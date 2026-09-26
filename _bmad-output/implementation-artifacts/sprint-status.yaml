@@ -40,7 +40,7 @@ development_status:
   1-1-initialiser-le-socle-découplé-et-la-gestion-immuable-du-mast: review
   1-2-ingestion-automatisée-et-flux-radar-d-offres-de-stage-pfe: review
   1-3-calcul-d-alignement-ats-déterministe-et-inventaire-des-écart: review
-  1-4-génération-de-cv-ciblé-zéro-hallucination-et-rendu-pdf-ats-1: backlog
+  1-4-génération-de-cv-ciblé-zéro-hallucination-et-rendu-pdf-ats-1: in-progress
   1-5-rédaction-de-lettre-de-motivation-sur-mesure-au-ton-sobre-d: backlog
   1-6-vue-miroir-de-révision-et-déclencheur-de-soumission-assistée: backlog
   1-7-suivi-kanban-du-cycle-de-vie-des-candidatures-et-métriques-d: backlog
