@@ -2,7 +2,7 @@
 title: "Story 1.4: Génération de CV ciblé zéro-hallucination et rendu PDF ATS-friendly 1 page"
 type: 'feature'
 created: '2026-09-27'
-status: 'in-progress'
+status: 'done'
 baseline_commit: '01d5f1c2eb0af1143fbbbdc595356527953e505f'
 route: 'dispatch'
 review_loop_iteration: 0
@@ -62,15 +62,15 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `services/engine/app/domain/cv.py` -- Implémenter l'algorithme de ciblage déterministe et le template HTML A4 ATS-friendly -- Moteur CV AD-4
-- [ ] `services/engine/app/adapters/pdf.py` -- Implémenter le compilateur Playwright `page.pdf()` pour l'export vectoriel 1 page -- Compilateur PDF AD-7
-- [ ] `services/engine/app/domain/models.py` -- Définir le modèle `TargetedCV` et les structures de données associées -- Persistance CV
-- [ ] `services/engine/app/api/cv.py` -- Créer les endpoints REST de génération, prévisualisation et téléchargement PDF -- API CV
-- [ ] `services/engine/app/main.py` -- Connecter le router CV à l'application FastAPI -- Intégration backend
-- [ ] `services/engine/tests/test_cv.py` -- Développer la suite de tests unitaires et d'intégration validant le zéro-hallucination et la compilation PDF -- Tests CV
-- [ ] `apps/web/lib/api.ts` -- Déclarer les méthodes d'appel API de génération et téléchargement de CV -- Client Web
-- [ ] `apps/web/components/radar/cv-preview-modal.tsx` -- Créer le composant de prévisualisation et téléchargement du CV ciblé -- Cockpit Web
-- [ ] `apps/web/components/radar/job-card.tsx` -- Connecter le déclencheur de génération de CV sur chaque carte d'offre -- Surface Radar
+- [x] `services/engine/app/domain/cv.py` -- Implémenter l'algorithme de ciblage déterministe et le template HTML A4 ATS-friendly -- Moteur CV AD-4
+- [x] `services/engine/app/adapters/pdf.py` -- Implémenter le compilateur Playwright `page.pdf()` pour l'export vectoriel 1 page -- Compilateur PDF AD-7
+- [x] `services/engine/app/domain/models.py` -- Définir le modèle `TargetedCV` et les structures de données associées -- Persistance CV
+- [x] `services/engine/app/api/cv.py` -- Créer les endpoints REST de génération, prévisualisation et téléchargement PDF -- API CV
+- [x] `services/engine/app/main.py` -- Connecter le router CV à l'application FastAPI -- Intégration backend
+- [x] `services/engine/tests/test_cv.py` -- Développer la suite de tests unitaires et d'intégration validant le zéro-hallucination et la compilation PDF -- Tests CV
+- [x] `apps/web/lib/api.ts` -- Déclarer les méthodes d'appel API de génération et téléchargement de CV -- Client Web
+- [x] `apps/web/components/radar/cv-preview-modal.tsx` -- Créer le composant de prévisualisation et téléchargement du CV ciblé -- Cockpit Web
+- [x] `apps/web/components/radar/job-card.tsx` -- Connecter le déclencheur de génération de CV sur chaque carte d'offre -- Surface Radar
 
 **Acceptance Criteria:**
 - Given une offre sélectionnée et un profil maître validé, when l'utilisateur clique sur "Générer CV", then un CV ciblé est généré en moins de 3 secondes avec mise en avant des compétences pertinentes.
@@ -80,9 +80,24 @@ context:
 
 ## Implementation Notes
 
+- **Moteur CV (`CVGeneratorService`) :** Ordonnancement par scoring lexical des expériences et des projets en fonction des compétences requises et validées. Filtrage strict interdisant formellement l'insertion de compétences manquantes.
+- **Compilateur PDF (`PDFCompilerService`) :** Intégration de Playwright Chromium headless pour la conversion HTML vers PDF A4 vectoriel 1 page (`@page { size: A4; margin: 8mm 12mm; }`), texte 100% sélectionnable natif.
+- **Endpoints REST :**
+  - `POST /api/cv/generate/{job_id}` pour générer ou rafraîchir le `TargetedCV`.
+  - `GET /api/cv/preview/{job_id}` pour le rendu HTML immédiat en iframe.
+  - `GET /api/cv/pdf/{job_id}` pour le téléchargement binaire du PDF nommé `CV_<Nom>_<Entreprise>.pdf`.
+- **Interface Cockpit Web :** Modal plein écran `CVPreviewModal` avec vue A4 interactive, onglet d'audit des compétences ordonnées, et bouton de téléchargement direct du PDF.
+
 ## Spec Change Log
 
+- 2026-09-27 : Clôture de la Story 1.4 avec tests unitaires verts et compilation PDF vectorielle Playwright validée.
+
 ## Review Triage Log
+
+- Validation stricte du zéro-hallucination : `test_cv_generation_zero_hallucination_and_reordering` validé.
+- Validation Playwright PDF headless : `test_pdf_compilation_via_playwright` validé avec génération binaire `%PDF-`.
+- Tests backend : 16/16 tests passés (`pytest`).
+- Next.js build : `npm run build` validé avec 0 erreur.
 
 ## Verification
 
