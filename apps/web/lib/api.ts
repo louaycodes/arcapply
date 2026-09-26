@@ -200,7 +200,8 @@ export async function archiveJob(jobId: string): Promise<JobOffer> {
 export function createRadarEventSource(
   onJobDiscovered?: (job: JobOffer) => void,
   onProgress?: (progress: { platform: string; status: string; message: string }) => void,
-  onError?: (err: any) => void
+  onError?: (err: any) => void,
+  onJobStatusChanged?: (payload: { job_id: string; old_status: string; new_status: string }) => void
 ): () => void {
   if (typeof window === "undefined") return () => {};
 
@@ -225,6 +226,17 @@ export function createRadarEventSource(
       }
     } catch (err) {
       console.error("Error parsing SCRAPE_PROGRESS event:", err);
+    }
+  });
+
+  eventSource.addEventListener("JOB_STATUS_CHANGED", (e: MessageEvent) => {
+    try {
+      const data = JSON.parse(e.data);
+      if (onJobStatusChanged && data.payload) {
+        onJobStatusChanged(data.payload);
+      }
+    } catch (err) {
+      console.error("Error parsing JOB_STATUS_CHANGED event:", err);
     }
   });
 
@@ -359,6 +371,26 @@ export async function updateCoverLetter(
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
       errorData?.detail?.message || "Échec de la mise à jour de la lettre."
+    );
+  }
+  return res.json();
+}
+
+export async function transitionJobStatus(
+  jobId: string,
+  newStatus: string
+): Promise<JobOffer> {
+  const res = await fetch(`${API_BASE_URL}/api/jobs/${jobId}/transition`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ new_status: newStatus }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(
+      errorData?.detail?.message || "Échec de la transition de statut."
     );
   }
   return res.json();

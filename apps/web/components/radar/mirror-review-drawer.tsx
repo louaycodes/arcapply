@@ -1,0 +1,620 @@
+"use client";
+
+import { useEffect, useState, useRef } from "react";
+import {
+  JobOffer,
+  ATSMatchResult,
+  CoverLetter,
+  generateTargetedCV,
+  generateCoverLetter,
+  fetchCoverLetter,
+  updateCoverLetter,
+  transitionJobStatus,
+  getCVPreviewUrl,
+  getCVPdfDownloadUrl,
+} from "@/lib/api";
+import { AtsScoreBadge } from "./ats-score-badge";
+import {
+  X,
+  FileText,
+  Mail,
+  ExternalLink,
+  ShieldCheck,
+  CheckCircle2,
+  AlertTriangle,
+  Clock,
+  Sparkles,
+  RefreshCw,
+  Send,
+  Save,
+  Check,
+  RotateCcw,
+  Loader2,
+  Building2,
+  MapPin,
+  ChevronRight,
+  ShieldAlert,
+} from "lucide-react";
+
+interface MirrorReviewDrawerProps {
+  job: JobOffer | null;
+  atsMatch?: ATSMatchResult;
+  isOpen: boolean;
+  onClose: () => void;
+  onJobUpdated?: (updatedJob: JobOffer) => void;
+}
+
+export function MirrorReviewDrawer({
+  job,
+  atsMatch,
+  isOpen,
+  onClose,
+  onJobUpdated,
+}: MirrorReviewDrawerProps) {
+  const [activeTab, setActiveTab] = useState<"cv" | "letter">("cv");
+  const [status, setStatus] = useState<string>("DISCOVERED");
+  const [loadingAction, setLoadingAction] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // CV state
+  const [cvLoading, setCvLoading] = useState(false);
+  const [cvGenerated, setCvGenerated] = useState(false);
+
+  // Letter state
+  const [letter, setLetter] = useState<CoverLetter | null>(null);
+  const [letterLoading, setLetterLoading] = useState(false);
+  const [letterContent, setLetterContent] = useState("");
+  const [isLetterSaving, setIsLetterSaving] = useState(false);
+  const [letterSaveSuccess, setLetterSaveSuccess] = useState(false);
+
+  // 5-second countdown state
+  const [isCountingDown, setIsCountingDown] = useState(false);
+  const [countdownSeconds, setCountdownSeconds] = useState(5);
+  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Synchronisation avec le job courant
+  useEffect(() => {
+    if (job && isOpen) {
+      setStatus(job.status);
+      setErrorMsg(null);
+      setIsCountingDown(false);
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
+
+      // Initialiser CV
+      setCvLoading(true);
+      generateTargetedCV(job.id)
+        .then(() => setCvGenerated(true))
+        .catch((err) => console.error("Erreur auto-generation CV:", err))
+        .finally(() => setCvLoading(false));
+
+      // Initialiser Lettre
+      setLetterLoading(true);
+      fetchCoverLetter(job.id)
+        .then((l) => {
+          setLetter(l);
+          setLetterContent(l.content_markdown);
+        })
+        .catch(() => {
+          // Si pas encore générée, la générer
+          generateCoverLetter(job.id)
+            .then((l) => {
+              setLetter(l);
+              setLetterContent(l.content_markdown);
+            })
+            .catch((err) => console.error("Erreur génération lettre:", err));
+        })
+        .finally(() => setLetterLoading(false));
+    }
+  }, [job?.id, isOpen]);
+
+  // Nettoyage countdown lors du démontage ou fermeture
+  useEffect(() => {
+    return () => {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+      }
+    };
+  }, []);
+
+  if (!isOpen || !job) return null;
+
+  const pdfUrl = getCVPdfDownloadUrl(job.id);
+  const previewUrl = getCVPreviewUrl(job.id);
+
+  // Actions FSM
+  const handleTransition = async (newStatus: string) => {
+    try {
+      setLoadingAction(true);
+      setErrorMsg(null);
+      const updated = await transitionJobStatus(job.id, newStatus);
+      setStatus(updated.status);
+      onJobUpdated?.(updated);
+    } catch (err: any) {
+      setErrorMsg(err.message || "Erreur lors du changement de statut.");
+    } finally {
+      setLoadingAction(false);
+    }
+  };
+
+  // Déclencheur 5s avec annulation possible
+  const startSubmissionCountdown = () => {
+    setIsCountingDown(true);
+    setCountdownSeconds(5);
+
+    countdownIntervalRef.current = setInterval(() => {
+      setCountdownSeconds((prev) => {
+        if (prev <= 1) {
+          if (countdownIntervalRef.current) {
+            clearInterval(countdownIntervalRef.current);
+            countdownIntervalRef.current = null;
+          }
+          setIsCountingDown(false);
+          // Exécution de la soumission irréversible
+          handleTransition("SUBMITTED");
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const cancelSubmissionCountdown = () => {
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+    setIsCountingDown(false);
+    setCountdownSeconds(5);
+  };
+
+  const handleSaveLetter = async () => {
+    if (!letterContent) return;
+    try {
+      setIsLetterSaving(true);
+      const updated = await updateCoverLetter(job.id, letterContent);
+      setLetter(updated);
+      setLetterSaveSuccess(true);
+      setTimeout(() => setLetterSaveSuccess(false), 2500);
+    } catch (err: any) {
+      setErrorMsg(err.message || "Erreur lors de la sauvegarde de la lettre.");
+    } finally {
+      setIsLetterSaving(false);
+    }
+  };
+
+  const getStatusBadge = (st: string) => {
+    switch (st) {
+      case "DISCOVERED":
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/30">Découvert</span>;
+      case "REVIEWING":
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">En révision</span>;
+      case "READY":
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">Prêt pour envoi</span>;
+      case "SUBMITTED":
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/30">Candidature transmise</span>;
+      case "INTERVIEW":
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/30">Entretien planifié</span>;
+      case "OFFER":
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-300 border border-green-500/50">Offre reçue 🎉</span>;
+      case "REJECTED":
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/30">Non retenu</span>;
+      default:
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-muted text-muted-foreground border border-border">{st}</span>;
+    }
+  };
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-background/85 backdrop-blur-md animate-in fade-in duration-200"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-7xl h-[95vh] rounded-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="p-4 sm:px-6 py-4 border-b border-border/80 flex items-center justify-between gap-4 bg-muted/20">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary font-bold">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono font-semibold uppercase tracking-wider text-primary">
+                  Vue Miroir de Révision
+                </span>
+                {getStatusBadge(status)}
+              </div>
+              <h2 className="text-base sm:text-lg font-bold text-foreground line-clamp-1">
+                {job.title} — {job.company}
+              </h2>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {job.url && (
+              <a
+                href={job.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-background hover:bg-muted text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Annonce source</span>
+              </a>
+            )}
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              title="Fermer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Error Notification Banner if any */}
+        {errorMsg && (
+          <div className="px-6 py-2.5 bg-destructive/15 border-b border-destructive/30 flex items-center justify-between text-xs text-destructive">
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 shrink-0" />
+              <span>{errorMsg}</span>
+            </div>
+            <button
+              onClick={() => setErrorMsg(null)}
+              className="p-1 hover:bg-destructive/20 rounded"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
+        {/* Main Split Body */}
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
+          {/* LEFT PANEL: Job & ATS Details (5 cols) */}
+          <div className="lg:col-span-5 border-r border-border/80 flex flex-col h-full overflow-hidden bg-background/50">
+            <div className="p-4 sm:p-5 border-b border-border/60 bg-muted/10 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Détails de l'opportunité
+                </span>
+                <AtsScoreBadge match={atsMatch} />
+              </div>
+
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-foreground">{job.title}</h3>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="font-semibold text-foreground flex items-center gap-1">
+                    <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
+                    {job.company}
+                  </span>
+                  <span>•</span>
+                  <span className="flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
+                    {job.location || job.country}
+                  </span>
+                </div>
+              </div>
+
+              {/* ATS Skills inventory */}
+              {atsMatch && (
+                <div className="pt-2 border-t border-border/40 space-y-2">
+                  <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    Audit des compétences déterministe
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
+                    {atsMatch.matched_skills.map((s) => (
+                      <span
+                        key={s}
+                        className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1"
+                      >
+                        <Check className="w-3 h-3" />
+                        {s}
+                      </span>
+                    ))}
+                    {atsMatch.transferable_skills.map((s) => (
+                      <span
+                        key={s}
+                        className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/30"
+                      >
+                        ~ {s}
+                      </span>
+                    ))}
+                    {atsMatch.missing_skills.map((s) => (
+                      <span
+                        key={s}
+                        className="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-500/15 text-rose-400 border border-rose-500/30"
+                      >
+                        ✕ {s}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Scrollable Job Description */}
+            <div className="flex-1 p-4 sm:p-5 overflow-y-auto space-y-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Description brute du recruteur
+              </span>
+              <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap font-sans">
+                {job.description_raw}
+              </p>
+            </div>
+          </div>
+
+          {/* RIGHT PANEL: CV & Cover Letter Tabs (7 cols) */}
+          <div className="lg:col-span-7 flex flex-col h-full overflow-hidden bg-card/60">
+            {/* Sub-tabs header */}
+            <div className="px-5 py-3 border-b border-border/80 flex items-center justify-between bg-muted/10">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("cv")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors ${
+                    activeTab === "cv"
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-muted/50 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>CV Ciblé (A4)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("letter")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors ${
+                    activeTab === "letter"
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-muted/50 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>Lettre de motivation</span>
+                  {letter && letter.cliche_score > 0 && (
+                    <span className="w-2 h-2 rounded-full bg-amber-400" />
+                  )}
+                </button>
+              </div>
+
+              {activeTab === "cv" && (
+                <div className="flex items-center gap-2">
+                  <a
+                    href={pdfUrl}
+                    download={`CV_${job.company.replace(/\s+/g, "_")}.pdf`}
+                    className="px-2.5 py-1 rounded-md border border-border bg-background hover:bg-muted text-xs font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors"
+                  >
+                    <span>PDF A4</span>
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCvLoading(true);
+                      generateTargetedCV(job.id)
+                        .then(() => setCvGenerated(true))
+                        .finally(() => setCvLoading(false));
+                    }}
+                    disabled={cvLoading}
+                    className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+                    title="Régénérer le CV"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${cvLoading ? "animate-spin" : ""}`} />
+                  </button>
+                </div>
+              )}
+
+              {activeTab === "letter" && (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSaveLetter}
+                    disabled={isLetterSaving}
+                    className="px-3 py-1 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                  >
+                    {isLetterSaving ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : letterSaveSuccess ? (
+                      <Check className="w-3.5 h-3.5 text-emerald-300" />
+                    ) : (
+                      <Save className="w-3.5 h-3.5" />
+                    )}
+                    <span>{letterSaveSuccess ? "Sauvegardé" : "Enregistrer"}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Sub-tab content */}
+            <div className="flex-1 overflow-hidden relative">
+              {activeTab === "cv" ? (
+                <div className="w-full h-full p-2 bg-muted/30 flex items-center justify-center overflow-hidden">
+                  {cvLoading ? (
+                    <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                      <p className="text-xs font-medium">Compilation vectorielle du CV A4...</p>
+                    </div>
+                  ) : (
+                    <iframe
+                      src={previewUrl}
+                      title="Prévisualisation CV"
+                      className="w-full h-full rounded-lg border border-border/80 bg-white shadow-inner"
+                    />
+                  )}
+                </div>
+              ) : (
+                <div className="w-full h-full p-4 flex flex-col gap-3 overflow-hidden bg-background/40">
+                  {letterLoading ? (
+                    <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
+                      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                      <p className="text-xs font-medium">Synthèse de la lettre sobre...</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-foreground">Édition en direct :</span>
+                          <span className="text-[11px]">
+                            {letter?.cliche_score === 0 ? (
+                              <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                                <CheckCircle2 className="w-3.5 h-3.5" /> 0 cliché détecté
+                              </span>
+                            ) : (
+                              <span className="text-amber-400 font-semibold flex items-center gap-1">
+                                <AlertTriangle className="w-3.5 h-3.5" /> {letter?.cliche_score} cliché(s)
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                        <span className="text-[11px] font-mono">
+                          {letterContent.length} caractères
+                        </span>
+                      </div>
+
+                      <textarea
+                        value={letterContent}
+                        onChange={(e) => setLetterContent(e.target.value)}
+                        className="flex-1 w-full p-4 rounded-xl border border-border bg-card font-mono text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none leading-relaxed"
+                        placeholder="Rédigez ou éditez votre lettre de motivation sobre ici..."
+                      />
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* BOTTOM ACTION BAR (FSM Workflow & 5-Second Grace Guard) */}
+        <div className="p-4 sm:px-6 py-3.5 border-t border-border bg-muted/30 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-muted-foreground hidden sm:inline">
+              Workflow :
+            </span>
+            <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground">
+              <span className={status === "DISCOVERED" ? "text-primary font-bold" : ""}>Découvert</span>
+              <ChevronRight className="w-3 h-3" />
+              <span className={status === "REVIEWING" ? "text-amber-400 font-bold" : ""}>Révision</span>
+              <ChevronRight className="w-3 h-3" />
+              <span className={status === "READY" ? "text-emerald-400 font-bold" : ""}>Prêt</span>
+              <ChevronRight className="w-3 h-3" />
+              <span className={status === "SUBMITTED" ? "text-purple-400 font-bold" : ""}>Soumis</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {/* If DISCOVERED */}
+            {status === "DISCOVERED" && (
+              <button
+                type="button"
+                onClick={() => handleTransition("REVIEWING")}
+                disabled={loadingAction}
+                className="px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold flex items-center gap-2 transition-all shadow-md cursor-pointer disabled:opacity-50"
+              >
+                {loadingAction ? <Loader2 className="w-4 h-4 animate-spin" /> : <ChevronRight className="w-4 h-4" />}
+                <span>Passer en révision (REVIEWING)</span>
+              </button>
+            )}
+
+            {/* If REVIEWING */}
+            {status === "REVIEWING" && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleTransition("DISCOVERED")}
+                  disabled={loadingAction}
+                  className="px-3 py-2 rounded-xl border border-border bg-background hover:bg-muted text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Retour Découvert</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleTransition("READY")}
+                  disabled={loadingAction}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-md cursor-pointer disabled:opacity-50"
+                >
+                  {loadingAction ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                  <span>Valider & Marquer Prêt (READY)</span>
+                </button>
+              </>
+            )}
+
+            {/* If READY: The Human-in-the-Loop 5-second countdown guard */}
+            {status === "READY" && !isCountingDown && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleTransition("REVIEWING")}
+                  disabled={loadingAction}
+                  className="px-3 py-2 rounded-xl border border-border bg-background hover:bg-muted text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Modifier</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={startSubmissionCountdown}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-primary hover:opacity-95 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-lg hover:shadow-emerald-500/20 cursor-pointer"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>Soumettre la candidature</span>
+                </button>
+              </>
+            )}
+
+            {/* 5-second active countdown modal banner inside bar */}
+            {status === "READY" && isCountingDown && (
+              <div className="flex items-center gap-3 animate-in fade-in">
+                <div className="flex items-center gap-2 bg-destructive/15 border border-destructive/40 px-3 py-1.5 rounded-xl">
+                  <Clock className="w-4 h-4 text-destructive animate-pulse" />
+                  <span className="text-xs font-bold text-destructive">
+                    Envoi dans {countdownSeconds}s...
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={cancelSubmissionCountdown}
+                  className="px-4 py-2 rounded-xl bg-destructive hover:bg-destructive/90 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                  <span>Annuler immédiatement</span>
+                </button>
+              </div>
+            )}
+
+            {/* If SUBMITTED */}
+            {status === "SUBMITTED" && (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 text-xs font-semibold">
+                  <CheckCircle2 className="w-4 h-4 text-purple-400" />
+                  <span>Dossier soumis & consigné</span>
+                </div>
+                {job.url && (
+                  <a
+                    href={job.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3.5 py-1.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold flex items-center gap-1.5 transition-all shadow-md"
+                  >
+                    <span>Finaliser sur le site</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

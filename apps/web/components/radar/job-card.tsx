@@ -11,6 +11,7 @@ import {
   Clock,
   ArrowRight,
   Mail,
+  CheckCircle2,
 } from "lucide-react";
 
 interface JobCardProps {
@@ -20,6 +21,7 @@ interface JobCardProps {
   onArchive: (id: string) => void;
   onOpenCV?: (job: JobOffer) => void;
   onOpenLetter?: (job: JobOffer) => void;
+  onOpenMirror?: (job: JobOffer) => void;
   isNew?: boolean;
 }
 
@@ -30,6 +32,7 @@ export function JobCard({
   onArchive,
   onOpenCV,
   onOpenLetter,
+  onOpenMirror,
   isNew = false,
 }: JobCardProps) {
   const isLinkedIn = job.platform.toLowerCase() === "linkedin";
@@ -68,6 +71,23 @@ export function JobCard({
             <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border/50">
               {isFrance ? "🇫🇷 France" : isTunisia ? "🇹🇳 Tunisie" : job.country}
             </span>
+
+            {job.status === "REVIEWING" && (
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                En révision
+              </span>
+            )}
+            {job.status === "READY" && (
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                Prêt
+              </span>
+            )}
+            {job.status === "SUBMITTED" && (
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-400 border border-purple-500/30 flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3" />
+                Soumis
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -110,7 +130,7 @@ export function JobCard({
             type="button"
             onClick={() => onArchive(job.id)}
             className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-            title="Archiver cette offre (Touche x)"
+            title="Archiver cette offre"
           >
             <Archive className="w-4 h-4" />
           </button>
@@ -132,7 +152,7 @@ export function JobCard({
           <button
             type="button"
             onClick={() => onOpenLetter?.(job)}
-            className="px-2.5 py-1.5 rounded-md border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-2 py-1.5 rounded-md border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
             title="Rédiger une lettre de motivation sobre"
           >
             <Mail className="w-3.5 h-3.5" />
@@ -142,10 +162,20 @@ export function JobCard({
           <button
             type="button"
             onClick={() => onOpenCV?.(job)}
-            className="px-3 py-1.5 rounded-md bg-primary/10 hover:bg-primary text-primary hover:text-white border border-primary/20 hover:border-transparent text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+            className="px-2 py-1.5 rounded-md border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+            title="Aperçu du CV ciblé"
           >
             <span>CV</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onOpenMirror?.(job)}
+            className="px-3 py-1.5 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+            title="Ouvrir la vue miroir de révision et déclencher la soumission"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Miroir</span>
           </button>
         </div>
       </div>

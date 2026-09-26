@@ -15,6 +15,7 @@ import {
 import { JobCard } from "@/components/radar/job-card";
 import { CVPreviewModal } from "@/components/radar/cv-preview-modal";
 import { LetterPreviewModal } from "@/components/radar/letter-preview-modal";
+import { MirrorReviewDrawer } from "@/components/radar/mirror-review-drawer";
 import {
   Radar,
   Sparkles,
@@ -36,6 +37,7 @@ export default function RadarPage() {
   const [isAtsLoading, setIsAtsLoading] = useState(false);
   const [selectedJobForCV, setSelectedJobForCV] = useState<JobOffer | null>(null);
   const [selectedJobForLetter, setSelectedJobForLetter] = useState<JobOffer | null>(null);
+  const [selectedJobForMirror, setSelectedJobForMirror] = useState<JobOffer | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [newJobIds, setNewJobIds] = useState<Set<string>>(new Set());
   const [selectedCountry, setSelectedCountry] = useState<string>("all");
@@ -109,6 +111,21 @@ export default function RadarPage() {
         if (progress.status === "completed") {
           setTimeout(() => setScrapeMessage(null), 4000);
         }
+      },
+      undefined,
+      (statusPayload) => {
+        setJobs((prev) =>
+          prev.map((j) =>
+            j.id === statusPayload.job_id
+              ? { ...j, status: statusPayload.new_status }
+              : j
+          )
+        );
+        setSelectedJobForMirror((prev) =>
+          prev && prev.id === statusPayload.job_id
+            ? { ...prev, status: statusPayload.new_status }
+            : prev
+        );
       }
     );
 
@@ -367,6 +384,7 @@ export default function RadarPage() {
               onArchive={handleArchive}
               onOpenCV={(j) => setSelectedJobForCV(j)}
               onOpenLetter={(j) => setSelectedJobForLetter(j)}
+              onOpenMirror={(j) => setSelectedJobForMirror(j)}
               isNew={newJobIds.has(job.id)}
             />
           ))}
@@ -470,6 +488,18 @@ export default function RadarPage() {
         job={selectedJobForLetter}
         isOpen={!!selectedJobForLetter}
         onClose={() => setSelectedJobForLetter(null)}
+      />
+
+      {/* Vue miroir de révision et déclencheur de soumission assistée */}
+      <MirrorReviewDrawer
+        job={selectedJobForMirror}
+        atsMatch={selectedJobForMirror ? atsScores[selectedJobForMirror.id] : undefined}
+        isOpen={!!selectedJobForMirror}
+        onClose={() => setSelectedJobForMirror(null)}
+        onJobUpdated={(updated) => {
+          setJobs((prev) => prev.map((j) => (j.id === updated.id ? updated : j)));
+          setSelectedJobForMirror(updated);
+        }}
       />
     </div>
   );
