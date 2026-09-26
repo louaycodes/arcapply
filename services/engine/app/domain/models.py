@@ -346,3 +346,49 @@ class TargetedCVRead(SQLModel):
     created_at: datetime
 
 
+# ============================================================================
+# Cover Letter (Anti-Cliché & Fact-Based Sober Pitch)
+# ============================================================================
+
+class CoverLetterBase(SQLModel):
+    job_id: str = Field(foreign_key="job_offers.id", index=True)
+    profile_id: str = Field(foreign_key="master_profiles.id", index=True)
+    target_role: str = Field(default="")
+    company_name: str = Field(default="")
+    content_markdown: str = Field(default="")
+    cliche_score: int = Field(default=0)
+    banned_phrases_detected_raw: str = Field(default="[]")
+
+
+class CoverLetter(CoverLetterBase, table=True):
+    __tablename__ = "cover_letters"
+    id: str = Field(default_factory=generate_uuid, primary_key=True)
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+
+    @property
+    def banned_phrases_detected(self) -> list[str]:
+        return json.loads(self.banned_phrases_detected_raw) if self.banned_phrases_detected_raw else []
+
+    @banned_phrases_detected.setter
+    def banned_phrases_detected(self, value: list[str]) -> None:
+        self.banned_phrases_detected_raw = json.dumps(value)
+
+
+class CoverLetterRead(SQLModel):
+    id: str
+    job_id: str
+    profile_id: str
+    target_role: str
+    company_name: str
+    content_markdown: str
+    cliche_score: int
+    banned_phrases_detected: list[str]
+    created_at: datetime
+    updated_at: datetime
+
+
+class CoverLetterUpdate(SQLModel):
+    content_markdown: str
+
+

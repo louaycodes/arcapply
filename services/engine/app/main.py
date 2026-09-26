@@ -3,7 +3,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.adapters.database import init_db
-from app.api import ats, cv, events, jobs, profile
+from app.api import ats, cv, events, jobs, letter, profile
 from app.config import settings
 
 
@@ -36,6 +36,7 @@ app.include_router(jobs.router)
 app.include_router(events.router)
 app.include_router(ats.router)
 app.include_router(cv.router)
+app.include_router(letter.router)
 
 
 @app.exception_handler(HTTPException)
