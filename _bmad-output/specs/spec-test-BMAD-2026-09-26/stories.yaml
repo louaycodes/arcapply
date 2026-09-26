@@ -1,0 +1,78 @@
+- id: "1"
+  title: Initialiser le socle découplé et la gestion immuable du Master Profile
+  description: >-
+    Mettre en place le monorepo (apps/web Next.js, services/engine FastAPI) et la base locale SQLite (~/.arcapply/arcapply.db).
+    Implémenter le CRUD et la validation de complétude du Master Profile bloquant toute génération tant qu'il est incomplet (CAP-1).
+  spec_checkpoint: true
+  done_checkpoint: true
+  invoke_dev_with: >-
+    Respecter le découplage strict AD-1/AD-2 : SQLite est la propriété exclusive de l'engine FastAPI.
+    Mettre en place les tests unitaires sur les règles d'invariance et de blocage du Master Profile.
+- id: "2"
+  title: Ingestion automatisée et flux Radar d'offres de stage PFE
+  description: >-
+    Développer les connecteurs Playwright pour scraper et dédupliquer les offres LinkedIn et Jobteaser selon les critères géographiques et mots-clés (CAP-2).
+    Exposer le flux d'opportunités temps réel via SSE vers la vue Radar du cockpit web.
+  spec_checkpoint: false
+  done_checkpoint: false
+  invoke_dev_with: >-
+    Implémenter impérativement le jitter aléatoire et le rate limiting (AD-4) pour éviter tout blocage de compte.
+    Gérer le scraping en tâche asynchrone non bloquante dans l'engine.
+- id: "3"
+  title: Calcul d'alignement ATS déterministe et inventaire des écarts de compétences
+  description: >-
+    Implémenter l'analyseur confrontant la description de l'offre au Master Profile pour produire un score d'adéquation en pourcentage (CAP-3).
+    Ventiler les compétences en correspondances exactes, transférables et compétences absentes sans aucune extrapolation.
+  spec_checkpoint: false
+  done_checkpoint: false
+  invoke_dev_with: >-
+    Le calcul doit être rigoureusement déterministe et traçable.
+    Interdire toute invention ou inférence non vérifiable de compétences absentes du Master Profile.
+- id: "4"
+  title: Génération de CV ciblé zéro-hallucination et rendu PDF ATS 1 page
+  description: >-
+    Sélectionner et réordonner les réalisations et compétences du Master Profile les plus pertinentes pour l'offre cible (CAP-4).
+    Compiler un document PDF vectoriel d'une seule page, sans colonnes complexes, conforme aux standards de parsing ATS.
+  spec_checkpoint: true
+  done_checkpoint: true
+  invoke_dev_with: >-
+    Vérifier l'invariant strict : aucun terme, compétence ou expérience non présent dans le Master Profile ne doit figurer dans le PDF généré.
+    Le rendu PDF Playwright doit produire exactement 1 page vectorielle.
+- id: "5"
+  title: Rédaction de lettre de motivation sur-mesure au ton sobre d'élève-ingénieur
+  description: >-
+    Générer un projet de lettre de motivation personnalisé mettant en valeur les réalisations réelles en lien avec l'offre (CAP-5).
+    Appliquer un filtre anti-clichés bannissant les stéréotypes d'IA (« dynamique et motivé », etc.).
+  spec_checkpoint: false
+  done_checkpoint: false
+  invoke_dev_with: >-
+    Utiliser le modèle Grok avec sorties structurées Instructor.
+    Le prompt système doit imposer un style sobre, direct, technique et crédible pour un élève-ingénieur.
+- id: "6"
+  title: Vue miroir de révision et déclencheur de soumission assistée sous contrôle humain
+  description: >-
+    Développer le panneau d'inspection miroir permettant d'éditer le CV et la lettre face à l'offre ciblée (CAP-6).
+    Intégrer l'action explicite de validation (génération du package complet ou dispatch Easy Apply supervisé).
+  spec_checkpoint: true
+  done_checkpoint: true
+  invoke_dev_with: >-
+    Appliquer l'invariant non-goal absolu : aucune candidature ne peut être transmise sans action manuelle explicite de l'utilisateur.
+- id: "7"
+  title: Suivi Kanban du cycle de vie des candidatures et métriques de conversion
+  description: >-
+    Implémenter le tableau Kanban à 7 colonnes pour orchestrer le cycle de vie de chaque candidature avec persistance de l'historique et des métriques (CAP-7).
+    Assurer la responsivité mobile complète du cockpit pour le suivi en mobilité.
+  spec_checkpoint: false
+  done_checkpoint: false
+  invoke_dev_with: >-
+    Assurer la gestion d'état fluide avec TanStack Query et persister les transitions d'état horodatées dans SQLite.
+- id: "8"
+  title: Ingestion automatique des emails recruteurs et mise à jour de statut
+  description: >-
+    Développer le connecteur IMAP/OAuth inspectant périodiquement la boîte de réception pour détecter les retours recruteurs (CAP-8).
+    Classifier les réponses (entretien, refus, accusé) et basculer automatiquement la carte correspondante dans le Kanban avec l'extrait pertinent archivé.
+  spec_checkpoint: true
+  done_checkpoint: true
+  invoke_dev_with: >-
+    Isoler les credentials email dans l'environnement local sécurisé.
+    Lier automatiquement l'email à la candidature par correspondance entreprise / intitulé.

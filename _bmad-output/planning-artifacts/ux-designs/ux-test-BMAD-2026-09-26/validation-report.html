@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>UX Design Validation: ArcApply</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --border: #e7e5e4;
+    --text: #1c1917;
+    --muted: #78716c;
+
+    --verdict-strong: #16a34a;
+    --verdict-adequate: #65a30d;
+    --verdict-thin: #d97706;
+    --verdict-broken: #dc2626;
+
+    --sev-low: #64748b;
+    --sev-medium: #ca8a04;
+    --sev-high: #ea580c;
+    --sev-critical: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 32px 24px 64px; }
+
+  header.report-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .title h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+  .title .subtitle { color: var(--muted); font-size: 13px; margin-top: 4px; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+
+  .synthesis {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--verdict-strong);
+    border-radius: 8px;
+    padding: 18px 22px;
+    margin-bottom: 24px;
+    font-size: 15px;
+  }
+  .synthesis p { margin: 0 0 10px; }
+  .synthesis p:last-child { margin-bottom: 0; }
+
+  .stats-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .stat-pill {
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .dimension-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .dim-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .dim-card .dim-name { font-size: 12.5px; color: var(--muted); margin-bottom: 6px; }
+  .dim-card .dim-verdict { font-size: 14px; font-weight: 600; }
+
+  section.dimension, section.reviewer-section { margin-bottom: 14px; }
+  section.dimension details, section.reviewer-section details {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  section summary {
+    padding: 14px 20px;
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  section summary::-webkit-details-marker { display: none; }
+  section summary::before {
+    content: "▸";
+    display: inline-block;
+    color: var(--muted);
+    transition: transform 0.15s ease;
+  }
+  section details[open] summary::before { transform: rotate(90deg); }
+  section summary h2 {
+    display: inline;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    flex: 1;
+  }
+  .verdict-pill {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: white;
+  }
+  .verdict-strong { background: var(--verdict-strong); }
+  .verdict-adequate { background: var(--verdict-adequate); }
+  .verdict-thin { background: var(--verdict-thin); }
+  .verdict-broken { background: var(--verdict-broken); }
+
+  .dim-body { padding: 4px 20px 18px; }
+  .dim-judgment { color: var(--text); font-size: 14px; }
+  .dim-judgment p { margin: 0 0 10px; }
+
+  .findings-list { padding: 0 20px 4px; }
+  article.finding {
+    padding: 14px 0;
+    border-top: 1px solid var(--border);
+  }
+  article.finding:first-child { border-top: none; }
+  article.finding header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  .badge {
+    font-size: 10.5px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+  }
+  .badge-sev-low { background: rgba(100, 116, 139, 0.12); color: var(--sev-low); }
+  .badge-sev-medium { background: rgba(202, 138, 4, 0.14); color: var(--sev-medium); }
+  .badge-sev-high { background: rgba(234, 88, 12, 0.14); color: var(--sev-high); }
+  .badge-sev-critical { background: rgba(220, 38, 38, 0.14); color: var(--sev-critical); }
+  .finding-title { margin: 0; font-size: 15px; font-weight: 500; flex: 1; min-width: 200px; }
+  .finding-location { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px; color: var(--muted); }
+  .finding-note, .finding-fix { margin-top: 6px; font-size: 14px; }
+  .finding-fix strong { color: var(--muted); font-weight: 500; }
+
+  .reviewer-source {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  footer.report-footer {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  footer .meta { display: flex; gap: 24px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+  <div class="container">
+
+    <header class="report-header">
+      <div class="title">
+        <h1>ArcApply — Rapport de Validation UX (Reviewer Gate)</h1>
+        <div class="subtitle">_bmad-output/planning-artifacts/ux-designs/ux-test-BMAD-2026-09-26/</div>
+      </div>
+    </header>
+
+    <div class="synthesis">
+      <p><strong>Verdict Synthétique :</strong> Le tandem <code>DESIGN.md</code> et <code>EXPERIENCE.md</code> pose une architecture UX d'une grande rigueur, parfaitement taillée pour un outil d'ingénierie et de productivité intense. L'obligation du contrôle humain (<em>Human-in-the-loop</em>) et la règle d'anti-hallucination sont remarquablement ancrées dans les parcours.</p>
+      <p>La revue approfondie via les 3 prismes spécialisés (Accessibilité WCAG 2.1 AA, Cohérence des flux & cas limites, Heuristiques de Nielsen) identifie <strong>0 point critique</strong>, <strong>5 points d'attention haute (High)</strong> axés sur l'ergonomie clavier du tiroir, le contraste de micro-textes sur fond sombre et le mode de repli en cas d'imprévu LinkedIn, ainsi que <strong>6 points d'optimisation moyenne (Medium)</strong> facilement intégrables.</p>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat-pill" style="background: rgba(220, 38, 38, 0.1); color: var(--sev-critical);">0 Critique</div>
+      <div class="stat-pill" style="background: rgba(234, 88, 12, 0.1); color: var(--sev-high);">5 High</div>
+      <div class="stat-pill" style="background: rgba(202, 138, 4, 0.1); color: var(--sev-medium);">6 Medium</div>
+      <div class="stat-pill" style="background: rgba(100, 116, 139, 0.1); color: var(--sev-low);">5 Low / Robustesse</div>
+    </div>
+
+    <div class="dimension-summary">
+      <div class="dim-card">
+        <div class="dim-name">1. Flow coverage</div>
+        <div class="dim-verdict" style="color: var(--verdict-adequate)">ADEQUATE</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">2. Token completeness</div>
+        <div class="dim-verdict" style="color: var(--verdict-adequate)">ADEQUATE</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">3. Component coverage</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">STRONG</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">4. State coverage</div>
+        <div class="dim-verdict" style="color: var(--verdict-adequate)">ADEQUATE</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">5. Visual ref coverage</div>
+        <div class="dim-verdict" style="color: var(--verdict-adequate)">ADEQUATE</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">6. Bloat discipline</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">STRONG</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">7. Inheritance</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">STRONG</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">8. Shape fit</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">STRONG</div>
+      </div>
+    </div>
+
+    <!-- Reviewer 1: Accessibilité -->
+    <section class="reviewer-section">
+      <details open>
+        <summary>
+          <h2>Prisme Accessibilité & Inclusion (WCAG 2.1 AA)</h2>
+          <span class="reviewer-source">review-accessibility.md</span>
+        </summary>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">HIGH</span>
+              <span class="finding-title">Piège au clavier et cycle de focus dans le Review Drawer</span>
+              <span class="finding-location">EXPERIENCE.md § Component Patterns</span>
+            </header>
+            <div class="finding-note">À l'ouverture du tiroir via Space, le confinement du focus (focus trap) et le retour à l'élément déclencheur via Escape doivent être formellement verrouillés.</div>
+            <div class="finding-fix"><strong>Fix :</strong> Définir aria-modal="true", boucle de tabulation et fermeture immédiate sur Escape.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">HIGH</span>
+              <span class="finding-title">Ratio de contraste sur texte atténué (muted-foreground)</span>
+              <span class="finding-location">DESIGN.md § Colors</span>
+            </header>
+            <div class="finding-note">#94A3B8 sur surface #1E293B est limite sur les petits caractères JetBrains Mono 13px.</div>
+            <div class="finding-fix"><strong>Fix :</strong> Éclaircir à #A1B0CB pour garantir un ratio supérieur à 5:1.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">MEDIUM</span>
+              <span class="finding-title">Gestion des alertes de flux temps réel (Live Regions)</span>
+              <span class="finding-location">EXPERIENCE.md § State Patterns</span>
+            </header>
+            <div class="finding-note">Éviter la saturation vocale lors des réceptions d'offres en tâche de fond.</div>
+            <div class="finding-fix"><strong>Fix :</strong> Borner aria-live="polite" à un compteur textuel de synthèse.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <!-- Reviewer 2: Cohérence des flux -->
+    <section class="reviewer-section">
+      <details open>
+        <summary>
+          <h2>Prisme Cohérence des Flux & Cas Limites</h2>
+          <span class="reviewer-source">review-flow-coherence.md</span>
+        </summary>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">HIGH</span>
+              <span class="finding-title">Mode de repli lors d'un blocage ou CAPTCHA LinkedIn</span>
+              <span class="finding-location">EXPERIENCE.md § Key Flows</span>
+            </header>
+            <div class="finding-note">En cas de champ inattendu ou de CAPTCHA, l'utilisateur ne doit pas rester bloqué.</div>
+            <div class="finding-fix"><strong>Fix :</strong> Spécifier le Fallback Path en "Contrôle manuel" avec surbrillance des champs à compléter soi-même.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">HIGH</span>
+              <span class="finding-title">Archivage / Ignorer une offre non pertinente</span>
+              <span class="finding-location">EXPERIENCE.md § Information Architecture</span>
+            </header>
+            <div class="finding-note">L'étudiant a besoin de masquer rapidement une offre rejetée sans la laisser encombrer le radar.</div>
+            <div class="finding-fix"><strong>Fix :</strong> Ajouter l'action Pass / Archive ('x' au clavier) retirant l'offre du radar actif.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">MEDIUM</span>
+              <span class="finding-title">Boucle de confirmation pour les candidatures externes</span>
+              <span class="finding-location">EXPERIENCE.md § Key Flows</span>
+            </header>
+            <div class="finding-note">Si Louay ferme l'onglet Workday/Taleo sans postuler, la carte reste indéfiniment en statut flottant.</div>
+            <div class="finding-fix"><strong>Fix :</strong> Prévoir un prompt d'acquittement au retour dans ArcApply ("Avez-vous finalisé la soumission ?").</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <!-- Reviewer 3: Heuristiques UX -->
+    <section class="reviewer-section">
+      <details open>
+        <summary>
+          <h2>Prisme Heuristiques UX (Nielsen Norman 10)</h2>
+          <span class="reviewer-source">review-heuristics.md</span>
+        </summary>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">MEDIUM</span>
+              <span class="finding-title">Délai d'inférence LLM et visibilité du statut (H1)</span>
+              <span class="finding-location">EXPERIENCE.md § State Patterns</span>
+            </header>
+            <div class="finding-note">Un simple Skeleton peut laisser planer un doute en cas de latence réseau.</div>
+            <div class="finding-fix"><strong>Fix :</strong> Intégrer un micro-stepper textuel séquencé (Analyse $\rightarrow$ Alignement $\rightarrow$ Rédaction) avec timer d'abandon.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">MEDIUM</span>
+              <span class="finding-title">Délai de grâce 'Annuler l'envoi' (H3)</span>
+              <span class="finding-location">EXPERIENCE.md § Interaction Primitives</span>
+            </header>
+            <div class="finding-note">Permettre de stopper l'action immédiatement après le clic de soumission directe.</div>
+            <div class="finding-fix"><strong>Fix :</strong> Délai de sécurité de 5 secondes avec bouton "Annuler" avant soumission irréversible.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">MEDIUM</span>
+              <span class="finding-title">Mise en miroir Offre vs Lettre (H6 - Reconnaissance)</span>
+              <span class="finding-location">EXPERIENCE.md § Component Patterns</span>
+            </header>
+            <div class="finding-note">Éviter d'obliger l'étudiant à se remémorer de mémoire les exigences de la fiche de poste.</div>
+            <div class="finding-fix"><strong>Fix :</strong> Vue synchronisée affichant en miroir les exigences sources et les preuves associées dans la lettre.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <footer class="report-footer">
+      <div class="meta">
+        <div>Spines : DESIGN.md & EXPERIENCE.md</div>
+        <div>Audits : review-rubric.md, review-accessibility.md, review-flow-coherence.md, review-heuristics.md</div>
+        <div>Date : 2026-09-26</div>
+      </div>
+    </footer>
+
+  </div>
+</body>
+</html>
