@@ -201,7 +201,8 @@ export function createRadarEventSource(
   onJobDiscovered?: (job: JobOffer) => void,
   onProgress?: (progress: { platform: string; status: string; message: string }) => void,
   onError?: (err: any) => void,
-  onJobStatusChanged?: (payload: { job_id: string; old_status: string; new_status: string }) => void
+  onJobStatusChanged?: (payload: { job_id: string; old_status: string; new_status: string }) => void,
+  onEmailReceived?: (payload: { id: string; category: string; company?: string; subject: string; snippet?: string }) => void
 ): () => void {
   if (typeof window === "undefined") return () => {};
 
@@ -237,6 +238,17 @@ export function createRadarEventSource(
       }
     } catch (err) {
       console.error("Error parsing JOB_STATUS_CHANGED event:", err);
+    }
+  });
+
+  eventSource.addEventListener("EMAIL_RECEIVED", (e: MessageEvent) => {
+    try {
+      const data = JSON.parse(e.data);
+      if (onEmailReceived && data.payload) {
+        onEmailReceived(data.payload);
+      }
+    } catch (err) {
+      console.error("Error parsing EMAIL_RECEIVED event:", err);
     }
   });
 
@@ -418,6 +430,70 @@ export async function fetchPipelineMetrics(): Promise<PipelineMetrics> {
   }
   return res.json();
 }
+
+export interface EmailInteraction {
+  id: string;
+  job_id?: string | null;
+  sender: string;
+  recipient: string;
+  subject: string;
+  snippet: string;
+  category: "INTERVIEW" | "REJECTION" | "ACKNOWLEDGEMENT" | "OTHER";
+  raw_body?: string;
+  received_at: string;
+  created_at: string;
+  company_name?: string | null;
+  job_title?: string | null;
+}
+
+export interface EmailSimulatePayload {
+  sender: string;
+  subject: string;
+  body: string;
+  company_hint?: string;
+}
+
+export async function fetchRecentEmails(limit = 30): Promise<EmailInteraction[]> {
+  const res = await fetch(`${API_BASE_URL}/api/emails/recent?limit=${limit}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch recent recruiter emails: ${res.statusText}`);
+  }
+  return res.json();
+}
+
+export async function simulateIncomingEmail(
+  payload: EmailSimulatePayload
+): Promise<EmailInteraction> {
+  const res = await fetch(`${API_BASE_URL}/api/emails/simulate`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to simulate incoming email: ${res.statusText}`);
+  }
+  return res.json();
+}
+
+export async function triggerEmailSync(): Promise<{
+  status: string;
+  message: string;
+  total_archived: number;
+  last_sync: string;
+}> {
+  const res = await fetch(`${API_BASE_URL}/api/emails/ingest`, {
+    method: "POST",
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to trigger email sync: ${res.statusText}`);
+  }
+  return res.json();
+}
+
 
 
 

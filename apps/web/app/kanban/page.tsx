@@ -13,6 +13,7 @@ import {
 } from "@/lib/api";
 import { KanbanColumn } from "@/components/kanban/kanban-column";
 import { MirrorReviewDrawer } from "@/components/radar/mirror-review-drawer";
+import { EmailInboxModal } from "@/components/kanban/email-inbox-modal";
 import {
   KanbanSquare,
   Sparkles,
@@ -29,6 +30,7 @@ import {
   CalendarCheck,
   XCircle,
   Radio,
+  Mail,
 } from "lucide-react";
 
 export default function KanbanPage() {
@@ -39,8 +41,10 @@ export default function KanbanPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [transitioningJobId, setTransitioningJobId] = useState<string | null>(null);
   const [selectedJobForMirror, setSelectedJobForMirror] = useState<JobOffer | null>(null);
+  const [showEmailModal, setShowEmailModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [errorNotification, setErrorNotification] = useState<string | null>(null);
+  const [emailToast, setEmailToast] = useState<string | null>(null);
 
   const loadData = async () => {
     try {
@@ -89,6 +93,13 @@ export default function KanbanPage() {
           )
         );
         fetchPipelineMetrics().then(setMetrics).catch(() => {});
+      },
+      (emailPayload) => {
+        setEmailToast(
+          `📩 Email recruteur reçu [${emailPayload.category}] : ${emailPayload.company || "Candidature"} — ${emailPayload.subject}`
+        );
+        loadData();
+        setTimeout(() => setEmailToast(null), 8000);
       }
     );
     return cleanup;
@@ -212,6 +223,16 @@ export default function KanbanPage() {
 
           <button
             type="button"
+            onClick={() => setShowEmailModal(true)}
+            className="px-3 py-1.5 rounded-lg border border-primary/30 bg-primary/10 hover:bg-primary text-primary hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+            title="Consulter les emails recruteurs et simuler des retours"
+          >
+            <Mail className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Boîte Recruteurs</span>
+          </button>
+
+          <button
+            type="button"
             onClick={loadData}
             disabled={isRefreshing}
             className="p-2 rounded-lg border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
@@ -221,6 +242,23 @@ export default function KanbanPage() {
           </button>
         </div>
       </div>
+
+      {/* Recruiter Email Toast Live Alert */}
+      {emailToast && (
+        <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-between text-xs text-emerald-400 font-semibold shadow-md animate-in slide-in-from-top-2">
+          <div className="flex items-center gap-2">
+            <Mail className="w-4 h-4 shrink-0 text-emerald-400 animate-bounce" />
+            <span>{emailToast}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setEmailToast(null)}
+            className="p-1 hover:bg-emerald-500/20 rounded"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Error alert banner */}
       {errorNotification && (
@@ -372,6 +410,14 @@ export default function KanbanPage() {
           setSelectedJobForMirror(updated);
           fetchPipelineMetrics().then(setMetrics).catch(() => {});
         }}
+      />
+
+      {/* Recruiter Email Inbox & Simulator Modal */}
+      <EmailInboxModal
+        isOpen={showEmailModal}
+        onClose={() => setShowEmailModal(false)}
+        jobs={jobs}
+        onEmailProcessed={loadData}
       />
     </div>
   );
