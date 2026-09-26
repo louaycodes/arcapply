@@ -392,3 +392,39 @@ class CoverLetterUpdate(SQLModel):
     content_markdown: str
 
 
+# ============================================================================
+# Recruiter Email Ingestion & Status Auto-Updates
+# ============================================================================
+
+class EmailInteractionBase(SQLModel):
+    job_id: Optional[str] = Field(default=None, foreign_key="job_offers.id", index=True)
+    sender: str
+    recipient: str = Field(default="me@arcapply.local")
+    subject: str
+    snippet: str
+    category: str = Field(default="OTHER", index=True)  # "INTERVIEW" | "REJECTION" | "ACKNOWLEDGEMENT" | "OTHER"
+    raw_body: str = Field(default="")
+    received_at: datetime = Field(default_factory=utc_now)
+
+
+class EmailInteraction(EmailInteractionBase, table=True):
+    __tablename__ = "email_interactions"
+    id: str = Field(default_factory=generate_uuid, primary_key=True)
+    created_at: datetime = Field(default_factory=utc_now)
+
+
+class EmailInteractionRead(EmailInteractionBase):
+    id: str
+    created_at: datetime
+    company_name: Optional[str] = None
+    job_title: Optional[str] = None
+
+
+class EmailSimulateRequest(SQLModel):
+    sender: str
+    subject: str
+    body: str
+    company_hint: Optional[str] = None
+
+
+
