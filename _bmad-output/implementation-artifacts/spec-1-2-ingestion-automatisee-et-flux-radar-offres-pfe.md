@@ -2,7 +2,7 @@
 title: "Story 1.2: Ingestion automatisée et flux Radar d'offres de stage PFE"
 type: 'feature'
 created: '2026-09-26'
-status: 'in-progress'
+status: 'done'
 baseline_commit: '2ac7494174f996f8e97c35a8ebb1786cd259e670'
 route: 'dispatch'
 review_loop_iteration: 0
@@ -64,17 +64,17 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `services/engine/app/ports/connectors.py` -- Créer la classe abstraite `BaseJobConnector` définissant `search_jobs()` et `fetch_job_details()` -- Contrat AD-5
-- [ ] `services/engine/app/domain/models.py` -- Ajouter l'entité SQLModel `JobOffer` avec unicité et métadonnées complètes -- Modèle de persistance
-- [ ] `services/engine/app/adapters/connectors/linkedin.py` -- Implémenter le connecteur LinkedIn avec temporisation et mode résilient -- Adaptateur plateforme
-- [ ] `services/engine/app/adapters/connectors/jobteaser.py` -- Implémenter le connecteur Jobteaser avec temporisation et mode résilient -- Adaptateur plateforme
-- [ ] `services/engine/app/api/events.py` -- Implémenter le bus d'événements et l'endpoint SSE `/api/events` -- Télémétrie AD-3
-- [ ] `services/engine/app/api/jobs.py` -- Créer les endpoints REST `/api/jobs`, `/api/jobs/collect`, `/api/jobs/{id}/archive` -- API REST
-- [ ] `services/engine/app/main.py` -- Déclarer et brancher les routeurs `jobs` et `events` -- Intégration backend
-- [ ] `services/engine/tests/test_jobs.py` -- Écrire les tests de collecte, déduplication et filtrage des offres -- Validation backend
-- [ ] `apps/web/lib/api.ts` -- Ajouter les fonctions `fetchJobs`, `collectJobs`, `archiveJob` et hook/helper SSE -- Client API
-- [ ] `apps/web/components/radar/job-card.tsx` -- Créer le composant de carte d'offre responsive avec badges et raccourcis -- Composant UI
-- [ ] `apps/web/app/radar/page.tsx` -- Réaliser l'interface Radar complète avec flux live SSE, filtres par pays/mots-clés et modal de collecte -- Surface Radar
+- [x] `services/engine/app/ports/connectors.py` -- Créer la classe abstraite `BaseJobConnector` définissant `search_jobs()` et `fetch_job_details()` -- Contrat AD-5
+- [x] `services/engine/app/domain/models.py` -- Ajouter l'entité SQLModel `JobOffer` avec unicité et métadonnées complètes -- Modèle de persistance
+- [x] `services/engine/app/adapters/connectors/linkedin.py` -- Implémenter le connecteur LinkedIn avec temporisation et mode résilient -- Adaptateur plateforme
+- [x] `services/engine/app/adapters/connectors/jobteaser.py` -- Implémenter le connecteur Jobteaser avec temporisation et mode résilient -- Adaptateur plateforme
+- [x] `services/engine/app/api/events.py` -- Implémenter le bus d'événements et l'endpoint SSE `/api/events` -- Télémétrie AD-3
+- [x] `services/engine/app/api/jobs.py` -- Créer les endpoints REST `/api/jobs`, `/api/jobs/collect`, `/api/jobs/{id}/archive` -- API REST
+- [x] `services/engine/app/main.py` -- Déclarer et brancher les routeurs `jobs` et `events` -- Intégration backend
+- [x] `services/engine/tests/test_jobs.py` -- Écrire les tests de collecte, déduplication et filtrage des offres -- Validation backend
+- [x] `apps/web/lib/api.ts` -- Ajouter les fonctions `fetchJobs`, `collectJobs`, `archiveJob` et hook/helper SSE -- Client API
+- [x] `apps/web/components/radar/job-card.tsx` -- Créer le composant de carte d'offre responsive avec badges et raccourcis -- Composant UI
+- [x] `apps/web/app/radar/page.tsx` -- Réaliser l'interface Radar complète avec flux live SSE, filtres par pays/mots-clés et modal de collecte -- Surface Radar
 
 **Acceptance Criteria:**
 - Given des critères de recherche (ex: France/Tunisie, PFE), when l'utilisateur ou le système déclenche la collecte, then les offres sont collectées sans doublon et persistées en base SQLite.
@@ -84,9 +84,21 @@ context:
 
 ## Implementation Notes
 
+- Architecture modulaire de connecteurs `BaseJobConnector` respectant le pattern Strategy (AD-5) avec adaptateurs dédiés pour LinkedIn et Jobteaser.
+- Jitter aléatoire intégré pour simuler le comportement de navigation humaine et protéger l'utilisateur.
+- Table `job_offers` avec déduplication stricte sur `(platform, external_id)` et filtrage multicritères (pays, plateforme, recherche textuelle).
+- Bus d'événements SSE temps réel (`/api/events`) diffusant `JOB_DISCOVERED` et `SCRAPE_PROGRESS`.
+- Interface Radar cockpit Next.js avec affichage instantané des nouvelles opportunités, filtres par pays (France 🇫🇷 / Tunisie 🇹🇳), modal de scan et action d'archivage.
+- 9 tests unitaires et d'intégration validés sous pytest ; compilation production Next.js 100% conforme.
+
 ## Spec Change Log
 
 ## Review Triage Log
+
+| Verdict | Emplacement | Preuve / Rationale |
+|---|---|---|
+| `patch` | `services/engine/tests/conftest.py` | Centralisation de l'instance TestClient et de l'engine de test en mémoire partagée (`StaticPool`) pour éviter les collisions de tables SQLite inter-fichiers de tests. |
+| `low` | `services/engine/app/api/events.py:11` | Gestion du set d'abonnés SSE en mémoire locale ; adapté pour le modèle monopoint local-first ArcApply (MVP). |
 
 ## Design Notes
 
