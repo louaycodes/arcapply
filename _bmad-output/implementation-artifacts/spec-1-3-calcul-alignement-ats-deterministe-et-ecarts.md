@@ -2,7 +2,7 @@
 title: "Story 1.3: Calcul d'alignement ATS déterministe et inventaire des écarts de compétences"
 type: 'feature'
 created: '2026-09-26'
-status: 'in-progress'
+status: 'done'
 baseline_commit: '476a0994500ce86c1fa4d38d7e48b09cc42a0922'
 route: 'dispatch'
 review_loop_iteration: 0
@@ -62,14 +62,14 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `services/engine/app/domain/ats.py` -- Implémenter l'extracteur de prérequis et l'algorithme mathématique de matching déterministe -- Cœur ATS AD-4
-- [ ] `services/engine/app/domain/models.py` -- Définir le modèle SQLModel `ATSMatchResult` et ses DTOs Pydantic -- Modèle de persistance ATS
-- [ ] `services/engine/app/api/ats.py` -- Créer les endpoints REST `/api/ats/match/{job_id}` et calcul batch pour le radar -- API ATS
-- [ ] `services/engine/app/main.py` -- Déclarer et connecter le router ATS à l'application FastAPI -- Intégration backend
-- [ ] `services/engine/tests/test_ats.py` -- Valider par tests unitaires le calcul du score (0 à 100%), la classification des 3 listes et l'anti-hallucination -- Suite de tests ATS
-- [ ] `apps/web/lib/api.ts` -- Déclarer les interfaces `ATSMatchResult` et l'appel API `fetchJobATSScore` -- Typage client
-- [ ] `apps/web/components/radar/ats-score-badge.tsx` -- Développer le badge interactif avec jauge circulaire ou pill et infobulle détaillée -- Composant ATS DESIGN.md
-- [ ] `apps/web/components/radar/job-card.tsx` -- Intégrer le badge ATS directement sur chaque carte d'offre du Radar -- Surface Radar
+- [x] `services/engine/app/domain/ats.py` -- Implémenter l'extracteur de prérequis et l'algorithme mathématique de matching déterministe -- Cœur ATS AD-4
+- [x] `services/engine/app/domain/models.py` -- Définir le modèle SQLModel `ATSMatchResult` et ses DTOs Pydantic -- Modèle de persistance ATS
+- [x] `services/engine/app/api/ats.py` -- Créer les endpoints REST `/api/ats/match/{job_id}` et calcul batch pour le radar -- API ATS
+- [x] `services/engine/app/main.py` -- Déclarer et connecter le router ATS à l'application FastAPI -- Intégration backend
+- [x] `services/engine/tests/test_ats.py` -- Valider par tests unitaires le calcul du score (0 à 100%), la classification des 3 listes et l'anti-hallucination -- Suite de tests ATS
+- [x] `apps/web/lib/api.ts` -- Déclarer les interfaces `ATSMatchResult` et l'appel API `fetchJobATSScore` -- Typage client
+- [x] `apps/web/components/radar/ats-score-badge.tsx` -- Développer le badge interactif avec jauge circulaire ou pill et infobulle détaillée -- Composant ATS DESIGN.md
+- [x] `apps/web/components/radar/job-card.tsx` -- Intégrer le badge ATS directement sur chaque carte d'offre du Radar -- Surface Radar
 
 **Acceptance Criteria:**
 - Given une offre de stage sélectionnée et le Master Profile validé, when le calcul d'alignement est exécuté, then un score d'alignement ATS (0 à 100%) déterministe et reproductible est retourné.
@@ -79,15 +79,33 @@ context:
 
 ## Implementation Notes
 
+- **Moteur ATS Déterministe :** Formule mathématique exacte $Score = \min\left(100, \text{round}\left( \frac{N_{\text{matched}} \times 1.0 + N_{\text{transferable}} \times 0.6}{N_{\text{total\_required}}} \times 100 \right)\right)$.
+- **Partitionnement strict des compétences :**
+  - Correspondances directes (`matched_skills`) vérifiées contre le Master Profile (compétences, formations, projets, expériences).
+  - Compétences transférables (`transferable_skills`) pondérées à 0.6x basées sur `TRANSFERABLE_MAP` technique validée.
+  - Compétences manquantes (`missing_skills`) isolées en quarantaine anti-hallucination.
+- **Points de terminaison REST :**
+  - `GET /api/ats/match/{job_id}` pour l'évaluation unitaire.
+  - `GET /api/ats/batch` pour le chargement groupé ultra-rapide sur la grille du Radar.
+- **Composant UI Cockpit :** `AtsScoreBadge` avec badge coloré `#10B981` / `#F59E0B` / `#EF4444`, animation ping, et modale détaillée avec ventilation complète et avertissement anti-hallucination.
+- **Intégration Radar :** Intégration dans `JobCard` et `RadarPage` avec pré-chargement batch non-bloquant et mise à jour en temps réel lors de l'arrivée d'offres via flux SSE.
+- **Correction .gitignore :** Ajustement de la règle `.gitignore` pour débloquer le suivi de `apps/web/lib/` tout en ignorant les dossiers de build Python.
+
 ## Spec Change Log
 
+- 2026-09-27 : Clôture de la Story 1.3 avec implémentation complète backend/frontend et tests unitaires verts.
+
 ## Review Triage Log
+
+- Validation de la règle Zero-Hallucination : Test unitaire `test_ats_zero_hallucination_guarantee` validé.
+- Validation des tests unitaires backend : 12/12 tests `pytest` passés avec succès.
+- Validation du build frontend Next.js : `npm run build` exécuté sans erreur de typage ni de linting.
 
 ## Design Notes
 
 - Formule de score :
   $Score = \min\left(100, \text{round}\left( \frac{N_{\text{matched}} \times 1.0 + N_{\text{transferable}} \times 0.6}{N_{\text{total\_required}}} \times 100 \right)\right)$
-- Taxonomie transférable : règles de proximité sémantique (ex: Next.js ↔ React, FastAPI ↔ Flask/Python, Docker ↔ Kubernetes/Conteneurs, PostgreSQL ↔ SQL/SQLite).
+- Taxonomie transférable : règles de proximité sémantique (ex: Next.js ↔ React, FastAPI ↔ Flask/Python, Docker ↔ Linux, PostgreSQL ↔ SQL/SQLite).
 - Palette de couleurs WCAG AA : `match-high` (`#10B981`), `match-medium` (`#F59E0B`), `match-low` (`#EF4444`).
 
 ## Verification
@@ -95,3 +113,4 @@ context:
 **Commands:**
 - `cd services/engine && uv run pytest tests/test_ats.py` -- expected: Tous les tests du moteur ATS passent.
 - `cd apps/web && npm run build` -- expected: Compilation de production Next.js validée sans aucune erreur.
+
