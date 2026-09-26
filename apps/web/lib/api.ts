@@ -396,5 +396,29 @@ export async function transitionJobStatus(
   return res.json();
 }
 
+export interface PipelineMetrics {
+  total_tracked: number;
+  by_status: Record<string, number>;
+  submitted_total: number;
+  active_count: number;
+  interview_count: number;
+  offer_count: number;
+  rejected_count: number;
+  interview_rate_percent: number;
+  response_rate_percent: number;
+  stale_relance_count: number;
+}
+
+export async function fetchPipelineMetrics(): Promise<PipelineMetrics> {
+  const res = await fetch(`${API_BASE_URL}/api/jobs/metrics`, {
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch pipeline metrics: ${res.statusText}`);
+  }
+  return res.json();
+}
+
+
 
 
