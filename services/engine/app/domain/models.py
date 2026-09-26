@@ -251,3 +251,18 @@ class JobCollectSummary(SQLModel):
     platforms: list[str]
     message: str
 
+
+# ============================================================================
+# ATS Matching Results (Deterministic Alignment)
+# ============================================================================
+
+class ATSMatchResult(SQLModel):
+    job_id: str
+    score: int
+    matched_skills: list[str] = []
+    transferable_skills: list[str] = []
+    missing_skills: list[str] = []
+    total_required: int = 0
+    calculated_at: datetime = Field(default_factory=utc_now)
+
+
