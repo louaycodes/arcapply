@@ -63,18 +63,18 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `services/engine/pyproject.toml` -- Initialiser le projet backend avec uv, FastAPI, SQLModel et pytest -- Socle backend AD-1
-- [ ] `services/engine/app/config.py` -- Définir la configuration et le chemin souverain `~/.arcapply/arcapply.db` -- AD-2, AD-8
-- [ ] `services/engine/app/domain/models.py` -- Définir les modèles de données `MasterProfile`, `Education`, `Experience`, `Skill`, `Project` -- Schéma du profil de vérité
-- [ ] `services/engine/app/domain/validation.py` -- Implémenter le validateur de complétude du profil et la règle de garde-fou CAP-1 -- Blocage anti-hallucination
-- [ ] `services/engine/app/adapters/database.py` -- Implémenter l'adaptateur de persistance SQLite avec initialisation automatique -- Isolation locale AD-2
-- [ ] `services/engine/app/api/profile.py` -- Créer les endpoints REST GET/PUT `/api/profile` et GET `/api/profile/status` -- Contrat API REST
-- [ ] `services/engine/app/main.py` -- Assembler l'application FastAPI avec configuration CORS et gestion des erreurs -- Point d'entrée de l'engine
-- [ ] `services/engine/tests/test_profile.py` -- Écrire la suite de tests pour la persistance et les garde-fous de complétude -- Validation des critères d'acceptation
-- [ ] `apps/web/package.json` -- Initialiser le projet Next.js avec TypeScript, Tailwind CSS et dépendances de base -- Socle frontend AD-1
-- [ ] `apps/web/app/layout.tsx` -- Mettre en place le layout avec thème sombre (DESIGN.md) et navigation persistante (EXPERIENCE.md) -- Architecture de l'information
-- [ ] `apps/web/lib/api.ts` -- Écrire le client API typé pour la communication avec FastAPI -- Protocole REST découplé
-- [ ] `apps/web/app/profile/page.tsx` -- Développer l'interface de gestion du Master Profile avec jauge de complétude et formulaires d'édition -- Surface fonctionnelle Master Profile
+- [x] `services/engine/pyproject.toml` -- Initialiser le projet backend avec uv, FastAPI, SQLModel et pytest -- Socle backend AD-1
+- [x] `services/engine/app/config.py` -- Définir la configuration et le chemin souverain `~/.arcapply/arcapply.db` -- AD-2, AD-8
+- [x] `services/engine/app/domain/models.py` -- Définir les modèles de données `MasterProfile`, `Education`, `Experience`, `Skill`, `Project` -- Schéma du profil de vérité
+- [x] `services/engine/app/domain/validation.py` -- Implémenter le validateur de complétude du profil et la règle de garde-fou CAP-1 -- Blocage anti-hallucination
+- [x] `services/engine/app/adapters/database.py` -- Implémenter l'adaptateur de persistance SQLite avec initialisation automatique -- Isolation locale AD-2
+- [x] `services/engine/app/api/profile.py` -- Créer les endpoints REST GET/PUT `/api/profile` et GET `/api/profile/status` -- Contrat API REST
+- [x] `services/engine/app/main.py` -- Assembler l'application FastAPI avec configuration CORS et gestion des erreurs -- Point d'entrée de l'engine
+- [x] `services/engine/tests/test_profile.py` -- Écrire la suite de tests pour la persistance et les garde-fous de complétude -- Validation des critères d'acceptation
+- [x] `apps/web/package.json` -- Initialiser le projet Next.js avec TypeScript, Tailwind CSS et dépendances de base -- Socle frontend AD-1
+- [x] `apps/web/app/layout.tsx` -- Mettre en place le layout avec thème sombre (DESIGN.md) et navigation persistante (EXPERIENCE.md) -- Architecture de l'information
+- [x] `apps/web/lib/api.ts` -- Écrire le client API typé pour la communication avec FastAPI -- Protocole REST découplé
+- [x] `apps/web/app/profile/page.tsx` -- Développer l'interface de gestion du Master Profile avec jauge de complétude et formulaires d'édition -- Surface fonctionnelle Master Profile
 
 **Acceptance Criteria:**
 - Given un environnement sans base préalable, when le moteur FastAPI démarre, then le dossier `~/.arcapply` et la base `arcapply.db` sont créés avec le schéma relationnel valide.
@@ -83,6 +83,12 @@ context:
 - Given le frontend Next.js lancé, when l'utilisateur consulte la page `/profile`, then les données du profil s'affichent avec l'indicateur d'état de complétude synchronisé en temps réel depuis le backend.
 
 ## Implementation Notes
+
+- Backend FastAPI configuré avec uv, SQLModel et persistance locale SQLite dans `~/.arcapply/arcapply.db`.
+- Implémentation du garde-fou CAP-1 bloquant la génération si le profil n'est pas exhaustif (HTTP 422 avec code `PROFILE_INCOMPLETE`).
+- Suite de tests complète pytest (5 tests passés avec succès couvrant création de base, brouillons, blocage et déblocage).
+- Frontend Next.js 15 App Router avec TypeScript, Tailwind CSS (palette DESIGN.md), navigation latérale persistante et page Master Profile responsive avec jauge de complétude et injection de profil exemple.
+- Compilation de production Next.js validée sans aucune erreur de typage ou de lint.
 
 ## Spec Change Log
 
