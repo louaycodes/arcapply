@@ -305,4 +305,64 @@ export function getCVPdfDownloadUrl(jobId: string): string {
   return `${API_BASE_URL}/api/cv/pdf/${jobId}`;
 }
 
+export interface CoverLetter {
+  id: string;
+  job_id: string;
+  profile_id: string;
+  target_role: string;
+  company_name: string;
+  content_markdown: string;
+  cliche_score: number;
+  banned_phrases_detected: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export async function generateCoverLetter(jobId: string): Promise<CoverLetter> {
+  const res = await fetch(`${API_BASE_URL}/api/letter/generate/${jobId}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(
+      errorData?.detail?.message || "Échec de la génération de la lettre de motivation."
+    );
+  }
+  return res.json();
+}
+
+export async function fetchCoverLetter(jobId: string): Promise<CoverLetter> {
+  const res = await fetch(`${API_BASE_URL}/api/letter/${jobId}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch cover letter: ${res.statusText}`);
+  }
+  return res.json();
+}
+
+export async function updateCoverLetter(
+  jobId: string,
+  contentMarkdown: string
+): Promise<CoverLetter> {
+  const res = await fetch(`${API_BASE_URL}/api/letter/${jobId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ content_markdown: contentMarkdown }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(
+      errorData?.detail?.message || "Échec de la mise à jour de la lettre."
+    );
+  }
+  return res.json();
+}
+
+
 

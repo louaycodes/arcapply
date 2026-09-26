@@ -14,6 +14,7 @@ import {
 } from "@/lib/api";
 import { JobCard } from "@/components/radar/job-card";
 import { CVPreviewModal } from "@/components/radar/cv-preview-modal";
+import { LetterPreviewModal } from "@/components/radar/letter-preview-modal";
 import {
   Radar,
   Sparkles,
@@ -34,6 +35,7 @@ export default function RadarPage() {
   const [atsScores, setAtsScores] = useState<Record<string, ATSMatchResult>>({});
   const [isAtsLoading, setIsAtsLoading] = useState(false);
   const [selectedJobForCV, setSelectedJobForCV] = useState<JobOffer | null>(null);
+  const [selectedJobForLetter, setSelectedJobForLetter] = useState<JobOffer | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [newJobIds, setNewJobIds] = useState<Set<string>>(new Set());
   const [selectedCountry, setSelectedCountry] = useState<string>("all");
@@ -364,6 +366,7 @@ export default function RadarPage() {
               atsLoading={isAtsLoading && !atsScores[job.id]}
               onArchive={handleArchive}
               onOpenCV={(j) => setSelectedJobForCV(j)}
+              onOpenLetter={(j) => setSelectedJobForLetter(j)}
               isNew={newJobIds.has(job.id)}
             />
           ))}
@@ -460,6 +463,13 @@ export default function RadarPage() {
         job={selectedJobForCV}
         isOpen={!!selectedJobForCV}
         onClose={() => setSelectedJobForCV(null)}
+      />
+
+      {/* Modal de rédaction et révision de la lettre de motivation sobre */}
+      <LetterPreviewModal
+        job={selectedJobForLetter}
+        isOpen={!!selectedJobForLetter}
+        onClose={() => setSelectedJobForLetter(null)}
       />
     </div>
   );

@@ -10,6 +10,7 @@ import {
   Sparkles,
   Clock,
   ArrowRight,
+  Mail,
 } from "lucide-react";
 
 interface JobCardProps {
@@ -18,6 +19,7 @@ interface JobCardProps {
   atsLoading?: boolean;
   onArchive: (id: string) => void;
   onOpenCV?: (job: JobOffer) => void;
+  onOpenLetter?: (job: JobOffer) => void;
   isNew?: boolean;
 }
 
@@ -27,6 +29,7 @@ export function JobCard({
   atsLoading = false,
   onArchive,
   onOpenCV,
+  onOpenLetter,
   isNew = false,
 }: JobCardProps) {
   const isLinkedIn = job.platform.toLowerCase() === "linkedin";
@@ -125,14 +128,26 @@ export function JobCard({
           )}
         </div>
 
-        <button
-          type="button"
-          onClick={() => onOpenCV?.(job)}
-          className="px-3 py-1.5 rounded-md bg-primary/10 hover:bg-primary text-primary hover:text-white border border-primary/20 hover:border-transparent text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
-        >
-          <span>Générer CV</span>
-          <ArrowRight className="w-3.5 h-3.5" />
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => onOpenLetter?.(job)}
+            className="px-2.5 py-1.5 rounded-md border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            title="Rédiger une lettre de motivation sobre"
+          >
+            <Mail className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Lettre</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onOpenCV?.(job)}
+            className="px-3 py-1.5 rounded-md bg-primary/10 hover:bg-primary text-primary hover:text-white border border-primary/20 hover:border-transparent text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+          >
+            <span>CV</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
     </div>
   );
