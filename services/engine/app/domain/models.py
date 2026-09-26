@@ -206,3 +206,48 @@ class ProfileCompletenessStatus(SQLModel):
     can_generate: bool
     missing_fields: list[str] = []
     completion_percentage: int = 0
+
+
+# ============================================================================
+# Job Offers (Radar & Application Pipeline)
+# ============================================================================
+
+class JobOfferBase(SQLModel):
+    platform: str = Field(index=True)  # "linkedin" | "jobteaser"
+    external_id: str = Field(index=True)
+    title: str = Field(index=True)
+    company: str = Field(index=True)
+    location: str = Field(default="")
+    country: str = Field(default="France", index=True)
+    description_raw: str = Field(default="")
+    url: str = Field(default="")
+    status: str = Field(default="DISCOVERED", index=True)
+
+
+class JobOffer(JobOfferBase, table=True):
+    __tablename__ = "job_offers"
+    id: str = Field(default_factory=generate_uuid, primary_key=True)
+    collected_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+
+
+class JobOfferRead(JobOfferBase):
+    id: str
+    collected_at: datetime
+    updated_at: datetime
+
+
+class JobCollectRequest(SQLModel):
+    keywords: list[str] = ["PFE", "Stage Ingénieur"]
+    locations: list[str] = ["France", "Tunisie"]
+    platforms: list[str] = ["linkedin", "jobteaser"]
+    limit_per_platform: int = 5
+
+
+class JobCollectSummary(SQLModel):
+    collected_count: int
+    new_count: int
+    duplicate_count: int
+    platforms: list[str]
+    message: str
+

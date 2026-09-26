@@ -3,7 +3,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.adapters.database import init_db
-from app.api import profile
+from app.api import events, jobs, profile
 from app.config import settings
 
 
@@ -32,6 +32,8 @@ app.add_middleware(
 
 # Inclusion des routeurs API
 app.include_router(profile.router)
+app.include_router(jobs.router)
+app.include_router(events.router)
 
 
 @app.exception_handler(HTTPException)
