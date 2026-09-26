@@ -1,3 +1,4 @@
+import json
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
@@ -264,5 +265,84 @@ class ATSMatchResult(SQLModel):
     missing_skills: list[str] = []
     total_required: int = 0
     calculated_at: datetime = Field(default_factory=utc_now)
+
+
+# ============================================================================
+# Targeted CV (Zero-Hallucination & ATS 1-page Render)
+# ============================================================================
+
+class TargetedCVBase(SQLModel):
+    job_id: str = Field(foreign_key="job_offers.id", index=True)
+    profile_id: str = Field(foreign_key="master_profiles.id", index=True)
+    headline: str = Field(default="")
+    summary: str = Field(default="")
+    matched_skills_raw: str = Field(default="[]")
+    transferable_skills_raw: str = Field(default="[]")
+    experiences_raw: str = Field(default="[]")
+    projects_raw: str = Field(default="[]")
+    educations_raw: str = Field(default="[]")
+    html_content: str = Field(default="")
+
+
+class TargetedCV(TargetedCVBase, table=True):
+    __tablename__ = "targeted_cvs"
+    id: str = Field(default_factory=generate_uuid, primary_key=True)
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+
+    @property
+    def matched_skills(self) -> list[str]:
+        return json.loads(self.matched_skills_raw) if self.matched_skills_raw else []
+
+    @matched_skills.setter
+    def matched_skills(self, value: list[str]) -> None:
+        self.matched_skills_raw = json.dumps(value)
+
+    @property
+    def transferable_skills(self) -> list[str]:
+        return json.loads(self.transferable_skills_raw) if self.transferable_skills_raw else []
+
+    @transferable_skills.setter
+    def transferable_skills(self, value: list[str]) -> None:
+        self.transferable_skills_raw = json.dumps(value)
+
+    @property
+    def experiences(self) -> list[dict]:
+        return json.loads(self.experiences_raw) if self.experiences_raw else []
+
+    @experiences.setter
+    def experiences(self, value: list[dict]) -> None:
+        self.experiences_raw = json.dumps(value)
+
+    @property
+    def projects(self) -> list[dict]:
+        return json.loads(self.projects_raw) if self.projects_raw else []
+
+    @projects.setter
+    def projects(self, value: list[dict]) -> None:
+        self.projects_raw = json.dumps(value)
+
+    @property
+    def educations(self) -> list[dict]:
+        return json.loads(self.educations_raw) if self.educations_raw else []
+
+    @educations.setter
+    def educations(self, value: list[dict]) -> None:
+        self.educations_raw = json.dumps(value)
+
+
+class TargetedCVRead(SQLModel):
+    id: str
+    job_id: str
+    profile_id: str
+    headline: str
+    summary: str
+    matched_skills: list[str]
+    transferable_skills: list[str]
+    experiences: list[dict]
+    projects: list[dict]
+    educations: list[dict]
+    html_content: str
+    created_at: datetime
 
 

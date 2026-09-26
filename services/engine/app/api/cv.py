@@ -1,0 +1,158 @@
+import re
+from fastapi import APIRouter, Depends, HTTPException, Response, status
+from sqlmodel import Session, select
+
+from app.adapters.pdf import PDFCompilerService
+from app.adapters.database import get_session
+from app.domain.ats import ATSMatchingEngine
+from app.domain.cv import CVGeneratorService
+from app.domain.models import (
+    JobOffer,
+    MasterProfile,
+    TargetedCV,
+    TargetedCVRead,
+)
+
+router = APIRouter(prefix="/api/cv", tags=["CV Generation & PDF"])
+
+
+def sanitize_filename(name: str) -> str:
+    """Nettoie une chaîne pour un nom de fichier HTTP sûr."""
+    return re.sub(r"[^\w\-_\.]", "_", name)
+
+
+def _get_or_create_cv(session: Session, job_id: str) -> tuple[TargetedCV, MasterProfile, JobOffer]:
+    job = session.get(JobOffer, job_id)
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error_code": "JOB_NOT_FOUND", "message": f"Offre {job_id} introuvable."},
+        )
+
+    profile = session.get(MasterProfile, "default-profile")
+    if not profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error_code": "PROFILE_NOT_FOUND", "message": "Master Profile introuvable."},
+        )
+
+    if not profile.is_complete:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error_code": "PROFILE_INCOMPLETE",
+                "message": "Le Master Profile est incomplet. Complétez vos formations, expériences et compétences pour générer un CV.",
+            },
+        )
+
+    # Vérification si un CV existe déjà
+    statement = select(TargetedCV).where(TargetedCV.job_id == job_id)
+    cv = session.exec(statement).first()
+
+    if not cv:
+        ats_match = ATSMatchingEngine.evaluate_alignment(job, profile)
+        cv = CVGeneratorService.generate_cv(job, profile, ats_match)
+        session.add(cv)
+        session.commit()
+        session.refresh(cv)
+
+    return cv, profile, job
+
+
+@router.post("/generate/{job_id}", response_model=TargetedCVRead)
+def generate_targeted_cv(job_id: str, session: Session = Depends(get_session)) -> TargetedCVRead:
+    """
+    Génère un CV personnalisé ciblé selon l'offre et le profil maître (AD-4).
+    Met à jour le CV existant si déjà généré.
+    """
+    job = session.get(JobOffer, job_id)
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error_code": "JOB_NOT_FOUND", "message": f"Offre {job_id} introuvable."},
+        )
+
+    profile = session.get(MasterProfile, "default-profile")
+    if not profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error_code": "PROFILE_NOT_FOUND", "message": "Master Profile introuvable."},
+        )
+
+    if not profile.is_complete:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error_code": "PROFILE_INCOMPLETE",
+                "message": "Le Master Profile est incomplet (CAP-1). Complétez vos informations avant de générer un CV.",
+            },
+        )
+
+    ats_match = ATSMatchingEngine.evaluate_alignment(job, profile)
+    new_cv = CVGeneratorService.generate_cv(job, profile, ats_match)
+
+    # Upsert dans la base
+    statement = select(TargetedCV).where(TargetedCV.job_id == job_id)
+    existing_cv = session.exec(statement).first()
+
+    if existing_cv:
+        existing_cv.headline = new_cv.headline
+        existing_cv.summary = new_cv.summary
+        existing_cv.html_content = new_cv.html_content
+        existing_cv.matched_skills_raw = new_cv.matched_skills_raw
+        existing_cv.transferable_skills_raw = new_cv.transferable_skills_raw
+        existing_cv.experiences_raw = new_cv.experiences_raw
+        existing_cv.projects_raw = new_cv.projects_raw
+        existing_cv.educations_raw = new_cv.educations_raw
+        session.add(existing_cv)
+        session.commit()
+        session.refresh(existing_cv)
+        cv = existing_cv
+    else:
+        session.add(new_cv)
+        session.commit()
+        session.refresh(new_cv)
+        cv = new_cv
+
+    return TargetedCVRead(
+        id=cv.id,
+        job_id=cv.job_id,
+        profile_id=cv.profile_id,
+        headline=cv.headline,
+        summary=cv.summary,
+        matched_skills=cv.matched_skills,
+        transferable_skills=cv.transferable_skills,
+        experiences=cv.experiences,
+        projects=cv.projects,
+        educations=cv.educations,
+        html_content=cv.html_content,
+        created_at=cv.created_at,
+    )
+
+
+@router.get("/preview/{job_id}", response_class=Response)
+def preview_targeted_cv(job_id: str, session: Session = Depends(get_session)) -> Response:
+    """Retourne le contenu HTML du CV ciblé pour affichage direct en iframe."""
+    cv, _, _ = _get_or_create_cv(session, job_id)
+    return Response(content=cv.html_content, media_type="text/html; charset=utf-8")
+
+
+@router.get("/pdf/{job_id}", response_class=Response)
+async def download_cv_pdf(job_id: str, session: Session = Depends(get_session)) -> Response:
+    """Compile le CV en PDF vectoriel 1 page standardisée via Playwright (AD-7)."""
+    cv, profile, job = _get_or_create_cv(session, job_id)
+
+    pdf_bytes = await PDFCompilerService.compile_html_to_pdf(cv.html_content)
+
+    clean_name = sanitize_filename(profile.full_name) or "Candidat"
+    clean_company = sanitize_filename(job.company) or "Entreprise"
+    filename = f"CV_{clean_name}_{clean_company}.pdf"
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Type": "application/pdf",
+        },
+    )
