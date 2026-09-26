@@ -2,7 +2,8 @@
 title: "Story 1.3: Calcul d'alignement ATS déterministe et inventaire des écarts de compétences"
 type: 'feature'
 created: '2026-09-26'
-status: 'draft'
+status: 'in-progress'
+baseline_commit: '476a0994500ce86c1fa4d38d7e48b09cc42a0922'
 route: 'dispatch'
 review_loop_iteration: 0
 context:
