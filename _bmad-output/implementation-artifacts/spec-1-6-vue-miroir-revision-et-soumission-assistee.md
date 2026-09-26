@@ -61,12 +61,12 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `services/engine/app/domain/fsm.py` -- Développer le moteur `ApplicationFSM` validant rigoureusement les transitions d'états -- Machine à états AD-6
-- [ ] `services/engine/app/api/jobs.py` -- Implémenter l'endpoint REST de transition d'état `/api/jobs/{id}/transition` avec gestion RFC 7807 -- API FSM
-- [ ] `services/engine/tests/test_fsm.py` -- Développer la suite de tests unitaires validant l'interdiction des sauts d'états sauvages -- Tests FSM
-- [ ] `apps/web/lib/api.ts` -- Déclarer la méthode `transitionJobStatus` et les statuts autorisés -- Client Web
-- [ ] `apps/web/components/radar/mirror-review-drawer.tsx` -- Développer le tiroir miroir côte à côte avec compte à rebours 5s et annulation -- Cockpit Web
-- [ ] `apps/web/components/radar/job-card.tsx` -- Connecter le déclencheur d'inspection miroir sur chaque carte -- Surface Radar
+- [x] `services/engine/app/domain/fsm.py` -- Développer le moteur `ApplicationFSM` validant rigoureusement les transitions d'états -- Machine à états AD-6
+- [x] `services/engine/app/api/jobs.py` -- Implémenter l'endpoint REST de transition d'état `/api/jobs/{id}/transition` avec gestion RFC 7807 -- API FSM
+- [x] `services/engine/tests/test_fsm.py` -- Développer la suite de tests unitaires validant l'interdiction des sauts d'états sauvages -- Tests FSM
+- [x] `apps/web/lib/api.ts` -- Déclarer la méthode `transitionJobStatus` et les statuts autorisés -- Client Web
+- [x] `apps/web/components/radar/mirror-review-drawer.tsx` -- Développer le tiroir miroir côte à côte avec compte à rebours 5s et annulation -- Cockpit Web
+- [x] `apps/web/components/radar/job-card.tsx` -- Connecter le déclencheur d'inspection miroir sur chaque carte -- Surface Radar
 
 **Acceptance Criteria:**
 - Given une offre à l'état `DISCOVERED`, when l'étudiant tente de la passer directement à `SUBMITTED`, then le backend rejette avec HTTP 422.
