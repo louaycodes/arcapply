@@ -2,7 +2,7 @@
 title: 'Story 1.1: Initialiser le socle découplé et la gestion immuable du Master Profile'
 type: 'feature'
 created: '2026-09-26'
-status: 'in-progress'
+status: 'in-review'
 baseline_commit: 'e0063433704363a6dcc381f8158ef757c3e6dde7'
 route: 'dispatch'
 review_loop_iteration: 0
@@ -93,6 +93,13 @@ context:
 ## Spec Change Log
 
 ## Review Triage Log
+
+| Verdict | Emplacement | Preuve / Rationale |
+|---|---|---|
+| `patch` | `services/engine/app/main.py:36` | Ajout d'un handler HTTPException au format RFC 7807 (Problem Details) pour standardiser les retours d'erreurs (notamment 422). |
+| `patch` | `services/engine/app/domain/validation.py:21` | Renforcement de la validation de complétude d'email pour exiger un nom de domaine avec extension valide. |
+| `low` | `services/engine/app/domain/models.py:16` | Utilisation de uuid4 standard satisfaisant l'unicité locale du MVP ; passage à uuid7 différé à l'intégration du pipeline d'ingestion d'offres. |
+| `low` | `services/engine/app/adapters/database.py:27` | Appel `create_all` au lifespan sans verrou inter-processus ; acceptable pour l'architecture locale monopoint d'ArcApply. |
 
 ## Design Notes
 
