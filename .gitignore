@@ -32,8 +32,10 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+# Python build artifacts
+services/engine/lib/
+services/engine/lib64/
+!apps/web/lib/
 parts/
 sdist/
 var/

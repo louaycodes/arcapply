@@ -1,6 +1,7 @@
 "use client";
 
-import { JobOffer } from "@/lib/api";
+import { JobOffer, ATSMatchResult } from "@/lib/api";
+import { AtsScoreBadge } from "./ats-score-badge";
 import {
   Building2,
   MapPin,
@@ -13,11 +14,19 @@ import {
 
 interface JobCardProps {
   job: JobOffer;
+  atsMatch?: ATSMatchResult;
+  atsLoading?: boolean;
   onArchive: (id: string) => void;
   isNew?: boolean;
 }
 
-export function JobCard({ job, onArchive, isNew = false }: JobCardProps) {
+export function JobCard({
+  job,
+  atsMatch,
+  atsLoading = false,
+  onArchive,
+  isNew = false,
+}: JobCardProps) {
   const isLinkedIn = job.platform.toLowerCase() === "linkedin";
   const isFrance = job.country.toLowerCase() === "france";
   const isTunisia = job.country.toLowerCase() === "tunisie";
@@ -39,7 +48,7 @@ export function JobCard({ job, onArchive, isNew = false }: JobCardProps) {
     >
       <div className="space-y-3">
         {/* Top Badges Header */}
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
             <span
               className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full border ${
@@ -56,9 +65,12 @@ export function JobCard({ job, onArchive, isNew = false }: JobCardProps) {
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground">
-            <Clock className="w-3 h-3" />
-            <span>{formattedDate}</span>
+          <div className="flex items-center gap-2">
+            <AtsScoreBadge match={atsMatch} loading={atsLoading} />
+            <div className="flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground">
+              <Clock className="w-3 h-3" />
+              <span>{formattedDate}</span>
+            </div>
           </div>
         </div>
 

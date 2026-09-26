@@ -6,8 +6,11 @@ import {
   collectJobs,
   archiveJob,
   createRadarEventSource,
+  fetchBatchATSScores,
+  fetchJobATSScore,
   JobOffer,
   JobCollectSummary,
+  ATSMatchResult,
 } from "@/lib/api";
 import { JobCard } from "@/components/radar/job-card";
 import {
@@ -27,6 +30,8 @@ import {
 
 export default function RadarPage() {
   const [jobs, setJobs] = useState<JobOffer[]>([]);
+  const [atsScores, setAtsScores] = useState<Record<string, ATSMatchResult>>({});
+  const [isAtsLoading, setIsAtsLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [newJobIds, setNewJobIds] = useState<Set<string>>(new Set());
   const [selectedCountry, setSelectedCountry] = useState<string>("all");
@@ -52,6 +57,13 @@ export default function RadarPage() {
         search: searchQuery,
       });
       setJobs(data);
+
+      // Calcul des scores ATS en tâche de fond non bloquante
+      setIsAtsLoading(true);
+      fetchBatchATSScores()
+        .then((scores) => setAtsScores(scores))
+        .catch((err) => console.error("Erreur calcul ATS batch:", err))
+        .finally(() => setIsAtsLoading(false));
     } catch (err: any) {
       setNotification({
         type: "error",
@@ -75,6 +87,11 @@ export default function RadarPage() {
           return [newJob, ...prev];
         });
         setNewJobIds((prev) => new Set(prev).add(newJob.id));
+        fetchJobATSScore(newJob.id)
+          .then((score) => {
+            setAtsScores((prev) => ({ ...prev, [newJob.id]: score }));
+          })
+          .catch((err) => console.error("Erreur calcul ATS SSE:", err));
         setTimeout(() => {
           setNewJobIds((prev) => {
             const next = new Set(prev);
@@ -341,6 +358,8 @@ export default function RadarPage() {
             <JobCard
               key={job.id}
               job={job}
+              atsMatch={atsScores[job.id]}
+              atsLoading={isAtsLoading && !atsScores[job.id]}
               onArchive={handleArchive}
               isNew={newJobIds.has(job.id)}
             />
