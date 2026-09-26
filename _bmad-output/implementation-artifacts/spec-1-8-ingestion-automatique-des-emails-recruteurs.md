@@ -66,13 +66,13 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `services/engine/app/domain/models.py` -- Ajouter le modèle `EmailInteraction` et ses schémas de lecture -- Base de données
-- [ ] `services/engine/app/domain/email_classifier.py` -- Développer le classifieur d'emails et l'algorithme de réconciliation d'offres -- Moteur IA & Regex
-- [ ] `services/engine/app/api/emails.py` -- Implémenter le routeur FastAPI des emails avec simulation et diffusion SSE -- API Backend
-- [ ] `services/engine/tests/test_email.py` -- Développer la suite de tests complète (détection entretien, refus, accusé, FSM) -- Tests Engine
-- [ ] `apps/web/lib/api.ts` -- Déclarer les types et méthodes API pour la boîte de réception recruteurs -- Client Web
-- [ ] `apps/web/components/kanban/email-inbox-modal.tsx` -- Développer l'interface de consultation des emails et de simulation de retours -- Composant Cockpit
-- [ ] `apps/web/app/kanban/page.tsx` -- Intégrer l'inbox recruteur dans le cockpit Kanban avec badge dynamique -- Surface Kanban
+- [x] `services/engine/app/domain/models.py` -- Ajouter le modèle `EmailInteraction` et ses schémas de lecture -- Base de données
+- [x] `services/engine/app/domain/email_classifier.py` -- Développer le classifieur d'emails et l'algorithme de réconciliation d'offres -- Moteur IA & Regex
+- [x] `services/engine/app/api/emails.py` -- Implémenter le routeur FastAPI des emails avec simulation et diffusion SSE -- API Backend
+- [x] `services/engine/tests/test_email.py` -- Développer la suite de tests complète (détection entretien, refus, accusé, FSM) -- Tests Engine
+- [x] `apps/web/lib/api.ts` -- Déclarer les types et méthodes API pour la boîte de réception recruteurs -- Client Web
+- [x] `apps/web/components/kanban/email-inbox-modal.tsx` -- Développer l'interface de consultation des emails et de simulation de retours -- Composant Cockpit
+- [x] `apps/web/app/kanban/page.tsx` -- Intégrer l'inbox recruteur dans le cockpit Kanban avec badge dynamique -- Surface Kanban
 
 **Acceptance Criteria:**
 - Given un email recruteur contenant des mots-clés de convocation d'entretien pour une entreprise postulée, when l'email est ingéré, then il est classé `INTERVIEW`, associé à l'offre et celle-ci bascule automatiquement dans la colonne `INTERVIEW`.
