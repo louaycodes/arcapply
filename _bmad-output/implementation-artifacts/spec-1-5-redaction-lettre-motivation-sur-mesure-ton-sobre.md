@@ -2,7 +2,7 @@
 title: "Story 1.5: Rédaction de lettre de motivation sur-mesure au ton sobre d'élève-ingénieur"
 type: 'feature'
 created: '2026-09-27'
-status: 'in-progress'
+status: 'done'
 baseline_commit: 'b53973178f712e324ee81434e199d537602a3ef1'
 route: 'dispatch'
 review_loop_iteration: 0
@@ -63,14 +63,14 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `services/engine/app/domain/models.py` -- Définir le modèle SQLModel `CoverLetter` et ses schémas DTO -- Modèle de persistance
-- [ ] `services/engine/app/domain/letter.py` -- Implémenter le moteur `CoverLetterService` avec filtre anti-clichés et synthèse sobre -- Domaine IA AD-4
-- [ ] `services/engine/app/api/letter.py` -- Créer les endpoints REST de génération, consultation et mise à jour de lettre -- API Lettre
-- [ ] `services/engine/app/main.py` -- Connecter le router `letter` à l'application FastAPI -- Intégration backend
-- [ ] `services/engine/tests/test_letter.py` -- Développer la suite de tests validant l'absence de clichés et le respect strict du profil -- Tests unitaires
-- [ ] `apps/web/lib/api.ts` -- Déclarer les méthodes d'appel API de génération et mise à jour de lettre -- Typage client
-- [ ] `apps/web/components/radar/letter-preview-modal.tsx` -- Créer le composant de prévisualisation et édition de la lettre avec audit anti-clichés -- Cockpit Web
-- [ ] `apps/web/components/radar/job-card.tsx` -- Intégrer le bouton d'accès à la lettre de motivation sur chaque carte d'offre -- Surface Radar
+- [x] `services/engine/app/domain/models.py` -- Définir le modèle SQLModel `CoverLetter` et ses schémas DTO -- Modèle de persistance
+- [x] `services/engine/app/domain/letter.py` -- Implémenter le moteur `CoverLetterService` avec filtre anti-clichés et synthèse sobre -- Domaine IA AD-4
+- [x] `services/engine/app/api/letter.py` -- Créer les endpoints REST de génération, consultation et mise à jour de lettre -- API Lettre
+- [x] `services/engine/app/main.py` -- Connecter le router `letter` à l'application FastAPI -- Intégration backend
+- [x] `services/engine/tests/test_letter.py` -- Développer la suite de tests validant l'absence de clichés et le respect strict du profil -- Tests unitaires
+- [x] `apps/web/lib/api.ts` -- Déclarer les méthodes d'appel API de génération et mise à jour de lettre -- Typage client
+- [x] `apps/web/components/radar/letter-preview-modal.tsx` -- Créer le composant de prévisualisation et édition de la lettre avec audit anti-clichés -- Cockpit Web
+- [x] `apps/web/components/radar/job-card.tsx` -- Intégrer le bouton d'accès à la lettre de motivation sur chaque carte d'offre -- Surface Radar
 
 **Acceptance Criteria:**
 - Given une offre cible et un profil maître validé, when la lettre est générée, then elle ne contient aucune expression issue de la liste noire de clichés IA.
@@ -79,9 +79,24 @@ context:
 
 ## Implementation Notes
 
+- **Filtre Anti-Clichés Déterministe (`CoverLetterService`) :** Dictionnaire de regex ciblant 12 clichés IA courants en français (ex: *« dynamique et motivé »*, *« candidat idéal »*, *« opportunité rêvée »*) avec audit en temps réel et remplacement sobre.
+- **Synthèse Factuelle AD-4 :** Articulation en 4 paragraphes sobres d'ingénieur centré sur les projets réels du Master Profile et l'école d'ingénieurs, sans aucune extrapolation de compétences manquantes.
+- **Points de terminaison REST :**
+  - `POST /api/letter/generate/{job_id}` pour la génération ou régénération.
+  - `GET /api/letter/{job_id}` pour la récupération immédiate.
+  - `PUT /api/letter/{job_id}` pour la mise à jour des modifications manuelles avec ré-audit automatique des clichés.
+- **Cockpit Web Next.js :** Modal `LetterPreviewModal` avec bascule lecture/édition en direct, badge de validation du style sobre, bouton de copie rapide et déclencheur intégré sur chaque carte du Radar.
+
 ## Spec Change Log
 
+- 2026-09-27 : Clôture de la Story 1.5 avec implémentation complète backend/frontend et tests unitaires verts.
+
 ## Review Triage Log
+
+- Validation de l'éradication des clichés : `test_audit_and_sanitize_cliches` validé avec détection et assainissement complets.
+- Validation du zéro-hallucination : `test_letter_generation_zero_hallucination_and_facts` validé sans mention des compétences manquantes.
+- Tests backend : 20/20 tests passés (`pytest`).
+- Next.js build : `npm run build` validé avec 0 erreur.
 
 ## Verification
 

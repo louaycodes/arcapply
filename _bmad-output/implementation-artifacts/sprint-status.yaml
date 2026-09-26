@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 09-26-2026 23:07
-last_updated: 09-27-2026 00:16
+last_updated: 09-27-2026 00:38
 project: arcapply
 project_key: NOKEY
 tracking_system: file-system
@@ -41,7 +41,7 @@ development_status:
   1-2-ingestion-automatisée-et-flux-radar-d-offres-de-stage-pfe: review
   1-3-calcul-d-alignement-ats-déterministe-et-inventaire-des-écart: review
   1-4-génération-de-cv-ciblé-zéro-hallucination-et-rendu-pdf-ats-1: review
-  1-5-rédaction-de-lettre-de-motivation-sur-mesure-au-ton-sobre-d: in-progress
+  1-5-rédaction-de-lettre-de-motivation-sur-mesure-au-ton-sobre-d: review
   1-6-vue-miroir-de-révision-et-déclencheur-de-soumission-assistée: backlog
   1-7-suivi-kanban-du-cycle-de-vie-des-candidatures-et-métriques-d: backlog
   1-8-ingestion-automatique-des-emails-recruteurs-et-mise-à-jour-d: backlog
