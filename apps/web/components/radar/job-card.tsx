@@ -17,6 +17,7 @@ interface JobCardProps {
   atsMatch?: ATSMatchResult;
   atsLoading?: boolean;
   onArchive: (id: string) => void;
+  onOpenCV?: (job: JobOffer) => void;
   isNew?: boolean;
 }
 
@@ -25,6 +26,7 @@ export function JobCard({
   atsMatch,
   atsLoading = false,
   onArchive,
+  onOpenCV,
   isNew = false,
 }: JobCardProps) {
   const isLinkedIn = job.platform.toLowerCase() === "linkedin";
@@ -125,9 +127,10 @@ export function JobCard({
 
         <button
           type="button"
-          className="px-3 py-1.5 rounded-md bg-primary/10 hover:bg-primary text-primary hover:text-white border border-primary/20 hover:border-transparent text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm"
+          onClick={() => onOpenCV?.(job)}
+          className="px-3 py-1.5 rounded-md bg-primary/10 hover:bg-primary text-primary hover:text-white border border-primary/20 hover:border-transparent text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
         >
-          <span>Examiner</span>
+          <span>Générer CV</span>
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>

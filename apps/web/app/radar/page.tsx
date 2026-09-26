@@ -13,6 +13,7 @@ import {
   ATSMatchResult,
 } from "@/lib/api";
 import { JobCard } from "@/components/radar/job-card";
+import { CVPreviewModal } from "@/components/radar/cv-preview-modal";
 import {
   Radar,
   Sparkles,
@@ -32,6 +33,7 @@ export default function RadarPage() {
   const [jobs, setJobs] = useState<JobOffer[]>([]);
   const [atsScores, setAtsScores] = useState<Record<string, ATSMatchResult>>({});
   const [isAtsLoading, setIsAtsLoading] = useState(false);
+  const [selectedJobForCV, setSelectedJobForCV] = useState<JobOffer | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [newJobIds, setNewJobIds] = useState<Set<string>>(new Set());
   const [selectedCountry, setSelectedCountry] = useState<string>("all");
@@ -361,6 +363,7 @@ export default function RadarPage() {
               atsMatch={atsScores[job.id]}
               atsLoading={isAtsLoading && !atsScores[job.id]}
               onArchive={handleArchive}
+              onOpenCV={(j) => setSelectedJobForCV(j)}
               isNew={newJobIds.has(job.id)}
             />
           ))}
@@ -451,6 +454,13 @@ export default function RadarPage() {
           </div>
         </div>
       )}
+
+      {/* Modal de prévisualisation et téléchargement du CV ciblé */}
+      <CVPreviewModal
+        job={selectedJobForCV}
+        isOpen={!!selectedJobForCV}
+        onClose={() => setSelectedJobForCV(null)}
+      />
     </div>
   );
 }

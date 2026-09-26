@@ -266,3 +266,43 @@ export async function fetchBatchATSScores(): Promise<Record<string, ATSMatchResu
   return res.json();
 }
 
+export interface TargetedCV {
+  id: string;
+  job_id: string;
+  profile_id: string;
+  headline: string;
+  summary: string;
+  matched_skills: string[];
+  transferable_skills: string[];
+  experiences: any[];
+  projects: any[];
+  educations: any[];
+  html_content: string;
+  created_at: string;
+}
+
+export async function generateTargetedCV(jobId: string): Promise<TargetedCV> {
+  const res = await fetch(`${API_BASE_URL}/api/cv/generate/${jobId}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(
+      errorData?.detail?.message || "Échec de la génération du CV ciblé."
+    );
+  }
+  return res.json();
+}
+
+export function getCVPreviewUrl(jobId: string): string {
+  return `${API_BASE_URL}/api/cv/preview/${jobId}`;
+}
+
+export function getCVPdfDownloadUrl(jobId: string): string {
+  return `${API_BASE_URL}/api/cv/pdf/${jobId}`;
+}
+
+
