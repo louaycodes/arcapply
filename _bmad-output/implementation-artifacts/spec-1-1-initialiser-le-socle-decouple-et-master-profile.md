@@ -2,7 +2,7 @@
 title: 'Story 1.1: Initialiser le socle découplé et la gestion immuable du Master Profile'
 type: 'feature'
 created: '2026-09-26'
-status: 'in-review'
+status: 'done'
 baseline_commit: 'e0063433704363a6dcc381f8158ef757c3e6dde7'
 route: 'dispatch'
 review_loop_iteration: 0
