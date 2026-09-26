@@ -1,3 +1,4 @@
+from datetime import timedelta, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session, SQLModel, col, desc, select
@@ -17,6 +18,20 @@ from app.ports.connectors import BaseJobConnector
 
 class JobTransitionRequest(SQLModel):
     new_status: str
+
+
+class PipelineMetrics(SQLModel):
+    total_tracked: int
+    by_status: dict[str, int]
+    submitted_total: int
+    active_count: int
+    interview_count: int
+    offer_count: int
+    rejected_count: int
+    interview_rate_percent: float
+    response_rate_percent: float
+    stale_relance_count: int
+
 
 router = APIRouter(prefix="/api/jobs", tags=["Job Offers & Radar"])
 
@@ -60,6 +75,81 @@ def list_jobs(
     query = query.order_by(desc(JobOffer.collected_at))
     offers = session.exec(query).all()
     return offers
+
+
+@router.get("/metrics", response_model=PipelineMetrics)
+def get_pipeline_metrics(session: Session = Depends(get_session)):
+    """
+    Calcule les métriques en temps réel du pipeline Kanban :
+    - Répartition par statut
+    - Total de candidatures soumises (SUBMITTED, INTERVIEW, OFFER, REJECTED)
+    - Candidatures actives (SUBMITTED, INTERVIEW)
+    - Taux de transformation en entretien (cible > 15%)
+    - Taux de réponse global
+    - Candidatures soumises depuis plus de 7 jours nécessitant une relance
+    """
+    all_jobs = session.exec(select(JobOffer)).all()
+    total = len(all_jobs)
+
+    counts: dict[str, int] = {
+        "DISCOVERED": 0,
+        "REVIEWING": 0,
+        "READY": 0,
+        "SUBMITTED": 0,
+        "INTERVIEW": 0,
+        "OFFER": 0,
+        "REJECTED": 0,
+        "ARCHIVED": 0,
+    }
+    for j in all_jobs:
+        if j.status in counts:
+            counts[j.status] += 1
+        else:
+            counts[j.status] = 1
+
+    interview_count = counts.get("INTERVIEW", 0)
+    offer_count = counts.get("OFFER", 0)
+    rejected_count = counts.get("REJECTED", 0)
+    submitted_count = counts.get("SUBMITTED", 0)
+
+    # Total ayant franchi la soumission
+    submitted_total = submitted_count + interview_count + offer_count + rejected_count
+    active_count = submitted_count + interview_count
+
+    interview_rate = (
+        round(((interview_count + offer_count) / submitted_total) * 100, 1)
+        if submitted_total > 0
+        else 0.0
+    )
+    response_rate = (
+        round(((interview_count + offer_count + rejected_count) / submitted_total) * 100, 1)
+        if submitted_total > 0
+        else 0.0
+    )
+
+    now = utc_now()
+    seven_days_ago = now - timedelta(days=7)
+    stale_relance_count = 0
+    for j in all_jobs:
+        if j.status == "SUBMITTED":
+            check_date = j.updated_at or j.collected_at
+            if check_date.tzinfo is None:
+                check_date = check_date.replace(tzinfo=timezone.utc)
+            if check_date <= seven_days_ago:
+                stale_relance_count += 1
+
+    return PipelineMetrics(
+        total_tracked=total,
+        by_status=counts,
+        submitted_total=submitted_total,
+        active_count=active_count,
+        interview_count=interview_count,
+        offer_count=offer_count,
+        rejected_count=rejected_count,
+        interview_rate_percent=interview_rate,
+        response_rate_percent=response_rate,
+        stale_relance_count=stale_relance_count,
+    )
 
 
 @router.get("/{job_id}", response_model=JobOfferRead)

@@ -132,3 +132,60 @@ def test_archive_job_removes_from_radar_feed():
     # Mais présente si include_archived=true
     res_all = client.get("/api/jobs?include_archived=true")
     assert any(j["id"] == job_id for j in res_all.json())
+
+
+def test_pipeline_metrics_calculation():
+    from datetime import datetime, timedelta, timezone
+
+    now = datetime.now(timezone.utc)
+    old_date = now - timedelta(days=10)
+
+    with Session(engine) as session:
+        # Nettoyage ou création spécifique
+        j_sub1 = JobOffer(
+            platform="linkedin",
+            external_id="m-sub1",
+            title="Ingénieur PFE 1",
+            company="Company 1",
+            status="SUBMITTED",
+            updated_at=old_date,
+        )
+        j_int = JobOffer(
+            platform="linkedin",
+            external_id="m-int1",
+            title="Ingénieur PFE 2",
+            company="Company 2",
+            status="INTERVIEW",
+        )
+        j_off = JobOffer(
+            platform="jobteaser",
+            external_id="m-off1",
+            title="Ingénieur PFE 3",
+            company="Company 3",
+            status="OFFER",
+        )
+        j_rej = JobOffer(
+            platform="jobteaser",
+            external_id="m-rej1",
+            title="Ingénieur PFE 4",
+            company="Company 4",
+            status="REJECTED",
+        )
+        session.add(j_sub1)
+        session.add(j_int)
+        session.add(j_off)
+        session.add(j_rej)
+        session.commit()
+
+    res = client.get("/api/jobs/metrics")
+    assert res.status_code == 200
+    metrics = res.json()
+
+    assert metrics["submitted_total"] >= 4
+    assert metrics["by_status"]["SUBMITTED"] >= 1
+    assert metrics["by_status"]["INTERVIEW"] >= 1
+    assert metrics["by_status"]["OFFER"] >= 1
+    assert metrics["by_status"]["REJECTED"] >= 1
+    assert metrics["interview_rate_percent"] > 0
+    assert metrics["stale_relance_count"] >= 1
+
