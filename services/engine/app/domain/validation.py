@@ -18,7 +18,12 @@ def evaluate_profile_completeness(profile: MasterProfile) -> ProfileCompleteness
         missing_fields.append("Nom complet (full_name)")
 
     # 2. Email de contact
-    if profile.email and "@" in profile.email:
+    if (
+        profile.email
+        and "@" in profile.email
+        and "." in profile.email.split("@")[-1]
+        and len(profile.email.split("@")[-1].split(".")[-1]) >= 2
+    ):
         passed_checks += 1
     else:
         missing_fields.append("Email valide (email)")

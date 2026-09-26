@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.adapters.database import init_db
 from app.api import profile
@@ -31,6 +32,22 @@ app.add_middleware(
 
 # Inclusion des routeurs API
 app.include_router(profile.router)
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_rfc7807_handler(request: Request, exc: HTTPException):
+    detail = exc.detail if isinstance(exc.detail, dict) else {"message": str(exc.detail)}
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "type": "https://datatracker.ietf.org/doc/html/rfc7807",
+            "title": "Erreur applicative",
+            "status": exc.status_code,
+            "detail": detail,
+            "path": str(request.url.path),
+        },
+    )
+
 
 
 @app.get("/")
