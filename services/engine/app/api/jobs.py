@@ -1,10 +1,11 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlmodel import Session, col, desc, select
+from sqlmodel import Session, SQLModel, col, desc, select
 from app.adapters.connectors.jobteaser import JobteaserJobConnector
 from app.adapters.connectors.linkedin import LinkedInJobConnector
 from app.adapters.database import get_session
 from app.api.events import broadcast_event
+from app.domain.fsm import ApplicationFSM
 from app.domain.models import (
     JobCollectRequest,
     JobCollectSummary,
@@ -13,6 +14,9 @@ from app.domain.models import (
     utc_now,
 )
 from app.ports.connectors import BaseJobConnector
+
+class JobTransitionRequest(SQLModel):
+    new_status: str
 
 router = APIRouter(prefix="/api/jobs", tags=["Job Offers & Radar"])
 
@@ -90,6 +94,51 @@ async def archive_job(job_id: str, session: Session = Depends(get_session)):
     await broadcast_event(
         "JOB_ARCHIVED",
         {"id": job.id, "title": job.title, "company": job.company},
+    )
+
+    return job
+
+
+@router.patch("/{job_id}/transition", response_model=JobOfferRead)
+async def transition_job_status(
+    job_id: str,
+    payload: JobTransitionRequest,
+    session: Session = Depends(get_session),
+):
+    """
+    Exécute une transition d'état sur l'offre selon la machine à états finis AD-6.
+    Rejette toute transition illégale (ex: DISCOVERED -> SUBMITTED) avec HTTP 422.
+    """
+    job = session.get(JobOffer, job_id)
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error_code": "JOB_NOT_FOUND", "message": f"Offre {job_id} introuvable."},
+        )
+
+    try:
+        ApplicationFSM.validate_transition(job.status, payload.new_status)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error_code": "INVALID_STATE_TRANSITION",
+                "message": str(e),
+                "current_status": job.status,
+                "target_status": payload.new_status,
+            },
+        )
+
+    job.status = payload.new_status.upper()
+    job.updated_at = utc_now()
+    session.add(job)
+    session.commit()
+    session.refresh(job)
+
+    # Diffusion SSE du changement de statut
+    await broadcast_event(
+        "JOB_STATUS_CHANGED",
+        {"id": job.id, "title": job.title, "company": job.company, "status": job.status},
     )
 
     return job
