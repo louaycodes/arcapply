@@ -67,12 +67,12 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `services/engine/app/api/jobs.py` -- Implémenter l'endpoint `GET /api/jobs/metrics` avec compteurs et taux de conversion -- Backend Metrics
-- [ ] `services/engine/tests/test_jobs.py` -- Ajouter les tests unitaires pour l'endpoint de métriques du pipeline -- Tests Engine
-- [ ] `apps/web/lib/api.ts` -- Déclarer le modèle `PipelineMetrics` et la fonction client `fetchPipelineMetrics` -- API Client
-- [ ] `apps/web/components/kanban/kanban-card.tsx` -- Développer la carte Kanban avec badges ATS, alerte relance et boutons d'action -- Composant UI
-- [ ] `apps/web/components/kanban/kanban-column.tsx` -- Développer la colonne Kanban avec compteur et conteneur déroulant -- Composant UI
-- [ ] `apps/web/app/kanban/page.tsx` -- Assembler le cockpit Kanban complet avec barre de métriques analytiques -- Page Cockpit
+- [x] `services/engine/app/api/jobs.py` -- Implémenter l'endpoint `GET /api/jobs/metrics` avec compteurs et taux de conversion -- Backend Metrics
+- [x] `services/engine/tests/test_jobs.py` -- Ajouter les tests unitaires pour l'endpoint de métriques du pipeline -- Tests Engine
+- [x] `apps/web/lib/api.ts` -- Déclarer le modèle `PipelineMetrics` et la fonction client `fetchPipelineMetrics` -- API Client
+- [x] `apps/web/components/kanban/kanban-card.tsx` -- Développer la carte Kanban avec badges ATS, alerte relance et boutons d'action -- Composant UI
+- [x] `apps/web/components/kanban/kanban-column.tsx` -- Développer la colonne Kanban avec compteur et conteneur déroulant -- Composant UI
+- [x] `apps/web/app/kanban/page.tsx` -- Assembler le cockpit Kanban complet avec barre de métriques analytiques -- Page Cockpit
 
 **Acceptance Criteria:**
 - Given le cockpit `/kanban`, when l'étudiant accède à la page, then les 7 colonnes affichent les candidatures réparties selon leur état FSM.
