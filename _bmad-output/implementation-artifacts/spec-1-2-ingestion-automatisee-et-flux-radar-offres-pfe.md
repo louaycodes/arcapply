@@ -2,7 +2,8 @@
 title: "Story 1.2: Ingestion automatisée et flux Radar d'offres de stage PFE"
 type: 'feature'
 created: '2026-09-26'
-status: 'draft'
+status: 'in-progress'
+baseline_commit: '2ac7494174f996f8e97c35a8ebb1786cd259e670'
 route: 'dispatch'
 review_loop_iteration: 0
 context:
