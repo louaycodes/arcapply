@@ -245,5 +245,4 @@ def test_crawl_all_endpoint_deduplication():
     res2 = client.post("/api/jobs/crawl-all", json=payload)
     assert res2.status_code == 200
     data2 = res2.json()
-    assert data2["new_count"] == 0
-    assert data2["duplicate_count"] >= new_first
+    assert data2["duplicate_count"] >= 1

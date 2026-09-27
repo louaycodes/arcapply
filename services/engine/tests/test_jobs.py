@@ -189,3 +189,31 @@ def test_pipeline_metrics_calculation():
     assert metrics["interview_rate_percent"] > 0
     assert metrics["stale_relance_count"] >= 1
 
+
+def test_clear_all_jobs():
+    # Insertion d'une offre
+    with Session(engine) as session:
+        j = JobOffer(
+            platform="linkedin",
+            external_id="clear-test-1",
+            title="Ingénieur Test PFE",
+            company="Test Corp",
+            status="DISCOVERED",
+        )
+        session.add(j)
+        session.commit()
+
+    # Vérification présence
+    res = client.get("/api/jobs")
+    assert len(res.json()) > 0
+
+    # Appel de suppression
+    delete_res = client.delete("/api/jobs/clear")
+    assert delete_res.status_code == 200
+    assert delete_res.json()["status"] == "success"
+
+    # Vérification que la liste est vide
+    res_after = client.get("/api/jobs")
+    assert res_after.status_code == 200
+    assert len(res_after.json()) == 0
+

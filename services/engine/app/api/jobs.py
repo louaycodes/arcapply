@@ -1,16 +1,19 @@
 from datetime import timedelta, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlmodel import Session, SQLModel, col, desc, select
+from sqlmodel import Session, SQLModel, col, delete, desc, select
 from app.adapters.scheduler import ALL_CONNECTORS, CrawlerScheduler
 from app.adapters.database import get_session
 from app.api.events import broadcast_event
 from app.domain.fsm import ApplicationFSM
 from app.domain.models import (
+    CoverLetter,
+    EmailInteraction,
     JobCollectRequest,
     JobCollectSummary,
     JobOffer,
     JobOfferRead,
+    TargetedCV,
     utc_now,
 )
 from app.ports.connectors import BaseJobConnector
@@ -72,6 +75,31 @@ def list_jobs(
     query = query.order_by(desc(JobOffer.collected_at))
     offers = session.exec(query).all()
     return offers
+
+
+@router.delete("/clear")
+@router.delete("")
+async def clear_all_jobs(session: Session = Depends(get_session)):
+    """
+    Supprime toutes les offres d'emploi de la base de données locale
+    ainsi que les CVs ciblés et lettres de motivation associés.
+    """
+    session.exec(delete(TargetedCV))
+    session.exec(delete(CoverLetter))
+    session.exec(delete(EmailInteraction))
+    session.exec(delete(JobOffer))
+    session.commit()
+
+    # Diffusion SSE pour actualisation immédiate de l'interface
+    await broadcast_event(
+        "JOBS_CLEARED",
+        {"message": "Toutes les offres ont été supprimées avec succès."},
+    )
+
+    return {
+        "status": "success",
+        "message": "Toutes les offres et documents associés ont été supprimés avec succès.",
+    }
 
 
 @router.get("/metrics", response_model=PipelineMetrics)
