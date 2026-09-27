@@ -2,8 +2,7 @@ from datetime import timedelta, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session, SQLModel, col, desc, select
-from app.adapters.connectors.jobteaser import JobteaserJobConnector
-from app.adapters.connectors.linkedin import LinkedInJobConnector
+from app.adapters.scheduler import ALL_CONNECTORS, CrawlerScheduler
 from app.adapters.database import get_session
 from app.api.events import broadcast_event
 from app.domain.fsm import ApplicationFSM
@@ -35,10 +34,8 @@ class PipelineMetrics(SQLModel):
 
 router = APIRouter(prefix="/api/jobs", tags=["Job Offers & Radar"])
 
-CONNECTORS: dict[str, type[BaseJobConnector]] = {
-    "linkedin": LinkedInJobConnector,
-    "jobteaser": JobteaserJobConnector,
-}
+CONNECTORS = ALL_CONNECTORS
+
 
 
 @router.get("", response_model=list[JobOfferRead])
@@ -150,6 +147,30 @@ def get_pipeline_metrics(session: Session = Depends(get_session)):
         response_rate_percent=response_rate,
         stale_relance_count=stale_relance_count,
     )
+
+
+@router.get("/sources")
+def get_sources_status():
+    """Retourne la liste des connecteurs enregistrés et leur télémétrie de scraping."""
+    return CrawlerScheduler.get_status()
+
+
+@router.post("/crawl-all")
+async def trigger_full_crawl(
+    payload: Optional[JobCollectRequest] = None,
+    session: Session = Depends(get_session),
+):
+    """Déclenche l'ingestion multi-sources en temps réel avec diffusion SSE."""
+    kw = payload.keywords if payload else None
+    loc = payload.locations if payload else None
+    plat = payload.platforms if payload else None
+    summary = await CrawlerScheduler.run_full_crawl(
+        keywords=kw,
+        locations=loc,
+        platforms=plat,
+        session=session,
+    )
+    return summary
 
 
 @router.get("/{job_id}", response_model=JobOfferRead)
