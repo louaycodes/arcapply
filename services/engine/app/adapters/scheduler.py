@@ -4,16 +4,26 @@ from typing import Any
 from sqlmodel import Session, select
 from app.adapters.connectors.aneti import AnetiJobConnector
 from app.adapters.connectors.apec import ApecJobConnector
+from app.adapters.connectors.cadremploi import CadremploiJobConnector
+from app.adapters.connectors.capdigital import CapDigitalJobConnector
+from app.adapters.connectors.chooseyourboss import ChooseYourBossJobConnector
 from app.adapters.connectors.emploitunisie import EmploiTunisieJobConnector
 from app.adapters.connectors.esndirect import ESNDirectJobConnector
 from app.adapters.connectors.hellowork import HelloWorkJobConnector
 from app.adapters.connectors.indeed import IndeedJobConnector
 from app.adapters.connectors.jobteaser import JobteaserJobConnector
 from app.adapters.connectors.keejob import KeejobJobConnector
+from app.adapters.connectors.letudiant import LEtudiantJobConnector
 from app.adapters.connectors.linkedin import LinkedInJobConnector
+from app.adapters.connectors.meteojob import MeteojobJobConnector
+from app.adapters.connectors.monster import MonsterJobConnector
 from app.adapters.connectors.moovijob import MoovijobJobConnector
+from app.adapters.connectors.numeum import NumeumJobConnector
+from app.adapters.connectors.offreemploitn import OffreEmploiTnJobConnector
 from app.adapters.connectors.optioncarriere import OptionCarriereJobConnector
 from app.adapters.connectors.stagetunisie import StageTunisieJobConnector
+from app.adapters.connectors.stagiairesfr import StagiairesFrJobConnector
+from app.adapters.connectors.stackoverflowjobs import StackOverflowJobsJobConnector
 from app.adapters.connectors.tanitjobs import TanitjobsJobConnector
 from app.adapters.connectors.tunisietravail import TunisieTravailJobConnector
 from app.adapters.connectors.unjeuneunesolution import UnJeuneUneSolutionJobConnector
@@ -26,6 +36,7 @@ from app.ports.connectors import BaseJobConnector
 ALL_CONNECTORS: dict[str, type[BaseJobConnector]] = {
     # 🌍 International & Global
     "linkedin": LinkedInJobConnector,
+    "stackoverflow_jobs": StackOverflowJobsJobConnector,
     # 🇹🇳 Tunisie
     "keejob": KeejobJobConnector,
     "tunisietravail": TunisieTravailJobConnector,
@@ -34,6 +45,7 @@ ALL_CONNECTORS: dict[str, type[BaseJobConnector]] = {
     "stagetunisie": StageTunisieJobConnector,
     "optioncarriere": OptionCarriereJobConnector,
     "aneti": AnetiJobConnector,
+    "offre_emploi_tn": OffreEmploiTnJobConnector,
     # 🇫🇷 France
     "wttj": WTTJJobConnector,
     "1jeune1solution": UnJeuneUneSolutionJobConnector,
@@ -42,7 +54,16 @@ ALL_CONNECTORS: dict[str, type[BaseJobConnector]] = {
     "indeed": IndeedJobConnector,
     "apec": ApecJobConnector,
     "moovijob": MoovijobJobConnector,
+    "monster": MonsterJobConnector,
+    "stagiaires_fr": StagiairesFrJobConnector,
+    "cadremploi": CadremploiJobConnector,
+    "meteojob": MeteojobJobConnector,
+    "letudiant": LEtudiantJobConnector,
+    "chooseyourboss": ChooseYourBossJobConnector,
+    # 🏢 Portails ESN & Écosystèmes Tech
     "esn_direct": ESNDirectJobConnector,
+    "numeum": NumeumJobConnector,
+    "capdigital": CapDigitalJobConnector,
 }
 
 
