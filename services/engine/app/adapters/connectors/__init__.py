@@ -4,8 +4,9 @@ from typing import Literal
 
 from app.adapters.connectors.linkedin import LinkedInJobConnector
 from app.adapters.connectors.jobteaser import JobteaserJobConnector
+from app.adapters.connectors.top100_enterprises import Top100EnterprisesJobConnector
 
-__all__ = ["LinkedInJobConnector", "JobteaserJobConnector", "infer_offer_type"]
+__all__ = ["LinkedInJobConnector", "JobteaserJobConnector", "Top100EnterprisesJobConnector", "infer_offer_type"]
 
 # ---------------------------------------------------------------------------
 # Heuristique de classification automatique des offres (PFE vs JOB)

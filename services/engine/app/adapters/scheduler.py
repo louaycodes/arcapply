@@ -27,6 +27,7 @@ from app.adapters.connectors.stackoverflowjobs import StackOverflowJobsJobConnec
 from app.adapters.connectors.tanitjobs import TanitjobsJobConnector
 from app.adapters.connectors.tunisietravail import TunisieTravailJobConnector
 from app.adapters.connectors.unjeuneunesolution import UnJeuneUneSolutionJobConnector
+from app.adapters.connectors.top100_enterprises import Top100EnterprisesJobConnector
 from app.adapters.connectors.wttj import WTTJJobConnector
 from app.adapters.database import get_engine
 from app.api.events import broadcast_event
@@ -36,6 +37,8 @@ from app.domain.models import JobOffer, utc_now
 from app.ports.connectors import BaseJobConnector
 
 ALL_CONNECTORS: dict[str, type[BaseJobConnector]] = {
+    # 🏆 Top 100 Entreprises IT (Portails Carrières Dédiés & ATS direct)
+    "top100_enterprises": Top100EnterprisesJobConnector,
     # 🌍 International & Global
     "linkedin": LinkedInJobConnector,
     "stackoverflow_jobs": StackOverflowJobsJobConnector,
