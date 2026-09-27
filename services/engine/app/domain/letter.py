@@ -1,7 +1,11 @@
+import logging
 import re
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
+from app.config import settings
 from app.domain.models import ATSMatchResult, CoverLetter, JobOffer, MasterProfile
+
+logger = logging.getLogger(__name__)
 
 # Dictionnaire des clichés d'IA bannis -> Substitutions sobres d'ingénieur
 CLICHE_RULES = [
@@ -15,8 +19,12 @@ CLICHE_RULES = [
     (r"\bmettre à profit mes comp[eé]tences\b", "contribuer activement à vos développements"),
     (r"\b(?:au sein de )?votre prestigieuse (?:entreprise|société|agence)\b", "vos équipes"),
     (r"\brelever des d[eé]fis stimulants\b", "résoudre ces problématiques techniques"),
+    (r"\brelever ce challenge\b", "mener ce projet à bien"),
     (r"\bamour pour\b", "intérêt marqué pour"),
     (r"\bparfaite ad[eé]quation\b", "adéquation concrète"),
+    (r"\bforce de proposition\b", "analytique et méthodique"),
+    (r"\bsoif d'apprendre\b", "volonté d'approfondissement technique"),
+    (r"\bcouteau suisse\b", "ingénieur polyvalent"),
 ]
 
 
@@ -109,7 +117,7 @@ def _build_realizations_paragraph(
     target_skills_str: str,
 ) -> str:
     """
-    Construit le paragraphe de réalisations en citant TOUS les projets et expériences
+    Construit le paragraphe de réalisations (« MOI ») en citant TOUS les projets et expériences
     dont le score de pertinence est > 0, de façon fluide et convaincante.
     Si aucun élément n'est pertinent (tous à 0), replie vers le meilleur disponible.
     """
@@ -117,7 +125,6 @@ def _build_realizations_paragraph(
     relevant_experiences = [(s, e) for s, e in ranked_experiences if s > 0]
 
     if not relevant_projects and not relevant_experiences:
-        # Fallback zéro-pertinence : citer le meilleur projet ou expérience disponible
         if ranked_projects:
             _, p = ranked_projects[0]
             proj_techs = ", ".join(p.technologies[:4]) if p.technologies else target_skills_str
@@ -141,7 +148,6 @@ def _build_realizations_paragraph(
             f"de {target_skills_str}."
         )
 
-    # Construction fluide : tous les éléments pertinents, du plus au moins pertinent
     parts: List[str] = []
     has_first = False
 
@@ -179,13 +185,15 @@ def _build_realizations_paragraph(
 
 class CoverLetterService:
     """
-    Moteur de synthèse de lettre de motivation sobre d'élève-ingénieur (AD-4 Étape 3).
+    Moteur de synthèse de lettre de motivation sobre d'élève-ingénieur et jeune diplômé (AD-4 Étape 3).
 
-    Garantit :
+    Architecture :
+    - Standard professionnel Apec & Harvard en 4 actes : VOUS - MOI - NOUS - DEMAIN.
+    - Adaptation dynamique selon le mode : PFE (stage de fin d'études) vs JOB (emploi CDI/CDD).
     - Zéro-hallucination : seules les données vérifiées du MasterProfile sont injectées.
     - Éradication des clichés IA par filtre déterministe.
-    - Sélection intelligente multi-projets/expériences via scoring de pertinence à l'offre.
-    - Citation fluide de TOUS les projets et expériences pertinents (score > 0).
+    - Sélection intelligente multi-projets/expériences via scoring ATS.
+    - Rédaction augmentée par LLM Groq avec bascule transparente vers synthèse déterministe.
     """
 
     @classmethod
@@ -207,26 +215,261 @@ class CoverLetterService:
         return sanitized
 
     @classmethod
+    def _is_job_target(cls, job: JobOffer, profile: MasterProfile) -> bool:
+        """Détermine si la cible est un emploi (CDI/CDD) ou un stage PFE."""
+        if getattr(job, "offer_type", None) == "JOB":
+            return True
+        if getattr(job, "offer_type", None) == "PFE":
+            return False
+        return getattr(profile, "search_mode", "PFE") == "JOB"
+
+    @classmethod
+    def _build_vous_paragraph(
+        cls,
+        job: JobOffer,
+        is_job_mode: bool,
+        school_name: str,
+        degree_name: str,
+        target_skills_str: str,
+    ) -> str:
+        """Acte 1 (VOUS) : L'entreprise cible, le poste et ses défis techniques."""
+        company = job.company or "votre entreprise"
+        job_title = job.title or "Ingénieur Logiciel"
+
+        if is_job_mode:
+            return (
+                f"Diplômé en {degree_name} de {school_name}, je vous soumets ma candidature "
+                f"au poste de {job_title} chez {company}. Votre dynamique technique et vos enjeux "
+                f"en {target_skills_str} ont particulièrement retenu mon attention, "
+                f"constituant un cadre idéal pour mettre en œuvre une pratique rigoureuse de l'ingénierie."
+            )
+        else:
+            return (
+                f"Actuellement {degree_name} à {school_name}, je recherche activement mon projet de fin d'études "
+                f"(PFE) d'une durée de 6 mois. L'opportunité d'intégrer {company} au poste de {job_title} "
+                f"a retenu toute mon attention en raison de ses exigences techniques en {target_skills_str}."
+            )
+
+    @classmethod
+    def _build_nous_paragraph(
+        cls,
+        job: JobOffer,
+        is_job_mode: bool,
+        target_skills_str: str,
+    ) -> str:
+        """Acte 3 (NOUS) : Synergie et valeur ajoutée immédiate apportée à l'équipe."""
+        company = job.company or "vos équipes"
+        if is_job_mode:
+            return (
+                f"En rejoignant {company}, j'apporterai une contribution opérationnelle concrète à vos développements "
+                f"en {target_skills_str}. Mon engagement méthodique me permettra de m'intégrer rapidement dans vos cycles "
+                f"de livraison, avec un souci constant de qualité de code et de robustesse des systèmes."
+            )
+        else:
+            return (
+                f"En rejoignant vos équipes pour ce stage PFE, je souhaite apporter une contribution concrète "
+                f"sur vos développements en {target_skills_str}, en m'investissant avec méthode et rigueur "
+                f"sur la qualité du code et la robustesse des systèmes livrés."
+            )
+
+    @classmethod
+    def _build_demain_paragraph(
+        cls,
+        is_job_mode: bool,
+    ) -> str:
+        """Acte 4 (DEMAIN) : Disponibilité et invitation à l'entretien technique."""
+        if is_job_mode:
+            return (
+                "Disponible immédiatement, je serais ravi d'échanger avec vous lors d'un entretien technique "
+                "afin de vous exposer plus en détail mes réalisations et ma méthodologie de travail."
+            )
+        else:
+            return (
+                "Disponible dès le premier semestre 2026 pour une durée de six mois, je serais ravi d'échanger "
+                "avec vous lors d'un entretien technique afin de vous exposer plus en détail mes réalisations "
+                "et ma méthodologie de travail."
+            )
+
+    @classmethod
+    def _build_deterministic_letter(
+        cls,
+        job: JobOffer,
+        profile: MasterProfile,
+        ats_match: ATSMatchResult,
+        is_job_mode: bool,
+        degree_name: str,
+        school_name: str,
+        target_skills_str: str,
+        realizations_paragraph: str,
+    ) -> str:
+        """Générateur déterministe conforme Apec Vous-Moi-Nous-Demain."""
+        vous_part = cls._build_vous_paragraph(
+            job=job,
+            is_job_mode=is_job_mode,
+            school_name=school_name,
+            degree_name=degree_name,
+            target_skills_str=target_skills_str,
+        )
+        nous_part = cls._build_nous_paragraph(
+            job=job,
+            is_job_mode=is_job_mode,
+            target_skills_str=target_skills_str,
+        )
+        demain_part = cls._build_demain_paragraph(is_job_mode=is_job_mode)
+
+        return f"""Madame, Monsieur,
+
+{vous_part}
+
+{realizations_paragraph}
+
+{nous_part}
+
+{demain_part}
+
+Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distinguées.
+
+{profile.full_name}"""
+
+    @classmethod
+    def _generate_with_ai(
+        cls,
+        job: JobOffer,
+        profile: MasterProfile,
+        ats_match: ATSMatchResult,
+        is_job_mode: bool,
+        degree_name: str,
+        school_name: str,
+        target_skills_str: str,
+        ranked_projects: List[tuple],
+        ranked_experiences: List[tuple],
+    ) -> Optional[str]:
+        """
+        Rédige la lettre via le modèle Groq (Qwen/Llama) en appliquant
+        strictement le schéma Vous-Moi-Nous et les gardes-fous Zéro-Hallucination.
+        """
+        api_key = settings.effective_groq_api_key
+        if not api_key:
+            return None
+
+        try:
+            from groq import Groq
+
+            client = Groq(api_key=api_key)
+
+            # Préparation des réalisations autorisées
+            allowed_projects = [
+                f"- Projet « {p.title} » ({p.role or 'développeur'}) : {p.description} [Technologies: {p.technologies_raw}]"
+                for s, p in ranked_projects
+                if s > 0
+            ]
+            allowed_experiences = [
+                f"- Expérience chez {e.company} ({e.role}) : {e.description} [Technologies: {e.technologies_raw}]"
+                for s, e in ranked_experiences
+                if s > 0
+            ]
+            realizations_text = "\n".join(allowed_projects + allowed_experiences)
+            if not realizations_text:
+                realizations_text = f"Formation académique en {degree_name} à {school_name} avec pratique de {target_skills_str}."
+
+            mode_label = "EMPLOI (CDI / CDD)" if is_job_mode else "STAGE PFE (Projet de Fin d'Études 6 mois)"
+            mode_prohibitions = (
+                "STRICTEMENT INTERDIT de mentionner les mots 'stage', 'stagiaire', 'PFE' ou 'fin d'études'. Le candidat postule pour un emploi CDI/CDD."
+                if is_job_mode
+                else "Le candidat recherche son stage de fin d'études PFE d'une durée de 6 mois."
+            )
+
+            missing_prohibitions = ""
+            if ats_match.missing_skills:
+                missing_str = ", ".join(ats_match.missing_skills)
+                missing_prohibitions = f"STRICTEMENT INTERDIT de citer les compétences suivantes que le candidat ne possède pas : {missing_str}."
+
+            prompt = f"""Rédige une lettre de motivation d'ingénieur sobre, percutante et factuelle selon la méthode Apec (VOUS - MOI - NOUS - DEMAIN) en 4 paragraphes.
+
+DONNÉES DU CANDIDAT (SOURCE UNIQUE DE VÉRITÉ - ZÉRO HALLUCINATION) :
+- Nom : {profile.full_name}
+- Formation : {degree_name} à {school_name}
+- Entreprise ciblée : {job.company or 'votre entreprise'}
+- Poste ciblé : {job.title or 'Ingénieur Logiciel'}
+- Compétences vérifiées à valoriser : {target_skills_str}
+- Réalisations vérifiées à citer :
+{realizations_text}
+- Statut / Mode de candidature : {mode_label}
+
+RÈGLES IMPÉRATIVES DE RÉDACTION :
+1. Structure en 4 paragraphes distincts :
+   - Paragraphe 1 (VOUS) : L'entreprise ciblée et ses enjeux techniques sur le poste.
+   - Paragraphe 2 (MOI) : Les réalisations concrètes fournies ci-dessus avec leurs technologies exactes.
+   - Paragraphe 3 (NOUS) : La valeur ajoutée et la contribution opérationnelle immédiate apportée à l'équipe.
+   - Paragraphe 4 (DEMAIN) : Disponibilité et invitation sobre à un entretien technique.
+2. Tu DOIS obligatoirement citer le titre exact de chaque projet mentionné entre guillemets « Titre du Projet » tel qu'indiqué dans les données (sans inverser ni modifier les mots).
+3. {mode_prohibitions}
+4. {missing_prohibitions}
+5. Ne JAMAIS inventer de projets, de chiffres ou d'entreprises non listés.
+6. Proscrire les superlatifs et clichés (« dynamique », « passionné depuis toujours », « opportunité rêvée »).
+7. Débuter par « Madame, Monsieur, » et conclure par les salutations professionnelles usuelles suivies du nom du candidat."""
+
+            response = client.chat.completions.create(
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "Tu es un rédacteur d'élite de candidatures d'ingénieurs. Tu rédiges en français sobre, percutant et factuel.",
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+                model=settings.effective_groq_model,
+                temperature=0.2,
+                max_tokens=450,
+            )
+
+            generated_text = (response.choices[0].message.content or "").strip()
+            if not generated_text:
+                return None
+
+            # Garde-fou 1 : Invariant Zéro-Hallucination sur les missing_skills
+            lower_text = generated_text.lower()
+            for missing in ats_match.missing_skills:
+                if len(missing) > 2 and missing.lower() in lower_text:
+                    logger.warning(f"Rejet génération IA : détection de missing_skill '{missing}'.")
+                    return None
+
+            # Garde-fou 2 : Invariant cohérence du mode JOB (interdiction de 'stage' / 'pfe')
+            if is_job_mode:
+                if re.search(r"\b(stage|stagiaire|pfe)\b", lower_text):
+                    logger.warning("Rejet génération IA : mention de stage/PFE en mode JOB.")
+                    return None
+
+            return generated_text
+
+        except Exception as err:
+            logger.warning(f"Échec de l'appel LLM Groq ({err}), repli déterministe automatique.")
+            return None
+
+    @classmethod
     def generate_cover_letter(
         cls,
         job: JobOffer,
         profile: MasterProfile,
         ats_match: ATSMatchResult,
+        use_ai: bool = True,
     ) -> CoverLetter:
         if not profile.is_complete:
             raise ValueError(
                 "Le Master Profile doit être complet (CAP-1) pour générer une lettre de motivation."
             )
 
+        is_job_mode = cls._is_job_target(job, profile)
+
         # 1. Formation de l'ingénieur
         school_name = "école d'ingénieurs"
-        degree_name = "élève-ingénieur"
+        degree_name = "diplôme d'ingénieur" if is_job_mode else "élève-ingénieur"
         if profile.educations:
             top_edu = profile.educations[0]
             if top_edu.school:
                 school_name = top_edu.school
             if top_edu.field_of_study:
-                degree_name = f"élève-ingénieur en {top_edu.field_of_study}"
+                prefix = "ingénieur en" if is_job_mode else "élève-ingénieur en"
+                degree_name = f"{prefix} {top_edu.field_of_study}"
 
         # 2. Compétences attestées (zéro-hallucination : on exclut les missing_skills)
         missing_set = {s.lower() for s in ats_match.missing_skills}
@@ -238,31 +481,44 @@ class CoverLetterService:
         ranked_projects = _rank_projects(profile, ats_match, job_title)
         ranked_experiences = _rank_experiences(profile, ats_match, job_title)
 
-        # 4. Construction du paragraphe de réalisations multi-éléments
+        # 4. Construction du paragraphe de réalisations multi-éléments (MOI)
         realizations_paragraph = _build_realizations_paragraph(
             ranked_projects=ranked_projects,
             ranked_experiences=ranked_experiences,
             target_skills_str=target_skills_str,
         )
 
-        # 5. Assemblage lettre — structure sobre 4 paragraphes
         company = job.company or "votre entreprise"
 
-        raw_letter = f"""Madame, Monsieur,
+        # 5. Tentative de génération via IA Groq (si demandée et configurée)
+        raw_letter: Optional[str] = None
+        if use_ai:
+            raw_letter = cls._generate_with_ai(
+                job=job,
+                profile=profile,
+                ats_match=ats_match,
+                is_job_mode=is_job_mode,
+                degree_name=degree_name,
+                school_name=school_name,
+                target_skills_str=target_skills_str,
+                ranked_projects=ranked_projects,
+                ranked_experiences=ranked_experiences,
+            )
 
-Actuellement {degree_name} à {school_name}, je suis à la recherche de mon stage de fin d'études (PFE) d'une durée de 6 mois. L'opportunité d'intégrer {company} au poste de {job_title} a particulièrement retenu mon attention en raison des défis techniques qu'elle implique en {target_skills_str}.
+        # Repli déterministe garanti si IA non activée, indisponible ou rejetée par garde-fous
+        if not raw_letter:
+            raw_letter = cls._build_deterministic_letter(
+                job=job,
+                profile=profile,
+                ats_match=ats_match,
+                is_job_mode=is_job_mode,
+                degree_name=degree_name,
+                school_name=school_name,
+                target_skills_str=target_skills_str,
+                realizations_paragraph=realizations_paragraph,
+            )
 
-{realizations_paragraph}
-
-En rejoignant vos équipes, je souhaite apporter une contribution concrète sur vos développements en {target_skills_str}, en m'investissant avec méthode et rigueur sur la qualité du code et la robustesse des systèmes livrés.
-
-Disponible dès le premier semestre 2026 pour une durée de six mois, je serais ravi d'échanger avec vous lors d'un entretien technique afin de vous exposer plus en détail mes réalisations et ma méthodologie de travail.
-
-Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distinguées.
-
-{profile.full_name}"""
-
-        # 6. Filtrage anti-clichés
+        # 6. Filtrage anti-clichés déterministe
         cleaned_content = cls.sanitize_cliches(raw_letter)
         cliche_count, detected_phrases = cls.audit_cliches(cleaned_content)
 
