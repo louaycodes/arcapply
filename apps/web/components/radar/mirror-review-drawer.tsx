@@ -59,6 +59,7 @@ export function MirrorReviewDrawer({
   // CV state
   const [cvLoading, setCvLoading] = useState(false);
   const [cvGenerated, setCvGenerated] = useState(false);
+  const [cvLanguage, setCvLanguage] = useState<"fr" | "en">("fr");
 
   // Letter state
   const [letter, setLetter] = useState<CoverLetter | null>(null);
@@ -85,7 +86,7 @@ export function MirrorReviewDrawer({
 
       // Initialiser CV
       setCvLoading(true);
-      generateTargetedCV(job.id)
+      generateTargetedCV(job.id, cvLanguage)
         .then(() => setCvGenerated(true))
         .catch((err) => console.error("Erreur auto-generation CV:", err))
         .finally(() => setCvLoading(false));
@@ -121,8 +122,8 @@ export function MirrorReviewDrawer({
 
   if (!isOpen || !job) return null;
 
-  const pdfUrl = getCVPdfDownloadUrl(job.id);
-  const previewUrl = getCVPreviewUrl(job.id);
+  const pdfUrl = getCVPdfDownloadUrl(job.id, cvLanguage);
+  const previewUrl = getCVPreviewUrl(job.id, cvLanguage);
 
   // Actions FSM
   const handleTransition = async (newStatus: string) => {
@@ -386,9 +387,48 @@ export function MirrorReviewDrawer({
 
               {activeTab === "cv" && (
                 <div className="flex items-center gap-2">
+                  <div className="flex items-center rounded border border-border bg-muted/40 p-0.5 text-[11px] font-semibold">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCvLanguage("fr");
+                        setCvLoading(true);
+                        generateTargetedCV(job.id, "fr")
+                          .then(() => setCvGenerated(true))
+                          .finally(() => setCvLoading(false));
+                      }}
+                      className={`px-2 py-0.5 rounded transition-all ${
+                        cvLanguage === "fr"
+                          ? "bg-primary text-primary-foreground font-bold shadow-xs"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                      title="Version Française"
+                    >
+                      FR
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCvLanguage("en");
+                        setCvLoading(true);
+                        generateTargetedCV(job.id, "en")
+                          .then(() => setCvGenerated(true))
+                          .finally(() => setCvLoading(false));
+                      }}
+                      className={`px-2 py-0.5 rounded transition-all ${
+                        cvLanguage === "en"
+                          ? "bg-primary text-primary-foreground font-bold shadow-xs"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                      title="English Version"
+                    >
+                      EN
+                    </button>
+                  </div>
+
                   <a
                     href={pdfUrl}
-                    download={`CV_${job.company.replace(/\s+/g, "_")}.pdf`}
+                    download={`CV_${job.company.replace(/\s+/g, "_")}_${cvLanguage.toUpperCase()}.pdf`}
                     className="px-2.5 py-1 rounded-md border border-border bg-background hover:bg-muted text-xs font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors"
                   >
                     <span>PDF A4</span>
@@ -397,7 +437,7 @@ export function MirrorReviewDrawer({
                     type="button"
                     onClick={() => {
                       setCvLoading(true);
-                      generateTargetedCV(job.id)
+                      generateTargetedCV(job.id, cvLanguage)
                         .then(() => setCvGenerated(true))
                         .finally(() => setCvLoading(false));
                     }}

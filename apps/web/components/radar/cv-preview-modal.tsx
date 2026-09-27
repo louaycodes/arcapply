@@ -33,13 +33,14 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"preview" | "audit">("preview");
+  const [language, setLanguage] = useState<"fr" | "en">("fr");
 
   const loadOrGenerateCV = async () => {
     if (!job) return;
     try {
       setLoading(true);
       setError(null);
-      const generated = await generateTargetedCV(job.id);
+      const generated = await generateTargetedCV(job.id, language);
       setCv(generated);
     } catch (err: any) {
       setError(err.message || "Erreur lors de la génération du CV ciblé.");
@@ -55,12 +56,12 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
       setCv(null);
       setError(null);
     }
-  }, [isOpen, job?.id]);
+  }, [isOpen, job?.id, language]);
 
   if (!isOpen || !job) return null;
 
-  const pdfUrl = getCVPdfDownloadUrl(job.id);
-  const previewUrl = getCVPreviewUrl(job.id);
+  const pdfUrl = getCVPdfDownloadUrl(job.id, language);
+  const previewUrl = getCVPreviewUrl(job.id, language);
 
   return (
     <div
@@ -97,13 +98,40 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
 
           {/* Right Action Controls */}
           <div className="flex items-center gap-2">
+            <div className="flex items-center rounded-lg border border-border bg-muted/40 p-0.5 text-xs font-semibold mr-1">
+              <button
+                type="button"
+                onClick={() => setLanguage("fr")}
+                className={`px-2.5 py-1 rounded-md transition-all ${
+                  language === "fr"
+                    ? "bg-primary text-primary-foreground shadow-sm font-bold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                title="Version Française"
+              >
+                🇫🇷 FR
+              </button>
+              <button
+                type="button"
+                onClick={() => setLanguage("en")}
+                className={`px-2.5 py-1 rounded-md transition-all ${
+                  language === "en"
+                    ? "bg-primary text-primary-foreground shadow-sm font-bold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                title="English Version"
+              >
+                🇬🇧 EN
+              </button>
+            </div>
+
             <a
               href={pdfUrl}
               download
               className="px-3.5 py-2 rounded-lg bg-primary hover:bg-primary-hover text-white text-xs font-semibold flex items-center gap-2 shadow-lg shadow-primary/20 transition-all"
             >
               <Download className="w-4 h-4" />
-              <span className="hidden sm:inline">Télécharger PDF</span>
+              <span className="hidden sm:inline">Télécharger PDF ({language.toUpperCase()})</span>
             </a>
 
             <button

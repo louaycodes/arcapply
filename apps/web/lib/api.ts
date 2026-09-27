@@ -363,11 +363,12 @@ export interface TargetedCV {
   projects: any[];
   educations: any[];
   html_content: string;
+  language?: string;
   created_at: string;
 }
 
-export async function generateTargetedCV(jobId: string): Promise<TargetedCV> {
-  const res = await fetch(`${API_BASE_URL}/api/cv/generate/${jobId}`, {
+export async function generateTargetedCV(jobId: string, lang: string = "fr"): Promise<TargetedCV> {
+  const res = await fetch(`${API_BASE_URL}/api/cv/generate/${jobId}?lang=${lang}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -382,12 +383,12 @@ export async function generateTargetedCV(jobId: string): Promise<TargetedCV> {
   return res.json();
 }
 
-export function getCVPreviewUrl(jobId: string): string {
-  return `${API_BASE_URL}/api/cv/preview/${jobId}`;
+export function getCVPreviewUrl(jobId: string, lang: string = "fr"): string {
+  return `${API_BASE_URL}/api/cv/preview/${jobId}?lang=${lang}`;
 }
 
-export function getCVPdfDownloadUrl(jobId: string): string {
-  return `${API_BASE_URL}/api/cv/pdf/${jobId}`;
+export function getCVPdfDownloadUrl(jobId: string, lang: string = "fr"): string {
+  return `${API_BASE_URL}/api/cv/pdf/${jobId}?lang=${lang}`;
 }
 
 export interface CoverLetter {
