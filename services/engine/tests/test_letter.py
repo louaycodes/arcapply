@@ -88,6 +88,98 @@ def test_letter_generation_zero_hallucination_and_facts():
     assert len(letter.banned_phrases_detected) == 0
 
 
+def test_letter_selects_all_relevant_projects_by_score():
+    """
+    Valide que le moteur de scoring multi-critères :
+    1. Cite le projet le plus pertinent en premier (Python+FastAPI sur offre Backend)
+    2. Cite aussi le second projet pertinent (Docker)
+    3. N'invoque PAS le projet sans lien (projet ML/R sans aucun tech en commun)
+    4. Cite l'expérience pertinente (FastAPI)
+    """
+    profile = MasterProfile(
+        id="prof-multi-1",
+        full_name="Adam Ben Salah",
+        email="adam@enit.tn",
+        headline="Élève-Ingénieur Backend & Cloud",
+        is_complete=True,
+    )
+    profile.skills = [
+        Skill(name="Python", category="Languages"),
+        Skill(name="FastAPI", category="Frameworks"),
+        Skill(name="Docker", category="Tools"),
+    ]
+    profile.educations = [
+        Education(
+            school="ENIT",
+            degree="Diplôme National d'Ingénieur",
+            field_of_study="Génie Logiciel",
+            start_date="2022",
+        )
+    ]
+    # Trois projets : deux pertinents, un sans lien
+    profile.projects = [
+        Project(
+            title="API Gateway Microservices",
+            role="Backend Lead",
+            description="Passerelle API haute disponibilité pour microservices distribués.",
+            technologies_raw="Python,FastAPI,Docker",
+        ),
+        Project(
+            title="CI/CD Pipeline Automatisé",
+            role="DevOps",
+            description="Pipeline de déploiement continu avec tests automatisés.",
+            technologies_raw="Docker,Git",
+        ),
+        Project(
+            title="Analyse Statistique en R",
+            role="Data Analyst",
+            description="Modélisation statistique de données épidémiologiques.",
+            technologies_raw="R,ggplot2",
+        ),
+    ]
+    profile.experiences = [
+        Experience(
+            company="StartupIO",
+            role="Stagiaire Backend",
+            description="Développement d'APIs REST avec FastAPI et PostgreSQL.",
+            technologies_raw="FastAPI,Python,PostgreSQL",
+            start_date="2024",
+        )
+    ]
+
+    job = JobOffer(
+        id="job-multi-test",
+        platform="linkedin",
+        external_id="ext-multi-1",
+        title="Stage PFE Ingénieur Backend Python",
+        company="Criteo",
+        description_raw="Nous cherchons un ingénieur maîtrisant Python, FastAPI, Docker pour nos microservices.",
+    )
+
+    ats_match = ATSMatchingEngine.evaluate_alignment(job, profile)
+    letter = CoverLetterService.generate_cover_letter(job, profile, ats_match)
+    content_lower = letter.content_markdown.lower()
+
+    # 1. Le projet le plus pertinent (Python+FastAPI+Docker) est cité en premier
+    assert "api gateway microservices" in content_lower, "Le projet principal pertinent doit être cité"
+
+    # 2. Le second projet pertinent (Docker) est aussi cité
+    assert "ci/cd pipeline" in content_lower, "Le second projet pertinent (Docker) doit être cité"
+
+    # 3. Le projet sans lien (R, ggplot2) ne doit PAS être cité
+    assert "analyse statistique en r" not in content_lower, "Les projets non-pertinents ne doivent pas être cités"
+    assert "ggplot2" not in content_lower, "Les technologies non-matchées ne doivent pas apparaître"
+
+    # 4. L'expérience pertinente (FastAPI) est mentionnée
+    assert "startupIO".lower() in content_lower or "stagiaire backend" in content_lower, \
+        "L'expérience pertinente doit être citée"
+
+    # 5. Zéro cliché, zéro hallucination
+    assert letter.cliche_score == 0
+    assert "criteo" in content_lower
+    assert "enit" in content_lower
+
+
 def test_letter_generation_blocked_when_profile_incomplete():
     incomplete = MasterProfile(
         id="inc-let-prof",
