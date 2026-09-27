@@ -119,3 +119,64 @@ Afin d'actualiser immédiatement le statut de mes candidatures sans saisie manue
 - **Given** la classification effectuée,
   **When** la candidature est mise à jour,
   **Then** sa carte bascule automatiquement dans l'étape appropriée (ex. « Entretien ») avec l'extrait pertinent archivé.
+
+## Epic 2: Expansion du Pipeline, Relances Intelligentes & Assistance Avancée
+
+L'Epic 2 enrichit l'écosystème ArcApply au-delà du MVP en élargissant les canaux de détection réels (France & Tunisie), en automatisant la gestion proactive des relances après inactivité, en accélérant le remplissage des portails carrières tiers et en fournissant des métriques décisionnelles avancées.
+
+### Story 2.1: Connecteurs multi-sources scraping reel
+
+En tant qu'étudiant ingénieur,
+Je veux collecter en direct et agréger les offres de stage PFE sur les plateformes tunisiennes (Keejob, TunisieTravail, Tanitjobs) et françaises (LinkedIn Guest, WTTJ, 1j1s, Jobteaser),
+Afin de maximiser mes opportunités sans dépendre d'une source unique et sans risquer le blocage de mon compte.
+
+**Acceptance Criteria:**
+- **Given** des critères de recherche et les connecteurs activés,
+  **When** un crawl unifié est déclenché (`POST /api/jobs/crawl-all`),
+  **Then** les offres sont extraites en direct avec BeautifulSoup/Playwright, dédupliquées par `(platform, external_id)` et stockées dans SQLite locale.
+- **Given** des offres découvertes,
+  **When** le cockpit Radar est consulté,
+  **Then** les offres apparaissent avec le badge visuel distinctif de leur plateforme source et un événement SSE `JOB_DISCOVERED` est émis.
+
+### Story 2.2: Système de relances intelligentes et alertes d'inactivité
+
+En tant qu'étudiant ingénieur,
+Je veux identifier automatiquement les candidatures sans réponse depuis un délai déterminé (ex. J+7 ou J+14) et disposer d'un brouillon d'email de relance percutant,
+Afin de relancer les recruteurs avec professionnalisme au bon moment sans paraître insistant.
+
+**Acceptance Criteria:**
+- **Given** une candidature à l'état `SUBMITTED` sans mise à jour ni réponse depuis plus de 7 ou 14 jours,
+  **When** le tableau de bord Kanban ou le radar est affiché,
+  **Then** un badge visuel d'alerte de relance suggérée est mis en exergue avec le calcul exact du délai écoulé.
+- **Given** une candidature nécessitant une relance,
+  **When** l'utilisateur clique sur « Préparer la relance »,
+  **Then** un email de relance au ton sobre d'élève-ingénieur est synthétisé (rappelant l'intitulé du poste, l'entreprise et la date d'envoi), sans clichés IA et soumis à la validation humaine explicite avant envoi ou copie.
+
+### Story 2.3: Assistant de pré-remplissage pour formulaires externes
+
+En tant qu'étudiant ingénieur,
+Je veux disposer d'un assistant d'injection et de copie rapide des informations du Master Profile et des pièces générées (CV PDF ciblé, lettre),
+Afin de renseigner en moins de deux minutes les longs formulaires ATS externes (Workday, Taleo, Greenhouse, Welcome to the Jungle) sans saisie répétitive manuelle.
+
+**Acceptance Criteria:**
+- **Given** une offre orientant vers un portail externe ATS,
+  **When** l'utilisateur active l'assistant de formulaire externe,
+  **Then** un tiroir d'assistance expose des boutons de copie instantanée en un clic pour tous les champs usuels (expériences formatées, motivation, liens GitHub/LinkedIn, coordonnées) ainsi que le téléchargement direct du CV PDF compilé.
+- **Given** la candidature externe déposée par l'étudiant,
+  **When** l'utilisateur confirme la soumission dans ArcApply,
+  **Then** la candidature bascule à l'état `SUBMITTED` avec l'URL externe et la date de soumission consignées dans la base SQLite locale.
+
+### Story 2.4: Cockpit analytique de conversion et intelligence de marché
+
+En tant qu'étudiant ingénieur,
+Je veux visualiser des indicateurs analytiques avancés sur mon entonnoir de conversion et la demande réelle du marché PFE,
+Afin d'orienter stratégiquement mes efforts et mes révisions techniques vers les stacks et entreprises les plus réceptives.
+
+**Acceptance Criteria:**
+- **Given** l'ensemble des candidatures enregistrées dans SQLite,
+  **When** l'onglet Analytics / Insights est ouvert,
+  **Then** des graphiques affichent le taux de passage par étape (Entonnoir : Découverte -> Validé -> Postulé -> Réponse -> Entretien -> Offre), le taux de réponse par plateforme source et le délai moyen de retour recruteur.
+- **Given** les descriptions de postes collectées,
+  **When** l'agrégat des compétences est calculé,
+  **Then** le cockpit affiche un radar des technologies les plus recherchées par rapport aux compétences validées de mon Master Profile pour identifier les écarts prioritaires à combler.
+

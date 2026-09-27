@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 09-26-2026 23:07
-last_updated: 09-27-2026 00:38
+last_updated: 09-27-2026 01:21
 project: arcapply
 project_key: NOKEY
 tracking_system: file-system
@@ -46,5 +46,10 @@ development_status:
   1-7-suivi-kanban-du-cycle-de-vie-des-candidatures-et-métriques-d: done
   1-8-ingestion-automatique-des-emails-recruteurs-et-mise-à-jour-d: done
   epic-1-retrospective: done
+
   epic-2: in-progress
   2-1-connecteurs-multi-sources-scraping-reel: done
+  2-2-système-de-relances-intelligentes-et-alertes-d-inactivité: backlog
+  2-3-assistant-de-pré-remplissage-pour-formulaires-externes: backlog
+  2-4-cockpit-analytique-de-conversion-et-intelligence-de-marché: backlog
+  epic-2-retrospective: optional
