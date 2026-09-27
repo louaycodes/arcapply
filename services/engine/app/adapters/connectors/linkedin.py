@@ -71,6 +71,20 @@ class LinkedInJobConnector(BaseJobConnector):
                         ext_id_match = re.search(r"-([0-9]{8,12})", job_url) or re.search(r"view/([0-9]+)", job_url)
                         ext_id = f"li-{ext_id_match.group(1)}" if ext_id_match else f"li-{abs(hash(title + company)) % 10000000}"
 
+                        time_el = card.find("time")
+                        published_date_raw = ""
+                        if time_el:
+                            published_date_raw = time_el.get("datetime") or time_el.text.strip()
+
+                        # Extraction du snippet ou description sur la carte
+                        snippet_el = card.find("p") or card.find("div", class_=lambda c: c and "snippet" in c)
+                        snippet_text = snippet_el.text.strip() if snippet_el else ""
+
+                        base_desc = snippet_text if snippet_text else (
+                            f"Offre d'ingénierie et de stage chez {company} ({location_str}). "
+                            f"Consultez les détails pour découvrir les missions, la stack technique et postuler."
+                        )
+
                         country = "Tunisie" if "tunisi" in location_str.lower() or "tunis" in location_str.lower() else "France"
 
                         results.append({
@@ -80,10 +94,8 @@ class LinkedInJobConnector(BaseJobConnector):
                             "company": company,
                             "location": location_str,
                             "country": country,
-                            "description_raw": (
-                                f"Offre collectée en direct sur LinkedIn. Titre : {title} chez {company}. "
-                                f"Localisation : {location_str}. Postulez ou consultez l'annonce source pour le détail des compétences."
-                            ),
+                            "description_raw": base_desc,
+                            "published_date_raw": published_date_raw,
                             "url": job_url or f"https://www.linkedin.com/jobs/view/{ext_id}",
                         })
 
@@ -96,7 +108,40 @@ class LinkedInJobConnector(BaseJobConnector):
         return results
 
     async def fetch_job_details(self, job_url: str) -> dict[str, Any]:
+        """Récupère la description complète sans troncature via l'endpoint public invité de LinkedIn."""
         await self.apply_jitter(min_seconds=0.1, max_seconds=0.3)
+        ext_id_match = re.search(r"-([0-9]{8,12})", job_url) or re.search(r"view/([0-9]+)", job_url)
+        if not ext_id_match:
+            return {"url": job_url, "status": "active"}
+
+        job_id = ext_id_match.group(1)
+        detail_url = f"https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/{job_id}"
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+            ),
+            "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
+        }
+        try:
+            async with httpx.AsyncClient(timeout=6.0, follow_redirects=True) as client:
+                resp = await client.get(detail_url, headers=headers)
+                if resp.status_code == 200 and resp.text:
+                    soup = BeautifulSoup(resp.text, "html.parser")
+                    desc_el = (
+                        soup.find("div", class_="show-more-less-html__markup")
+                        or soup.find("section", class_="show-more-less-html")
+                    )
+                    if desc_el:
+                        desc_text = desc_el.get_text(separator="\n").strip()
+                        return {
+                            "url": job_url,
+                            "status": "active",
+                            "description_raw": desc_text,
+                        }
+        except Exception:
+            pass
+
         return {
             "url": job_url,
             "status": "active",

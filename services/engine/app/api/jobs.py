@@ -1,6 +1,7 @@
 from datetime import timedelta, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status as http_status
+from sqlalchemy import func, or_
 from sqlmodel import Session, SQLModel, col, delete, desc, select
 from app.adapters.scheduler import ALL_CONNECTORS, CrawlerScheduler
 from app.adapters.connectors import infer_offer_type
@@ -53,6 +54,8 @@ def list_jobs(
         None,
         description="Surcharge explicite du filtrage par type d'offre (PFE|JOB). Si absent, utilise le search_mode du profil.",
     ),
+    period: Optional[str] = Query(None, description="Filtrage temporel de fraîcheur: today | week | month"),
+    direct_only: bool = Query(False, description="Uniquement sites carrières directs des entreprises"),
     search: Optional[str] = Query(None, description="Recherche textuelle dans le titre ou l'entreprise"),
     include_archived: bool = Query(False, description="Inclure les offres archivées"),
     session: Session = Depends(get_session),
@@ -97,6 +100,30 @@ def list_jobs(
         active_mode = profile.search_mode if profile else "PFE"
         query = query.where(JobOffer.offer_type == active_mode)
     # -------------------------------------------------------
+
+    # --- Filtrage direct carrière & temporel ---
+    if direct_only:
+        query = query.where(JobOffer.is_direct_career_site == True)
+
+    if period:
+        now = utc_now()
+        period_lower = period.lower()
+        threshold = None
+        if period_lower == "today":
+            threshold = now - timedelta(hours=24)
+        elif period_lower == "week":
+            threshold = now - timedelta(days=7)
+        elif period_lower == "month":
+            threshold = now - timedelta(days=30)
+
+        if threshold is not None:
+            query = query.where(
+                or_(
+                    JobOffer.published_at >= threshold,
+                    (JobOffer.published_at == None) & (JobOffer.collected_at >= threshold),
+                )
+            )
+    # -------------------------------------------
 
     if search:
         search_filter = f"%{search.lower()}%"

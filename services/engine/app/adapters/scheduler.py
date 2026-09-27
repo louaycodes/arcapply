@@ -30,6 +30,8 @@ from app.adapters.connectors.unjeuneunesolution import UnJeuneUneSolutionJobConn
 from app.adapters.connectors.wttj import WTTJJobConnector
 from app.adapters.database import get_engine
 from app.api.events import broadcast_event
+from app.adapters.connectors import infer_offer_type
+from app.domain.job_extractor import JobDeepExtractor
 from app.domain.models import JobOffer, utc_now
 from app.ports.connectors import BaseJobConnector
 
@@ -158,16 +160,33 @@ class CrawlerScheduler:
                         total_duplicates += 1
                         continue
 
+                    # Inférence automatique du type d'offre
+                    inferred_type = j.get("offer_type") or infer_offer_type(j.get("title", ""), j.get("description_raw", ""))
+                    j_with_type = dict(j)
+                    j_with_type["offer_type"] = inferred_type
+
+                    # Deep Extraction & Enrichissement sémantique (stack, durée, télétravail, salaire, date)
+                    enriched = JobDeepExtractor.enrich_job_data(j_with_type)
+
                     new_job = JobOffer(
                         platform=plat,
                         external_id=ext_id,
-                        title=j["title"],
-                        company=j["company"],
-                        location=j.get("location", ""),
-                        country=j.get("country", "France"),
-                        description_raw=j.get("description_raw", ""),
-                        url=j.get("url", ""),
+                        title=enriched["title"],
+                        company=enriched["company"],
+                        location=enriched.get("location", ""),
+                        country=enriched.get("country", "France"),
+                        description_raw=enriched.get("description_raw", ""),
+                        url=enriched.get("url", ""),
                         status="DISCOVERED",
+                        offer_type=enriched.get("offer_type", "PFE"),
+                        published_at=enriched.get("published_at"),
+                        skills_required=enriched.get("skills_required", "[]"),
+                        contract_duration=enriched.get("contract_duration", ""),
+                        work_mode=enriched.get("work_mode", ""),
+                        salary_stipend=enriched.get("salary_stipend", ""),
+                        department=enriched.get("department", ""),
+                        is_direct_career_site=enriched.get("is_direct_career_site", False),
+                        apply_url=enriched.get("apply_url", ""),
                     )
                     sess.add(new_job)
                     sess.commit()
@@ -187,6 +206,15 @@ class CrawlerScheduler:
                             "country": new_job.country,
                             "location": new_job.location,
                             "status": new_job.status,
+                            "offer_type": new_job.offer_type,
+                            "skills_required": new_job.skills_required,
+                            "contract_duration": new_job.contract_duration,
+                            "work_mode": new_job.work_mode,
+                            "salary_stipend": new_job.salary_stipend,
+                            "department": new_job.department,
+                            "is_direct_career_site": new_job.is_direct_career_site,
+                            "apply_url": new_job.apply_url,
+                            "published_at": new_job.published_at.isoformat() if new_job.published_at else None,
                             "collected_at": new_job.collected_at.isoformat(),
                         }
                     )

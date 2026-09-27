@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from sqlmodel import Session
 from app.adapters.connectors import infer_offer_type
 from app.domain.models import JobOffer
@@ -358,5 +359,71 @@ def test_profile_update_search_mode_validation():
     assert res_err.status_code == 422
     data = res_err.json()
     assert data["detail"]["error_code"] == "INVALID_SEARCH_MODE"
+
+
+def test_jobs_filter_period_and_direct_career():
+    now = datetime.now(timezone.utc)
+    with Session(engine) as session:
+        # Offre d'aujourd'hui direct career
+        j_today = JobOffer(
+            platform="top100_enterprises",
+            external_id="test-today-direct",
+            title="Stage PFE Cloud AWS Direct",
+            company="Amazon Tech",
+            location="Paris",
+            country="France",
+            description_raw="Stage PFE Cloud",
+            status="DISCOVERED",
+            offer_type="PFE",
+            is_direct_career_site=True,
+            published_at=now - timedelta(hours=2),
+            collected_at=now - timedelta(hours=2),
+        )
+        # Offre vieille de 15 jours
+        j_old = JobOffer(
+            platform="linkedin",
+            external_id="test-old-job",
+            title="Stage PFE Ancien",
+            company="Old Corp",
+            location="Tunis",
+            country="Tunisie",
+            description_raw="Stage PFE",
+            status="DISCOVERED",
+            offer_type="PFE",
+            is_direct_career_site=False,
+            published_at=now - timedelta(days=15),
+            collected_at=now - timedelta(days=15),
+        )
+        session.add(j_today)
+        session.add(j_old)
+        session.commit()
+        session.refresh(j_today)
+        session.refresh(j_old)
+        id_today = j_today.id
+        id_old = j_old.id
+
+    # Test filtre today
+    res_today = client.get("/api/jobs?period=today")
+    assert res_today.status_code == 200
+    ids_today = [j["id"] for j in res_today.json()]
+    assert id_today in ids_today
+    assert id_old not in ids_today
+
+    # Test filtre direct_only
+    res_direct = client.get("/api/jobs?direct_only=true")
+    assert res_direct.status_code == 200
+    ids_direct = [j["id"] for j in res_direct.json()]
+    assert id_today in ids_direct
+    assert id_old not in ids_direct
+
+    # Cleanup
+    with Session(engine) as session:
+        j1 = session.get(JobOffer, id_today)
+        j2 = session.get(JobOffer, id_old)
+        if j1:
+            session.delete(j1)
+        if j2:
+            session.delete(j2)
+        session.commit()
 
 

@@ -40,6 +40,24 @@ def _migrate_db(engine) -> None:
         except Exception:
             pass
 
+        # Migrations additives pour le Deep Scraping & Filtrage Temporel
+        additive_columns = [
+            ("published_at", "TIMESTAMP"),
+            ("skills_required", "TEXT DEFAULT '[]'"),
+            ("contract_duration", "VARCHAR DEFAULT ''"),
+            ("work_mode", "VARCHAR DEFAULT ''"),
+            ("salary_stipend", "VARCHAR DEFAULT ''"),
+            ("department", "VARCHAR DEFAULT ''"),
+            ("is_direct_career_site", "BOOLEAN DEFAULT 0"),
+            ("apply_url", "VARCHAR DEFAULT ''"),
+        ]
+        for col_name, col_type in additive_columns:
+            try:
+                conn.execute(text(f"ALTER TABLE job_offers ADD COLUMN {col_name} {col_type}"))
+                conn.commit()
+            except Exception:
+                pass
+
 
 def init_db() -> None:
     engine = get_engine()

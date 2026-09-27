@@ -238,6 +238,15 @@ class JobOfferBase(SQLModel):
     status: str = Field(default="DISCOVERED", index=True)
     # Type d'offre inféré automatiquement à l'ingestion : "PFE" ou "JOB"
     offer_type: str = Field(default="PFE", index=True)
+    # Deep Extraction & Métadonnées d'enrichissement
+    published_at: Optional[datetime] = Field(default=None, index=True)
+    skills_required: str = Field(default="[]")
+    contract_duration: str = Field(default="")
+    work_mode: str = Field(default="")
+    salary_stipend: str = Field(default="")
+    department: str = Field(default="")
+    is_direct_career_site: bool = Field(default=False, index=True)
+    apply_url: str = Field(default="")
 
 
 class JobOffer(JobOfferBase, table=True):
