@@ -49,6 +49,8 @@ export interface MasterProfile {
   github_url?: string | null;
   website_url?: string | null;
   is_complete: boolean;
+  /** Préférence de recherche : "PFE" (stage) ou "JOB" (emploi CDI/CDD). Défaut : "PFE". */
+  search_mode: "PFE" | "JOB";
   created_at: string;
   updated_at: string;
   educations: Education[];
@@ -135,6 +137,7 @@ export interface JobOffer {
   description_raw: string;
   url: string;
   status: string;
+  offer_type?: "PFE" | "JOB";
   collected_at: string;
   updated_at: string;
 }
@@ -158,12 +161,14 @@ export async function fetchJobs(params?: {
   country?: string;
   platform?: string;
   search?: string;
+  offer_type?: string;
   include_archived?: boolean;
 }): Promise<JobOffer[]> {
   const query = new URLSearchParams();
   if (params?.country && params.country !== "all") query.set("country", params.country);
   if (params?.platform && params.platform !== "all") query.set("platform", params.platform);
   if (params?.search) query.set("search", params.search);
+  if (params?.offer_type) query.set("offer_type", params.offer_type);
   if (params?.include_archived) query.set("include_archived", "true");
 
   const url = `${API_BASE_URL}/api/jobs${query.toString() ? `?${query.toString()}` : ""}`;

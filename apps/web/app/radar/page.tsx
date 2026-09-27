@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import Link from "next/link";
 import {
   fetchJobs,
+  fetchProfile,
   collectJobs,
   crawlAllSources,
   archiveJob,
@@ -33,6 +35,8 @@ import {
   X,
   Globe2,
   Trash2,
+  GraduationCap,
+  Briefcase,
 } from "lucide-react";
 
 const AVAILABLE_PLATFORMS = [
@@ -81,6 +85,7 @@ export default function RadarPage() {
   const [isClearing, setIsClearing] = useState(false);
   const [scrapeMessage, setScrapeMessage] = useState<string | null>(null);
   const [showCollectModal, setShowCollectModal] = useState(false);
+  const [searchMode, setSearchMode] = useState<"PFE" | "JOB">("PFE");
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   // Formulaire de collecte multi-sources
@@ -143,6 +148,16 @@ export default function RadarPage() {
   useEffect(() => {
     loadJobs();
   }, [selectedCountry, selectedPlatform]);
+
+  useEffect(() => {
+    fetchProfile()
+      .then((p) => {
+        if (p?.search_mode) {
+          setSearchMode(p.search_mode);
+        }
+      })
+      .catch((err) => console.error("Erreur chargement mode recherche profil:", err));
+  }, []);
 
   // Écoute SSE en direct
   useEffect(() => {
@@ -307,17 +322,41 @@ export default function RadarPage() {
       {/* Top Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-border/60 pb-6">
         <div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
               <Radar className="w-6 h-6 text-primary" />
-              <span>Radar d'Offres PFE</span>
+              <span>{searchMode === "JOB" ? "Radar d'Offres Emploi" : "Radar d'Offres PFE"}</span>
             </h1>
             <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
               Flux Live SSE
             </span>
+            <Link
+              href="/profile"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border transition-all hover:opacity-85 shadow-sm"
+              style={{
+                backgroundColor: searchMode === "JOB" ? "rgba(59, 130, 246, 0.12)" : "rgba(16, 185, 129, 0.12)",
+                borderColor: searchMode === "JOB" ? "rgba(59, 130, 246, 0.35)" : "rgba(16, 185, 129, 0.35)",
+                color: searchMode === "JOB" ? "#3b82f6" : "#10b981",
+              }}
+              title="Cliquez pour changer votre objectif de recherche dans votre Master Profile"
+            >
+              {searchMode === "JOB" ? (
+                <>
+                  <Briefcase className="w-3.5 h-3.5" />
+                  <span>Mode Emploi (CDI / CDD)</span>
+                </>
+              ) : (
+                <>
+                  <GraduationCap className="w-3.5 h-3.5" />
+                  <span>Mode PFE (Stage fin d'études)</span>
+                </>
+              )}
+            </Link>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            Détection automatique d'opportunités de stage d'excellence (France & Tunisie) sans doublon.
+            {searchMode === "JOB"
+              ? "Détection automatique d'opportunités d'emploi d'excellence (France & Tunisie) sans doublon."
+              : "Détection automatique d'opportunités de stage d'excellence (France & Tunisie) sans doublon."}
           </p>
         </div>
 

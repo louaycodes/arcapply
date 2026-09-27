@@ -102,6 +102,7 @@ export default function ProfilePage() {
     if (!profile) return;
     const demo: MasterProfile = {
       ...profile,
+      search_mode: "PFE",
       full_name: "Yassine Ben Salem",
       email: "yassine.bensalem@insat.u-carthage.tn",
       phone: "+33 6 42 18 90 12",
@@ -471,6 +472,59 @@ export default function ProfilePage() {
           <div className="flex items-center gap-3 border-b border-border/50 pb-3">
             <User className="w-5 h-5 text-primary" />
             <h2 className="text-base font-semibold text-foreground">Identité & Coordonnées</h2>
+          </div>
+
+          {/* Objectif de recherche (PFE vs JOB) */}
+          <div className="p-4 rounded-lg bg-muted/40 border border-border/80 space-y-3">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                Objectif de recherche actif *
+              </label>
+              <p className="text-xs text-muted-foreground">
+                Ce choix filtre automatiquement les offres collectées affichées dans votre Radar.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setProfile({ ...profile, search_mode: "PFE" })}
+                className={`flex items-center gap-3 p-3 rounded-lg border text-left transition-all ${
+                  (profile.search_mode || "PFE") === "PFE"
+                    ? "border-primary bg-primary/10 text-primary shadow-sm ring-1 ring-primary/30"
+                    : "border-border bg-card/60 text-muted-foreground hover:border-border/80 hover:bg-muted/40"
+                }`}
+              >
+                <div className={`p-2 rounded-md ${
+                  (profile.search_mode || "PFE") === "PFE" ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+                }`}>
+                  <GraduationCap className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-foreground">Stage PFE</div>
+                  <div className="text-xs text-muted-foreground">Projet de Fin d'Études (4 à 6 mois)</div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setProfile({ ...profile, search_mode: "JOB" })}
+                className={`flex items-center gap-3 p-3 rounded-lg border text-left transition-all ${
+                  profile.search_mode === "JOB"
+                    ? "border-primary bg-primary/10 text-primary shadow-sm ring-1 ring-primary/30"
+                    : "border-border bg-card/60 text-muted-foreground hover:border-border/80 hover:bg-muted/40"
+                }`}
+              >
+                <div className={`p-2 rounded-md ${
+                  profile.search_mode === "JOB" ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+                }`}>
+                  <Briefcase className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-foreground">Emploi / CDI</div>
+                  <div className="text-xs text-muted-foreground">CDI, CDD ou Premier Emploi ingénieur</div>
+                </div>
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

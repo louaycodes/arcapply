@@ -179,6 +179,18 @@ export function JobCard({
               {isFrance ? "🇫🇷 France" : isTunisia ? "🇹🇳 Tunisie" : job.country}
             </span>
 
+            {job.offer_type && (
+              <span
+                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                  job.offer_type === "JOB"
+                    ? "bg-blue-500/15 text-blue-400 border-blue-500/30"
+                    : "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                }`}
+              >
+                {job.offer_type === "JOB" ? "💼 Emploi" : "🎓 PFE"}
+              </span>
+            )}
+
             {job.status === "REVIEWING" && (
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
                 En révision
