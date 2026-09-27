@@ -127,6 +127,7 @@ class CVGeneratorService:
     """
     Moteur de génération et d'adaptation de CV ciblé (AD-4 Étape 3, AD-7).
     Garantit le zéro hallucination en ne projetant que les données vérifiées du Master Profile.
+    Format 2 pages aéré avec écriture sobre, monochrome, épurée et sans artifice de design.
     Prend en charge la génération bilingue Français / Anglais.
     """
 
@@ -228,10 +229,11 @@ class CVGeneratorService:
             }
             scored_experiences.append((overlap_score, exp_dict))
 
+        # Étalé sur 2 pages : conservation de l'ensemble des stages (jusqu'à 4 stages)
         scored_experiences.sort(key=lambda x: x[0], reverse=True)
-        selected_experiences = [item[1] for item in scored_experiences[:3]]
+        selected_experiences = [item[1] for item in scored_experiences[:4]]
 
-        # 4. Ordonnancement des projets par pertinence
+        # 4. Ordonnancement des projets par pertinence (jusqu'à 4-5 projets sélectionnés)
         scored_projects: list[tuple[float, dict]] = []
         for proj in profile.projects:
             proj_techs_lower = {t.lower().strip() for t in proj.technologies if t.strip()}
@@ -261,7 +263,7 @@ class CVGeneratorService:
             scored_projects.append((overlap_score, proj_dict))
 
         scored_projects.sort(key=lambda x: x[0], reverse=True)
-        selected_projects = [item[1] for item in scored_projects[:3]]
+        selected_projects = [item[1] for item in scored_projects[:5]]
 
         # 5. Formations
         educations_list = []
@@ -329,6 +331,15 @@ class CVGeneratorService:
                         "description": "Modeled complex network graphs and developed reporting pipelines using Python, NetworkX, and PowerBI.",
                         "technologies": ["Python", "NetworkX", "PowerBI"],
                     },
+                    {
+                        "company": "Capgemini Tunisia",
+                        "role": "DevOps Engineering Intern",
+                        "location": "Tunis",
+                        "start_date": "06/2025",
+                        "end_date": "07/2025",
+                        "description": "Automated end-to-end continuous integration and delivery (CI/CD) pipelines using Jenkins.",
+                        "technologies": ["Jenkins", "CI/CD", "Git"],
+                    },
                 ]
             else:
                 selected_experiences = [
@@ -350,6 +361,15 @@ class CVGeneratorService:
                         "description": "Modélisation de graphes de réseaux et création de tableaux de bord analytiques avec Python, NetworkX et PowerBI.",
                         "technologies": ["Python", "NetworkX", "PowerBI"],
                     },
+                    {
+                        "company": "Capgemini Tunisie",
+                        "role": "Stagiaire DevOps",
+                        "location": "Tunis",
+                        "start_date": "06/2025",
+                        "end_date": "07/2025",
+                        "description": "Mise en œuvre et automatisation de pipelines d'intégration et déploiement continus (CI/CD) avec Jenkins.",
+                        "technologies": ["Jenkins", "CI/CD", "Git"],
+                    },
                 ]
 
         if not selected_projects:
@@ -369,6 +389,13 @@ class CVGeneratorService:
                         "description": "Automated Jenkins CI/CD pipeline with SonarQube, Docker, Kubernetes, and Prometheus/Grafana.",
                         "technologies": ["Jenkins", "Kubernetes", "Docker", "Prometheus", "Grafana"],
                     },
+                    {
+                        "title": "Skill Sphere — AI Technical Interview Simulator",
+                        "role": "Fullstack Developer",
+                        "url": "https://www.louaycodes.tn",
+                        "description": "Technical interview simulator with Groq AI API, real-time analytics, and personalized guidance.",
+                        "technologies": ["NextJS", "PostgreSQL", "Grok"],
+                    },
                 ]
             else:
                 selected_projects = [
@@ -385,6 +412,13 @@ class CVGeneratorService:
                         "url": "https://www.louaycodes.tn",
                         "description": "Pipeline Jenkins complet avec SonarQube, conteneurisation Docker, déploiement Kubernetes et monitoring Grafana.",
                         "technologies": ["Jenkins", "Kubernetes", "Docker", "Prometheus", "Grafana"],
+                    },
+                    {
+                        "title": "Skill Sphere — Simulateur d'entretien technique IA",
+                        "role": "Développeur Fullstack",
+                        "url": "https://www.louaycodes.tn",
+                        "description": "Simulateur d'entretien technique avec l'API Grok AI, analytics en temps réel et conseils personnalisés.",
+                        "technologies": ["NextJS", "PostgreSQL", "Grok"],
                     },
                 ]
 
@@ -438,8 +472,7 @@ class CVGeneratorService:
         Cloud & DevOps, Networking, Backend, Frontend, Programming, Tools & Certs.
         Garantit le zéro-hallucination : seules les compétences du candidat sont affichées.
         """
-        # Récolte de toutes les technologies réellement maîtrisées par le profil
-        mastered_skills_dict: dict[str, str] = {}  # {name_lower: original_display_name}
+        mastered_skills_dict: dict[str, str] = {}
         for sk in profile.skills:
             if sk.name.strip():
                 mastered_skills_dict[sk.name.strip().lower()] = sk.name.strip()
@@ -496,21 +529,21 @@ class CVGeneratorService:
         language: str = "fr",
     ) -> str:
         """
-        Génère un HTML/CSS épuré, compact et sémantique calibré pour une page unique A4.
-        Respecte rigoureusement la lisibilité par les parseurs ATS (pas de multi-colonnes confuses).
-        Contient les 8 sections demandées :
+        Génère un HTML/CSS sobre, textuel, aéré et élégant étalé sur 2 pages A4.
+        Respecte la sobriété absolue demandée : écriture simple, typographie soignée, aucun artifice.
+        Contient les 8 sections dans l'ordre :
         1. Nom & Contact avec Portfolio direct sur www.louaycodes.tn
-        2. Overview de profil
+        2. Overview de profil (texte simple, aucun bandeau ni bordure latérale)
         3. Éducation
         4. Expériences professionnelles (stages)
         5. Projets sélectionnés
-        6. Compétences Techniques (organisées par catégories)
+        6. Compétences Techniques (par catégories)
         7. Activités extra-professionnelles (Enactus EMC & Lycée Pilote Bizerte Youth Club)
         8. Langues
         """
         is_en = language == "en"
 
-        # 1. Barre de contact avec portfolio en ligne
+        # 1. Barre de contact sobre avec portfolio
         portfolio_url = profile.website_url or "https://www.louaycodes.tn"
         if not portfolio_url.startswith("http"):
             portfolio_url = f"https://{portfolio_url}"
@@ -536,7 +569,7 @@ class CVGeneratorService:
 
         contact_bar = " &bull; ".join(contact_items)
 
-        # 2. Section Titres multilingues
+        # 2. Titres multilingues
         title_summary = "PROFILE SUMMARY" if is_en else "PROFIL PROFESSIONNEL"
         title_education = "EDUCATION" if is_en else "FORMATION"
         title_experiences = "PROFESSIONAL EXPERIENCE (INTERNSHIPS)" if is_en else "EXPÉRIENCES PROFESSIONNELLES (STAGES)"
@@ -545,7 +578,15 @@ class CVGeneratorService:
         title_extracurricular = "EXTRACURRICULAR ACTIVITIES" if is_en else "ACTIVITÉS EXTRA-PROFESSIONNELLES"
         title_languages = "LANGUAGES" if is_en else "LANGUES"
 
-        # 3. Formations
+        # 3. Overview : texte épuré sans fond ni bordure gauche
+        summary_html = f"""
+        <section class="section">
+            <h2 class="section-title">{title_summary}</h2>
+            <p class="summary-text">{html.escape(summary)}</p>
+        </section>
+        """ if summary else ""
+
+        # 4. Formations
         edu_items = []
         for edu in educations:
             edu_items.append(f"""
@@ -565,7 +606,7 @@ class CVGeneratorService:
         </section>
         """ if edu_items else ""
 
-        # 4. Expériences professionnelles (Stages)
+        # 5. Expériences professionnelles (Stages)
         exp_items = []
         for exp in experiences:
             tech_line = ""
@@ -591,7 +632,7 @@ class CVGeneratorService:
         </section>
         """ if exp_items else ""
 
-        # 5. Projets sélectionnés
+        # 6. Projets sélectionnés
         proj_items = []
         for proj in projects:
             tech_line = ""
@@ -616,16 +657,10 @@ class CVGeneratorService:
         </section>
         """ if proj_items else ""
 
-        # 6. Compétences Techniques (Organisées par catégories avec mise en valeur des compétences ciblées)
+        # 7. Compétences Techniques (Écriture simple sans badge ni artifice)
         skills_rows = []
         for cat in categorized_skills:
-            rendered_skills = []
-            for s in cat["skills"]:
-                if s["matched"]:
-                    rendered_skills.append(f'<strong class="skill-highlight">{html.escape(s["name"])}</strong>')
-                else:
-                    rendered_skills.append(html.escape(s["name"]))
-
+            rendered_skills = [html.escape(s["name"]) for s in cat["skills"]]
             skills_rows.append(f"""
             <div class="skill-row">
                 <span class="skill-cat">{html.escape(cat["title"])} :</span>
@@ -642,7 +677,7 @@ class CVGeneratorService:
         </section>
         """ if skills_rows else ""
 
-        # 7. Activités extra-professionnelles (Enactus EMC + Lycée Pilote Bizerte Youth Club)
+        # 8. Activités extra-professionnelles (Enactus EMC + Lycée Pilote Bizerte Youth Club)
         if is_en:
             extracurricular_items = """
             <div class="item">
@@ -689,7 +724,7 @@ class CVGeneratorService:
         </section>
         """
 
-        # 8. Langues
+        # 9. Langues
         if is_en:
             lang_content = "<strong>Arabic:</strong> Native &bull; <strong>French:</strong> Fluent &bull; <strong>English:</strong> Technical"
         else:
@@ -710,7 +745,7 @@ class CVGeneratorService:
     <style>
         @page {{
             size: A4 portrait;
-            margin: 6mm 10mm 6mm 10mm;
+            margin: 10mm 14mm 10mm 14mm;
         }}
         * {{
             box-sizing: border-box;
@@ -718,11 +753,11 @@ class CVGeneratorService:
             padding: 0;
         }}
         body {{
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            color: #1e293b;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: #111827;
             background-color: #ffffff;
-            font-size: 8.4pt;
-            line-height: 1.25;
+            font-size: 9pt;
+            line-height: 1.35;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }}
@@ -731,64 +766,58 @@ class CVGeneratorService:
         }}
         header {{
             text-align: center;
-            border-bottom: 1.5px solid #0f172a;
-            padding-bottom: 4px;
-            margin-bottom: 5px;
+            border-bottom: 1.2px solid #111827;
+            padding-bottom: 6px;
+            margin-bottom: 10px;
         }}
         h1 {{
-            font-size: 15pt;
-            font-weight: 800;
-            color: #0f172a;
+            font-size: 16pt;
+            font-weight: 700;
+            color: #111827;
             letter-spacing: -0.01em;
             text-transform: uppercase;
-            margin-bottom: 1px;
+            margin-bottom: 2px;
         }}
         .headline {{
-            font-size: 9.2pt;
+            font-size: 10pt;
             font-weight: 600;
-            color: #1d4ed8;
-            margin-bottom: 3px;
+            color: #374151;
+            margin-bottom: 4px;
         }}
         .contact-bar {{
-            font-size: 7.8pt;
-            color: #475569;
+            font-size: 8.5pt;
+            color: #374151;
+            line-height: 1.35;
         }}
         .contact-bar a {{
-            color: #0284c7;
-            text-decoration: none;
-            font-weight: 500;
-        }}
-        .contact-bar a.portfolio-link {{
-            color: #0284c7;
-            font-weight: 700;
+            color: #111827;
             text-decoration: underline;
         }}
-        .summary {{
-            font-size: 8pt;
-            color: #334155;
-            background: #f8fafc;
-            border-left: 2.5px solid #2563eb;
-            padding: 3px 6px;
-            margin-bottom: 5px;
-            line-height: 1.24;
-            text-align: justify;
-        }}
         .section {{
-            margin-bottom: 4.5px;
+            margin-bottom: 10px;
+            page-break-inside: avoid;
             break-inside: avoid;
         }}
         .section-title {{
-            font-size: 8.8pt;
-            font-weight: 800;
-            color: #0f172a;
+            font-size: 9.8pt;
+            font-weight: 700;
+            color: #111827;
             text-transform: uppercase;
             letter-spacing: 0.04em;
-            border-bottom: 1px solid #cbd5e1;
-            padding-bottom: 1.5px;
-            margin-bottom: 3px;
+            border-bottom: 1px solid #111827;
+            padding-bottom: 2px;
+            margin-bottom: 6px;
+        }}
+        .summary-text {{
+            font-size: 9pt;
+            color: #1f2937;
+            line-height: 1.38;
+            text-align: justify;
         }}
         .item {{
-            margin-bottom: 3px;
+            margin-bottom: 6px;
+            page-break-inside: avoid;
+            break-inside: avoid;
         }}
         .item:last-child {{
             margin-bottom: 0;
@@ -796,65 +825,61 @@ class CVGeneratorService:
         .item-header {{
             display: flex;
             align-items: baseline;
-            font-size: 8.4pt;
-            gap: 3px;
+            font-size: 9pt;
+            gap: 4px;
         }}
         .item-role {{
             font-weight: 700;
-            color: #0f172a;
+            color: #111827;
         }}
         .item-company {{
             font-weight: 600;
-            color: #334155;
+            color: #1f2937;
         }}
         .item-date {{
             margin-left: auto;
-            font-size: 7.5pt;
-            color: #64748b;
+            font-size: 8pt;
+            color: #4b5563;
             font-family: monospace;
             font-weight: 600;
         }}
         .item-desc {{
-            font-size: 7.8pt;
-            color: #334155;
-            line-height: 1.22;
-            margin-top: 1px;
+            font-size: 8.5pt;
+            color: #1f2937;
+            line-height: 1.35;
+            margin-top: 1.5px;
             text-align: justify;
         }}
         .item-tech {{
-            font-size: 7.5pt;
-            color: #475569;
-            margin-top: 1px;
+            font-size: 8.2pt;
+            color: #374151;
+            margin-top: 1.5px;
         }}
         .skills-grid {{
             display: flex;
             flex-direction: column;
-            gap: 1.5px;
-            font-size: 7.8pt;
+            gap: 3px;
+            font-size: 8.5pt;
+            line-height: 1.35;
         }}
         .skill-row {{
             display: flex;
             align-items: baseline;
-            line-height: 1.25;
         }}
         .skill-cat {{
-            width: 145px;
-            min-width: 145px;
+            width: 170px;
+            min-width: 170px;
             font-weight: 700;
-            color: #0f172a;
+            color: #111827;
         }}
         .skill-list {{
             flex: 1;
-            color: #334155;
-        }}
-        .skill-highlight {{
-            font-weight: 700;
-            color: #1d4ed8;
+            color: #1f2937;
         }}
         .languages-content {{
-            font-size: 8pt;
-            color: #1e293b;
-            padding: 1px 0;
+            font-size: 8.5pt;
+            color: #111827;
+            line-height: 1.35;
         }}
     </style>
 </head>
@@ -866,8 +891,7 @@ class CVGeneratorService:
             <div class="contact-bar">{contact_bar}</div>
         </header>
 
-        <div class="summary">{html.escape(summary)}</div>
-
+        {summary_html}
         {edu_html}
         {exp_html}
         {proj_html}
