@@ -745,7 +745,7 @@ class CVGeneratorService:
     <style>
         @page {{
             size: A4 portrait;
-            margin: 10mm 14mm 10mm 14mm;
+            margin: 8mm 12mm 8mm 12mm;
         }}
         * {{
             box-sizing: border-box;
@@ -768,7 +768,7 @@ class CVGeneratorService:
             text-align: center;
             border-bottom: 1.2px solid #111827;
             padding-bottom: 6px;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }}
         h1 {{
             font-size: 16pt;
@@ -794,9 +794,7 @@ class CVGeneratorService:
             text-decoration: underline;
         }}
         .section {{
-            margin-bottom: 10px;
-            page-break-inside: avoid;
-            break-inside: avoid;
+            margin-bottom: 8px;
         }}
         .section-title {{
             font-size: 9.8pt;
@@ -807,6 +805,8 @@ class CVGeneratorService:
             border-bottom: 1px solid #111827;
             padding-bottom: 2px;
             margin-bottom: 6px;
+            page-break-after: avoid;
+            break-after: avoid;
         }}
         .summary-text {{
             font-size: 9pt;
@@ -865,6 +865,8 @@ class CVGeneratorService:
         .skill-row {{
             display: flex;
             align-items: baseline;
+            page-break-inside: avoid;
+            break-inside: avoid;
         }}
         .skill-cat {{
             width: 170px;

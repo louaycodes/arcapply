@@ -244,3 +244,70 @@ def test_cv_contains_all_8_sections_and_portfolio_link():
     assert "Fluent" in html_en
     assert "Technical" in html_en
 
+
+@pytest.mark.asyncio
+async def test_cv_pdf_two_pages_flow_balance():
+    import io
+    import pypdf
+
+    with Session(engine) as session:
+        job = JobOffer(
+            id="job-cv-balance",
+            platform="linkedin",
+            external_id="ext-cv-bal",
+            title="Ingénieur DevOps / Cloud",
+            company="Accenture",
+            description_raw="Kubernetes, Docker, AWS, CI/CD, Python requis.",
+            status="DISCOVERED",
+        )
+        session.add(job)
+
+        profile = session.get(MasterProfile, "default-profile")
+        if profile:
+            profile.full_name = "Louay Zorai"
+            profile.is_complete = True
+            profile.website_url = "https://www.louaycodes.tn"
+            profile.headline = "Élève-Ingénieur Architectures Cloud / DevOps"
+            profile.bio = "Élève-ingénieur en informatique spécialisé en architectures Cloud & DevOps à l'ESPRIT. Solides compétences pratiques en Kubernetes, Docker, AWS et conception de systèmes distribués fiables."
+            profile.educations = [
+                Education(profile_id=profile.id, school="ESPRIT", degree="Diplôme National d'Ingénieur", field_of_study="Architectures Cloud", start_date="2022", end_date="2027")
+            ]
+            skills_names = ["OpenStack", "Kubernetes", "Docker", "Ansible", "Prometheus", "Grafana", "Zabbix", "AWS", "TCP/IP", "VMware", "Cisco", "Spring Boot", "FastAPI", "Node.js", "Angular", "Next.js", "Python", "Java", "C++", "Git", "Linux"]
+            profile.skills = [Skill(profile_id=profile.id, name=s) for s in skills_names]
+            profile.experiences = [
+                Experience(profile_id=profile.id, company="Capgemini Tunisie", role="Stagiaire FinOps", description="Plateforme FinOps autonome multi-agents pour la détection d'anomalies de coûts AWS, prévisions et recommandations via Flask et Angular.", technologies_raw="AWS,Python,Angular,Docker,LangGraph", start_date="06/2026", end_date="08/2026"),
+                Experience(profile_id=profile.id, company="EY Tunisie", role="Stagiaire AI & DATA", description="Modélisation de graphes de réseaux et création de tableaux de bord analytiques avec Python, NetworkX et PowerBI.", technologies_raw="Python,NetworkX,PowerBI", start_date="08/2026", end_date="09/2026"),
+                Experience(profile_id=profile.id, company="Capgemini Tunisie", role="Stagiaire DevOps", description="Mise en œuvre et automatisation de pipelines d'intégration et déploiement continus (CI/CD) avec Jenkins.", technologies_raw="Jenkins,CI/CD,Git", start_date="06/2025", end_date="07/2025"),
+                Experience(profile_id=profile.id, company="Natilait", role="Stagiaire", description="Immersion pratique dans les systèmes d'information industriels et administration réseau.", technologies_raw="Linux,Réseaux", start_date="06/2024", end_date="07/2024"),
+            ]
+            profile.projects = [
+                Project(profile_id=profile.id, title="FinOps Agent", role="Lead Développeur", description="Plateforme multi-agents orchestrée par LangGraph pour la découverte, prévision et réduction des coûts AWS.", technologies_raw="AWS,Python,LangGraph,ChromaDB,Angular"),
+                Project(profile_id=profile.id, title="Pipeline CI/CD auto-hébergé", role="Ingénieur DevOps", description="J'ai construit un pipeline CI/CD complet pour une application Spring Boot et Angular, s'exécutant de bout en bout sur un serveur Linux auto-géré. Chaque push sur GitHub déclenche automatiquement Jenkins via un webhook, qui exécute la compilation, teste le code, l'analyse avec SonarQube et OWASP Dependency-Check, construit une image Docker, la pousse sur Docker Hub, et la déploie sur un cluster Kubernetes. Prometheus et Grafana surveillent la santé du cluster, et Jenkins envoie un résumé de build au format HTML par email après chaque exécution.", technologies_raw="Jenkins,Kubernetes,Docker,Prometheus,Grafana"),
+                Project(profile_id=profile.id, title="Insightify", role="Lead Développeur", description="Application de bureau de gestion de podcasts avec reconnaissance faciale et vocale, messagerie interne et C++.", technologies_raw="C++,Qt,Python"),
+                Project(profile_id=profile.id, title="Skill Sphere", role="Développeur Fullstack", description="Simulateur d'entretien technique avec l'API Grok AI, analytics en temps réel et conseils personnalisés.", technologies_raw="NextJS,PostgreSQL,Grok"),
+                Project(profile_id=profile.id, title="Fast Agil", role="Ingénieur Mobile", description="Application mobile de gestion de file d'attente et réservation intelligente avec FlutterFlow et Firebase.", technologies_raw="FlutterFlow,Firebase"),
+            ]
+            session.add(profile)
+        session.commit()
+
+    res = client.post("/api/cv/generate/job-cv-balance?lang=fr")
+    assert res.status_code == 200
+    html = res.json()["html_content"]
+
+    # 1. Vérification des règles CSS de saut de page
+    assert "page-break-after: avoid;" in html
+    assert "break-after: avoid;" in html
+    assert ".section {\n            margin-bottom: 8px;\n        }" in html or "page-break-inside: avoid" not in html.split(".section {")[1].split("}")[0]
+
+    # 2. Compilation PDF vectoriel 2 pages
+    pdf_bytes = await PDFCompilerService.compile_html_to_pdf(html)
+    reader = pypdf.PdfReader(io.BytesIO(pdf_bytes))
+    assert len(reader.pages) == 2, f"Le CV doit faire exactement 2 pages, reçu {len(reader.pages)}"
+
+    # 3. La page 1 doit être remplie (>40 lignes de texte)
+    p1_lines = [l.strip() for l in reader.pages[0].extract_text().splitlines() if l.strip()]
+    p2_lines = [l.strip() for l in reader.pages[1].extract_text().splitlines() if l.strip()]
+    assert len(p1_lines) >= 40, f"La page 1 doit être remplie jusqu'en bas, seulement {len(p1_lines)} lignes trouvées"
+    assert len(p2_lines) >= 5, f"La page 2 doit contenir le reste des sections, {len(p2_lines)} lignes trouvées"
+
+

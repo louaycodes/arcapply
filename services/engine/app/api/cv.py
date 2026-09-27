@@ -54,9 +54,29 @@ def _get_or_create_cv(session: Session, job_id: str, lang: str = "fr") -> tuple[
     )
     cv = session.exec(statement).first()
 
+    # Si le CV n'existe pas ou contient l'ancien gabarit CSS rigide, on le régénère
+    is_outdated = cv and (
+        "page-break-inside: avoid" in cv.html_content
+        or "margin: 10mm 14mm" in cv.html_content
+    )
+
     if not cv:
         ats_match = ATSMatchingEngine.evaluate_alignment(job, profile)
         cv = CVGeneratorService.generate_cv(job, profile, ats_match, language=normalized_lang)
+        session.add(cv)
+        session.commit()
+        session.refresh(cv)
+    elif is_outdated:
+        ats_match = ATSMatchingEngine.evaluate_alignment(job, profile)
+        fresh_cv = CVGeneratorService.generate_cv(job, profile, ats_match, language=normalized_lang)
+        cv.headline = fresh_cv.headline
+        cv.summary = fresh_cv.summary
+        cv.html_content = fresh_cv.html_content
+        cv.matched_skills_raw = fresh_cv.matched_skills_raw
+        cv.transferable_skills_raw = fresh_cv.transferable_skills_raw
+        cv.experiences_raw = fresh_cv.experiences_raw
+        cv.projects_raw = fresh_cv.projects_raw
+        cv.educations_raw = fresh_cv.educations_raw
         session.add(cv)
         session.commit()
         session.refresh(cv)

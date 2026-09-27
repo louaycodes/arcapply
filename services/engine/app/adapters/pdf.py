@@ -25,7 +25,7 @@ class PDFCompilerService:
                     format="A4",
                     print_background=True,
                     prefer_css_page_size=True,
-                    margin={"top": "8mm", "bottom": "8mm", "left": "10mm", "right": "10mm"},
+                    margin={"top": "8mm", "bottom": "8mm", "left": "12mm", "right": "12mm"},
                 )
                 return pdf_bytes
             except Exception as e:
