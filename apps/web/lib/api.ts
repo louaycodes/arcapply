@@ -138,6 +138,14 @@ export interface JobOffer {
   url: string;
   status: string;
   offer_type?: "PFE" | "JOB";
+  published_at?: string | null;
+  skills_required?: string;
+  contract_duration?: string;
+  work_mode?: string;
+  salary_stipend?: string;
+  department?: string;
+  is_direct_career_site?: boolean;
+  apply_url?: string;
   collected_at: string;
   updated_at: string;
 }
@@ -162,6 +170,8 @@ export async function fetchJobs(params?: {
   platform?: string;
   search?: string;
   offer_type?: string;
+  period?: "all" | "today" | "week" | "month";
+  direct_only?: boolean;
   include_archived?: boolean;
 }): Promise<JobOffer[]> {
   const query = new URLSearchParams();
@@ -169,6 +179,8 @@ export async function fetchJobs(params?: {
   if (params?.platform && params.platform !== "all") query.set("platform", params.platform);
   if (params?.search) query.set("search", params.search);
   if (params?.offer_type) query.set("offer_type", params.offer_type);
+  if (params?.period && params.period !== "all") query.set("period", params.period);
+  if (params?.direct_only) query.set("direct_only", "true");
   if (params?.include_archived) query.set("include_archived", "true");
 
   const url = `${API_BASE_URL}/api/jobs${query.toString() ? `?${query.toString()}` : ""}`;

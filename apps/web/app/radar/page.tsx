@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   fetchJobs,
   fetchProfile,
-  collectJobs,
   crawlAllSources,
   archiveJob,
   clearAllJobs,
@@ -13,7 +12,6 @@ import {
   fetchBatchATSScores,
   fetchJobATSScore,
   JobOffer,
-  JobCollectSummary,
   ATSMatchResult,
 } from "@/lib/api";
 import { JobCard } from "@/components/radar/job-card";
@@ -26,20 +24,26 @@ import {
   Search,
   Filter,
   RefreshCw,
-  Plus,
   Play,
   Layers,
   MapPin,
   CheckCircle2,
   AlertCircle,
   X,
-  Globe2,
   Trash2,
   GraduationCap,
   Briefcase,
+  Flame,
+  Calendar,
+  Clock,
+  Building2,
+  LayoutGrid,
+  ListFilter,
+  Laptop,
 } from "lucide-react";
 
 const AVAILABLE_PLATFORMS = [
+  { id: "top100_enterprises", label: "🏢 Top 100 Firmes IT (Portails Carrières Dédiés)", country: "Global" },
   { id: "linkedin", label: "LinkedIn", country: "Global" },
   { id: "stackoverflow_jobs", label: "StackOverflow Jobs", country: "Global" },
   { id: "keejob", label: "Keejob", country: "Tunisie" },
@@ -77,9 +81,15 @@ export default function RadarPage() {
   const [selectedJobForMirror, setSelectedJobForMirror] = useState<JobOffer | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [newJobIds, setNewJobIds] = useState<Set<string>>(new Set());
+
+  // Filtres
   const [selectedCountry, setSelectedCountry] = useState<string>("all");
   const [selectedPlatform, setSelectedPlatform] = useState<string>("all");
+  const [selectedPeriod, setSelectedPeriod] = useState<"all" | "today" | "week" | "month">("all");
+  const [directOnly, setDirectOnly] = useState<boolean>(false);
+  const [workModeFilter, setWorkModeFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [viewMode, setViewMode] = useState<"timeline" | "grid">("timeline");
 
   const [isCollecting, setIsCollecting] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
@@ -91,32 +101,13 @@ export default function RadarPage() {
   // Formulaire de collecte multi-sources
   const [keywordsInput, setKeywordsInput] = useState<string>("PFE, Ingénieur, Développeur, Cloud, IA");
   const [selectedPlatformsToCrawl, setSelectedPlatformsToCrawl] = useState<string[]>([
+    "top100_enterprises",
     "linkedin",
-    "stackoverflow_jobs",
     "keejob",
-    "tunisietravail",
-    "tanitjobs",
-    "emploitunisie",
-    "stagetunisie",
-    "optioncarriere",
-    "aneti",
-    "offre_emploi_tn",
     "wttj",
-    "1jeune1solution",
     "jobteaser",
     "hellowork",
     "indeed",
-    "apec",
-    "moovijob",
-    "monster",
-    "stagiaires_fr",
-    "cadremploi",
-    "meteojob",
-    "letudiant",
-    "chooseyourboss",
-    "esn_direct",
-    "numeum",
-    "capdigital",
   ]);
 
   const loadJobs = async () => {
@@ -125,11 +116,12 @@ export default function RadarPage() {
       const data = await fetchJobs({
         country: selectedCountry,
         platform: selectedPlatform,
+        period: selectedPeriod,
+        direct_only: directOnly,
         search: searchQuery,
       });
       setJobs(data);
 
-      // Calcul des scores ATS en tâche de fond non bloquante
       setIsAtsLoading(true);
       fetchBatchATSScores()
         .then((scores) => setAtsScores(scores))
@@ -147,7 +139,7 @@ export default function RadarPage() {
 
   useEffect(() => {
     loadJobs();
-  }, [selectedCountry, selectedPlatform]);
+  }, [selectedCountry, selectedPlatform, selectedPeriod, directOnly]);
 
   useEffect(() => {
     fetchProfile()
@@ -224,7 +216,6 @@ export default function RadarPage() {
 
   const handleArchive = async (id: string) => {
     try {
-      // Optimistic UI update
       setJobs((prev) => prev.filter((j) => j.id !== id));
       await archiveJob(id);
       setNotification({
@@ -244,7 +235,7 @@ export default function RadarPage() {
     try {
       setIsCollecting(true);
       setShowCollectModal(false);
-      setScrapeMessage("Lancement du crawler multi-sources (France & Tunisie)...");
+      setScrapeMessage("Lancement de l'exploration multi-sources & plateformes Top 100 IT...");
 
       const keywords = keywordsInput
         .split(",")
@@ -275,7 +266,7 @@ export default function RadarPage() {
 
   const handleClearAllJobs = async () => {
     const confirmed = window.confirm(
-      "Êtes-vous sûr de vouloir vider toutes les offres de stage de la base de données locale ? Cette action supprimera également les CVs et lettres générés associés."
+      "Êtes-vous sûr de vouloir vider toutes les offres de la base de données locale ? Les CVs et lettres générés associés seront également réinitialisés."
     );
     if (!confirmed) return;
 
@@ -299,46 +290,115 @@ export default function RadarPage() {
     }
   };
 
-  const filteredJobs = jobs.filter((job) => {
-    if (selectedCountry !== "all" && job.country.toLowerCase() !== selectedCountry.toLowerCase()) {
-      return false;
+  // Filtrage local en mémoire (pour recherche instantanée et mode de travail)
+  const filteredJobs = useMemo(() => {
+    return jobs.filter((job) => {
+      if (selectedCountry !== "all" && job.country.toLowerCase() !== selectedCountry.toLowerCase()) {
+        return false;
+      }
+      if (selectedPlatform !== "all" && job.platform.toLowerCase() !== selectedPlatform.toLowerCase()) {
+        return false;
+      }
+      if (directOnly && !job.is_direct_career_site) {
+        return false;
+      }
+      if (workModeFilter !== "all") {
+        const mode = (job.work_mode || "").toLowerCase();
+        if (workModeFilter === "remote" && !mode.includes("télétravail total") && !mode.includes("remote")) {
+          return false;
+        }
+        if (workModeFilter === "hybrid" && !mode.includes("hybride")) {
+          return false;
+        }
+        if (workModeFilter === "onsite" && !mode.includes("site") && !mode.includes("présentiel")) {
+          return false;
+        }
+      }
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const inTitle = job.title.toLowerCase().includes(q);
+        const inCompany = job.company.toLowerCase().includes(q);
+        const inLocation = job.location.toLowerCase().includes(q);
+        const inSkills = (job.skills_required || "").toLowerCase().includes(q);
+        const inDept = (job.department || "").toLowerCase().includes(q);
+        return inTitle || inCompany || inLocation || inSkills || inDept;
+      }
+      return true;
+    });
+  }, [jobs, selectedCountry, selectedPlatform, directOnly, workModeFilter, searchQuery]);
+
+  // Répartition temporelle pour calcul des métriques et affichage chronologique
+  const { todayJobs, weekJobs, olderJobs, countToday, countWeek, countMonth, countDirect } = useMemo(() => {
+    const now = new Date().getTime();
+    const isWithinHours = (dateStr: string | null | undefined, hours: number) => {
+      if (!dateStr) return false;
+      const t = new Date(dateStr).getTime();
+      return now - t <= hours * 60 * 60 * 1000;
+    };
+
+    const today: JobOffer[] = [];
+    const week: JobOffer[] = [];
+    const older: JobOffer[] = [];
+
+    let cToday = 0;
+    let cWeek = 0;
+    let cMonth = 0;
+    let cDirect = 0;
+
+    for (const j of jobs) {
+      const d = j.published_at || j.collected_at;
+      if (isWithinHours(d, 24)) cToday++;
+      if (isWithinHours(d, 24 * 7)) cWeek++;
+      if (isWithinHours(d, 24 * 30)) cMonth++;
+      if (j.is_direct_career_site) cDirect++;
     }
-    if (selectedPlatform !== "all" && job.platform.toLowerCase() !== selectedPlatform.toLowerCase()) {
-      return false;
+
+    for (const j of filteredJobs) {
+      const d = j.published_at || j.collected_at;
+      if (isWithinHours(d, 24)) {
+        today.push(j);
+      } else if (isWithinHours(d, 24 * 7)) {
+        week.push(j);
+      } else {
+        older.push(j);
+      }
     }
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      return (
-        job.title.toLowerCase().includes(q) ||
-        job.company.toLowerCase().includes(q) ||
-        job.location.toLowerCase().includes(q)
-      );
-    }
-    return true;
-  });
+
+    return {
+      todayJobs: today,
+      weekJobs: week,
+      olderJobs: older,
+      countToday: cToday,
+      countWeek: cWeek,
+      countMonth: cMonth,
+      countDirect: cDirect,
+    };
+  }, [jobs, filteredJobs]);
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-6">
-      {/* Top Header */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-border/60 pb-6">
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+      {/* Cockpit Top Header */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-border/60 pb-5">
         <div>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
             <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
               <Radar className="w-6 h-6 text-primary" />
-              <span>{searchMode === "JOB" ? "Radar d'Offres Emploi" : "Radar d'Offres PFE"}</span>
+              <span>{searchMode === "JOB" ? "Radar Opportunités Emploi" : "Radar Opportunités PFE"}</span>
             </h1>
-            <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-              Flux Live SSE
+            <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+              <span>Live Radar</span>
             </span>
+
             <Link
               href="/profile"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border transition-all hover:opacity-85 shadow-sm"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border transition-all hover:opacity-85 shadow-xs"
               style={{
                 backgroundColor: searchMode === "JOB" ? "rgba(59, 130, 246, 0.12)" : "rgba(16, 185, 129, 0.12)",
                 borderColor: searchMode === "JOB" ? "rgba(59, 130, 246, 0.35)" : "rgba(16, 185, 129, 0.35)",
                 color: searchMode === "JOB" ? "#3b82f6" : "#10b981",
               }}
-              title="Cliquez pour changer votre objectif de recherche dans votre Master Profile"
+              title="Changer d'objectif dans votre Master Profile"
             >
               {searchMode === "JOB" ? (
                 <>
@@ -348,36 +408,34 @@ export default function RadarPage() {
               ) : (
                 <>
                   <GraduationCap className="w-3.5 h-3.5" />
-                  <span>Mode PFE (Stage fin d'études)</span>
+                  <span>Mode PFE (Stage Fin d'Études)</span>
                 </>
               )}
             </Link>
           </div>
-          <p className="text-sm text-muted-foreground mt-1">
-            {searchMode === "JOB"
-              ? "Détection automatique d'opportunités d'emploi d'excellence (France & Tunisie) sans doublon."
-              : "Détection automatique d'opportunités de stage d'excellence (France & Tunisie) sans doublon."}
+          <p className="text-xs md:text-sm text-muted-foreground mt-1">
+            Détection en temps réel sur les portails dédiés des 100 meilleures firmes IT mondiales (France & Tunisie) et plateformes vérifiées.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={handleClearAllJobs}
             disabled={isLoading || isClearing || jobs.length === 0}
-            className="px-3 py-2 rounded-md border border-destructive/30 bg-card hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors flex items-center gap-1.5 text-xs font-semibold disabled:opacity-40"
+            className="px-3 py-2 rounded-lg border border-destructive/20 bg-card hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors flex items-center gap-1.5 text-xs font-medium disabled:opacity-40 cursor-pointer"
             title="Vider la base de données des offres"
           >
             <Trash2 className={`w-3.5 h-3.5 text-destructive ${isClearing ? "animate-spin" : ""}`} />
-            <span className="text-destructive">{isClearing ? "Suppression..." : "Vider les offres"}</span>
+            <span className="text-destructive hidden sm:inline">{isClearing ? "Suppression..." : "Vider"}</span>
           </button>
 
           <button
             type="button"
             onClick={loadJobs}
             disabled={isLoading}
-            className="p-2 rounded-md border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-            title="Rafraîchir manuellement"
+            className="p-2 rounded-lg border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            title="Rafraîchir les offres"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
           </button>
@@ -386,18 +444,18 @@ export default function RadarPage() {
             type="button"
             onClick={() => setShowCollectModal(true)}
             disabled={isCollecting}
-            className="px-4 py-2 rounded-md bg-primary hover:bg-primary-hover text-white text-sm font-semibold flex items-center gap-2 shadow-lg shadow-primary/20 transition-all disabled:opacity-50"
+            className="px-4 py-2 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-xs md:text-sm font-semibold flex items-center gap-2 shadow-sm transition-all disabled:opacity-50 cursor-pointer"
           >
             <Play className={`w-3.5 h-3.5 fill-current ${isCollecting ? "animate-spin" : ""}`} />
-            <span>{isCollecting ? "Collecte en cours..." : "Lancer le scan Radar"}</span>
+            <span>{isCollecting ? "Collecte..." : "Explorer le Radar"}</span>
           </button>
         </div>
       </div>
 
       {/* Scrape Progress Banner (SSE) */}
       {scrapeMessage && (
-        <div className="p-3.5 rounded-lg border border-primary/40 bg-primary/10 text-primary text-xs font-mono flex items-center gap-2.5 animate-pulse">
-          <RefreshCw className="w-3.5 h-3.5 animate-spin flex-shrink-0" />
+        <div className="p-3 rounded-lg border border-primary/40 bg-primary/10 text-primary text-xs font-mono flex items-center gap-2.5 animate-pulse">
+          <RefreshCw className="w-3.5 h-3.5 animate-spin shrink-0" />
           <span>{scrapeMessage}</span>
         </div>
       )}
@@ -405,98 +463,211 @@ export default function RadarPage() {
       {/* Notification Toast */}
       {notification && (
         <div
-          className={`p-3.5 rounded-lg border text-xs flex items-center gap-2.5 transition-all ${
+          className={`p-3 rounded-lg border text-xs flex items-center gap-2.5 transition-all ${
             notification.type === "success"
               ? "bg-success/10 border-success/30 text-success"
               : "bg-destructive/10 border-destructive/30 text-destructive"
           }`}
         >
           {notification.type === "success" ? (
-            <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
           ) : (
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <AlertCircle className="w-4 h-4 shrink-0" />
           )}
           <span>{notification.message}</span>
         </div>
       )}
 
-      {/* Filter Toolbar */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 p-4 rounded-xl border border-border bg-card">
-        {/* Pills Country */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-muted-foreground mr-1 flex items-center gap-1 font-medium">
-            <MapPin className="w-3 h-3" />
-            Pays :
-          </span>
-          {[
-            { id: "all", label: "Tous" },
-            { id: "France", label: "🇫🇷 France" },
-            { id: "Tunisie", label: "🇹🇳 Tunisie" },
-          ].map((c) => (
-            <button
-              key={c.id}
-              type="button"
-              onClick={() => setSelectedCountry(c.id)}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                selectedCountry === c.id
-                  ? "bg-primary text-white font-semibold"
-                  : "bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted"
-              }`}
-            >
-              {c.label}
-            </button>
-          ))}
+      {/* 1. Barre Temporelle Intelligente & Métriques de Vélocité */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-2 bg-muted/40 rounded-xl border border-border/60">
+        {/* Onglets temporels */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setSelectedPeriod("all")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
+              selectedPeriod === "all"
+                ? "bg-card text-foreground font-semibold shadow-xs border border-border"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+            <span>Toutes les offres</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-muted text-muted-foreground">
+              {jobs.length}
+            </span>
+          </button>
 
-          <div className="h-4 w-[1px] bg-border mx-1 hidden sm:block" />
+          <button
+            type="button"
+            onClick={() => setSelectedPeriod("today")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
+              selectedPeriod === "today"
+                ? "bg-orange-500/15 text-orange-400 font-semibold border border-orange-500/30"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Flame className="w-3.5 h-3.5 text-orange-400" />
+            <span>Aujourd'hui</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-orange-500/20 text-orange-300 font-bold">
+              {countToday}
+            </span>
+          </button>
 
-          {/* Pills Platform */}
-          <span className="text-xs text-muted-foreground mr-1 flex items-center gap-1 font-medium">
-            <Layers className="w-3 h-3" />
-            Source :
-          </span>
-          {[
-            { id: "all", label: "Toutes" },
-            { id: "linkedin", label: "LinkedIn" },
-            { id: "keejob", label: "🇹🇳 Keejob" },
-            { id: "tunisietravail", label: "🇹🇳 TunisieTravail" },
-            { id: "tanitjobs", label: "🇹🇳 Tanitjobs" },
-            { id: "wttj", label: "🇫🇷 WTTJ" },
-            { id: "1jeune1solution", label: "🇫🇷 1j1s" },
-            { id: "jobteaser", label: "🇫🇷 Jobteaser" },
-          ].map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => setSelectedPlatform(p.id)}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-                selectedPlatform === p.id
-                  ? "bg-primary text-white font-semibold"
-                  : "bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted"
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
+          <button
+            type="button"
+            onClick={() => setSelectedPeriod("week")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
+              selectedPeriod === "week"
+                ? "bg-blue-500/15 text-blue-400 font-semibold border border-blue-500/30"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Calendar className="w-3.5 h-3.5 text-blue-400" />
+            <span>Cette semaine</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-blue-500/20 text-blue-300 font-bold">
+              {countWeek}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSelectedPeriod("month")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
+              selectedPeriod === "month"
+                ? "bg-primary/15 text-primary font-semibold border border-primary/30"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <span>Ce mois-ci</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-primary/20 text-primary">
+              {countMonth}
+            </span>
+          </button>
         </div>
 
-        {/* Live Search Input */}
-        <form onSubmit={handleSearchSubmit} className="relative min-w-[260px]">
+        {/* Bascule de vue (Chronologique vs Grille) */}
+        <div className="flex items-center gap-1.5 border-t sm:border-t-0 sm:border-l border-border/60 pt-2 sm:pt-0 sm:pl-3">
+          <span className="text-[11px] text-muted-foreground hidden lg:inline">Affichage :</span>
+          <button
+            type="button"
+            onClick={() => setViewMode("timeline")}
+            className={`p-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer flex items-center gap-1 ${
+              viewMode === "timeline"
+                ? "bg-card text-foreground font-semibold shadow-xs border border-border"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            title="Vue groupée par période temporelle"
+          >
+            <ListFilter className="w-3.5 h-3.5" />
+            <span className="text-xs">Timeline</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("grid")}
+            className={`p-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer flex items-center gap-1 ${
+              viewMode === "grid"
+                ? "bg-card text-foreground font-semibold shadow-xs border border-border"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            title="Vue Grille fluide"
+          >
+            <LayoutGrid className="w-3.5 h-3.5" />
+            <span className="text-xs">Grille</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 2. Barre de Filtres Secondaires & Recherche Avancée */}
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 p-3.5 rounded-xl border border-border bg-card">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Filtre Pays */}
+          <div className="flex items-center bg-muted/60 p-0.5 rounded-lg border border-border/40">
+            {[
+              { id: "all", label: "Tous" },
+              { id: "France", label: "🇫🇷 France" },
+              { id: "Tunisie", label: "🇹🇳 Tunisie" },
+            ].map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setSelectedCountry(c.id)}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                  selectedCountry === c.id
+                    ? "bg-background text-foreground font-semibold shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Filtre Sites Officiels Directs Uniquement */}
+          <button
+            type="button"
+            onClick={() => setDirectOnly((prev) => !prev)}
+            className={`px-3 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 border ${
+              directOnly
+                ? "bg-amber-500/15 text-amber-300 border-amber-500/40 font-semibold"
+                : "bg-muted/40 text-muted-foreground border-border/50 hover:bg-muted/70 hover:text-foreground"
+            }`}
+          >
+            <Building2 className="w-3 h-3 text-amber-400" />
+            <span>Portails Officiels Uniquement</span>
+            {countDirect > 0 && (
+              <span className="text-[10px] font-mono px-1 rounded bg-amber-500/20 text-amber-300">
+                {countDirect}
+              </span>
+            )}
+          </button>
+
+          {/* Filtre Modalité de travail */}
+          <div className="flex items-center bg-muted/60 p-0.5 rounded-lg border border-border/40">
+            <span className="text-[10px] font-medium text-muted-foreground px-2 flex items-center gap-1">
+              <Laptop className="w-3 h-3" />
+              Mode :
+            </span>
+            {[
+              { id: "all", label: "Tous" },
+              { id: "remote", label: "Remote" },
+              { id: "hybrid", label: "Hybride" },
+              { id: "onsite", label: "Site" },
+            ].map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => setWorkModeFilter(m.id)}
+                className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
+                  workModeFilter === m.id
+                    ? "bg-background text-foreground font-semibold shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Champ de Recherche Live */}
+        <form onSubmit={handleSearchSubmit} className="relative min-w-[240px]">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Filtrer titre, entreprise..."
+            placeholder="Stack, entreprise, pôle..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 rounded-md bg-muted/60 border border-border focus:outline-none focus:border-primary text-xs text-foreground placeholder:text-muted-foreground/60 transition-colors"
+            className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-muted/60 border border-border focus:outline-none focus:border-primary text-xs text-foreground placeholder:text-muted-foreground/60 transition-colors"
           />
         </form>
       </div>
 
-      {/* Jobs Grid */}
+      {/* 3. Zone d'Affichage des Offres */}
       {isLoading ? (
         <div className="p-16 text-center space-y-3">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-xs font-mono text-muted-foreground">Scan du flux d'offres en cours...</p>
+          <p className="text-xs font-mono text-muted-foreground">Scan des opportunités en temps réel...</p>
         </div>
       ) : filteredJobs.length === 0 ? (
         <div className="p-16 rounded-xl border border-dashed border-border bg-card/40 text-center space-y-4">
@@ -504,23 +675,120 @@ export default function RadarPage() {
             <Radar className="w-6 h-6" />
           </div>
           <div className="max-w-md mx-auto space-y-1.5">
-            <h3 className="text-sm font-semibold text-foreground">Aucune offre ne correspond à vos filtres</h3>
+            <h3 className="text-sm font-semibold text-foreground">Aucune offre ne correspond aux critères actifs</h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Lancez un scan Radar pour interroger LinkedIn et Jobteaser avec vos critères de recherche d'ingénieur.
+              Modifiez vos filtres temporels ou lancez une exploration Radar sur les portails dédiés des 100 meilleures entreprises IT.
             </p>
             <div className="pt-3">
               <button
                 type="button"
                 onClick={() => setShowCollectModal(true)}
-                className="px-4 py-2 rounded-md bg-primary text-white text-xs font-semibold hover:bg-primary-hover transition-colors"
+                className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors cursor-pointer"
               >
-                Lancer une première collecte
+                Lancer une nouvelle collecte
               </button>
             </div>
           </div>
         </div>
+      ) : viewMode === "timeline" && selectedPeriod === "all" ? (
+        /* Affichage Structuré par Sections Temporelles */
+        <div className="space-y-8">
+          {/* Section Aujourd'hui */}
+          {todayJobs.length > 0 && (
+            <div className="space-y-3.5">
+              <div className="flex items-center justify-between border-b border-border/50 pb-2">
+                <div className="flex items-center gap-2">
+                  <Flame className="w-4 h-4 text-orange-400" />
+                  <h2 className="text-sm font-bold text-foreground">Aujourd'hui</h2>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-300 font-semibold border border-orange-500/30">
+                    {todayJobs.length} opportunité(s)
+                  </span>
+                </div>
+                <span className="text-[11px] text-muted-foreground">Détectées il y a moins de 24 heures</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {todayJobs.map((job) => (
+                  <JobCard
+                    key={job.id}
+                    job={job}
+                    atsMatch={atsScores[job.id]}
+                    atsLoading={isAtsLoading && !atsScores[job.id]}
+                    onArchive={handleArchive}
+                    onOpenCV={(j) => setSelectedJobForCV(j)}
+                    onOpenLetter={(j) => setSelectedJobForLetter(j)}
+                    onOpenMirror={(j) => setSelectedJobForMirror(j)}
+                    isNew={newJobIds.has(job.id)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Section Cette Semaine */}
+          {weekJobs.length > 0 && (
+            <div className="space-y-3.5">
+              <div className="flex items-center justify-between border-b border-border/50 pb-2">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-blue-400" />
+                  <h2 className="text-sm font-bold text-foreground">Cette Semaine</h2>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 font-semibold border border-blue-500/30">
+                    {weekJobs.length} opportunité(s)
+                  </span>
+                </div>
+                <span className="text-[11px] text-muted-foreground">Publiées au cours des 7 derniers jours</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {weekJobs.map((job) => (
+                  <JobCard
+                    key={job.id}
+                    job={job}
+                    atsMatch={atsScores[job.id]}
+                    atsLoading={isAtsLoading && !atsScores[job.id]}
+                    onArchive={handleArchive}
+                    onOpenCV={(j) => setSelectedJobForCV(j)}
+                    onOpenLetter={(j) => setSelectedJobForLetter(j)}
+                    onOpenMirror={(j) => setSelectedJobForMirror(j)}
+                    isNew={newJobIds.has(job.id)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Section Plus Anciennes */}
+          {olderJobs.length > 0 && (
+            <div className="space-y-3.5">
+              <div className="flex items-center justify-between border-b border-border/50 pb-2">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-muted-foreground" />
+                  <h2 className="text-sm font-bold text-foreground">Plus Anciennes</h2>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-semibold border border-border/50">
+                    {olderJobs.length} offre(s)
+                  </span>
+                </div>
+                <span className="text-[11px] text-muted-foreground">Publiées il y a plus d'une semaine</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {olderJobs.map((job) => (
+                  <JobCard
+                    key={job.id}
+                    job={job}
+                    atsMatch={atsScores[job.id]}
+                    atsLoading={isAtsLoading && !atsScores[job.id]}
+                    onArchive={handleArchive}
+                    onOpenCV={(j) => setSelectedJobForCV(j)}
+                    onOpenLetter={(j) => setSelectedJobForLetter(j)}
+                    onOpenMirror={(j) => setSelectedJobForMirror(j)}
+                    isNew={newJobIds.has(job.id)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        /* Affichage Grille Standard (ou période ciblée) */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredJobs.map((job) => (
             <JobCard
               key={job.id}
@@ -539,17 +807,17 @@ export default function RadarPage() {
 
       {/* Collect Modal */}
       {showCollectModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4">
+          <div className="w-full max-w-lg rounded-xl border border-border bg-card p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between border-b border-border/60 pb-3">
               <div className="flex items-center gap-2">
                 <Radar className="w-5 h-5 text-primary" />
-                <h3 className="text-base font-bold text-foreground">Paramètres du scan Radar</h3>
+                <h3 className="text-base font-bold text-foreground">Configuration du Scan Radar</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setShowCollectModal(false)}
-                className="text-muted-foreground hover:text-foreground"
+                className="text-muted-foreground hover:text-foreground cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -558,14 +826,14 @@ export default function RadarPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
-                  Mots-clés de recherche PFE
+                  Mots-clés de recherche technologiques & rôles
                 </label>
                 <input
                   type="text"
                   value={keywordsInput}
                   onChange={(e) => setKeywordsInput(e.target.value)}
-                  className="w-full px-3 py-2 rounded-md bg-muted/60 border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                  placeholder="ex: PFE, Ingénieur, Cloud, Python"
+                  className="w-full px-3 py-2 rounded-lg bg-muted/60 border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                  placeholder="ex: PFE, Ingénieur, Cloud, Python, DevOps"
                 />
                 <p className="text-[11px] text-muted-foreground mt-1">Séparés par des virgules.</p>
               </div>
@@ -573,7 +841,7 @@ export default function RadarPage() {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="block text-xs font-semibold text-muted-foreground">
-                    Sources cibles ({selectedPlatformsToCrawl.length}/7 sélectionnées)
+                    Sources prioritaires ({selectedPlatformsToCrawl.length}/{AVAILABLE_PLATFORMS.length} actives)
                   </label>
                   <button
                     type="button"
@@ -584,23 +852,28 @@ export default function RadarPage() {
                         setSelectedPlatformsToCrawl(AVAILABLE_PLATFORMS.map((p) => p.id));
                       }
                     }}
-                    className="text-[11px] text-primary hover:underline font-semibold"
+                    className="text-[11px] text-primary hover:underline font-semibold cursor-pointer"
                   >
                     {selectedPlatformsToCrawl.length === AVAILABLE_PLATFORMS.length
                       ? "Tout désélectionner"
                       : "Tout sélectionner"}
                   </button>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
+                <div className="grid grid-cols-1 gap-1.5 max-h-60 overflow-y-auto pr-1">
                   {AVAILABLE_PLATFORMS.map((plat) => {
                     const isChecked = selectedPlatformsToCrawl.includes(plat.id);
+                    const isTop100 = plat.id === "top100_enterprises";
                     return (
                       <label
                         key={plat.id}
-                        className={`flex items-center justify-between p-2.5 rounded-lg border text-xs cursor-pointer transition-all ${
-                          isChecked
+                        className={`flex items-center justify-between p-2 rounded-lg border text-xs cursor-pointer transition-all ${
+                          isTop100
+                            ? isChecked
+                              ? "border-amber-500/50 bg-amber-500/10 text-foreground font-semibold"
+                              : "border-border bg-card text-muted-foreground hover:bg-muted/60"
+                            : isChecked
                             ? "border-primary/50 bg-primary/5 text-foreground font-semibold"
-                            : "border-border bg-muted/30 text-muted-foreground hover:bg-muted/60"
+                            : "border-border bg-card text-muted-foreground hover:bg-muted/60"
                         }`}
                       >
                         <div className="flex items-center gap-2">
@@ -628,7 +901,7 @@ export default function RadarPage() {
               </div>
 
               <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 text-[11px] text-muted-foreground leading-relaxed">
-                <span className="font-bold text-primary">Protection anti-bot :</span> Jitter aléatoire et plafonnement automatique appliqués pour chaque requête.
+                <span className="font-bold text-primary">Ingestion Dédiée :</span> Les portails carrières du Top 100 IT sont interrogés directement (Greenhouse, Lever, SmartRecruiters, Workday) avec deep extraction automatique.
               </div>
             </div>
 
@@ -636,14 +909,14 @@ export default function RadarPage() {
               <button
                 type="button"
                 onClick={() => setShowCollectModal(false)}
-                className="px-3.5 py-1.5 rounded-md text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                className="px-3.5 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
               >
                 Annuler
               </button>
               <button
                 type="button"
                 onClick={handleLaunchCollect}
-                className="px-4 py-2 rounded-md bg-primary hover:bg-primary-hover text-white text-xs font-semibold flex items-center gap-2 shadow-md shadow-primary/20 transition-all"
+                className="px-4 py-2 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold flex items-center gap-2 shadow-xs transition-all cursor-pointer"
               >
                 <Play className="w-3.5 h-3.5 fill-current" />
                 <span>Démarrer le scan</span>
@@ -653,21 +926,21 @@ export default function RadarPage() {
         </div>
       )}
 
-      {/* Modal de prévisualisation et téléchargement du CV ciblé */}
+      {/* Modal CV Ciblé */}
       <CVPreviewModal
         job={selectedJobForCV}
         isOpen={!!selectedJobForCV}
         onClose={() => setSelectedJobForCV(null)}
       />
 
-      {/* Modal de rédaction et révision de la lettre de motivation sobre */}
+      {/* Modal Lettre de Motivation */}
       <LetterPreviewModal
         job={selectedJobForLetter}
         isOpen={!!selectedJobForLetter}
         onClose={() => setSelectedJobForLetter(null)}
       />
 
-      {/* Vue miroir de révision et déclencheur de soumission assistée */}
+      {/* Vue Miroir de Révision */}
       <MirrorReviewDrawer
         job={selectedJobForMirror}
         atsMatch={selectedJobForMirror ? atsScores[selectedJobForMirror.id] : undefined}
