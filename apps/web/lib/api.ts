@@ -140,9 +140,9 @@ export interface JobOffer {
 }
 
 export interface JobCollectRequest {
-  keywords: string[];
-  locations: string[];
-  platforms: string[];
+  keywords?: string[];
+  locations?: string[];
+  platforms?: string[];
   limit_per_platform?: number;
 }
 
@@ -183,6 +183,40 @@ export async function collectJobs(payload: JobCollectRequest): Promise<JobCollec
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(errorData?.detail?.message || "Échec de la collecte d'offres.");
+  }
+  return res.json();
+}
+
+export interface SourceTelemetry {
+  name: string;
+  country: string;
+  status: "idle" | "running" | "error";
+  total_discovered: number;
+}
+
+export interface SourcesRegistryStatus {
+  is_crawling: boolean;
+  last_crawl: string | null;
+  sources: SourceTelemetry[];
+}
+
+export async function fetchSourcesStatus(): Promise<SourcesRegistryStatus> {
+  const res = await fetch(`${API_BASE_URL}/api/jobs/sources`, { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch sources: ${res.statusText}`);
+  }
+  return res.json();
+}
+
+export async function crawlAllSources(payload?: JobCollectRequest): Promise<JobCollectSummary> {
+  const res = await fetch(`${API_BASE_URL}/api/jobs/crawl-all`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload || {}),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData?.detail?.message || "Échec de l'ingestion multi-sources.");
   }
   return res.json();
 }

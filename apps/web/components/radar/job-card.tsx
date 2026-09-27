@@ -25,6 +25,37 @@ interface JobCardProps {
   isNew?: boolean;
 }
 
+const PLATFORM_CONFIG: Record<string, { label: string; className: string }> = {
+  linkedin: {
+    label: "LinkedIn",
+    className: "bg-[#0A66C2]/15 text-[#70B5F9] border-[#0A66C2]/30",
+  },
+  keejob: {
+    label: "Keejob",
+    className: "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
+  },
+  tunisietravail: {
+    label: "TunisieTravail",
+    className: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+  },
+  tanitjobs: {
+    label: "Tanitjobs",
+    className: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+  },
+  wttj: {
+    label: "Welcome Jungle",
+    className: "bg-yellow-500/15 text-yellow-300 border-yellow-500/30",
+  },
+  "1jeune1solution": {
+    label: "1j1s",
+    className: "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
+  },
+  jobteaser: {
+    label: "Jobteaser",
+    className: "bg-teal-500/15 text-teal-400 border-teal-500/30",
+  },
+};
+
 export function JobCard({
   job,
   atsMatch,
@@ -35,7 +66,11 @@ export function JobCard({
   onOpenMirror,
   isNew = false,
 }: JobCardProps) {
-  const isLinkedIn = job.platform.toLowerCase() === "linkedin";
+  const platKey = job.platform.toLowerCase();
+  const platformInfo = PLATFORM_CONFIG[platKey] || {
+    label: job.platform,
+    className: "bg-muted text-muted-foreground border-border/50",
+  };
   const isFrance = job.country.toLowerCase() === "france";
   const isTunisia = job.country.toLowerCase() === "tunisie";
 
@@ -59,13 +94,9 @@ export function JobCard({
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
             <span
-              className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full border ${
-                isLinkedIn
-                  ? "bg-[#0A66C2]/15 text-[#70B5F9] border-[#0A66C2]/30"
-                  : "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-              }`}
+              className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full border ${platformInfo.className}`}
             >
-              {isLinkedIn ? "LinkedIn" : "Jobteaser"}
+              {platformInfo.label}
             </span>
 
             <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border/50">

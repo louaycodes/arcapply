@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import {
   fetchJobs,
   collectJobs,
+  crawlAllSources,
   archiveJob,
   createRadarEventSource,
   fetchBatchATSScores,
@@ -29,7 +30,18 @@ import {
   CheckCircle2,
   AlertCircle,
   X,
+  Globe2,
 } from "lucide-react";
+
+const AVAILABLE_PLATFORMS = [
+  { id: "linkedin", label: "LinkedIn", country: "Global" },
+  { id: "keejob", label: "Keejob", country: "Tunisie" },
+  { id: "tunisietravail", label: "TunisieTravail", country: "Tunisie" },
+  { id: "tanitjobs", label: "Tanitjobs", country: "Tunisie" },
+  { id: "wttj", label: "Welcome to the Jungle", country: "France" },
+  { id: "1jeune1solution", label: "1jeune1solution", country: "France" },
+  { id: "jobteaser", label: "Jobteaser", country: "France" },
+];
 
 export default function RadarPage() {
   const [jobs, setJobs] = useState<JobOffer[]>([]);
@@ -49,10 +61,17 @@ export default function RadarPage() {
   const [showCollectModal, setShowCollectModal] = useState(false);
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  // Formulaire de collecte personnalisée
-  const [keywordsInput, setKeywordsInput] = useState<string>("PFE, Ingénieur, Systèmes Distribués, Cloud");
-  const [includeLinkedIn, setIncludeLinkedIn] = useState(true);
-  const [includeJobteaser, setIncludeJobteaser] = useState(true);
+  // Formulaire de collecte multi-sources
+  const [keywordsInput, setKeywordsInput] = useState<string>("PFE, Ingénieur, Développeur, Cloud, IA");
+  const [selectedPlatformsToCrawl, setSelectedPlatformsToCrawl] = useState<string[]>([
+    "linkedin",
+    "keejob",
+    "tunisietravail",
+    "tanitjobs",
+    "wttj",
+    "1jeune1solution",
+    "jobteaser",
+  ]);
 
   const loadJobs = async () => {
     try {
@@ -159,33 +178,28 @@ export default function RadarPage() {
     try {
       setIsCollecting(true);
       setShowCollectModal(false);
-      setScrapeMessage("Lancement de la collecte Playwright en cours...");
-
-      const platforms: string[] = [];
-      if (includeLinkedIn) platforms.push("linkedin");
-      if (includeJobteaser) platforms.push("jobteaser");
+      setScrapeMessage("Lancement du crawler multi-sources (France & Tunisie)...");
 
       const keywords = keywordsInput
         .split(",")
         .map((k) => k.trim())
         .filter(Boolean);
 
-      const summary = await collectJobs({
+      const summary = await crawlAllSources({
         keywords,
         locations: ["France", "Tunisie"],
-        platforms: platforms.length > 0 ? platforms : ["linkedin", "jobteaser"],
-        limit_per_platform: 5,
+        platforms: selectedPlatformsToCrawl.length > 0 ? selectedPlatformsToCrawl : undefined,
       });
 
       setNotification({
         type: "success",
-        message: summary.message,
+        message: summary.message || "Collecte multi-sources achevée avec succès.",
       });
       loadJobs();
     } catch (err: any) {
       setNotification({
         type: "error",
-        message: err.message || "Erreur pendant la collecte.",
+        message: err.message || "Erreur pendant la collecte multi-sources.",
       });
     } finally {
       setIsCollecting(false);
@@ -316,13 +330,18 @@ export default function RadarPage() {
           {[
             { id: "all", label: "Toutes" },
             { id: "linkedin", label: "LinkedIn" },
-            { id: "jobteaser", label: "Jobteaser" },
+            { id: "keejob", label: "🇹🇳 Keejob" },
+            { id: "tunisietravail", label: "🇹🇳 TunisieTravail" },
+            { id: "tanitjobs", label: "🇹🇳 Tanitjobs" },
+            { id: "wttj", label: "🇫🇷 WTTJ" },
+            { id: "1jeune1solution", label: "🇫🇷 1j1s" },
+            { id: "jobteaser", label: "🇫🇷 Jobteaser" },
           ].map((p) => (
             <button
               key={p.id}
               type="button"
               onClick={() => setSelectedPlatform(p.id)}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                 selectedPlatform === p.id
                   ? "bg-primary text-white font-semibold"
                   : "bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -425,28 +444,59 @@ export default function RadarPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground mb-2">
-                  Plateformes cibles
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <label className="flex items-center gap-2 p-2.5 rounded-lg border border-border bg-muted/40 cursor-pointer text-xs">
-                    <input
-                      type="checkbox"
-                      checked={includeLinkedIn}
-                      onChange={(e) => setIncludeLinkedIn(e.target.checked)}
-                      className="rounded accent-primary"
-                    />
-                    <span className="font-semibold text-foreground">LinkedIn</span>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-semibold text-muted-foreground">
+                    Sources cibles ({selectedPlatformsToCrawl.length}/7 sélectionnées)
                   </label>
-                  <label className="flex items-center gap-2 p-2.5 rounded-lg border border-border bg-muted/40 cursor-pointer text-xs">
-                    <input
-                      type="checkbox"
-                      checked={includeJobteaser}
-                      onChange={(e) => setIncludeJobteaser(e.target.checked)}
-                      className="rounded accent-primary"
-                    />
-                    <span className="font-semibold text-foreground">Jobteaser</span>
-                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (selectedPlatformsToCrawl.length === AVAILABLE_PLATFORMS.length) {
+                        setSelectedPlatformsToCrawl([]);
+                      } else {
+                        setSelectedPlatformsToCrawl(AVAILABLE_PLATFORMS.map((p) => p.id));
+                      }
+                    }}
+                    className="text-[11px] text-primary hover:underline font-semibold"
+                  >
+                    {selectedPlatformsToCrawl.length === AVAILABLE_PLATFORMS.length
+                      ? "Tout désélectionner"
+                      : "Tout sélectionner"}
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
+                  {AVAILABLE_PLATFORMS.map((plat) => {
+                    const isChecked = selectedPlatformsToCrawl.includes(plat.id);
+                    return (
+                      <label
+                        key={plat.id}
+                        className={`flex items-center justify-between p-2.5 rounded-lg border text-xs cursor-pointer transition-all ${
+                          isChecked
+                            ? "border-primary/50 bg-primary/5 text-foreground font-semibold"
+                            : "border-border bg-muted/30 text-muted-foreground hover:bg-muted/60"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedPlatformsToCrawl((prev) => [...prev, plat.id]);
+                              } else {
+                                setSelectedPlatformsToCrawl((prev) => prev.filter((id) => id !== plat.id));
+                              }
+                            }}
+                            className="rounded accent-primary"
+                          />
+                          <span>{plat.label}</span>
+                        </div>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted/80 text-muted-foreground">
+                          {plat.country}
+                        </span>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
 
