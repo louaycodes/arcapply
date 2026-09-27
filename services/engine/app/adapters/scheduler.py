@@ -2,9 +2,18 @@ import asyncio
 from datetime import datetime, timezone
 from typing import Any
 from sqlmodel import Session, select
+from app.adapters.connectors.aneti import AnetiJobConnector
+from app.adapters.connectors.apec import ApecJobConnector
+from app.adapters.connectors.emploitunisie import EmploiTunisieJobConnector
+from app.adapters.connectors.esndirect import ESNDirectJobConnector
+from app.adapters.connectors.hellowork import HelloWorkJobConnector
+from app.adapters.connectors.indeed import IndeedJobConnector
 from app.adapters.connectors.jobteaser import JobteaserJobConnector
 from app.adapters.connectors.keejob import KeejobJobConnector
 from app.adapters.connectors.linkedin import LinkedInJobConnector
+from app.adapters.connectors.moovijob import MoovijobJobConnector
+from app.adapters.connectors.optioncarriere import OptionCarriereJobConnector
+from app.adapters.connectors.stagetunisie import StageTunisieJobConnector
 from app.adapters.connectors.tanitjobs import TanitjobsJobConnector
 from app.adapters.connectors.tunisietravail import TunisieTravailJobConnector
 from app.adapters.connectors.unjeuneunesolution import UnJeuneUneSolutionJobConnector
@@ -15,14 +24,27 @@ from app.domain.models import JobOffer, utc_now
 from app.ports.connectors import BaseJobConnector
 
 ALL_CONNECTORS: dict[str, type[BaseJobConnector]] = {
+    # 🌍 International & Global
     "linkedin": LinkedInJobConnector,
+    # 🇹🇳 Tunisie
     "keejob": KeejobJobConnector,
     "tunisietravail": TunisieTravailJobConnector,
     "tanitjobs": TanitjobsJobConnector,
-    "jobteaser": JobteaserJobConnector,
+    "emploitunisie": EmploiTunisieJobConnector,
+    "stagetunisie": StageTunisieJobConnector,
+    "optioncarriere": OptionCarriereJobConnector,
+    "aneti": AnetiJobConnector,
+    # 🇫🇷 France
     "wttj": WTTJJobConnector,
     "1jeune1solution": UnJeuneUneSolutionJobConnector,
+    "jobteaser": JobteaserJobConnector,
+    "hellowork": HelloWorkJobConnector,
+    "indeed": IndeedJobConnector,
+    "apec": ApecJobConnector,
+    "moovijob": MoovijobJobConnector,
+    "esn_direct": ESNDirectJobConnector,
 }
+
 
 
 class CrawlerScheduler:

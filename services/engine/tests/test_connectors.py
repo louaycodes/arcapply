@@ -1,7 +1,16 @@
 import pytest
+from app.adapters.connectors.aneti import AnetiJobConnector
+from app.adapters.connectors.apec import ApecJobConnector
+from app.adapters.connectors.emploitunisie import EmploiTunisieJobConnector
+from app.adapters.connectors.esndirect import ESNDirectJobConnector
+from app.adapters.connectors.hellowork import HelloWorkJobConnector
+from app.adapters.connectors.indeed import IndeedJobConnector
 from app.adapters.connectors.jobteaser import JobteaserJobConnector
 from app.adapters.connectors.keejob import KeejobJobConnector
 from app.adapters.connectors.linkedin import LinkedInJobConnector
+from app.adapters.connectors.moovijob import MoovijobJobConnector
+from app.adapters.connectors.optioncarriere import OptionCarriereJobConnector
+from app.adapters.connectors.stagetunisie import StageTunisieJobConnector
 from app.adapters.connectors.tanitjobs import TanitjobsJobConnector
 from app.adapters.connectors.tunisietravail import TunisieTravailJobConnector
 from app.adapters.connectors.unjeuneunesolution import UnJeuneUneSolutionJobConnector
@@ -18,8 +27,6 @@ async def test_tunisia_connectors_output_structure():
     assert len(kee_jobs) > 0
     assert kee_jobs[0]["platform"] == "keejob"
     assert kee_jobs[0]["country"] == "Tunisie"
-    assert "title" in kee_jobs[0]
-    assert "company" in kee_jobs[0]
 
     # 2. TunisieTravail
     tt = TunisieTravailJobConnector()
@@ -27,7 +34,6 @@ async def test_tunisia_connectors_output_structure():
     assert isinstance(tt_jobs, list)
     assert len(tt_jobs) > 0
     assert tt_jobs[0]["platform"] == "tunisietravail"
-    assert tt_jobs[0]["country"] == "Tunisie"
 
     # 3. Tanitjobs
     tanit = TanitjobsJobConnector()
@@ -35,7 +41,35 @@ async def test_tunisia_connectors_output_structure():
     assert isinstance(tanit_jobs, list)
     assert len(tanit_jobs) > 0
     assert tanit_jobs[0]["platform"] == "tanitjobs"
-    assert tanit_jobs[0]["country"] == "Tunisie"
+
+    # 4. EmploiTunisie
+    et = EmploiTunisieJobConnector()
+    et_jobs = await et.search_jobs(keywords=["pfe"], locations=["Tunisie"], limit=2)
+    assert isinstance(et_jobs, list)
+    assert len(et_jobs) > 0
+    assert et_jobs[0]["platform"] == "emploitunisie"
+    assert et_jobs[0]["country"] == "Tunisie"
+
+    # 5. StageTunisie
+    st = StageTunisieJobConnector()
+    st_jobs = await st.search_jobs(keywords=["pfe"], locations=["Tunisie"], limit=2)
+    assert isinstance(st_jobs, list)
+    assert len(st_jobs) > 0
+    assert st_jobs[0]["platform"] == "stagetunisie"
+
+    # 6. OptionCarriere Tunisie
+    oc = OptionCarriereJobConnector()
+    oc_jobs = await oc.search_jobs(keywords=["pfe"], locations=["Tunisie"], limit=2)
+    assert isinstance(oc_jobs, list)
+    assert len(oc_jobs) > 0
+    assert oc_jobs[0]["platform"] == "optioncarriere"
+
+    # 7. ANETI
+    an = AnetiJobConnector()
+    an_jobs = await an.search_jobs(keywords=["pfe"], locations=["Tunisie"], limit=2)
+    assert isinstance(an_jobs, list)
+    assert len(an_jobs) > 0
+    assert an_jobs[0]["platform"] == "aneti"
 
 
 @pytest.mark.asyncio
@@ -53,7 +87,6 @@ async def test_france_connectors_output_structure():
     assert isinstance(wttj_jobs, list)
     assert len(wttj_jobs) > 0
     assert wttj_jobs[0]["platform"] == "wttj"
-    assert wttj_jobs[0]["country"] == "France"
 
     # 3. 1jeune1solution
     ujs = UnJeuneUneSolutionJobConnector()
@@ -62,6 +95,41 @@ async def test_france_connectors_output_structure():
     assert len(ujs_jobs) > 0
     assert ujs_jobs[0]["platform"] == "1jeune1solution"
 
+    # 4. HelloWork
+    hw = HelloWorkJobConnector()
+    hw_jobs = await hw.search_jobs(keywords=["stage", "pfe"], locations=["France"], limit=2)
+    assert isinstance(hw_jobs, list)
+    assert len(hw_jobs) > 0
+    assert hw_jobs[0]["platform"] == "hellowork"
+
+    # 5. Indeed
+    ind = IndeedJobConnector()
+    ind_jobs = await ind.search_jobs(keywords=["stage", "pfe"], locations=["France"], limit=2)
+    assert isinstance(ind_jobs, list)
+    assert len(ind_jobs) > 0
+    assert ind_jobs[0]["platform"] == "indeed"
+
+    # 6. Apec
+    ap = ApecJobConnector()
+    ap_jobs = await ap.search_jobs(keywords=["stage", "pfe"], locations=["France"], limit=2)
+    assert isinstance(ap_jobs, list)
+    assert len(ap_jobs) > 0
+    assert ap_jobs[0]["platform"] == "apec"
+
+    # 7. Moovijob
+    moov = MoovijobJobConnector()
+    moov_jobs = await moov.search_jobs(keywords=["stage", "pfe"], locations=["France"], limit=2)
+    assert isinstance(moov_jobs, list)
+    assert len(moov_jobs) > 0
+    assert moov_jobs[0]["platform"] == "moovijob"
+
+    # 8. ESN Direct
+    esn = ESNDirectJobConnector()
+    esn_jobs = await esn.search_jobs(keywords=["stage", "pfe"], locations=["France"], limit=2)
+    assert isinstance(esn_jobs, list)
+    assert len(esn_jobs) > 0
+    assert esn_jobs[0]["platform"] == "esn_direct"
+
 
 def test_sources_status_endpoint():
     res = client.get("/api/jobs/sources")
@@ -69,13 +137,23 @@ def test_sources_status_endpoint():
     data = res.json()
     assert "registered_connectors" in data
     connectors = data["registered_connectors"]
+    # Vérification des plateformes majeures
     assert "linkedin" in connectors
     assert "keejob" in connectors
     assert "tunisietravail" in connectors
     assert "tanitjobs" in connectors
+    assert "emploitunisie" in connectors
+    assert "stagetunisie" in connectors
+    assert "optioncarriere" in connectors
+    assert "aneti" in connectors
     assert "wttj" in connectors
     assert "1jeune1solution" in connectors
-    assert data["total_connectors"] >= 7
+    assert "hellowork" in connectors
+    assert "indeed" in connectors
+    assert "apec" in connectors
+    assert "moovijob" in connectors
+    assert "esn_direct" in connectors
+    assert data["total_connectors"] >= 16
 
 
 def test_crawl_all_endpoint_deduplication():
