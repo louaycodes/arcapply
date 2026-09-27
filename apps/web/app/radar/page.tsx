@@ -35,6 +35,7 @@ import {
 
 const AVAILABLE_PLATFORMS = [
   { id: "linkedin", label: "LinkedIn", country: "Global" },
+  { id: "stackoverflow_jobs", label: "StackOverflow Jobs", country: "Global" },
   { id: "keejob", label: "Keejob", country: "Tunisie" },
   { id: "tunisietravail", label: "TunisieTravail", country: "Tunisie" },
   { id: "tanitjobs", label: "Tanitjobs", country: "Tunisie" },
@@ -42,6 +43,7 @@ const AVAILABLE_PLATFORMS = [
   { id: "stagetunisie", label: "StageTunisie", country: "Tunisie" },
   { id: "optioncarriere", label: "OptionCarriere", country: "Tunisie" },
   { id: "aneti", label: "ANETI", country: "Tunisie" },
+  { id: "offre_emploi_tn", label: "Offre-Emploi.tn", country: "Tunisie" },
   { id: "wttj", label: "Welcome to the Jungle", country: "France" },
   { id: "1jeune1solution", label: "1jeune1solution", country: "France" },
   { id: "jobteaser", label: "Jobteaser", country: "France" },
@@ -49,7 +51,15 @@ const AVAILABLE_PLATFORMS = [
   { id: "indeed", label: "Indeed", country: "France" },
   { id: "apec", label: "Apec", country: "France" },
   { id: "moovijob", label: "Moovijob", country: "France" },
+  { id: "monster", label: "Monster", country: "France" },
+  { id: "stagiaires_fr", label: "Stagiaires.fr", country: "France" },
+  { id: "cadremploi", label: "Cadremploi", country: "France" },
+  { id: "meteojob", label: "Meteojob", country: "France" },
+  { id: "letudiant", label: "L'Etudiant", country: "France" },
+  { id: "chooseyourboss", label: "ChooseYourBoss", country: "France" },
   { id: "esn_direct", label: "Portails ESN (Capgemini, Sopra...)", country: "France" },
+  { id: "numeum", label: "Numeum ESN", country: "France" },
+  { id: "capdigital", label: "Cap Digital Tech", country: "France" },
 ];
 
 export default function RadarPage() {
@@ -74,6 +84,7 @@ export default function RadarPage() {
   const [keywordsInput, setKeywordsInput] = useState<string>("PFE, Ingénieur, Développeur, Cloud, IA");
   const [selectedPlatformsToCrawl, setSelectedPlatformsToCrawl] = useState<string[]>([
     "linkedin",
+    "stackoverflow_jobs",
     "keejob",
     "tunisietravail",
     "tanitjobs",
@@ -81,6 +92,7 @@ export default function RadarPage() {
     "stagetunisie",
     "optioncarriere",
     "aneti",
+    "offre_emploi_tn",
     "wttj",
     "1jeune1solution",
     "jobteaser",
@@ -88,7 +100,15 @@ export default function RadarPage() {
     "indeed",
     "apec",
     "moovijob",
+    "monster",
+    "stagiaires_fr",
+    "cadremploi",
+    "meteojob",
+    "letudiant",
+    "chooseyourboss",
     "esn_direct",
+    "numeum",
+    "capdigital",
   ]);
 
   const loadJobs = async () => {

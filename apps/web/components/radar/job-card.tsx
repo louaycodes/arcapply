@@ -90,6 +90,46 @@ const PLATFORM_CONFIG: Record<string, { label: string; className: string }> = {
     label: "Portails ESN",
     className: "bg-amber-400/15 text-amber-300 border-amber-400/30",
   },
+  monster: {
+    label: "Monster",
+    className: "bg-purple-600/15 text-purple-300 border-purple-600/30",
+  },
+  stagiaires_fr: {
+    label: "Stagiaires.fr",
+    className: "bg-pink-500/15 text-pink-400 border-pink-500/30",
+  },
+  cadremploi: {
+    label: "Cadremploi",
+    className: "bg-emerald-600/15 text-emerald-300 border-emerald-600/30",
+  },
+  meteojob: {
+    label: "Meteojob",
+    className: "bg-sky-600/15 text-sky-300 border-sky-600/30",
+  },
+  letudiant: {
+    label: "L'Etudiant",
+    className: "bg-rose-600/15 text-rose-300 border-rose-600/30",
+  },
+  chooseyourboss: {
+    label: "ChooseYourBoss",
+    className: "bg-lime-500/15 text-lime-300 border-lime-500/30",
+  },
+  stackoverflow_jobs: {
+    label: "StackOverflow",
+    className: "bg-orange-600/15 text-orange-300 border-orange-600/30",
+  },
+  numeum: {
+    label: "Numeum",
+    className: "bg-indigo-400/15 text-indigo-300 border-indigo-400/30",
+  },
+  capdigital: {
+    label: "Cap Digital",
+    className: "bg-teal-600/15 text-teal-300 border-teal-600/30",
+  },
+  offre_emploi_tn: {
+    label: "Offre-Emploi.tn",
+    className: "bg-amber-600/15 text-amber-300 border-amber-600/30",
+  },
 };
 
 export function JobCard({
