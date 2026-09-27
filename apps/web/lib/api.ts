@@ -231,12 +231,24 @@ export async function archiveJob(jobId: string): Promise<JobOffer> {
   return res.json();
 }
 
+export async function clearAllJobs(): Promise<{ status: string; message: string }> {
+  const res = await fetch(`${API_BASE_URL}/api/jobs/clear`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData?.detail?.message || "Échec de la suppression des offres.");
+  }
+  return res.json();
+}
+
 export function createRadarEventSource(
   onJobDiscovered?: (job: JobOffer) => void,
   onProgress?: (progress: { platform: string; status: string; message: string }) => void,
   onError?: (err: any) => void,
   onJobStatusChanged?: (payload: { job_id: string; old_status: string; new_status: string }) => void,
-  onEmailReceived?: (payload: { id: string; category: string; company?: string; subject: string; snippet?: string }) => void
+  onEmailReceived?: (payload: { id: string; category: string; company?: string; subject: string; snippet?: string }) => void,
+  onJobsCleared?: () => void
 ): () => void {
   if (typeof window === "undefined") return () => {};
 
@@ -283,6 +295,16 @@ export function createRadarEventSource(
       }
     } catch (err) {
       console.error("Error parsing EMAIL_RECEIVED event:", err);
+    }
+  });
+
+  eventSource.addEventListener("JOBS_CLEARED", () => {
+    try {
+      if (onJobsCleared) {
+        onJobsCleared();
+      }
+    } catch (err) {
+      console.error("Error parsing JOBS_CLEARED event:", err);
     }
   });
 

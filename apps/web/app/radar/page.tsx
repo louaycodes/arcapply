@@ -6,6 +6,7 @@ import {
   collectJobs,
   crawlAllSources,
   archiveJob,
+  clearAllJobs,
   createRadarEventSource,
   fetchBatchATSScores,
   fetchJobATSScore,
@@ -31,6 +32,7 @@ import {
   AlertCircle,
   X,
   Globe2,
+  Trash2,
 } from "lucide-react";
 
 const AVAILABLE_PLATFORMS = [
@@ -76,6 +78,7 @@ export default function RadarPage() {
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   const [isCollecting, setIsCollecting] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
   const [scrapeMessage, setScrapeMessage] = useState<string | null>(null);
   const [showCollectModal, setShowCollectModal] = useState(false);
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -183,6 +186,16 @@ export default function RadarPage() {
             ? { ...prev, status: statusPayload.new_status }
             : prev
         );
+      },
+      undefined,
+      () => {
+        setJobs([]);
+        setAtsScores({});
+        setNotification({
+          type: "success",
+          message: "La base de données des offres a été vidée.",
+        });
+        setTimeout(() => setNotification(null), 3500);
       }
     );
 
@@ -245,6 +258,32 @@ export default function RadarPage() {
     }
   };
 
+  const handleClearAllJobs = async () => {
+    const confirmed = window.confirm(
+      "Êtes-vous sûr de vouloir vider toutes les offres de stage de la base de données locale ? Cette action supprimera également les CVs et lettres générés associés."
+    );
+    if (!confirmed) return;
+
+    try {
+      setIsClearing(true);
+      const res = await clearAllJobs();
+      setJobs([]);
+      setAtsScores({});
+      setNotification({
+        type: "success",
+        message: res.message || "Toutes les offres ont été supprimées avec succès.",
+      });
+    } catch (err: any) {
+      setNotification({
+        type: "error",
+        message: err.message || "Erreur lors de la suppression des offres.",
+      });
+    } finally {
+      setIsClearing(false);
+      setTimeout(() => setNotification(null), 4000);
+    }
+  };
+
   const filteredJobs = jobs.filter((job) => {
     if (selectedCountry !== "all" && job.country.toLowerCase() !== selectedCountry.toLowerCase()) {
       return false;
@@ -282,7 +321,18 @@ export default function RadarPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={handleClearAllJobs}
+            disabled={isLoading || isClearing || jobs.length === 0}
+            className="px-3 py-2 rounded-md border border-destructive/30 bg-card hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors flex items-center gap-1.5 text-xs font-semibold disabled:opacity-40"
+            title="Vider la base de données des offres"
+          >
+            <Trash2 className={`w-3.5 h-3.5 text-destructive ${isClearing ? "animate-spin" : ""}`} />
+            <span className="text-destructive">{isClearing ? "Suppression..." : "Vider les offres"}</span>
+          </button>
+
           <button
             type="button"
             onClick={loadJobs}
