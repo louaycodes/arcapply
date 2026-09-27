@@ -73,44 +73,8 @@ class HelloWorkJobConnector(BaseJobConnector):
                         if len(results) >= limit:
                             break
         except Exception as e:
-            print(f"[HelloWorkConnector] Live scraping notice: {e}. Bascule pool garanti.")
-
-        if len(results) < limit:
-            fallback = [
-                {
-                    "external_id": "hw-pfe-dassault",
-                    "platform": "hellowork",
-                    "title": "Stage PFE - Ingénieur R&D Algorithmique Géométrique & CAO 3D",
-                    "company": "Dassault Systèmes",
-                    "location": "Vélizy-Villacoublay, France",
-                    "country": "France",
-                    "description_raw": (
-                        "Stage de fin d'études PFE d'ingénieur au sein de l'équipe CATIA R&D. "
-                        "Missions : Développement de nouveaux solveurs géométriques et optimisation multithreadée. "
-                        "Compétences : C++, mathématiques 3D, Git, Linux."
-                    ),
-                    "url": "https://www.hellowork.com/fr-fr/emplois/dassault-pfe-catia",
-                },
-                {
-                    "external_id": "hw-pfe-schneider",
-                    "platform": "hellowork",
-                    "title": "Stage PFE - Ingénieur Edge Computing & IoT Industriel",
-                    "company": "Schneider Electric",
-                    "location": "Grenoble, France",
-                    "country": "France",
-                    "description_raw": (
-                        "PFE au centre d'innovation Schneider Electric. Intégration de micro-passerelles Edge avec télémétrie MQTT/Cloud. "
-                        "Profil ingénieur informatique / électronique. Stack : Python, C, Docker, Linux embarqué."
-                    ),
-                    "url": "https://www.hellowork.com/fr-fr/emplois/schneider-pfe-edge",
-                },
-            ]
-            seen = {r["external_id"] for r in results}
-            for fb in fallback:
-                if fb["external_id"] not in seen:
-                    results.append(fb)
-                    if len(results) >= limit:
-                        break
+            print(f"[HelloWorkConnector] Live scraping error: {e}")
+            return []
 
         return results
 

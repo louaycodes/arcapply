@@ -1,11 +1,13 @@
 from typing import Any
+import httpx
 from app.ports.connectors import BaseJobConnector
 
 
 class StagiairesFrJobConnector(BaseJobConnector):
     """
     Connecteur Stagiaires.fr.
-    Portail entièrement ciblé sur les stages étudiants et stages de fin d'études (PFE) en France.
+    Effectue une requête réelle. Le site étant inactif (page de parking OVH "Site en construction"),
+    renvoie une liste vide avec log explicite (aucun mock - AD-4).
     """
 
     @property
@@ -20,37 +22,23 @@ class StagiairesFrJobConnector(BaseJobConnector):
     ) -> list[dict[str, Any]]:
         await self.apply_jitter(min_seconds=0.2, max_seconds=0.4)
 
-        pool = [
-            {
-                "external_id": "stg-pfe-deezer",
-                "platform": "stagiaires_fr",
-                "title": "Stage PFE - Ingénieur Recommandation Musicale & IA Audio",
-                "company": "Deezer",
-                "location": "Paris, France",
-                "country": "France",
-                "description_raw": (
-                    "Stage PFE de 6 mois au sein du lab R&D Audio & Machine Learning. "
-                    "Conception d'algorithmes d'embeddings audio et filtrage collaboratif pour les playlists intelligentes. "
-                    "Technologies : Python, PyTorch, BigQuery, Docker."
+        try:
+            url = "http://www.stagiaires.fr"
+            headers = {
+                "User-Agent": (
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
                 ),
-                "url": "https://www.stagiaires.fr/offres/deezer-pfe-audio-ia",
-            },
-            {
-                "external_id": "stg-pfe-blablacar",
-                "platform": "stagiaires_fr",
-                "title": "Stage PFE - Ingénieur Backend Core Engine (Go / Kafka)",
-                "company": "BlaBlaCar",
-                "location": "Paris, France",
-                "country": "France",
-                "description_raw": (
-                    "Au sein de la Core Engine Tribe. Optimisation des algorithmes de covoiturage et de recherche d'itinéraires en temps réel. "
-                    "Stack : Go, Kafka, PostgreSQL, GCP, Kubernetes."
-                ),
-                "url": "https://www.stagiaires.fr/offres/blablacar-pfe-backend-go",
-            },
-        ]
-
-        return pool[:limit]
+            }
+            async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
+                resp = await client.get(url, headers=headers)
+                if "Site en construction" in resp.text or "ovh" in resp.text.lower():
+                    print("[StagiairesFrConnector] Source indisponible : site inactif (page parking OVH)")
+                    return []
+                return []
+        except Exception as e:
+            print(f"[StagiairesFrConnector] Source indisponible : {e}")
+            return []
 
     async def fetch_job_details(self, job_url: str) -> dict[str, Any]:
         await self.apply_jitter(min_seconds=0.1, max_seconds=0.3)

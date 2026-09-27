@@ -8,8 +8,9 @@ from app.ports.connectors import BaseJobConnector
 
 class StageTunisieJobConnector(BaseJobConnector):
     """
-    Connecteur réel Stage-tunisie.tn (Portail spécialisé stages & PFE en Tunisie).
-    Cible spécifiquement les sujets PFE des écoles d'ingénieurs (ESPRIT, INSAT, ENIT, ENSI).
+    Connecteur Stage-tunisie.tn.
+    Vérifie la disponibilité du domaine et effectue la requête réelle.
+    En cas de domaine non résolu ou d'erreur de connexion, renvoie une liste vide avec log explicite (aucun mock - AD-4).
     """
 
     @property
@@ -37,19 +38,19 @@ class StageTunisieJobConnector(BaseJobConnector):
                 ),
             }
 
-            async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
+            async with httpx.AsyncClient(timeout=6.0, follow_redirects=True) as client:
                 resp = await client.get(url, headers=headers)
                 if resp.status_code == 200 and resp.text:
                     soup = BeautifulSoup(resp.text, "html.parser")
                     listings = soup.find_all("li", class_=lambda c: c and "job_listing" in c)
 
                     for item in listings:
-                        title_el = item.find("h3") or item.find("h4")
-                        if not title_el:
+                        link_el = item.find("a", href=True)
+                        title_el = item.find(["h3", "h4"]) or link_el
+                        if not link_el or not title_el:
                             continue
                         raw_title = title_el.text.strip()
-                        link_el = item.find("a", href=True)
-                        full_url = link_el["href"] if link_el else "https://stage-tunisie.tn"
+                        full_url = link_el["href"]
 
                         comp_el = item.find("div", class_=lambda c: c and "company" in c)
                         company = comp_el.text.strip() if comp_el else "Entreprise PFE Tunisie"
@@ -65,51 +66,19 @@ class StageTunisieJobConnector(BaseJobConnector):
                             "country": "Tunisie",
                             "description_raw": (
                                 f"Sujet de stage PFE publié sur Stage-Tunisie. Titre : {raw_title}. "
-                                f"Structure d'accueil : {company}. Consultez le catalogue officiel pour postuler."
+                                f"Structure d'accueil : {company}. Consultez l'annonce : {full_url}"
                             ),
                             "url": full_url,
                         })
 
                         if len(results) >= limit:
                             break
+        except httpx.ConnectError:
+            print("[StageTunisieConnector] Source indisponible : nom de domaine inexistant ou abandonné (DNS non résolu)")
+            return []
         except Exception as e:
-            print(f"[StageTunisieConnector] Live scraping notice: {e}. Bascule pool garanti.")
-
-        if len(results) < limit:
-            fallback = [
-                {
-                    "external_id": "st-pfe-wevioo",
-                    "platform": "stagetunisie",
-                    "title": "Stage PFE - Ingénieur Fullstack TypeScript & Cloud AWS",
-                    "company": "Wevioo Tunisie",
-                    "location": "Ariana, Tunisie",
-                    "country": "Tunisie",
-                    "description_raw": (
-                        "Stage PFE chez Wevioo : Développement d'une plateforme SaaS B2B de gestion logistique. "
-                        "Architecture microservices, React, Node.js/NestJS, Docker, AWS SQS/SNS."
-                    ),
-                    "url": "https://stage-tunisie.tn/offres/wevioo-pfe-cloud-fullstack",
-                },
-                {
-                    "external_id": "st-pfe-sagemcom",
-                    "platform": "stagetunisie",
-                    "title": "Stage PFE - Ingénieur R&D Énergie & IoT Connecté",
-                    "company": "Sagemcom Tunisie",
-                    "location": "Ben Arous, Tunisie",
-                    "country": "Tunisie",
-                    "description_raw": (
-                        "Intégration au centre de R&D Sagemcom. Développement de protocoles basse consommation pour compteurs intelligents. "
-                        "Compétences : C embarqué, LoRaWAN, BLE, Linux, Git."
-                    ),
-                    "url": "https://stage-tunisie.tn/offres/sagemcom-pfe-iot-embarque",
-                },
-            ]
-            seen = {r["external_id"] for r in results}
-            for fb in fallback:
-                if fb["external_id"] not in seen:
-                    results.append(fb)
-                    if len(results) >= limit:
-                        break
+            print(f"[StageTunisieConnector] Source indisponible : {e}")
+            return []
 
         return results
 

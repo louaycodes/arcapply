@@ -88,44 +88,8 @@ class KeejobJobConnector(BaseJobConnector):
                         if len(results) >= limit:
                             break
         except Exception as e:
-            print(f"[KeejobConnector] Live scraping warning: {e}. Bascule pool garanti.")
-
-        # Pool de secours enrichi Tunisie
-        if len(results) < limit:
-            fallback_pool = [
-                {
-                    "external_id": "kee-pfe-101",
-                    "platform": "keejob",
-                    "title": "Stage PFE - Ingénieur Développement Web Python / Django",
-                    "company": "Vermeg",
-                    "location": "Tunis, Tunisie",
-                    "country": "Tunisie",
-                    "description_raw": (
-                        "Stage de fin d'études PFE d'ingénieur. Sujet : Modernisation d'outils financiers internes en Python. "
-                        "Compétences : Python, Django, REST API, Git, bases relationnelles."
-                    ),
-                    "url": "https://www.keejob.com/offres-emploi/101/stage-pfe-vermeg/",
-                },
-                {
-                    "external_id": "kee-pfe-102",
-                    "platform": "keejob",
-                    "title": "Stage PFE - Ingénieur DevOps & Automatisation Kubernetes",
-                    "company": "Sofrecom Tunisie (Orange)",
-                    "location": "Ariana, Tunisie",
-                    "country": "Tunisie",
-                    "description_raw": (
-                        "Intégrez les équipes Cloud Orange pour votre PFE. Déploiement de microservices sur Kubernetes, "
-                        "intégration CI/CD GitLab et observabilité Prometheus. Profil ingénieur télécom/informatique."
-                    ),
-                    "url": "https://www.keejob.com/offres-emploi/102/stage-pfe-sofrecom/",
-                },
-            ]
-            existing_ids = {r["external_id"] for r in results}
-            for fb in fallback_pool:
-                if fb["external_id"] not in existing_ids:
-                    results.append(fb)
-                    if len(results) >= limit:
-                        break
+            print(f"[KeejobConnector] Live scraping error: {e}")
+            return []
 
         return results
 

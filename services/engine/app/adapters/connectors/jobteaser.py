@@ -1,11 +1,14 @@
+import re
+import urllib.parse
 from typing import Any
+from playwright.async_api import async_playwright
 from app.ports.connectors import BaseJobConnector
 
 
 class JobteaserJobConnector(BaseJobConnector):
     """
-    Connecteur de recherche et d'ingestion d'offres Jobteaser (PFE Grandes Écoles).
-    Applique le jitter aléatoire et cible les opportunités partenaires universitaires.
+    Connecteur réel Jobteaser (PFE Grandes Écoles & Universités).
+    Effectue un scraping dynamique via Playwright pour extraire les vraies offres de stages.
     """
 
     @property
@@ -16,67 +19,84 @@ class JobteaserJobConnector(BaseJobConnector):
         self,
         keywords: list[str],
         locations: list[str],
-        limit: int = 5,
+        limit: int = 10,
     ) -> list[dict[str, Any]]:
-        # Application du jitter éthique
-        await self.apply_jitter(min_seconds=0.2, max_seconds=0.5)
+        await self.apply_jitter(min_seconds=0.3, max_seconds=0.6)
 
-        sample_pool = [
-            {
-                "external_id": "jt-pfe-550192",
-                "platform": "jobteaser",
-                "title": "Stage PFE - Ingénieur Conception Logicielle & Microservices",
-                "company": "Société Générale (IT & Solutions)",
-                "location": "Paris La Défense, France",
-                "country": "France",
-                "description_raw": (
-                    "Stage PFE 2027 au sein de la direction informatique. Développement de modules de traitement "
-                    "bancaire résilients. Technologies : Python, FastAPI, API REST, Docker, PostgreSQL."
-                ),
-                "url": "https://www.jobteaser.com/fr/job-offers/550192",
-            },
-            {
-                "external_id": "jt-pfe-610488",
-                "platform": "jobteaser",
-                "title": "Stage Fin d'Études - Ingénieur QA Automatisation & Test Engine",
-                "company": "Capgemini",
-                "location": "Lyon, France",
-                "country": "France",
-                "description_raw": (
-                    "Rejoignez notre centre d'excellence pour votre PFE d'ingénieur. Automatisation de tests E2E, "
-                    "tests de charge et intégration continue. Connaissances : Python, Playwright ou Selenium, CI/CD."
-                ),
-                "url": "https://www.jobteaser.com/fr/job-offers/610488",
-            },
-            {
-                "external_id": "jt-pfe-720194",
-                "platform": "jobteaser",
-                "title": "Stage PFE - Développeur Systèmes Embarqués & IoT",
-                "company": "Telnet",
-                "location": "Tunis, Tunisie",
-                "country": "Tunisie",
-                "description_raw": (
-                    "Stage de fin d'études orienté passerelles IoT et traitement local de données. "
-                    "Profil : Élève-ingénieur avec de bonnes connaissances en C/C++, Linux embarqué et protocoles réseau."
-                ),
-                "url": "https://www.jobteaser.com/fr/job-offers/720194",
-            },
-        ]
-
+        query = " ".join(keywords) if keywords else "stage pfe"
         results: list[dict[str, Any]] = []
-        for job in sample_pool:
-            if locations:
-                if not any(loc.lower() in job["country"].lower() or loc.lower() in job["location"].lower() for loc in locations):
-                    continue
-            results.append(job)
-            if len(results) >= limit:
-                break
+
+        try:
+            encoded_query = urllib.parse.quote(query)
+            url = f"https://www.jobteaser.com/fr/job-offers?q={encoded_query}"
+
+            async with async_playwright() as p:
+                browser = await p.chromium.launch(headless=True)
+                page = await browser.new_page(
+                    user_agent=(
+                        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+                    )
+                )
+                await page.goto(url, timeout=15000, wait_until="domcontentloaded")
+                await page.wait_for_timeout(3000)
+
+                # Sélecteurs réels Jobteaser pour les offres
+                links = await page.query_selector_all('a[href*="/job-offers/"]')
+
+                seen_urls = set()
+                for link in links:
+                    href = await link.get_attribute("href") or ""
+                    raw_text = (await link.inner_text()).strip().replace("\n", " ")
+
+                    if not href or href in seen_urls:
+                        continue
+
+                    # Ignorer les liens non-spécifiques
+                    if href.endswith("/job-offers") or href.endswith("/job-offers/"):
+                        continue
+                    seen_urls.add(href)
+
+                    full_url = f"https://www.jobteaser.com{href}" if href.startswith("/") else href
+
+                    id_match = re.search(r"/job-offers/([0-9a-fA-F-]+)", href)
+                    ext_id = f"jt-{id_match.group(1)}" if id_match else f"jt-{abs(hash(full_url)) % 1000000}"
+
+                    title = raw_text if raw_text and len(raw_text) > 4 else "Stage PFE Jobteaser"
+                    company = "Entreprise Partenaire Jobteaser"
+
+                    # Recherche d'entreprise dans le parent
+                    parent = await link.query_selector("xpath=ancestor::article[1]") or await link.query_selector("xpath=ancestor::div[2]")
+                    if parent:
+                        parent_text = (await parent.inner_text()).strip()
+                        lines = [line.strip() for line in parent_text.splitlines() if line.strip()]
+                        if len(lines) >= 2:
+                            company = lines[0] if lines[0] != title else lines[1]
+
+                    results.append({
+                        "external_id": ext_id,
+                        "platform": "jobteaser",
+                        "title": title,
+                        "company": company,
+                        "location": "France",
+                        "country": "France",
+                        "description_raw": (
+                            f"Offre de stage collectée en direct sur Jobteaser. Intitulé : {title} chez {company}. "
+                            f"Consultez l'offre sur {full_url}"
+                        ),
+                        "url": full_url,
+                    })
+
+                    if len(results) >= limit:
+                        break
+
+                await browser.close()
+        except Exception as e:
+            print(f"[JobteaserConnector] Live scraping error: {e}")
+            return []
 
         return results
 
     async def fetch_job_details(self, job_url: str) -> dict[str, Any]:
         await self.apply_jitter(min_seconds=0.1, max_seconds=0.3)
-        return {
-            "url": job_url,
-            "status": "active",
-        }
+        return {"url": job_url, "status": "active"}

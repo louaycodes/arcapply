@@ -76,24 +76,8 @@ class TunisieTravailJobConnector(BaseJobConnector):
                         if len(results) >= limit:
                             break
         except Exception as e:
-            print(f"[TunisieTravailConnector] Live scraping warning: {e}. Bascule pool garanti.")
-
-        if len(results) < limit:
-            fallback = {
-                "external_id": "tt-pfe-supra",
-                "platform": "tunisietravail",
-                "title": "Supra Tech offre des Stages Rémunérés en PFE (Cloud & Fullstack)",
-                "company": "Supra Tech",
-                "location": "Tunis, Tunisie",
-                "country": "Tunisie",
-                "description_raw": (
-                    "Stage PFE d'excellence rémunéré pour élève-ingénieur en informatique. "
-                    "Technologies : Python, Docker, React, architectures microservices."
-                ),
-                "url": "https://www.tunisietravail.net/supra-tech-stages-pfe",
-            }
-            if not any(r["external_id"] == fallback["external_id"] for r in results):
-                results.append(fallback)
+            print(f"[TunisieTravailConnector] Live scraping error: {e}")
+            return []
 
         return results
 

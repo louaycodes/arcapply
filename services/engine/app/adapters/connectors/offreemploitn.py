@@ -1,11 +1,14 @@
+import re
 from typing import Any
+import httpx
+from bs4 import BeautifulSoup
 from app.ports.connectors import BaseJobConnector
 
 
 class OffreEmploiTnJobConnector(BaseJobConnector):
     """
-    Connecteur Offre-emploi.tn (Section stages et PFE Tunisie).
-    Agrège les opportunités de stages étudiants et PFE des entreprises tunisiennes.
+    Connecteur réel Offre-emploi.tn (Section stages et PFE Tunisie).
+    Effectue un scraping HTTP en direct sur la section /offres-de-stages/ avec extraction de vraies URLs.
     """
 
     @property
@@ -18,38 +21,59 @@ class OffreEmploiTnJobConnector(BaseJobConnector):
         locations: list[str],
         limit: int = 10,
     ) -> list[dict[str, Any]]:
-        await self.apply_jitter(min_seconds=0.2, max_seconds=0.4)
+        await self.apply_jitter(min_seconds=0.3, max_seconds=0.6)
 
-        pool = [
-            {
-                "external_id": "oet-pfe-smartech",
-                "platform": "offre_emploi_tn",
-                "title": "Stage PFE - Ingénieur Développement Web Spring Boot / Angular",
-                "company": "SmartTech Solutions Tunisie",
-                "location": "Sousse, Tunisie",
-                "country": "Tunisie",
-                "description_raw": (
-                    "Stage PFE d'ingénieur en génie logiciel. Conception et développement d'un portail de télémédecine et gestion des dossiers patients. "
-                    "Compétences : Java, Spring Boot, Angular, PostgreSQL, Docker, Git."
-                ),
-                "url": "https://www.offre-emploi.tn/offres-de-stages/smarttech-pfe-springboot",
-            },
-            {
-                "external_id": "oet-pfe-neo",
-                "platform": "offre_emploi_tn",
-                "title": "Stage PFE - Ingénieur Data Science & Prédiction de Churn Télécom",
-                "company": "NeoData Tunisie",
-                "location": "Tunis / El Ghazala Technopark, Tunisie",
-                "country": "Tunisie",
-                "description_raw": (
-                    "Stage PFE au pôle Analytics. Analyse exploratoire de données clients et implémentation de modèles d'arbres de décision et boosting. "
-                    "Technologies : Python, Pandas, XGBoost, MLflow, Docker."
-                ),
-                "url": "https://www.offre-emploi.tn/offres-de-stages/neodata-pfe-datascience",
-            },
-        ]
+        results: list[dict[str, Any]] = []
+        url = "https://www.offre-emploi.tn/offres-de-stages/"
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+            ),
+            "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
+        }
 
-        return pool[:limit]
+        try:
+            async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+                resp = await client.get(url, headers=headers)
+                if resp.status_code == 200 and resp.text:
+                    soup = BeautifulSoup(resp.text, "html.parser")
+                    links = soup.find_all("a", href=lambda h: h and "/offres-de-stages/" in h and re.search(r"-\d+/?$", h))
+
+                    seen_urls = set()
+                    for link in links:
+                        raw_title = link.text.strip()
+                        href = link.get("href", "")
+                        if not raw_title or len(raw_title) < 4 or href in seen_urls:
+                            continue
+
+                        full_url = href if href.startswith("http") else f"https://www.offre-emploi.tn{href}"
+                        seen_urls.add(href)
+
+                        id_match = re.search(r"-(\d+)/?$", href)
+                        ext_id = f"oet-{id_match.group(1)}" if id_match else f"oet-{abs(hash(full_url)) % 1000000}"
+
+                        results.append({
+                            "external_id": ext_id,
+                            "platform": "offre_emploi_tn",
+                            "title": raw_title,
+                            "company": "Entreprise Partenaire Offre-Emploi.tn",
+                            "location": "Tunis, Tunisie",
+                            "country": "Tunisie",
+                            "description_raw": (
+                                f"Offre de stage collectée en direct sur Offre-Emploi Tunisie. Titre : {raw_title}. "
+                                f"Consultez l'offre sur {full_url}"
+                            ),
+                            "url": full_url,
+                        })
+
+                        if len(results) >= limit:
+                            break
+        except Exception as e:
+            print(f"[OffreEmploiTnConnector] Live scraping error: {e}")
+            return []
+
+        return results
 
     async def fetch_job_details(self, job_url: str) -> dict[str, Any]:
         await self.apply_jitter(min_seconds=0.1, max_seconds=0.3)

@@ -1,11 +1,13 @@
 from typing import Any
+import httpx
 from app.ports.connectors import BaseJobConnector
 
 
 class ESNDirectJobConnector(BaseJobConnector):
     """
-    Connecteur Portails Carrières Directs ESN & Tech (Numeum, Capgemini, Sopra Steria, Talan, CGI).
-    Scrape et centralise les offres ciblées de stage PFE pré-embauche des grandes entreprises de services numériques.
+    Connecteur ESN Direct.
+    Effectue une vérification réelle de l'infrastructure cible. Le domaine étant inactif (parké HugeDomains),
+    renvoie une liste vide avec log explicite (aucun mock - AD-4).
     """
 
     @property
@@ -18,68 +20,25 @@ class ESNDirectJobConnector(BaseJobConnector):
         locations: list[str],
         limit: int = 10,
     ) -> list[dict[str, Any]]:
-        await self.apply_jitter(min_seconds=0.2, max_seconds=0.5)
+        await self.apply_jitter(min_seconds=0.2, max_seconds=0.4)
 
-        pool = [
-            {
-                "external_id": "esn-pfe-talan",
-                "platform": "esn_direct",
-                "title": "Stage PFE (Pré-embauche) - Consultant Ingénieur Data / IA Générative",
-                "company": "Talan France",
-                "location": "Paris La Défense, France",
-                "country": "France",
-                "description_raw": (
-                    "Stage PFE d'excellence de fin d'études au centre d'expertise Data & AI Talan. "
-                    "Accompagnement de grands comptes du CAC 40 dans l'intégration de solutions RAG et agents autonomes. "
-                    "Stack : Python, LangChain, Azure OpenAI, Docker, SQL."
+        try:
+            url = "http://www.esndirect.com"
+            headers = {
+                "User-Agent": (
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
                 ),
-                "url": "https://carrieres.talan.com/fr/jobs/talan-pfe-data-ia",
-            },
-            {
-                "external_id": "esn-pfe-capgemini",
-                "platform": "esn_direct",
-                "title": "Stage PFE - Ingénieur Conception Logicielle Cloud Native & DevOps",
-                "company": "Capgemini Engineering",
-                "location": "Toulouse / Lyon, France",
-                "country": "France",
-                "description_raw": (
-                    "Rejoignez Capgemini Engineering pour votre stage PFE de 6 mois avec perspective d'embauche en CDI. "
-                    "Industrialisation de plateformes cloud, automatisation Terraform et CI/CD sur Kubernetes. "
-                    "Profil : Élève-ingénieur en dernière année d'école d'ingénieurs informatique."
-                ),
-                "url": "https://www.capgemini.com/fr-fr/carrieres/offres/cap-pfe-cloud-native",
-            },
-            {
-                "external_id": "esn-pfe-sopra",
-                "platform": "esn_direct",
-                "title": "Stage PFE - Ingénieur Cybersécurité & Détection d'Anomalies Cloud",
-                "company": "Sopra Steria",
-                "location": "Paris / Rennes, France",
-                "country": "France",
-                "description_raw": (
-                    "Stage de fin d'études PFE au pôle Cyberdéfense Sopra Steria. "
-                    "Surveillance et durcissement d'infrastructures multi-cloud AWS/GCP, automatisation SIEM/EDR. "
-                    "Technologies : Python, Terraform, AWS Security, Splunk."
-                ),
-                "url": "https://carrieres.soprasteria.com/offres/sopra-pfe-cyber-cloud",
-            },
-            {
-                "external_id": "esn-pfe-cgi",
-                "platform": "esn_direct",
-                "title": "Stage PFE - Développeur Fullstack Java / Spring Boot & Angular",
-                "company": "CGI France",
-                "location": "Nantes / Bordeaux, France",
-                "country": "France",
-                "description_raw": (
-                    "CGI propose un stage PFE tremplin pour démarrer votre carrière d'ingénieur d'études. "
-                    "Participation à la refonte d'applications métier pour le secteur bancaire et public. "
-                    "Technologies : Java 21, Spring Boot, Angular, Docker, Git."
-                ),
-                "url": "https://www.cgi.com/france/fr-fr/carrieres/offres/cgi-pfe-fullstack",
-            },
-        ]
-
-        return pool[:limit]
+            }
+            async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
+                resp = await client.get(url, headers=headers)
+                if "hugedomains" in resp.text.lower() or "for sale" in resp.text.lower():
+                    print("[ESNDirectConnector] Source indisponible : domaine inactif / nom de domaine en vente (HugeDomains)")
+                    return []
+                return []
+        except Exception as e:
+            print(f"[ESNDirectConnector] Source indisponible : {e}")
+            return []
 
     async def fetch_job_details(self, job_url: str) -> dict[str, Any]:
         await self.apply_jitter(min_seconds=0.1, max_seconds=0.3)

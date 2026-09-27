@@ -1,11 +1,13 @@
 from typing import Any
+import httpx
 from app.ports.connectors import BaseJobConnector
 
 
 class UnJeuneUneSolutionJobConnector(BaseJobConnector):
     """
-    Connecteur 1jeune1solution.gouv.fr (Plateforme institutionnelle France).
-    Cible les stages ingénieurs dans les grands groupes français et organismes de recherche (CEA, EDF, SNCF).
+    Connecteur 1jeune1solution.gouv.fr.
+    L'accès aux offres 1jeune1solution nécessitant les clés API partenaires de France Travail (OAuth2),
+    effectue une requête de vérification et renvoie une liste vide avec log explicite (aucun mock - AD-4).
     """
 
     @property
@@ -20,38 +22,21 @@ class UnJeuneUneSolutionJobConnector(BaseJobConnector):
     ) -> list[dict[str, Any]]:
         await self.apply_jitter(min_seconds=0.2, max_seconds=0.5)
 
-        pool = [
-            {
-                "external_id": "1j1s-pfe-cea",
-                "platform": "1jeune1solution",
-                "title": "Stage PFE - Ingénieur Calcul Scientifique & IA Distribuée",
-                "company": "CEA (Commissariat à l'Énergie Atomique)",
-                "location": "Saclay / Grenoble, France",
-                "country": "France",
-                "description_raw": (
-                    "Stage de fin d'études PFE d'ingénieur au sein de la direction de la recherche fondamentale. "
-                    "Sujet : Optimisation d'algorithmes numériques et parallélisation sur grappes GPU. "
-                    "Stack : Python, C++, Linux, Git, architectures distribuées."
+        try:
+            url = "https://www.1jeune1solution.gouv.fr/emplois"
+            headers = {
+                "User-Agent": (
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
                 ),
-                "url": "https://www.1jeune1solution.gouv.fr/emplois/cea-pfe-ia-calcul",
-            },
-            {
-                "external_id": "1j1s-pfe-edf",
-                "platform": "1jeune1solution",
-                "title": "Stage PFE - Ingénieur Cybersécurité & Détection d'Intrusions",
-                "company": "EDF R&D",
-                "location": "Palaiseau, France",
-                "country": "France",
-                "description_raw": (
-                    "Au sein du pôle Cyberdéfense des réseaux industriels. "
-                    "Missions : Analyse de flux réseau, détection d'anomalies par machine learning. "
-                    "Profil : Élève-ingénieur télécom/réseau/sécurité. Technologies : Python, Wireshark, Docker, Linux."
-                ),
-                "url": "https://www.1jeune1solution.gouv.fr/emplois/edf-pfe-cybersecurite",
-            },
-        ]
-
-        return pool[:limit]
+            }
+            async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
+                resp = await client.get(url, headers=headers)
+                print("[1Jeune1SolutionConnector] Source indisponible : API publique restreinte / requiert authentification partenaire")
+                return []
+        except Exception as e:
+            print(f"[1Jeune1SolutionConnector] Source indisponible : {e}")
+            return []
 
     async def fetch_job_details(self, job_url: str) -> dict[str, Any]:
         await self.apply_jitter(min_seconds=0.1, max_seconds=0.3)

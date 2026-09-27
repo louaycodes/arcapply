@@ -1,11 +1,13 @@
 from typing import Any
+import httpx
 from app.ports.connectors import BaseJobConnector
 
 
 class StackOverflowJobsJobConnector(BaseJobConnector):
     """
-    Connecteur StackOverflow Jobs & Developer Hub.
-    Opportunités de stages ingénieurs logiciel et profils open-source.
+    Connecteur Stack Overflow Jobs.
+    Stack Overflow ayant définitivement fermé son service d'offres d'emploi (SO Jobs) en mars 2022,
+    effectue une requête de contrôle et renvoie une liste vide avec log explicite (aucun mock - AD-4).
     """
 
     @property
@@ -20,36 +22,21 @@ class StackOverflowJobsJobConnector(BaseJobConnector):
     ) -> list[dict[str, Any]]:
         await self.apply_jitter(min_seconds=0.2, max_seconds=0.5)
 
-        pool = [
-            {
-                "external_id": "so-pfe-mozilla",
-                "platform": "stackoverflow_jobs",
-                "title": "Stage PFE - Ingénieur R&D WebAssembly & Runtimes Navigateur",
-                "company": "Mozilla Europe",
-                "location": "Paris / Remote, France",
-                "country": "France",
-                "description_raw": (
-                    "Stage PFE chez Mozilla pour travailler sur le moteur SpiderMonkey et les spécifications WebAssembly. "
-                    "Expérience en Rust, C++, structures de données et compilation de code."
+        try:
+            url = "https://stackoverflow.com/jobs"
+            headers = {
+                "User-Agent": (
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
                 ),
-                "url": "https://stackoverflow.com/jobs/mozilla-pfe-wasm",
-            },
-            {
-                "external_id": "so-pfe-datadog",
-                "platform": "stackoverflow_jobs",
-                "title": "Stage PFE - Software Engineer Observability & Tracing Agent",
-                "company": "Datadog France",
-                "location": "Paris, France",
-                "country": "France",
-                "description_raw": (
-                    "Stage PFE chez Datadog au sein de l'équipe APM (Application Performance Monitoring). "
-                    "Développement de traceurs et d'instrumentation bas niveau pour les runtimes Python et Go."
-                ),
-                "url": "https://stackoverflow.com/jobs/datadog-pfe-apm",
-            },
-        ]
-
-        return pool[:limit]
+            }
+            async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
+                resp = await client.get(url, headers=headers)
+                print("[StackOverflowJobsConnector] Source indisponible : service définitivement arrêté par Stack Overflow en 2022")
+                return []
+        except Exception as e:
+            print(f"[StackOverflowJobsConnector] Source indisponible : {e}")
+            return []
 
     async def fetch_job_details(self, job_url: str) -> dict[str, Any]:
         await self.apply_jitter(min_seconds=0.1, max_seconds=0.3)

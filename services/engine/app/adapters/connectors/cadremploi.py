@@ -1,11 +1,15 @@
+import urllib.parse
 from typing import Any
+import httpx
+from bs4 import BeautifulSoup
 from app.ports.connectors import BaseJobConnector
 
 
 class CadremploiJobConnector(BaseJobConnector):
     """
-    Connecteur Cadremploi (Groupe Figaro).
-    Cible les stages ingénieurs d'excellence et opportunités pré-cadres Bac+5.
+    Connecteur réel Cadremploi (Groupe Figaro).
+    Effectue une requête HTTP réelle vers cadremploi.fr. En cas de blocage anti-bot DataDome (403),
+    renvoie une liste vide avec log explicite (aucun mock - AD-4).
     """
 
     @property
@@ -20,37 +24,46 @@ class CadremploiJobConnector(BaseJobConnector):
     ) -> list[dict[str, Any]]:
         await self.apply_jitter(min_seconds=0.2, max_seconds=0.5)
 
-        pool = [
-            {
-                "external_id": "cad-pfe-engie",
-                "platform": "cadremploi",
-                "title": "Stage PFE - Ingénieur Efficacité Énergétique & Jumeaux Numériques",
-                "company": "ENGIE Solutions",
-                "location": "Courbevoie / Paris, France",
-                "country": "France",
-                "description_raw": (
-                    "Stage PFE d'ingénieur en modélisation thermique et énergétique des bâtiments tertiaires. "
-                    "Développement d'algorithmes prédictifs pour optimiser la consommation de réseaux de chaleur. "
-                    "Compétences : Python, simulation numérique, Machine Learning, Git."
+        query = " ".join(keywords) if keywords else "stage pfe"
+        try:
+            encoded_query = urllib.parse.quote(query)
+            url = f"https://www.cadremploi.fr/emploi/liste_offres?motscles={encoded_query}"
+            headers = {
+                "User-Agent": (
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
                 ),
-                "url": "https://www.cadremploi.fr/emploi/engie-pfe-jumeaux-numeriques",
-            },
-            {
-                "external_id": "cad-pfe-safran",
-                "platform": "cadremploi",
-                "title": "Stage PFE - Ingénieur Conception Aéronautique & Calcul de Structures",
-                "company": "Safran Aircraft Engines",
-                "location": "Villaroche / Melun, France",
-                "country": "France",
-                "description_raw": (
-                    "Rejoignez les équipes calcul et méthodes de Safran. Analyse thermo-mécanique d'éléments de turboréacteurs de nouvelle génération. "
-                    "Outils : Python, C++, éléments finis, Ansys."
-                ),
-                "url": "https://www.cadremploi.fr/emploi/safran-pfe-structures-aero",
-            },
-        ]
+            }
 
-        return pool[:limit]
+            async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
+                resp = await client.get(url, headers=headers)
+                if resp.status_code == 403 or "datadome" in resp.text.lower():
+                    print("[CadremploiConnector] Source indisponible : blocage anti-bot DataDome (HTTP 403)")
+                    return []
+                if resp.status_code == 200:
+                    # Traiter les offres si réponse 200 non bloquée
+                    soup = BeautifulSoup(resp.text, "html.parser")
+                    links = soup.find_all("a", href=lambda h: h and "/emploi/" in h and "/offre" in h)
+                    results = []
+                    for l in links[:limit]:
+                        href = l.get("href", "")
+                        title = l.text.strip()
+                        full_url = f"https://www.cadremploi.fr{href}" if href.startswith("/") else href
+                        results.append({
+                            "external_id": f"cad-{abs(hash(full_url)) % 1000000}",
+                            "platform": "cadremploi",
+                            "title": title or "Offre Cadremploi",
+                            "company": "Entreprise Partenaire Cadremploi",
+                            "location": "France",
+                            "country": "France",
+                            "description_raw": f"Offre collectée sur Cadremploi : {title}. URL : {full_url}",
+                            "url": full_url,
+                        })
+                    return results
+                return []
+        except Exception as e:
+            print(f"[CadremploiConnector] Source indisponible : {e}")
+            return []
 
     async def fetch_job_details(self, job_url: str) -> dict[str, Any]:
         await self.apply_jitter(min_seconds=0.1, max_seconds=0.3)

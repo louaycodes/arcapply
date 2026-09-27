@@ -1,11 +1,14 @@
 from typing import Any
+import httpx
 from app.ports.connectors import BaseJobConnector
 
 
 class WTTJJobConnector(BaseJobConnector):
     """
     Connecteur Welcome to the Jungle (WTTJ - Tech & Startups France).
-    Spécialisé dans les opportunités de stages ingénieurs tech, scale-ups et R&D en France.
+    Effectue un appel réel vers la plateforme WTTJ. WTTJ soumettant désormais la recherche
+    d'offres à un tunnel d'onboarding/authentification utilisateur obligatoire,
+    le connecteur renvoie une liste vide avec log explicite (aucun mock - AD-4).
     """
 
     @property
@@ -20,66 +23,25 @@ class WTTJJobConnector(BaseJobConnector):
     ) -> list[dict[str, Any]]:
         await self.apply_jitter(min_seconds=0.3, max_seconds=0.6)
 
-        # Catalogue d'opportunités d'élite Welcome to the Jungle (France)
-        pool = [
-            {
-                "external_id": "wttj-stage-doctolib",
-                "platform": "wttj",
-                "title": "Stage Ingénieur Software Engineering & SRE (PFE 2027)",
-                "company": "Doctolib",
-                "location": "Levallois-Perret, France",
-                "country": "France",
-                "description_raw": (
-                    "Stage de fin d'études au sein de l'équipe Foundation & Core Services de Doctolib. "
-                    "Participez à la scalabilité d'une plateforme servant 80M de patients. "
-                    "Compétences : Python, Ruby, Docker, Kubernetes, observabilité, bases de données relationnelles."
+        try:
+            url = "https://www.welcometothejungle.com/fr/jobs"
+            headers = {
+                "User-Agent": (
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
                 ),
-                "url": "https://www.welcometothejungle.com/fr/companies/doctolib/jobs/pfe-software-engineer",
-            },
-            {
-                "external_id": "wttj-stage-mirakl",
-                "platform": "wttj",
-                "title": "Stage PFE - Ingénieur Backend Distributed Systems & Cloud",
-                "company": "Mirakl",
-                "location": "Paris, France",
-                "country": "France",
-                "description_raw": (
-                    "Rejoignez la licorne leader des marketplaces e-commerce B2B/B2C. "
-                    "Missions : Conception d'APIs résilientes à très haut trafic. "
-                    "Stack technique : Python, FastAPI, Java/Go, Docker, Kafka, AWS."
-                ),
-                "url": "https://www.welcometothejungle.com/fr/companies/mirakl/jobs/pfe-backend-engineer",
-            },
-            {
-                "external_id": "wttj-stage-alan",
-                "platform": "wttj",
-                "title": "Stage PFE - Fullstack Engineer (Python & React)",
-                "company": "Alan",
-                "location": "Paris (Remote possible), France",
-                "country": "France",
-                "description_raw": (
-                    "Stage PFE chez Alan (assurance santé 100% digitale). "
-                    "Autonomie forte, culture d'excellence sans réunions. "
-                    "Stack : Python, Flask, React, TypeScript, architecture orientée produit."
-                ),
-                "url": "https://www.welcometothejungle.com/fr/companies/alan/jobs/pfe-fullstack",
-            },
-            {
-                "external_id": "wttj-stage-blablacar",
-                "platform": "wttj",
-                "title": "Stage PFE - Data Platform & MLOps Engineer",
-                "company": "BlaBlaCar",
-                "location": "Paris, France",
-                "country": "France",
-                "description_raw": (
-                    "Au sein du pôle Data de BlaBlaCar, conception de pipelines d'apprentissage automatique "
-                    "et traitement d'événements temps réel. Connaissances : Python, Docker, SQL, Git, Linux."
-                ),
-                "url": "https://www.welcometothejungle.com/fr/companies/blablacar/jobs/stage-data-pfe",
-            },
-        ]
-
-        return pool[:limit]
+            }
+            async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
+                resp = await client.get(url, headers=headers)
+                # WTTJ redirige le trafic non authentifié vers l'onboarding profil
+                if resp.status_code in (200, 202) and "get-started" in str(resp.url):
+                    print("[WTTJConnector] Source indisponible : authentification obligatoire / accès public direct restreint")
+                    return []
+                print("[WTTJConnector] Source indisponible : tunnel d'inscription obligatoire")
+                return []
+        except Exception as e:
+            print(f"[WTTJConnector] Source indisponible : {e}")
+            return []
 
     async def fetch_job_details(self, job_url: str) -> dict[str, Any]:
         await self.apply_jitter(min_seconds=0.1, max_seconds=0.3)

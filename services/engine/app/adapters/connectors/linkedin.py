@@ -9,7 +9,7 @@ from app.ports.connectors import BaseJobConnector
 class LinkedInJobConnector(BaseJobConnector):
     """
     Connecteur réel de recherche et d'ingestion d'offres LinkedIn (PFE France & Tunisie).
-    Effectue un scraping en direct via l'API publique invité de LinkedIn avec fallback résilient.
+    Effectue un scraping en direct via l'API publique invité de LinkedIn (aucun mock ni fallback fictif - AD-4).
     """
 
     @property
@@ -90,74 +90,8 @@ class LinkedInJobConnector(BaseJobConnector):
                         if len(results) >= limit:
                             break
         except Exception as e:
-            # En cas d'indisponibilité temporaire du guest API, bascule sur le pool de secours
-            print(f"[LinkedInConnector] Live scraping warning: {e}. Activation du pool certifié.")
-
-        # 2. Si le scraping en direct n'a pas pu joindre LinkedIn ou a retourné trop peu, enrichir avec le pool garanti
-        if len(results) < limit:
-            fallback_pool = [
-                {
-                    "external_id": "li-pfe-7489201",
-                    "platform": "linkedin",
-                    "title": "Stage PFE - Ingénieur Backend Systèmes Distribués (H/F)",
-                    "company": "Dassault Systèmes",
-                    "location": "Vélizy-Villacoublay, France",
-                    "country": "France",
-                    "description_raw": (
-                        "Recherche élève-ingénieur en dernière année pour un stage PFE d'excellence de 6 mois démarrant début 2027. "
-                        "Missions : Conception d'architectures microservices résilientes en Python et Go. "
-                        "Compétences recherchées : Python, FastAPI, Docker, architectures distribuées, bases de données relationnelles (PostgreSQL/SQLite)."
-                    ),
-                    "url": "https://www.linkedin.com/jobs/view/7489201",
-                },
-                {
-                    "external_id": "li-pfe-8829103",
-                    "platform": "linkedin",
-                    "title": "Stage PFE - Ingénieur Cloud & Plateforme DevOps",
-                    "company": "Thales",
-                    "location": "Toulouse, France",
-                    "country": "France",
-                    "description_raw": (
-                        "Au sein du pôle Cloud Solutions, stage PFE axé sur l'automatisation CI/CD, "
-                        "l'orchestration de conteneurs et l'observabilité. "
-                        "Profil : Étudiant ingénieur Bac+5. Compétences : Docker, Kubernetes, Linux, scripts Python/Bash, Git."
-                    ),
-                    "url": "https://www.linkedin.com/jobs/view/8829103",
-                },
-                {
-                    "external_id": "li-pfe-9120485",
-                    "platform": "linkedin",
-                    "title": "Stage PFE - Développeur Fullstack React / Next.js & Python",
-                    "company": "Expensya / Mediasoft",
-                    "location": "Tunis, Tunisie",
-                    "country": "Tunisie",
-                    "description_raw": (
-                        "Stage de pré-embauche PFE 2027 à Tunis. Participation au développement du cockpit de gestion "
-                        "haute performance. Environnement : Next.js, React 19, TypeScript, API REST Python, Tailwind CSS."
-                    ),
-                    "url": "https://www.linkedin.com/jobs/view/9120485",
-                },
-                {
-                    "external_id": "li-pfe-9402911",
-                    "platform": "linkedin",
-                    "title": "Stage PFE - Ingénieur Software & Data Engineering",
-                    "company": "Instadeep",
-                    "location": "Tunis, Tunisie",
-                    "country": "Tunisie",
-                    "description_raw": (
-                        "Stage PFE d'excellence en ingénierie logicielle pour pipelines de données d'IA. "
-                        "Exigences : Maîtrise de Python, rigueur algorithmique, bases solides en Docker et Git."
-                    ),
-                    "url": "https://www.linkedin.com/jobs/view/9402911",
-                },
-            ]
-
-            existing_ids = {r["external_id"] for r in results}
-            for fallback in fallback_pool:
-                if fallback["external_id"] not in existing_ids:
-                    results.append(fallback)
-                    if len(results) >= limit:
-                        break
+            print(f"[LinkedInConnector] Live scraping error: {e}")
+            return []
 
         return results
 

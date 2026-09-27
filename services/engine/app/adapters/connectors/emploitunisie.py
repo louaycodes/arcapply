@@ -9,7 +9,8 @@ from app.ports.connectors import BaseJobConnector
 class EmploiTunisieJobConnector(BaseJobConnector):
     """
     Connecteur réel Emploitunisie.com (AfricaWork Tunisie).
-    Agrège les offres et stages d'ingénieurs en Tunisie.
+    Effectue un appel HTTP réel vers emploitunisie.com. En cas de blocage Cloudflare (403),
+    renvoie une liste vide avec log explicite (aucun mock ni fallback fictif - AD-4).
     """
 
     @property
@@ -40,24 +41,27 @@ class EmploiTunisieJobConnector(BaseJobConnector):
 
             async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
                 resp = await client.get(url, headers=headers)
-                if resp.status_code == 200 and resp.text:
+                if resp.status_code == 403 or "Just a moment..." in resp.text or "cf-challenge" in resp.text:
+                    print("[EmploiTunisieConnector] Source indisponible : blocage anti-bot Cloudflare (HTTP 403)")
+                    return []
+
+                if resp.status_code == 200:
                     soup = BeautifulSoup(resp.text, "html.parser")
-                    job_cards = soup.find_all("div", class_=lambda c: c and "job-description-wrapper" in c)
+                    job_cards = soup.find_all("div", class_=lambda c: c and ("job-description-wrapper" in c or "job-item" in c))
 
                     for card in job_cards:
-                        title_el = card.find("h5") or card.find("a")
-                        if not title_el:
-                            continue
-                        raw_title = title_el.text.strip()
                         link_el = card.find("a", href=True)
-                        href = link_el["href"] if link_el else ""
+                        if not link_el:
+                            continue
+                        raw_title = link_el.text.strip()
+                        href = link_el["href"]
                         full_url = href if href.startswith("http") else f"https://www.emploitunisie.com{href}"
 
                         comp_el = card.find("div", class_=lambda c: c and "company" in c)
                         company = comp_el.text.strip() if comp_el else "Recruteur Tech EmploiTunisie"
 
                         id_match = re.search(r"/(\d+)", href)
-                        ext_id = f"et-{id_match.group(1)}" if id_match else f"et-{abs(hash(raw_title)) % 1000000}"
+                        ext_id = f"et-{id_match.group(1)}" if id_match else f"et-{abs(hash(full_url)) % 1000000}"
 
                         results.append({
                             "external_id": ext_id,
@@ -76,43 +80,8 @@ class EmploiTunisieJobConnector(BaseJobConnector):
                         if len(results) >= limit:
                             break
         except Exception as e:
-            print(f"[EmploiTunisieConnector] Live scraping notice: {e}. Bascule pool garanti.")
-
-        if len(results) < limit:
-            fallback = [
-                {
-                    "external_id": "et-pfe-actia",
-                    "platform": "emploitunisie",
-                    "title": "Stage PFE - Ingénieur Logiciel Embarqué & Diagnostic Automobile",
-                    "company": "ACTIA Engineering Services Tunisie",
-                    "location": "Ariana, Tunisie",
-                    "country": "Tunisie",
-                    "description_raw": (
-                        "Stage PFE d'ingénieur au pôle R&D ACTIA Tunisie. Sujet : Conception et implémentation d'une stack "
-                        "de diagnostic UDS sur microcontrôleur ARM Cortex. Compétences : C/C++, RTOS, CAN/LIN, Python."
-                    ),
-                    "url": "https://www.emploitunisie.com/offres/actia-pfe-embarque",
-                },
-                {
-                    "external_id": "et-pfe-telnet",
-                    "platform": "emploitunisie",
-                    "title": "Stage PFE - Ingénieur Vision par Ordinateur & Deep Learning",
-                    "company": "TELNET Holding",
-                    "location": "Tunis Lac, Tunisie",
-                    "country": "Tunisie",
-                    "description_raw": (
-                        "Recherche élève-ingénieur en IA/Data pour projet PFE télécom et aérospatial. "
-                        "Objectif : Détection d'anomalies sur imagerie satellite. Stack : Python, PyTorch, OpenCV, Docker."
-                    ),
-                    "url": "https://www.emploitunisie.com/offres/telnet-pfe-vision-ia",
-                },
-            ]
-            seen = {r["external_id"] for r in results}
-            for fb in fallback:
-                if fb["external_id"] not in seen:
-                    results.append(fb)
-                    if len(results) >= limit:
-                        break
+            print(f"[EmploiTunisieConnector] Source indisponible : {e}")
+            return []
 
         return results
 
