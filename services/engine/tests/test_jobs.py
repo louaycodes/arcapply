@@ -35,29 +35,57 @@ def test_collect_jobs_creates_offers():
 
 
 def test_collect_jobs_deduplication():
+    from unittest.mock import patch, AsyncMock
+    mock_raw_jobs = [
+        {
+            "external_id": "li-dedup-1",
+            "platform": "linkedin",
+            "title": "Stage PFE Cloud Engineer",
+            "company": "Thales",
+            "location": "Paris, France",
+            "country": "France",
+            "description_raw": "Stage de fin d'études Cloud et DevOps.",
+            "url": "https://www.linkedin.com/jobs/view/li-dedup-1",
+        },
+        {
+            "external_id": "li-dedup-2",
+            "platform": "linkedin",
+            "title": "Stage PFE DevOps Kubernetes",
+            "company": "Airbus",
+            "location": "Toulouse, France",
+            "country": "France",
+            "description_raw": "Stage DevOps sur infrastructure Kubernetes.",
+            "url": "https://www.linkedin.com/jobs/view/li-dedup-2",
+        },
+    ]
+
     payload = {
         "keywords": ["PFE"],
         "locations": ["France"],
         "platforms": ["linkedin"],
         "limit_per_platform": 2,
     }
-    # Première passe
-    res1 = client.post("/api/jobs/collect", json=payload)
-    assert res1.status_code == 200
-    data1 = res1.json()
-    initial_new = data1["new_count"]
-    assert initial_new > 0
 
-    # Deuxième passe avec les mêmes critères : doit détecter les doublons et ne rien ajouter
-    res2 = client.post("/api/jobs/collect", json=payload)
-    assert res2.status_code == 200
-    data2 = res2.json()
-    assert data2["new_count"] == 0
-    assert data2["duplicate_count"] == initial_new
+    with patch("app.adapters.connectors.linkedin.LinkedInJobConnector.search_jobs", new_callable=AsyncMock) as mock_search:
+        mock_search.return_value = mock_raw_jobs
 
-    # Le total en base ne doit pas avoir augmenté
-    list_res = client.get("/api/jobs?platform=linkedin")
-    assert len(list_res.json()) == initial_new
+        # Première passe
+        res1 = client.post("/api/jobs/collect", json=payload)
+        assert res1.status_code == 200
+        data1 = res1.json()
+        assert data1["new_count"] == 2
+        assert data1["duplicate_count"] == 0
+
+        # Deuxième passe avec les mêmes critères : doit détecter les doublons et ne rien ajouter
+        res2 = client.post("/api/jobs/collect", json=payload)
+        assert res2.status_code == 200
+        data2 = res2.json()
+        assert data2["new_count"] == 0
+        assert data2["duplicate_count"] == 2
+
+        # Le total en base ne doit pas avoir augmenté
+        list_res = client.get("/api/jobs?platform=linkedin")
+        assert len(list_res.json()) == 2
 
 
 def test_filter_jobs_by_country_and_search():
