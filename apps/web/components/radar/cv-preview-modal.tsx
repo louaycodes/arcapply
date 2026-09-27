@@ -83,7 +83,7 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base sm:text-lg font-bold text-foreground">
-                  CV Ciblé ATS — 1 Page A4
+                  CV Ciblé ATS — 2 Pages A4
                 </h2>
                 <span className="inline-flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                   <ShieldCheck className="w-3.5 h-3.5" />
@@ -158,7 +158,7 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
               }`}
             >
               <Eye className="w-3.5 h-3.5" />
-              <span>Aperçu Document (A4)</span>
+              <span>Aperçu Document (2 Pages A4)</span>
             </button>
 
             <button
