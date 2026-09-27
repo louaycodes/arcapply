@@ -2,7 +2,7 @@
 title: "Fix: Sélection intelligente multi-projets/expériences pour la lettre de motivation"
 type: 'bugfix'
 created: '2026-09-27'
-status: 'in-progress'
+status: 'done'
 route: 'oneshot'
 review_loop_iteration: 0
 context: []
