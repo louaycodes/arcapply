@@ -62,7 +62,8 @@ class Experience(SQLModel, table=True):
     def technologies(self) -> list[str]:
         if not self.technologies_raw:
             return []
-        return [t.strip() for t in self.technologies_raw.split(",") if t.strip()]
+        raw = self.technologies_raw.replace(";", ",")
+        return [t.strip() for t in raw.split(",") if t.strip()]
 
     @technologies.setter
     def technologies(self, values: list[str]) -> None:
@@ -93,7 +94,8 @@ class Project(SQLModel, table=True):
     def technologies(self) -> list[str]:
         if not self.technologies_raw:
             return []
-        return [t.strip() for t in self.technologies_raw.split(",") if t.strip()]
+        raw = self.technologies_raw.replace(";", ",")
+        return [t.strip() for t in raw.split(",") if t.strip()]
 
     @technologies.setter
     def technologies(self, values: list[str]) -> None:
@@ -295,6 +297,7 @@ class TargetedCVBase(SQLModel):
     projects_raw: str = Field(default="[]")
     educations_raw: str = Field(default="[]")
     html_content: str = Field(default="")
+    language: str = Field(default="fr", index=True)
 
 
 class TargetedCV(TargetedCVBase, table=True):
@@ -356,6 +359,7 @@ class TargetedCVRead(SQLModel):
     projects: list[dict]
     educations: list[dict]
     html_content: str
+    language: str = "fr"
     created_at: datetime
 
 

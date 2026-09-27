@@ -34,6 +34,12 @@ def _migrate_db(engine) -> None:
         except Exception:
             pass
 
+        try:
+            conn.execute(text("ALTER TABLE targeted_cvs ADD COLUMN language VARCHAR DEFAULT 'fr'"))
+            conn.commit()
+        except Exception:
+            pass
+
 
 def init_db() -> None:
     engine = get_engine()

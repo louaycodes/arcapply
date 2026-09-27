@@ -1,5 +1,5 @@
 import re
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlmodel import Session, select
 
 from app.adapters.pdf import PDFCompilerService
@@ -21,7 +21,9 @@ def sanitize_filename(name: str) -> str:
     return re.sub(r"[^\w\-_\.]", "_", name)
 
 
-def _get_or_create_cv(session: Session, job_id: str) -> tuple[TargetedCV, MasterProfile, JobOffer]:
+def _get_or_create_cv(session: Session, job_id: str, lang: str = "fr") -> tuple[TargetedCV, MasterProfile, JobOffer]:
+    normalized_lang = "en" if lang.lower().strip() == "en" else "fr"
+
     job = session.get(JobOffer, job_id)
     if not job:
         raise HTTPException(
@@ -45,13 +47,16 @@ def _get_or_create_cv(session: Session, job_id: str) -> tuple[TargetedCV, Master
             },
         )
 
-    # Vérification si un CV existe déjà
-    statement = select(TargetedCV).where(TargetedCV.job_id == job_id)
+    # Vérification si un CV existe déjà pour cette offre ET cette langue
+    statement = select(TargetedCV).where(
+        TargetedCV.job_id == job_id,
+        TargetedCV.language == normalized_lang,
+    )
     cv = session.exec(statement).first()
 
     if not cv:
         ats_match = ATSMatchingEngine.evaluate_alignment(job, profile)
-        cv = CVGeneratorService.generate_cv(job, profile, ats_match)
+        cv = CVGeneratorService.generate_cv(job, profile, ats_match, language=normalized_lang)
         session.add(cv)
         session.commit()
         session.refresh(cv)
@@ -60,11 +65,17 @@ def _get_or_create_cv(session: Session, job_id: str) -> tuple[TargetedCV, Master
 
 
 @router.post("/generate/{job_id}", response_model=TargetedCVRead)
-def generate_targeted_cv(job_id: str, session: Session = Depends(get_session)) -> TargetedCVRead:
+def generate_targeted_cv(
+    job_id: str,
+    lang: str = Query("fr", description="Langue du CV : 'fr' ou 'en'"),
+    session: Session = Depends(get_session),
+) -> TargetedCVRead:
     """
     Génère un CV personnalisé ciblé selon l'offre et le profil maître (AD-4).
-    Met à jour le CV existant si déjà généré.
+    Met à jour le CV existant si déjà généré pour cette langue.
     """
+    normalized_lang = "en" if lang.lower().strip() == "en" else "fr"
+
     job = session.get(JobOffer, job_id)
     if not job:
         raise HTTPException(
@@ -89,10 +100,13 @@ def generate_targeted_cv(job_id: str, session: Session = Depends(get_session)) -
         )
 
     ats_match = ATSMatchingEngine.evaluate_alignment(job, profile)
-    new_cv = CVGeneratorService.generate_cv(job, profile, ats_match)
+    new_cv = CVGeneratorService.generate_cv(job, profile, ats_match, language=normalized_lang)
 
-    # Upsert dans la base
-    statement = select(TargetedCV).where(TargetedCV.job_id == job_id)
+    # Upsert dans la base pour la paire (job_id, language)
+    statement = select(TargetedCV).where(
+        TargetedCV.job_id == job_id,
+        TargetedCV.language == normalized_lang,
+    )
     existing_cv = session.exec(statement).first()
 
     if existing_cv:
@@ -104,6 +118,7 @@ def generate_targeted_cv(job_id: str, session: Session = Depends(get_session)) -
         existing_cv.experiences_raw = new_cv.experiences_raw
         existing_cv.projects_raw = new_cv.projects_raw
         existing_cv.educations_raw = new_cv.educations_raw
+        existing_cv.language = normalized_lang
         session.add(existing_cv)
         session.commit()
         session.refresh(existing_cv)
@@ -126,27 +141,37 @@ def generate_targeted_cv(job_id: str, session: Session = Depends(get_session)) -
         projects=cv.projects,
         educations=cv.educations,
         html_content=cv.html_content,
+        language=cv.language,
         created_at=cv.created_at,
     )
 
 
 @router.get("/preview/{job_id}", response_class=Response)
-def preview_targeted_cv(job_id: str, session: Session = Depends(get_session)) -> Response:
+def preview_targeted_cv(
+    job_id: str,
+    lang: str = Query("fr", description="Langue d'aperçu : 'fr' ou 'en'"),
+    session: Session = Depends(get_session),
+) -> Response:
     """Retourne le contenu HTML du CV ciblé pour affichage direct en iframe."""
-    cv, _, _ = _get_or_create_cv(session, job_id)
+    cv, _, _ = _get_or_create_cv(session, job_id, lang=lang)
     return Response(content=cv.html_content, media_type="text/html; charset=utf-8")
 
 
 @router.get("/pdf/{job_id}", response_class=Response)
-async def download_cv_pdf(job_id: str, session: Session = Depends(get_session)) -> Response:
+async def download_cv_pdf(
+    job_id: str,
+    lang: str = Query("fr", description="Langue du PDF : 'fr' ou 'en'"),
+    session: Session = Depends(get_session),
+) -> Response:
     """Compile le CV en PDF vectoriel 1 page standardisée via Playwright (AD-7)."""
-    cv, profile, job = _get_or_create_cv(session, job_id)
+    cv, profile, job = _get_or_create_cv(session, job_id, lang=lang)
 
     pdf_bytes = await PDFCompilerService.compile_html_to_pdf(cv.html_content)
 
     clean_name = sanitize_filename(profile.full_name) or "Candidat"
     clean_company = sanitize_filename(job.company) or "Entreprise"
-    filename = f"CV_{clean_name}_{clean_company}.pdf"
+    lang_suffix = lang.upper()
+    filename = f"CV_{clean_name}_{clean_company}_{lang_suffix}.pdf"
 
     return Response(
         content=pdf_bytes,

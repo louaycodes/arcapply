@@ -166,3 +166,81 @@ def test_cv_api_endpoints():
     assert res_pdf.headers["content-type"] == "application/pdf"
     assert res_pdf.content.startswith(b"%PDF")
     assert "attachment" in res_pdf.headers.get("content-disposition", "")
+
+
+def test_cv_contains_all_8_sections_and_portfolio_link():
+    with Session(engine) as session:
+        job = JobOffer(
+            id="job-cv-sections",
+            platform="linkedin",
+            external_id="ext-cv-sections",
+            title="Stage PFE Cloud & DevOps",
+            company="Devoteam",
+            description_raw="Kubernetes, Docker, Python, Ansible requis.",
+            status="DISCOVERED",
+        )
+        session.add(job)
+
+        profile = session.get(MasterProfile, "default-profile")
+        if profile:
+            profile.full_name = "Louay Zorai"
+            profile.is_complete = True
+            profile.website_url = "https://www.louaycodes.tn"
+            profile.skills = [
+                Skill(profile_id=profile.id, name="Kubernetes", category="Cloud & DevOps"),
+                Skill(profile_id=profile.id, name="Docker", category="Cloud & DevOps"),
+                Skill(profile_id=profile.id, name="Python", category="Programming"),
+            ]
+            session.add(profile)
+        session.commit()
+
+    # Génération en Français
+    res_fr = client.post("/api/cv/generate/job-cv-sections?lang=fr")
+    assert res_fr.status_code == 200
+    html_fr = res_fr.json()["html_content"]
+
+    # 1. Contact avec lien portfolio live www.louaycodes.tn
+    assert "www.louaycodes.tn" in html_fr
+    assert "https://www.louaycodes.tn" in html_fr
+    assert "portfolio-link" in html_fr
+
+    # 2. Sections en Français
+    assert "FORMATION" in html_fr
+    assert "EXPÉRIENCES PROFESSIONNELLES (STAGES)" in html_fr
+    assert "PROJETS SÉLECTIONNÉS" in html_fr
+    assert "COMPÉTENCES TECHNIQUES" in html_fr
+    assert "ACTIVITÉS EXTRA-PROFESSIONNELLES" in html_fr
+    assert "LANGUES" in html_fr
+
+    # 3. Activités extra-professionnelles requises
+    assert "Enactus EMC" in html_fr
+    assert "Lycée Pilote Bizerte Youth Club" in html_fr
+
+    # 4. Langues requises
+    assert "Arabe" in html_fr
+    assert "Français" in html_fr
+    assert "Anglais" in html_fr
+
+    # 5. Génération en Anglais
+    res_en = client.post("/api/cv/generate/job-cv-sections?lang=en")
+    assert res_en.status_code == 200
+    html_en = res_en.json()["html_content"]
+
+    # Sections en Anglais
+    assert "EDUCATION" in html_en
+    assert "PROFESSIONAL EXPERIENCE (INTERNSHIPS)" in html_en
+    assert "SELECTED PROJECTS" in html_en
+    assert "TECHNICAL SKILLS" in html_en
+    assert "EXTRACURRICULAR ACTIVITIES" in html_en
+    assert "LANGUAGES" in html_en
+
+    # Activités en anglais
+    assert "Project Department" in html_en
+    assert "Communication Director" in html_en
+
+    # Langues en anglais
+    assert "Arabic" in html_en
+    assert "Native" in html_en
+    assert "Fluent" in html_en
+    assert "Technical" in html_en
+
