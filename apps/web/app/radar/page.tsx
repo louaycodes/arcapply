@@ -38,9 +38,18 @@ const AVAILABLE_PLATFORMS = [
   { id: "keejob", label: "Keejob", country: "Tunisie" },
   { id: "tunisietravail", label: "TunisieTravail", country: "Tunisie" },
   { id: "tanitjobs", label: "Tanitjobs", country: "Tunisie" },
+  { id: "emploitunisie", label: "EmploiTunisie", country: "Tunisie" },
+  { id: "stagetunisie", label: "StageTunisie", country: "Tunisie" },
+  { id: "optioncarriere", label: "OptionCarriere", country: "Tunisie" },
+  { id: "aneti", label: "ANETI", country: "Tunisie" },
   { id: "wttj", label: "Welcome to the Jungle", country: "France" },
   { id: "1jeune1solution", label: "1jeune1solution", country: "France" },
   { id: "jobteaser", label: "Jobteaser", country: "France" },
+  { id: "hellowork", label: "HelloWork", country: "France" },
+  { id: "indeed", label: "Indeed", country: "France" },
+  { id: "apec", label: "Apec", country: "France" },
+  { id: "moovijob", label: "Moovijob", country: "France" },
+  { id: "esn_direct", label: "Portails ESN (Capgemini, Sopra...)", country: "France" },
 ];
 
 export default function RadarPage() {
@@ -68,9 +77,18 @@ export default function RadarPage() {
     "keejob",
     "tunisietravail",
     "tanitjobs",
+    "emploitunisie",
+    "stagetunisie",
+    "optioncarriere",
+    "aneti",
     "wttj",
     "1jeune1solution",
     "jobteaser",
+    "hellowork",
+    "indeed",
+    "apec",
+    "moovijob",
+    "esn_direct",
   ]);
 
   const loadJobs = async () => {

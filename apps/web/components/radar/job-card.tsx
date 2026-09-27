@@ -54,6 +54,42 @@ const PLATFORM_CONFIG: Record<string, { label: string; className: string }> = {
     label: "Jobteaser",
     className: "bg-teal-500/15 text-teal-400 border-teal-500/30",
   },
+  emploitunisie: {
+    label: "EmploiTunisie",
+    className: "bg-blue-600/15 text-blue-400 border-blue-600/30",
+  },
+  stagetunisie: {
+    label: "StageTunisie",
+    className: "bg-rose-500/15 text-rose-400 border-rose-500/30",
+  },
+  optioncarriere: {
+    label: "OptionCarriere",
+    className: "bg-orange-500/15 text-orange-400 border-orange-500/30",
+  },
+  aneti: {
+    label: "ANETI",
+    className: "bg-red-500/15 text-red-400 border-red-500/30",
+  },
+  hellowork: {
+    label: "HelloWork",
+    className: "bg-violet-500/15 text-violet-400 border-violet-500/30",
+  },
+  indeed: {
+    label: "Indeed",
+    className: "bg-sky-500/15 text-sky-400 border-sky-500/30",
+  },
+  apec: {
+    label: "Apec",
+    className: "bg-indigo-600/15 text-indigo-300 border-indigo-600/30",
+  },
+  moovijob: {
+    label: "Moovijob",
+    className: "bg-fuchsia-500/15 text-fuchsia-400 border-fuchsia-500/30",
+  },
+  esn_direct: {
+    label: "Portails ESN",
+    className: "bg-amber-400/15 text-amber-300 border-amber-400/30",
+  },
 };
 
 export function JobCard({
