@@ -7,31 +7,64 @@ from tests.conftest import engine, client
 
 
 def test_collect_jobs_creates_offers():
+    from unittest.mock import patch, AsyncMock
+    mock_linkedin_jobs = [
+        {
+            "external_id": "li-offer-1",
+            "platform": "linkedin",
+            "title": "Stage PFE Cloud AWS",
+            "company": "Amazon",
+            "location": "Paris, France",
+            "country": "France",
+            "description_raw": "Stage de fin d'études Cloud AWS.",
+            "url": "https://www.linkedin.com/jobs/view/li-offer-1",
+        }
+    ]
+    mock_jobteaser_jobs = [
+        {
+            "external_id": "jt-offer-1",
+            "platform": "jobteaser",
+            "title": "Ingénieur DevOps Junior",
+            "company": "Datadog",
+            "location": "Paris, France",
+            "country": "France",
+            "description_raw": "Poste CDI ingénieur DevOps.",
+            "url": "https://www.jobteaser.com/fr/job-offers/jt-offer-1",
+        }
+    ]
+
     payload = {
         "keywords": ["PFE", "Ingénieur"],
         "locations": ["France", "Tunisie"],
         "platforms": ["linkedin", "jobteaser"],
         "limit_per_platform": 5,
     }
-    response = client.post("/api/jobs/collect", json=payload)
-    assert response.status_code == 200
-    data = response.json()
-    assert data["collected_count"] > 0
-    assert data["new_count"] > 0
-    assert data["duplicate_count"] == 0
-    assert "linkedin" in data["platforms"]
-    assert "jobteaser" in data["platforms"]
 
-    # Vérification que les offres sont bien récupérées par GET /api/jobs (PFE et/ou JOB)
-    pfe_res = client.get("/api/jobs?offer_type=PFE")
-    job_res = client.get("/api/jobs?offer_type=JOB")
-    assert pfe_res.status_code == 200
-    assert job_res.status_code == 200
-    total_offers = len(pfe_res.json()) + len(job_res.json())
-    assert total_offers == data["new_count"]
-    all_jobs = pfe_res.json() + job_res.json()
-    assert any(j["platform"] == "linkedin" for j in all_jobs)
-    assert any(j["platform"] == "jobteaser" for j in all_jobs)
+    with patch("app.adapters.connectors.linkedin.LinkedInJobConnector.search_jobs", new_callable=AsyncMock) as mock_li, \
+         patch("app.adapters.connectors.jobteaser.JobteaserJobConnector.search_jobs", new_callable=AsyncMock) as mock_jt:
+        mock_li.return_value = mock_linkedin_jobs
+        mock_jt.return_value = mock_jobteaser_jobs
+
+        response = client.post("/api/jobs/collect", json=payload)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["collected_count"] > 0
+        assert data["new_count"] > 0
+        assert data["duplicate_count"] == 0
+        assert "linkedin" in data["platforms"]
+        assert "jobteaser" in data["platforms"]
+
+        # Vérification que les offres sont bien récupérées par GET /api/jobs (PFE et/ou JOB)
+        pfe_res = client.get("/api/jobs?offer_type=PFE")
+        job_res = client.get("/api/jobs?offer_type=JOB")
+        assert pfe_res.status_code == 200
+        assert job_res.status_code == 200
+        total_offers = len(pfe_res.json()) + len(job_res.json())
+        assert total_offers == data["new_count"]
+        all_jobs = pfe_res.json() + job_res.json()
+        assert any(j["platform"] == "linkedin" for j in all_jobs)
+        assert any(j["platform"] == "jobteaser" for j in all_jobs)
+
 
 
 def test_collect_jobs_deduplication():
