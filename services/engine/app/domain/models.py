@@ -124,6 +124,8 @@ class MasterProfileBase(SQLModel):
     linkedin_url: Optional[str] = Field(default=None)
     github_url: Optional[str] = Field(default=None)
     website_url: Optional[str] = Field(default=None)
+    # Préférence de recherche : "PFE" (stage de fin d'études) ou "JOB" (emploi CDI/CDD)
+    search_mode: str = Field(default="PFE", index=True)
 
 
 class MasterProfile(MasterProfileBase, table=True):
@@ -178,12 +180,16 @@ class SkillRead(SkillBase):
 class MasterProfileRead(MasterProfileBase):
     id: str
     is_complete: bool
+    search_mode: str
     created_at: datetime
     updated_at: datetime
     educations: list[EducationRead] = []
     experiences: list[ExperienceRead] = []
     projects: list[ProjectRead] = []
     skills: list[SkillRead] = []
+
+
+VALID_SEARCH_MODES = {"PFE", "JOB"}
 
 
 class MasterProfileUpdate(SQLModel):
@@ -196,6 +202,8 @@ class MasterProfileUpdate(SQLModel):
     linkedin_url: Optional[str] = None
     github_url: Optional[str] = None
     website_url: Optional[str] = None
+    # Préférence de recherche : "PFE" ou "JOB"
+    search_mode: Optional[str] = None
     educations: Optional[list[EducationBase]] = None
     experiences: Optional[list[ExperienceBase]] = None
     projects: Optional[list[ProjectBase]] = None
@@ -213,6 +221,9 @@ class ProfileCompletenessStatus(SQLModel):
 # Job Offers (Radar & Application Pipeline)
 # ============================================================================
 
+VALID_OFFER_TYPES = {"PFE", "JOB"}
+
+
 class JobOfferBase(SQLModel):
     platform: str = Field(index=True)  # "linkedin" | "jobteaser"
     external_id: str = Field(index=True)
@@ -223,6 +234,8 @@ class JobOfferBase(SQLModel):
     description_raw: str = Field(default="")
     url: str = Field(default="")
     status: str = Field(default="DISCOVERED", index=True)
+    # Type d'offre inféré automatiquement à l'ingestion : "PFE" ou "JOB"
+    offer_type: str = Field(default="PFE", index=True)
 
 
 class JobOffer(JobOfferBase, table=True):

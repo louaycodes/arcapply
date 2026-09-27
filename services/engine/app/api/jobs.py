@@ -1,8 +1,9 @@
 from datetime import timedelta, timezone
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status as http_status
 from sqlmodel import Session, SQLModel, col, delete, desc, select
 from app.adapters.scheduler import ALL_CONNECTORS, CrawlerScheduler
+from app.adapters.connectors import infer_offer_type
 from app.adapters.database import get_session
 from app.api.events import broadcast_event
 from app.domain.fsm import ApplicationFSM
@@ -13,7 +14,9 @@ from app.domain.models import (
     JobCollectSummary,
     JobOffer,
     JobOfferRead,
+    MasterProfile,
     TargetedCV,
+    VALID_OFFER_TYPES,
     utc_now,
 )
 from app.ports.connectors import BaseJobConnector
@@ -46,11 +49,21 @@ def list_jobs(
     country: Optional[str] = Query(None, description="Filtrer par pays (ex: France, Tunisie)"),
     platform: Optional[str] = Query(None, description="Filtrer par plateforme source"),
     status: Optional[str] = Query(None, description="Filtrer par statut"),
+    offer_type: Optional[str] = Query(
+        None,
+        description="Surcharge explicite du filtrage par type d'offre (PFE|JOB). Si absent, utilise le search_mode du profil.",
+    ),
     search: Optional[str] = Query(None, description="Recherche textuelle dans le titre ou l'entreprise"),
     include_archived: bool = Query(False, description="Inclure les offres archivées"),
     session: Session = Depends(get_session),
 ):
-    """Liste les offres d'emploi avec filtres pour alimenter le flux Radar."""
+    """Liste les offres du Radar, filtrées automatiquement selon le search_mode du profil.
+
+    Le type d'offre actif est déterminé dans cet ordre de priorité :
+    1. Le query param ``offer_type`` (surcharge explicite, pour les tests).
+    2. Le champ ``search_mode`` du profil ``default-profile`` (source de vérité).
+    3. ``"PFE"`` comme valeur de repli si le profil est absent.
+    """
     query = select(JobOffer)
 
     if not include_archived:
@@ -64,6 +77,26 @@ def list_jobs(
 
     if status:
         query = query.where(JobOffer.status == status)
+
+    # --- Filtrage par type d'offre (search_mode corrélé) ---
+    if offer_type:
+        # Surcharge explicite : valider puis appliquer
+        resolved_type = offer_type.upper()
+        if resolved_type not in VALID_OFFER_TYPES:
+            raise HTTPException(
+                status_code=http_status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={
+                    "error_code": "INVALID_OFFER_TYPE",
+                    "message": f"offer_type invalide : '{offer_type}'. Valeurs acceptées : PFE, JOB.",
+                },
+            )
+        query = query.where(JobOffer.offer_type == resolved_type)
+    else:
+        # Lecture automatique du search_mode du profil
+        profile = session.get(MasterProfile, "default-profile")
+        active_mode = profile.search_mode if profile else "PFE"
+        query = query.where(JobOffer.offer_type == active_mode)
+    # -------------------------------------------------------
 
     if search:
         search_filter = f"%{search.lower()}%"
@@ -207,7 +240,7 @@ def get_job(job_id: str, session: Session = Depends(get_session)):
     job = session.get(JobOffer, job_id)
     if not job:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail={"error_code": "JOB_NOT_FOUND", "message": f"Offre {job_id} introuvable."},
         )
     return job
@@ -219,7 +252,7 @@ async def archive_job(job_id: str, session: Session = Depends(get_session)):
     job = session.get(JobOffer, job_id)
     if not job:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail={"error_code": "JOB_NOT_FOUND", "message": f"Offre {job_id} introuvable."},
         )
 
@@ -251,7 +284,7 @@ async def transition_job_status(
     job = session.get(JobOffer, job_id)
     if not job:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail={"error_code": "JOB_NOT_FOUND", "message": f"Offre {job_id} introuvable."},
         )
 
@@ -259,7 +292,7 @@ async def transition_job_status(
         ApplicationFSM.validate_transition(job.status, payload.new_status)
     except ValueError as e:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=http_status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={
                 "error_code": "INVALID_STATE_TRANSITION",
                 "message": str(e),
@@ -335,7 +368,13 @@ async def trigger_collection(
                 duplicate_count += 1
                 continue
 
-            # Création de la nouvelle offre
+            # Inférence automatique du type d'offre avant persistance
+            inferred_type = infer_offer_type(
+                title=raw["title"],
+                description=raw.get("description_raw", ""),
+            )
+
+            # Création de la nouvelle offre avec offer_type classifié
             new_job = JobOffer(
                 platform=raw["platform"],
                 external_id=raw["external_id"],
@@ -346,6 +385,7 @@ async def trigger_collection(
                 description_raw=raw.get("description_raw", ""),
                 url=raw.get("url", ""),
                 status="DISCOVERED",
+                offer_type=inferred_type,
             )
             session.add(new_job)
             session.commit()

@@ -10,6 +10,7 @@ from app.domain.models import (
     ProfileCompletenessStatus,
     Project,
     Skill,
+    VALID_SEARCH_MODES,
     utc_now,
 )
 from app.domain.validation import evaluate_profile_completeness
@@ -65,6 +66,19 @@ def update_profile(
     for field in scalar_fields:
         if field in update_dict:
             setattr(profile, field, update_dict[field])
+
+    # Validation et mise à jour du mode de recherche (PFE / JOB)
+    if "search_mode" in update_dict:
+        new_mode = update_dict["search_mode"].upper() if update_dict["search_mode"] else ""
+        if new_mode not in VALID_SEARCH_MODES:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={
+                    "error_code": "INVALID_SEARCH_MODE",
+                    "message": f"search_mode invalide : '{update_dict['search_mode']}'. Valeurs acceptées : PFE, JOB.",
+                },
+            )
+        profile.search_mode = new_mode
 
     # Mise à jour des formations si fournies
     if data.educations is not None:
