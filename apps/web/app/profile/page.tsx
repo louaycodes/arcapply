@@ -393,14 +393,14 @@ export default function ProfilePage() {
           </div>
 
           {/* Progress Bar */}
-          <div className="w-full bg-muted rounded-full h-2 overflow-hidden border border-border/40">
+          <div className="w-full bg-stone-100 rounded-full h-2.5 overflow-hidden border border-stone-200">
             <div
               className={`h-full transition-all duration-500 rounded-full ${
                 percentage === 100
-                  ? "bg-success shadow-[0_0_12px_rgba(16,185,129,0.5)]"
+                  ? "bg-emerald-600"
                   : percentage > 50
-                  ? "bg-warning"
-                  : "bg-destructive"
+                  ? "bg-amber-600"
+                  : "bg-rose-600"
               }`}
               style={{ width: `${percentage}%` }}
             />
@@ -409,16 +409,16 @@ export default function ProfilePage() {
           {/* Missing fields list */}
           {!isComplete && status && status.missing_fields.length > 0 && (
             <div className="pt-2">
-              <p className="text-xs font-semibold text-muted-foreground mb-2">
+              <p className="text-xs font-semibold text-stone-700 mb-2">
                 Éléments requis manquants pour débloquer la génération :
               </p>
               <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                 {status.missing_fields.map((field, idx) => (
                   <li
                     key={idx}
-                    className="flex items-center gap-2 text-warning/90 bg-warning/5 px-2.5 py-1.5 rounded border border-warning/20"
+                    className="flex items-center gap-2 text-amber-950 bg-amber-50 px-2.5 py-1.5 rounded-lg border border-amber-200 font-medium shadow-xs"
                   >
-                    <ArrowRight className="w-3 h-3 text-warning flex-shrink-0" />
+                    <ArrowRight className="w-3.5 h-3.5 text-amber-700 flex-shrink-0" />
                     <span>{field}</span>
                   </li>
                 ))}

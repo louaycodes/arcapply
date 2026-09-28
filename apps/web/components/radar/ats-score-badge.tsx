@@ -23,8 +23,8 @@ export function AtsScoreBadge({ match, loading = false }: AtsScoreBadgeProps) {
 
   if (loading) {
     return (
-      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-stone-100 border border-stone-200 text-[11px] font-mono text-stone-500 animate-pulse">
-        <Target className="w-3 h-3 animate-spin text-stone-400" />
+      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-stone-100 border border-stone-200 text-[11px] font-mono text-stone-600">
+        <Target className="w-3 h-3 text-stone-500" />
         <span>ATS...</span>
       </div>
     );
@@ -66,9 +66,9 @@ export function AtsScoreBadge({ match, loading = false }: AtsScoreBadgeProps) {
         title="Cliquer pour voir l'inventaire des compétences et l'audit ATS"
       >
         <span
-          className="w-1.5 h-1.5 rounded-full animate-ping mr-0.5 opacity-75"
+          className="w-2 h-2 rounded-full mr-1 shrink-0"
           style={{
-            backgroundColor: isHigh ? "#16A34A" : isMedium ? "#D97706" : "#DC2626",
+            backgroundColor: isHigh ? "#15803D" : isMedium ? "#B45309" : "#B91C1C",
           }}
         />
         <span>ATS {score}%</span>

@@ -189,21 +189,21 @@ export function MirrorReviewDrawer({
   const getStatusBadge = (st: string) => {
     switch (st) {
       case "DISCOVERED":
-        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/30">Découvert</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-stone-100 text-stone-800 border border-stone-300">Découvert</span>;
       case "REVIEWING":
-        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">En révision</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-300">En révision</span>;
       case "READY":
-        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">Prêt pour envoi</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-900 border border-emerald-300">Prêt pour envoi</span>;
       case "SUBMITTED":
-        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/30">Candidature transmise</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-50 text-orange-950 border border-orange-200">Candidature transmise</span>;
       case "INTERVIEW":
-        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/30">Entretien planifié</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-50 text-sky-900 border border-sky-300">Entretien planifié</span>;
       case "OFFER":
-        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-300 border border-green-500/50">Offre reçue 🎉</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-900 border border-emerald-300">Offre reçue 🎉</span>;
       case "REJECTED":
-        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/30">Non retenu</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-stone-100 text-stone-600 border border-stone-200">Non retenu</span>;
       default:
-        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-muted text-muted-foreground border border-border">{st}</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-stone-100 text-stone-700 border border-stone-200">{st}</span>;
     }
   };
 
@@ -211,15 +211,15 @@ export function MirrorReviewDrawer({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-background/85 backdrop-blur-md animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-stone-900/40 backdrop-blur-xs animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-7xl h-[95vh] rounded-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+        className="w-full max-w-7xl h-[95vh] rounded-2xl border border-stone-200 bg-white shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-4 sm:px-6 py-4 border-b border-border/80 flex items-center justify-between gap-4 bg-muted/20">
+        <div className="p-4 sm:px-6 py-4 border-b border-stone-200 flex items-center justify-between gap-4 bg-stone-50/70">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary font-bold">
               <Sparkles className="w-5 h-5" />
@@ -312,16 +312,16 @@ export function MirrorReviewDrawer({
                     {atsMatch.matched_skills.map((s) => (
                       <span
                         key={s}
-                        className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1"
+                        className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-900 border border-emerald-300 flex items-center gap-1"
                       >
-                        <Check className="w-3 h-3" />
+                        <Check className="w-3 h-3 text-emerald-700" />
                         {s}
                       </span>
                     ))}
                     {atsMatch.transferable_skills.map((s) => (
                       <span
                         key={s}
-                        className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/30"
+                        className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-900 border border-amber-300"
                       >
                         ~ {s}
                       </span>
@@ -329,7 +329,7 @@ export function MirrorReviewDrawer({
                     {atsMatch.missing_skills.map((s) => (
                       <span
                         key={s}
-                        className="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-500/15 text-rose-400 border border-rose-500/30"
+                        className="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-50 text-rose-900 border border-rose-300"
                       >
                         ✕ {s}
                       </span>
@@ -360,8 +360,8 @@ export function MirrorReviewDrawer({
                   onClick={() => setActiveTab("cv")}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors ${
                     activeTab === "cv"
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "bg-muted/50 text-muted-foreground hover:text-foreground"
+                      ? "bg-primary text-white shadow-xs"
+                      : "bg-stone-100 text-stone-700 hover:text-stone-900"
                   }`}
                 >
                   <FileText className="w-3.5 h-3.5" />
@@ -373,14 +373,14 @@ export function MirrorReviewDrawer({
                   onClick={() => setActiveTab("letter")}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors ${
                     activeTab === "letter"
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "bg-muted/50 text-muted-foreground hover:text-foreground"
+                      ? "bg-primary text-white shadow-xs"
+                      : "bg-stone-100 text-stone-700 hover:text-stone-900"
                   }`}
                 >
                   <Mail className="w-3.5 h-3.5" />
                   <span>Lettre de motivation</span>
                   {letter && letter.cliche_score > 0 && (
-                    <span className="w-2 h-2 rounded-full bg-amber-400" />
+                    <span className="w-2 h-2 rounded-full bg-amber-600" />
                   )}
                 </button>
               </div>
@@ -461,7 +461,7 @@ export function MirrorReviewDrawer({
                     {isLetterSaving ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     ) : letterSaveSuccess ? (
-                      <Check className="w-3.5 h-3.5 text-emerald-300" />
+                      <Check className="w-3.5 h-3.5 text-white" />
                     ) : (
                       <Save className="w-3.5 h-3.5" />
                     )}
@@ -502,12 +502,12 @@ export function MirrorReviewDrawer({
                           <span className="font-semibold text-foreground">Édition en direct :</span>
                           <span className="text-[11px]">
                             {letter?.cliche_score === 0 ? (
-                              <span className="text-emerald-400 font-semibold flex items-center gap-1">
-                                <CheckCircle2 className="w-3.5 h-3.5" /> 0 cliché détecté
+                              <span className="text-emerald-800 font-semibold flex items-center gap-1">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> 0 cliché détecté
                               </span>
                             ) : (
-                              <span className="text-amber-400 font-semibold flex items-center gap-1">
-                                <AlertTriangle className="w-3.5 h-3.5" /> {letter?.cliche_score} cliché(s)
+                              <span className="text-amber-900 font-semibold flex items-center gap-1">
+                                <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /> {letter?.cliche_score} cliché(s)
                               </span>
                             )}
                           </span>
@@ -532,19 +532,19 @@ export function MirrorReviewDrawer({
         </div>
 
         {/* BOTTOM ACTION BAR (FSM Workflow & 5-Second Grace Guard) */}
-        <div className="p-4 sm:px-6 py-3.5 border-t border-border bg-muted/30 flex items-center justify-between gap-4">
+        <div className="p-4 sm:px-6 py-3.5 border-t border-border bg-stone-50/80 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-muted-foreground hidden sm:inline">
+            <span className="text-xs font-semibold text-stone-600 hidden sm:inline font-mono">
               Workflow :
             </span>
-            <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground">
+            <div className="flex items-center gap-1.5 text-xs font-mono text-stone-500">
               <span className={status === "DISCOVERED" ? "text-primary font-bold" : ""}>Découvert</span>
               <ChevronRight className="w-3 h-3" />
-              <span className={status === "REVIEWING" ? "text-amber-400 font-bold" : ""}>Révision</span>
+              <span className={status === "REVIEWING" ? "text-amber-800 font-bold" : ""}>Révision</span>
               <ChevronRight className="w-3 h-3" />
-              <span className={status === "READY" ? "text-emerald-400 font-bold" : ""}>Prêt</span>
+              <span className={status === "READY" ? "text-emerald-800 font-bold" : ""}>Prêt</span>
               <ChevronRight className="w-3 h-3" />
-              <span className={status === "SUBMITTED" ? "text-purple-400 font-bold" : ""}>Soumis</span>
+              <span className={status === "SUBMITTED" ? "text-orange-950 font-bold" : ""}>Soumis</span>
             </div>
           </div>
 
@@ -555,7 +555,7 @@ export function MirrorReviewDrawer({
                 type="button"
                 onClick={() => handleTransition("REVIEWING")}
                 disabled={loadingAction}
-                className="px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold flex items-center gap-2 transition-all shadow-md cursor-pointer disabled:opacity-50"
+                className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold flex items-center gap-2 transition-all tactile-button shadow-artisan-button cursor-pointer disabled:opacity-50"
               >
                 {loadingAction ? <Loader2 className="w-4 h-4 animate-spin" /> : <ChevronRight className="w-4 h-4" />}
                 <span>Passer en révision (REVIEWING)</span>
@@ -569,7 +569,7 @@ export function MirrorReviewDrawer({
                   type="button"
                   onClick={() => handleTransition("DISCOVERED")}
                   disabled={loadingAction}
-                  className="px-3 py-2 rounded-xl border border-border bg-background hover:bg-muted text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer disabled:opacity-50"
+                  className="px-3 py-2 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-xs font-semibold text-stone-700 hover:text-stone-900 transition-colors cursor-pointer disabled:opacity-50"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Retour Découvert</span>
@@ -579,7 +579,7 @@ export function MirrorReviewDrawer({
                   type="button"
                   onClick={() => handleTransition("READY")}
                   disabled={loadingAction}
-                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-md cursor-pointer disabled:opacity-50"
+                  className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-sm cursor-pointer disabled:opacity-50"
                 >
                   {loadingAction ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                   <span>Valider & Marquer Prêt (READY)</span>
@@ -594,7 +594,7 @@ export function MirrorReviewDrawer({
                   type="button"
                   onClick={() => handleTransition("REVIEWING")}
                   disabled={loadingAction}
-                  className="px-3 py-2 rounded-xl border border-border bg-background hover:bg-muted text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer disabled:opacity-50"
+                  className="px-3 py-2 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-xs font-semibold text-stone-700 hover:text-stone-900 transition-colors cursor-pointer disabled:opacity-50"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Modifier</span>
@@ -603,7 +603,7 @@ export function MirrorReviewDrawer({
                 <button
                   type="button"
                   onClick={startSubmissionCountdown}
-                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-primary hover:opacity-95 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-lg hover:shadow-emerald-500/20 cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold flex items-center gap-2 transition-all tactile-button shadow-artisan-button cursor-pointer"
                 >
                   <Send className="w-4 h-4" />
                   <span>Soumettre la candidature</span>
@@ -614,9 +614,9 @@ export function MirrorReviewDrawer({
             {/* 5-second active countdown modal banner inside bar */}
             {status === "READY" && isCountingDown && (
               <div className="flex items-center gap-3 animate-in fade-in">
-                <div className="flex items-center gap-2 bg-destructive/15 border border-destructive/40 px-3 py-1.5 rounded-xl">
-                  <Clock className="w-4 h-4 text-destructive animate-pulse" />
-                  <span className="text-xs font-bold text-destructive">
+                <div className="flex items-center gap-2 bg-red-50 border border-red-200 px-3 py-1.5 rounded-xl">
+                  <Clock className="w-4 h-4 text-red-600" />
+                  <span className="text-xs font-bold text-red-800">
                     Envoi dans {countdownSeconds}s...
                   </span>
                 </div>
@@ -624,7 +624,7 @@ export function MirrorReviewDrawer({
                 <button
                   type="button"
                   onClick={cancelSubmissionCountdown}
-                  className="px-4 py-2 rounded-xl bg-destructive hover:bg-destructive/90 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                   <span>Annuler immédiatement</span>
@@ -635,8 +635,8 @@ export function MirrorReviewDrawer({
             {/* If SUBMITTED */}
             {status === "SUBMITTED" && (
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 text-xs font-semibold">
-                  <CheckCircle2 className="w-4 h-4 text-purple-400" />
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs font-semibold">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-700" />
                   <span>Dossier soumis & consigné</span>
                 </div>
                 {job.url && (
@@ -644,7 +644,7 @@ export function MirrorReviewDrawer({
                     href={job.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-3.5 py-1.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold flex items-center gap-1.5 transition-all shadow-md"
+                    className="px-3.5 py-1.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold flex items-center gap-1.5 transition-all tactile-button shadow-artisan-button"
                   >
                     <span>Finaliser sur le site</span>
                     <ExternalLink className="w-3.5 h-3.5" />

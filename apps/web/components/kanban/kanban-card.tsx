@@ -82,8 +82,8 @@ export function KanbanCard({
 
       {/* Relance alert badge if submitted > 7 days */}
       {isRelanceDue && (
-        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-50 border border-amber-300 text-[10px] font-semibold text-amber-800 animate-pulse">
-          <AlertTriangle className="w-3 h-3 shrink-0 text-amber-600" />
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-50 border border-amber-300 text-[10px] font-semibold text-amber-900 shadow-xs">
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-700" />
           <span>Relance due (J+{diffDays})</span>
         </div>
       )}

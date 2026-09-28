@@ -67,45 +67,45 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-background/80 backdrop-blur-md animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-stone-900/40 backdrop-blur-xs animate-in fade-in duration-150"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-6xl h-[96vh] rounded-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-150"
+        className="w-full max-w-6xl h-[96vh] rounded-2xl border border-stone-200 bg-white shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-border/80 flex items-center justify-between gap-4 bg-muted/20">
+        <div className="p-4 sm:p-5 border-b border-stone-200 flex items-center justify-between gap-4 bg-stone-50/70">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary">
+            <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center text-primary">
               <FileText className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base sm:text-lg font-bold text-foreground">
+                <h2 className="text-base sm:text-lg font-bold text-stone-900 font-display">
                   CV Ciblé ATS — 2 Pages A4
                 </h2>
-                <span className="inline-flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                  <ShieldCheck className="w-3.5 h-3.5" />
+                <span className="inline-flex items-center gap-1 text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-900 border border-emerald-300 font-semibold">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
                   Zéro-Hallucination
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-                {job.title} &bull; <span className="font-semibold text-foreground">{job.company}</span>
+              <p className="text-xs text-stone-600 mt-0.5 line-clamp-1">
+                {job.title} &bull; <span className="font-semibold text-stone-900">{job.company}</span>
               </p>
             </div>
           </div>
 
           {/* Right Action Controls */}
           <div className="flex items-center gap-2">
-            <div className="flex items-center rounded-lg border border-border bg-muted/40 p-0.5 text-xs font-semibold mr-1">
+            <div className="flex items-center rounded-lg border border-stone-200 bg-stone-100 p-0.5 text-xs font-semibold mr-1">
               <button
                 type="button"
                 onClick={() => setLanguage("fr")}
                 className={`px-2.5 py-1 rounded-md transition-all ${
                   language === "fr"
-                    ? "bg-primary text-primary-foreground shadow-sm font-bold"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-stone-900 text-white shadow-xs font-bold"
+                    : "text-stone-600 hover:text-stone-900"
                 }`}
                 title="Version Française"
               >
@@ -116,8 +116,8 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
                 onClick={() => setLanguage("en")}
                 className={`px-2.5 py-1 rounded-md transition-all ${
                   language === "en"
-                    ? "bg-primary text-primary-foreground shadow-sm font-bold"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-stone-900 text-white shadow-xs font-bold"
+                    : "text-stone-600 hover:text-stone-900"
                 }`}
                 title="English Version"
               >
@@ -127,7 +127,7 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
 
             <a
               href="/cv"
-              className="px-3 py-2 rounded-lg border border-border/80 bg-muted/40 hover:bg-muted text-foreground text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm"
+              className="px-3 py-2 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-800 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs"
               title="Ouvrir dans le Studio CV pour modifier le texte directement"
             >
               <FileText className="w-3.5 h-3.5 text-primary" />
@@ -137,7 +137,7 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
             <a
               href={pdfUrl}
               download
-              className="px-3.5 py-2 rounded-lg bg-primary hover:bg-primary-hover text-white text-xs font-semibold flex items-center gap-2 shadow-lg shadow-primary/20 transition-all"
+              className="px-3.5 py-2 rounded-lg bg-primary hover:bg-primary-hover text-white text-xs font-semibold flex items-center gap-2 tactile-button shadow-artisan-button transition-all"
             >
               <Download className="w-4 h-4" />
               <span className="hidden sm:inline">Télécharger PDF ({language.toUpperCase()})</span>
@@ -146,7 +146,7 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              className="p-1.5 rounded-lg text-stone-500 hover:text-stone-900 hover:bg-stone-100 transition-colors"
               title="Fermer"
             >
               <X className="w-5 h-5" />
@@ -155,93 +155,85 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
         </div>
 
         {/* Tab Switcher & Sub-toolbar */}
-        <div className="px-5 py-2.5 border-b border-border/50 bg-card flex items-center justify-between text-xs">
+        <div className="px-5 py-2.5 border-b border-stone-200 bg-stone-50/50 flex items-center justify-between text-xs">
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setActiveTab("preview")}
-              className={`px-3 py-1.5 rounded-md font-medium flex items-center gap-1.5 transition-colors ${
+              className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors ${
                 activeTab === "preview"
-                  ? "bg-secondary text-secondary-foreground font-semibold shadow-sm"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  ? "bg-stone-900 text-white shadow-xs"
+                  : "bg-white border border-stone-200 text-stone-700 hover:text-stone-900"
               }`}
             >
               <Eye className="w-3.5 h-3.5" />
-              <span>Aperçu Document (2 Pages A4)</span>
+              <span>Aperçu PDF Direct</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab("audit")}
-              className={`px-3 py-1.5 rounded-md font-medium flex items-center gap-1.5 transition-colors ${
+              className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors ${
                 activeTab === "audit"
-                  ? "bg-secondary text-secondary-foreground font-semibold shadow-sm"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  ? "bg-stone-900 text-white shadow-xs"
+                  : "bg-white border border-stone-200 text-stone-700 hover:text-stone-900"
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
-              <span>Audit & Compétences Ciblées</span>
+              <span>Audit de Pertinence ATS</span>
             </button>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={loadOrGenerateCV}
               disabled={loading}
-              className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border border-stone-200 bg-white text-xs font-semibold text-stone-700 hover:text-stone-900 hover:bg-stone-50 transition-colors disabled:opacity-50"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
               <span>Régénérer</span>
             </button>
-
-            <a
-              href={previewUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
-              title="Ouvrir dans un nouvel onglet"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-            </a>
           </div>
         </div>
 
-        {/* Content Area */}
-        <div className="flex-1 bg-muted/40 p-4 sm:p-6 overflow-y-auto flex justify-center items-start">
+        {/* Modal Body */}
+        <div className="flex-1 overflow-hidden relative bg-[#FAF7F2]">
           {loading ? (
-            <div className="m-auto text-center space-y-3">
-              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-              <p className="text-xs font-mono text-muted-foreground">
-                Génération du CV ciblé & ordonnancement des réalisations...
+            <div className="h-full flex flex-col items-center justify-center space-y-3">
+              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <p className="text-xs font-mono text-stone-600">
+                Génération déterministe du CV ciblé en cours...
               </p>
             </div>
           ) : error ? (
-            <div className="m-auto max-w-md p-6 rounded-xl border border-destructive/30 bg-destructive/10 text-center space-y-3">
-              <p className="text-sm font-semibold text-destructive">{error}</p>
+            <div className="h-full flex flex-col items-center justify-center max-w-md mx-auto text-center space-y-3 p-6">
+              <p className="text-sm font-semibold text-red-700">{error}</p>
               <button
                 type="button"
                 onClick={loadOrGenerateCV}
-                className="px-4 py-2 rounded-lg bg-destructive text-white text-xs font-semibold hover:bg-destructive/90 transition-colors"
+                className="px-4 py-2 rounded-xl bg-red-600 text-white text-xs font-semibold hover:bg-red-700 transition-colors"
               >
                 Réessayer
               </button>
             </div>
           ) : activeTab === "preview" ? (
-            <div className="w-full max-w-[950px] bg-white rounded-lg shadow-2xl border border-border/80 overflow-hidden flex flex-col h-[83vh]">
+            /* Visual PDF Preview via IFrame */
+            <div className="w-full h-full p-4 flex justify-center items-center bg-[#EFE8DD]">
               <iframe
                 src={previewUrl}
-                title="Aperçu CV A4"
-                className="w-full h-full border-0 bg-white"
+                className="w-full max-w-4xl h-full rounded-xl shadow-[0_12px_36px_rgba(44,28,16,0.12)] border border-stone-300 bg-white"
+                title="Aperçu du CV"
               />
             </div>
           ) : (
-            <div className="w-full max-w-2xl bg-card rounded-xl border border-border p-6 shadow-sm space-y-5">
+            /* Structured ATS Mapping Audit View */
+            <div className="h-full overflow-y-auto p-6 max-w-3xl mx-auto space-y-6 bg-white border border-stone-200 rounded-2xl m-4 shadow-artisan">
               <div>
-                <h3 className="text-sm font-bold text-foreground">
+                <h3 className="text-sm font-bold text-stone-900 font-display">
                   Synthèse d'ordonnancement du CV
                 </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="text-xs text-stone-600 mt-0.5">
                   Seules les réalisations et compétences issues de votre Master Profile sont projetées.
                 </p>
               </div>
@@ -249,16 +241,16 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
               {/* Matched skills */}
               {cv && (
                 <div className="space-y-4 text-xs">
-                  <div className="p-3.5 rounded-lg border border-emerald-500/20 bg-emerald-500/5 space-y-2">
-                    <span className="font-semibold text-emerald-400 flex items-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4" />
+                  <div className="p-4 rounded-xl border border-emerald-300 bg-emerald-50/60 space-y-2">
+                    <span className="font-bold text-emerald-900 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-700" />
                       Compétences Clés Mises en Avant ({cv.matched_skills.length})
                     </span>
                     <div className="flex flex-wrap gap-1.5">
                       {cv.matched_skills.map((s) => (
                         <span
                           key={s}
-                          className="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 font-mono"
+                          className="px-2 py-0.5 rounded bg-emerald-100/80 border border-emerald-300 text-emerald-950 font-semibold font-mono"
                         >
                           ✓ {s}
                         </span>
@@ -267,16 +259,16 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
                   </div>
 
                   {cv.transferable_skills.length > 0 && (
-                    <div className="p-3.5 rounded-lg border border-amber-500/20 bg-amber-500/5 space-y-2">
-                      <span className="font-semibold text-amber-400 flex items-center gap-1.5">
-                        <AlertTriangle className="w-4 h-4" />
+                    <div className="p-4 rounded-xl border border-amber-300 bg-amber-50/60 space-y-2">
+                      <span className="font-bold text-amber-900 flex items-center gap-1.5">
+                        <AlertTriangle className="w-4 h-4 text-amber-700" />
                         Compétences Transférables Connexes ({cv.transferable_skills.length})
                       </span>
                       <div className="flex flex-wrap gap-1.5">
                         {cv.transferable_skills.map((s) => (
                           <span
                             key={s}
-                            className="px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 font-mono"
+                            className="px-2 py-0.5 rounded bg-amber-100/80 border border-amber-300 text-amber-950 font-semibold font-mono"
                           >
                             ⚡ {s}
                           </span>
@@ -285,15 +277,15 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
                     </div>
                   )}
 
-                  <div className="space-y-2 pt-2 border-t border-border">
-                    <h4 className="font-semibold text-foreground">Expériences ordonnées par pertinence :</h4>
+                  <div className="space-y-2 pt-2 border-t border-stone-200">
+                    <h4 className="font-bold text-stone-900">Expériences ordonnées par pertinence :</h4>
                     <ul className="space-y-1.5">
                       {cv.experiences.map((exp, idx) => (
-                        <li key={idx} className="p-2.5 rounded-md bg-muted/50 border border-border/50">
-                          <span className="font-bold text-foreground">{exp.role}</span> chez{" "}
-                          <span className="font-semibold">{exp.company}</span> ({exp.start_date} – {exp.end_date})
+                        <li key={idx} className="p-3 rounded-xl bg-stone-50 border border-stone-200">
+                          <span className="font-bold text-stone-900">{exp.role}</span> chez{" "}
+                          <span className="font-semibold text-stone-800">{exp.company}</span> ({exp.start_date} – {exp.end_date})
                           {exp.technologies && (
-                            <p className="text-[11px] text-muted-foreground mt-0.5 font-mono">
+                            <p className="text-[11px] text-stone-600 mt-0.5 font-mono">
                               Tech : {exp.technologies.join(", ")}
                             </p>
                           )}
@@ -302,14 +294,14 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
                     </ul>
                   </div>
 
-                  <div className="space-y-2 pt-2 border-t border-border">
-                    <h4 className="font-semibold text-foreground">Projets d'ingénierie sélectionnés :</h4>
+                  <div className="space-y-2 pt-2 border-t border-stone-200">
+                    <h4 className="font-bold text-stone-900">Projets d'ingénierie sélectionnés :</h4>
                     <ul className="space-y-1.5">
                       {cv.projects.map((proj, idx) => (
-                        <li key={idx} className="p-2.5 rounded-md bg-muted/50 border border-border/50">
-                          <span className="font-bold text-foreground">{proj.title}</span>
+                        <li key={idx} className="p-3 rounded-xl bg-stone-50 border border-stone-200">
+                          <span className="font-bold text-stone-900">{proj.title}</span>
                           {proj.technologies && (
-                            <p className="text-[11px] text-muted-foreground mt-0.5 font-mono">
+                            <p className="text-[11px] text-stone-600 mt-0.5 font-mono">
                               Stack : {proj.technologies.join(", ")}
                             </p>
                           )}

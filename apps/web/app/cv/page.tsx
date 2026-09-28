@@ -815,21 +815,21 @@ export default function StudioCVPage() {
       {/* Floating Notification */}
       {notification && (
         <div
-          className={`mx-5 mt-2 p-2.5 rounded-lg border text-xs flex items-center justify-between shrink-0 animate-in slide-in-from-top-2 duration-150 z-30 ${
+          className={`mx-5 mt-2 p-2.5 rounded-lg border text-xs flex items-center justify-between shrink-0 animate-in slide-in-from-top-2 duration-150 z-30 font-medium ${
             notification.type === "success"
-              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+              ? "bg-emerald-50 border-emerald-300 text-emerald-950 shadow-xs"
               : notification.type === "error"
-              ? "bg-rose-500/10 border-rose-500/30 text-rose-300"
-              : "bg-blue-500/10 border-blue-500/30 text-blue-300"
+              ? "bg-rose-50 border-rose-300 text-rose-950 shadow-xs"
+              : "bg-blue-50 border-blue-300 text-blue-950 shadow-xs"
           }`}
         >
           <div className="flex items-center gap-2">
             {notification.type === "success" ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
             ) : notification.type === "error" ? (
-              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+              <AlertTriangle className="w-4 h-4 text-rose-700 shrink-0" />
             ) : (
-              <Sparkles className="w-4 h-4 text-blue-400 shrink-0" />
+              <Sparkles className="w-4 h-4 text-blue-700 shrink-0" />
             )}
             <span>{notification.message}</span>
           </div>
@@ -933,7 +933,7 @@ export default function StudioCVPage() {
           <button
             type="button"
             onClick={deleteCurrentItem}
-            className="p-1 rounded text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 transition-colors ml-1"
+            className="p-1 rounded text-stone-500 hover:text-rose-700 hover:bg-rose-50 transition-colors ml-1"
             title="Supprimer le bloc sous le curseur"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -1029,7 +1029,7 @@ export default function StudioCVPage() {
         {/* Floating Instruction Pill */}
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
           <div className="px-3.5 py-1 rounded-full bg-white/95 border border-orange-200 text-stone-900 text-[11px] font-medium backdrop-blur-md shadow-md flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-emerald-600" />
             <span>Mode Éditeur Visuel Actif : Cliquez pour éditer &bull; Le texte collé adopte fidèlement le style du CV</span>
           </div>
         </div>

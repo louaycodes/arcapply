@@ -245,15 +245,15 @@ export default function KanbanPage() {
 
       {/* Recruiter Email Toast Live Alert */}
       {emailToast && (
-        <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-between text-xs text-emerald-400 font-semibold shadow-md animate-in slide-in-from-top-2">
+        <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-300 flex items-center justify-between text-xs text-emerald-950 font-semibold shadow-xs animate-in slide-in-from-top-2">
           <div className="flex items-center gap-2">
-            <Mail className="w-4 h-4 shrink-0 text-emerald-400 animate-bounce" />
+            <Mail className="w-4 h-4 shrink-0 text-emerald-700" />
             <span>{emailToast}</span>
           </div>
           <button
             type="button"
             onClick={() => setEmailToast(null)}
-            className="p-1 hover:bg-emerald-500/20 rounded"
+            className="p-1 hover:bg-emerald-100 rounded text-emerald-800"
           >
             ✕
           </button>

@@ -385,29 +385,28 @@ export default function RadarPage() {
               <Radar className="w-6 h-6 text-primary" />
               <span>{searchMode === "JOB" ? "Radar Opportunités Emploi" : "Radar Opportunités PFE"}</span>
             </h1>
-            <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+            <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-orange-100 text-orange-900 border border-orange-200 flex items-center gap-1.5 font-semibold">
+              <span className="w-2 h-2 rounded-full bg-emerald-600" />
               <span>Live Radar</span>
             </span>
 
             <Link
               href="/profile"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border transition-all hover:opacity-85 shadow-xs"
-              style={{
-                backgroundColor: searchMode === "JOB" ? "rgba(59, 130, 246, 0.12)" : "rgba(16, 185, 129, 0.12)",
-                borderColor: searchMode === "JOB" ? "rgba(59, 130, 246, 0.35)" : "rgba(16, 185, 129, 0.35)",
-                color: searchMode === "JOB" ? "#3b82f6" : "#10b981",
-              }}
+              className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border transition-all shadow-xs ${
+                searchMode === "JOB"
+                  ? "bg-blue-50 text-blue-900 border-blue-300 hover:bg-blue-100"
+                  : "bg-emerald-50 text-emerald-900 border-emerald-300 hover:bg-emerald-100"
+              }`}
               title="Changer d'objectif dans votre Master Profile"
             >
               {searchMode === "JOB" ? (
                 <>
-                  <Briefcase className="w-3.5 h-3.5" />
+                  <Briefcase className="w-3.5 h-3.5 text-blue-700" />
                   <span>Mode Emploi (CDI / CDD)</span>
                 </>
               ) : (
                 <>
-                  <GraduationCap className="w-3.5 h-3.5" />
+                  <GraduationCap className="w-3.5 h-3.5 text-emerald-700" />
                   <span>Mode PFE (Stage Fin d'Études)</span>
                 </>
               )}
@@ -454,8 +453,8 @@ export default function RadarPage() {
 
       {/* Scrape Progress Banner (SSE) */}
       {scrapeMessage && (
-        <div className="p-3 rounded-lg border border-primary/40 bg-primary/10 text-primary text-xs font-mono flex items-center gap-2.5 animate-pulse">
-          <RefreshCw className="w-3.5 h-3.5 animate-spin shrink-0" />
+        <div className="p-3 rounded-xl border border-orange-200 bg-orange-50 text-orange-950 text-xs font-mono flex items-center gap-2.5 shadow-xs">
+          <RefreshCw className="w-3.5 h-3.5 animate-spin shrink-0 text-orange-700" />
           <span>{scrapeMessage}</span>
         </div>
       )}
@@ -463,10 +462,10 @@ export default function RadarPage() {
       {/* Notification Toast */}
       {notification && (
         <div
-          className={`p-3 rounded-lg border text-xs flex items-center gap-2.5 transition-all ${
+          className={`p-3 rounded-xl border text-xs flex items-center gap-2.5 transition-all shadow-xs font-medium ${
             notification.type === "success"
-              ? "bg-success/10 border-success/30 text-success"
-              : "bg-destructive/10 border-destructive/30 text-destructive"
+              ? "bg-emerald-50 border-emerald-300 text-emerald-950"
+              : "bg-rose-50 border-rose-300 text-rose-950"
           }`}
         >
           {notification.type === "success" ? (
@@ -503,13 +502,13 @@ export default function RadarPage() {
             onClick={() => setSelectedPeriod("today")}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
               selectedPeriod === "today"
-                ? "bg-orange-500/15 text-orange-400 font-semibold border border-orange-500/30"
+                ? "bg-orange-100 text-orange-950 font-semibold border border-orange-300 shadow-xs"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Flame className="w-3.5 h-3.5 text-orange-400" />
+            <Flame className="w-3.5 h-3.5 text-orange-700" />
             <span>Aujourd'hui</span>
-            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-orange-500/20 text-orange-300 font-bold">
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-orange-200 text-orange-900 font-bold">
               {countToday}
             </span>
           </button>
@@ -519,13 +518,13 @@ export default function RadarPage() {
             onClick={() => setSelectedPeriod("week")}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
               selectedPeriod === "week"
-                ? "bg-blue-500/15 text-blue-400 font-semibold border border-blue-500/30"
+                ? "bg-blue-100 text-blue-950 font-semibold border border-blue-300 shadow-xs"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Calendar className="w-3.5 h-3.5 text-blue-400" />
+            <Calendar className="w-3.5 h-3.5 text-blue-700" />
             <span>Cette semaine</span>
-            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-blue-500/20 text-blue-300 font-bold">
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-blue-200 text-blue-900 font-bold">
               {countWeek}
             </span>
           </button>
@@ -535,12 +534,12 @@ export default function RadarPage() {
             onClick={() => setSelectedPeriod("month")}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
               selectedPeriod === "month"
-                ? "bg-primary/15 text-primary font-semibold border border-primary/30"
+                ? "bg-orange-100 text-orange-950 font-semibold border border-orange-300 shadow-xs"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <span>Ce mois-ci</span>
-            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-primary/20 text-primary">
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-orange-200 text-orange-900 font-bold">
               {countMonth}
             </span>
           </button>
@@ -609,14 +608,14 @@ export default function RadarPage() {
             onClick={() => setDirectOnly((prev) => !prev)}
             className={`px-3 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 border ${
               directOnly
-                ? "bg-amber-500/15 text-amber-300 border-amber-500/40 font-semibold"
-                : "bg-muted/40 text-muted-foreground border-border/50 hover:bg-muted/70 hover:text-foreground"
+                ? "bg-amber-100 text-amber-950 border-amber-300 font-semibold shadow-xs"
+                : "bg-stone-100 text-stone-600 border-stone-200 hover:bg-stone-200/70 hover:text-stone-900"
             }`}
           >
-            <Building2 className="w-3 h-3 text-amber-400" />
+            <Building2 className="w-3.5 h-3.5 text-amber-700" />
             <span>Portails Officiels Uniquement</span>
             {countDirect > 0 && (
-              <span className="text-[10px] font-mono px-1 rounded bg-amber-500/20 text-amber-300">
+              <span className="text-[10px] font-mono px-1 rounded bg-amber-200 text-amber-900 font-bold">
                 {countDirect}
               </span>
             )}
@@ -698,9 +697,9 @@ export default function RadarPage() {
             <div className="space-y-3.5">
               <div className="flex items-center justify-between border-b border-border/50 pb-2">
                 <div className="flex items-center gap-2">
-                  <Flame className="w-4 h-4 text-orange-400" />
-                  <h2 className="text-sm font-bold text-foreground">Aujourd'hui</h2>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-300 font-semibold border border-orange-500/30">
+                  <Flame className="w-4 h-4 text-orange-700" />
+                  <h2 className="text-sm font-bold text-stone-900 font-display">Aujourd'hui</h2>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-orange-100 text-orange-900 font-semibold border border-orange-200">
                     {todayJobs.length} opportunité(s)
                   </span>
                 </div>
@@ -729,9 +728,9 @@ export default function RadarPage() {
             <div className="space-y-3.5">
               <div className="flex items-center justify-between border-b border-border/50 pb-2">
                 <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-blue-400" />
-                  <h2 className="text-sm font-bold text-foreground">Cette Semaine</h2>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 font-semibold border border-blue-500/30">
+                  <Calendar className="w-4 h-4 text-blue-700" />
+                  <h2 className="text-sm font-bold text-stone-900 font-display">Cette Semaine</h2>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 font-semibold border border-blue-200">
                     {weekJobs.length} opportunité(s)
                   </span>
                 </div>
@@ -807,17 +806,17 @@ export default function RadarPage() {
 
       {/* Collect Modal */}
       {showCollectModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4">
-          <div className="w-full max-w-lg rounded-xl border border-border bg-card p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between border-b border-border/60 pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-lg rounded-2xl border border-stone-200 bg-white p-6 shadow-xl space-y-5 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-stone-200 pb-3">
               <div className="flex items-center gap-2">
                 <Radar className="w-5 h-5 text-primary" />
-                <h3 className="text-base font-bold text-foreground">Configuration du Scan Radar</h3>
+                <h3 className="text-base font-bold text-stone-900 font-display">Configuration du Scan Radar</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setShowCollectModal(false)}
-                className="text-muted-foreground hover:text-foreground cursor-pointer"
+                className="text-stone-400 hover:text-stone-700 cursor-pointer p-1 rounded-lg hover:bg-stone-100 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -869,11 +868,11 @@ export default function RadarPage() {
                         className={`flex items-center justify-between p-2 rounded-lg border text-xs cursor-pointer transition-all ${
                           isTop100
                             ? isChecked
-                              ? "border-amber-500/50 bg-amber-500/10 text-foreground font-semibold"
-                              : "border-border bg-card text-muted-foreground hover:bg-muted/60"
+                              ? "border-amber-300 bg-amber-50 text-amber-950 font-semibold shadow-xs"
+                              : "border-stone-200 bg-white text-stone-600 hover:bg-stone-50"
                             : isChecked
-                            ? "border-primary/50 bg-primary/5 text-foreground font-semibold"
-                            : "border-border bg-card text-muted-foreground hover:bg-muted/60"
+                            ? "border-orange-300 bg-orange-50 text-orange-950 font-semibold shadow-xs"
+                            : "border-stone-200 bg-white text-stone-600 hover:bg-stone-50"
                         }`}
                       >
                         <div className="flex items-center gap-2">

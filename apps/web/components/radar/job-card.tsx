@@ -236,18 +236,18 @@ export function JobCard({
             )}
 
             {job.status === "REVIEWING" && (
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-300">
                 En révision
               </span>
             )}
             {job.status === "READY" && (
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-900 border border-emerald-300">
                 Prêt
               </span>
             )}
             {job.status === "SUBMITTED" && (
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-400 border border-purple-500/30 flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" />
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-stone-100 text-stone-900 border border-stone-300 flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3 text-emerald-700" />
                 Soumis
               </span>
             )}

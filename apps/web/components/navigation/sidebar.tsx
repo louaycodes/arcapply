@@ -113,10 +113,10 @@ export function Sidebar() {
             <span
               className={`w-2 h-2 rounded-full ${
                 isEngineOnline === null
-                  ? "bg-amber-400 animate-pulse"
+                  ? "bg-amber-500"
                   : isEngineOnline
-                  ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
-                  : "bg-red-500"
+                  ? "bg-emerald-600"
+                  : "bg-rose-600"
               }`}
             />
             <span
