@@ -12,10 +12,12 @@ import {
   Server,
   FileText,
   LogOut,
+  LogIn,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { checkEngineHealth } from "@/lib/api";
 import { useAuth } from "@/components/auth/auth-context";
+
 
 const navigationItems = [
   { name: "Tableau de bord", href: "/", icon: LayoutDashboard, shortcut: "g d" },
@@ -106,31 +108,51 @@ export function Sidebar() {
       </div>
 
       <div className="space-y-3">
-        {/* User Card */}
-        {user && (
-          <div className="px-3 py-2.5 rounded-xl bg-white border border-border shadow-artisan flex items-center justify-between">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary/20 to-orange-200 text-primary font-bold flex items-center justify-center text-[11px] shrink-0 border border-primary/30">
-                {user.full_name?.substring(0, 2).toUpperCase() || user.username.substring(0, 2).toUpperCase()}
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-stone-800 truncate leading-tight">
-                  {user.full_name || user.username}
-                </p>
-                <p className="text-[10px] text-muted-foreground font-mono">
-                  @{user.username}
-                </p>
+        {/* User Card & Connexion */}
+        {user ? (
+          <div className="space-y-1.5">
+            <div className="px-3 py-2.5 rounded-xl bg-white border border-border shadow-artisan flex items-center justify-between">
+              <Link href="/login" className="flex items-center gap-2.5 min-w-0 hover:opacity-80 transition-opacity">
+                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary/20 to-orange-200 text-primary font-bold flex items-center justify-center text-[11px] shrink-0 border border-primary/30">
+                  {user.full_name?.substring(0, 2).toUpperCase() || user.username.substring(0, 2).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-stone-800 truncate leading-tight">
+                    {user.full_name || user.username}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground font-mono">
+                    @{user.username}
+                  </p>
+                </div>
+              </Link>
+              <div className="flex items-center gap-0.5">
+                <Link
+                  href="/login"
+                  title="Changer d'utilisateur / Connexion"
+                  className="p-1.5 rounded-lg text-stone-400 hover:text-primary hover:bg-orange-50 transition-colors"
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                </Link>
+                <button
+                  onClick={logout}
+                  title="Se déconnecter"
+                  className="p-1.5 rounded-lg text-stone-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
-            <button
-              onClick={logout}
-              title="Se déconnecter"
-              className="p-1.5 rounded-lg text-stone-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-            </button>
           </div>
+        ) : (
+          <Link
+            href="/login"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-primary hover:bg-orange-700 text-white font-medium text-xs shadow-sm transition-all"
+          >
+            <LogIn className="w-4 h-4" />
+            <span>Se connecter</span>
+          </Link>
         )}
+
 
         {/* Engine Status & System Info */}
         <div>

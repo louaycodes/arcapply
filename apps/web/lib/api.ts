@@ -1,5 +1,34 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_ENGINE_API_URL || "http://localhost:8000";
 
+function getAuthHeaders(): HeadersInit {
+  if (typeof window === "undefined") return {};
+  const token = localStorage.getItem("arcapply_token");
+  const userStr = localStorage.getItem("arcapply_user");
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  if (userStr) {
+    try {
+      const u = JSON.parse(userStr);
+      if (u?.username) {
+        headers["X-Username"] = u.username;
+      }
+    } catch (_) {}
+  }
+  return headers;
+}
+
+export async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  const authHeaders = getAuthHeaders();
+  const headers = {
+    ...authHeaders,
+    ...(options.headers || {}),
+  };
+  return fetch(url, { ...options, headers });
+}
+
+
 export interface Education {
   id?: string;
   school: string;
@@ -84,7 +113,7 @@ export interface ProfileCompletenessStatus {
 }
 
 export async function fetchProfile(): Promise<MasterProfile> {
-  const res = await fetch(`${API_BASE_URL}/api/profile`, {
+  const res = await authFetch(`${API_BASE_URL}/api/profile`, {
     cache: "no-store",
   });
   if (!res.ok) {
@@ -94,7 +123,7 @@ export async function fetchProfile(): Promise<MasterProfile> {
 }
 
 export async function updateProfile(data: Partial<MasterProfile>): Promise<MasterProfile> {
-  const res = await fetch(`${API_BASE_URL}/api/profile`, {
+  const res = await authFetch(`${API_BASE_URL}/api/profile`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -108,7 +137,7 @@ export async function updateProfile(data: Partial<MasterProfile>): Promise<Maste
 }
 
 export async function fetchProfileStatus(): Promise<ProfileCompletenessStatus> {
-  const res = await fetch(`${API_BASE_URL}/api/profile/status`, {
+  const res = await authFetch(`${API_BASE_URL}/api/profile/status`, {
     cache: "no-store",
   });
   if (!res.ok) {
@@ -122,7 +151,7 @@ export async function verifyGenerationEligibility(): Promise<{
   message: string;
   completion_percentage: number;
 }> {
-  const res = await fetch(`${API_BASE_URL}/api/profile/can-generate`, {
+  const res = await authFetch(`${API_BASE_URL}/api/profile/can-generate`, {
     method: "POST",
   });
   if (!res.ok) {
@@ -136,7 +165,7 @@ export async function verifyGenerationEligibility(): Promise<{
 
 export async function checkEngineHealth(): Promise<boolean> {
   try {
-    const res = await fetch(`${API_BASE_URL}/health`, { cache: "no-store" });
+    const res = await authFetch(`${API_BASE_URL}/health`, { cache: "no-store" });
     return res.ok;
   } catch {
     return false;
@@ -201,15 +230,16 @@ export async function fetchJobs(params?: {
   if (params?.include_archived) query.set("include_archived", "true");
 
   const url = `${API_BASE_URL}/api/jobs${query.toString() ? `?${query.toString()}` : ""}`;
-  const res = await fetch(url, { cache: "no-store" });
+  const res = await authFetch(url, { cache: "no-store" });
   if (!res.ok) {
+
     throw new Error(`Failed to fetch jobs: ${res.statusText}`);
   }
   return res.json();
 }
 
 export async function collectJobs(payload: JobCollectRequest): Promise<JobCollectSummary> {
-  const res = await fetch(`${API_BASE_URL}/api/jobs/collect`, {
+  const res = await authFetch(`${API_BASE_URL}/api/jobs/collect`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -235,7 +265,7 @@ export interface SourcesRegistryStatus {
 }
 
 export async function fetchSourcesStatus(): Promise<SourcesRegistryStatus> {
-  const res = await fetch(`${API_BASE_URL}/api/jobs/sources`, { cache: "no-store" });
+  const res = await authFetch(`${API_BASE_URL}/api/jobs/sources`, { cache: "no-store" });
   if (!res.ok) {
     throw new Error(`Failed to fetch sources: ${res.statusText}`);
   }
@@ -243,7 +273,7 @@ export async function fetchSourcesStatus(): Promise<SourcesRegistryStatus> {
 }
 
 export async function crawlAllSources(payload?: JobCollectRequest): Promise<JobCollectSummary> {
-  const res = await fetch(`${API_BASE_URL}/api/jobs/crawl-all`, {
+  const res = await authFetch(`${API_BASE_URL}/api/jobs/crawl-all`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload || {}),
@@ -256,7 +286,7 @@ export async function crawlAllSources(payload?: JobCollectRequest): Promise<JobC
 }
 
 export async function archiveJob(jobId: string): Promise<JobOffer> {
-  const res = await fetch(`${API_BASE_URL}/api/jobs/${jobId}/archive`, {
+  const res = await authFetch(`${API_BASE_URL}/api/jobs/${jobId}/archive`, {
     method: "PATCH",
   });
   if (!res.ok) {
@@ -266,7 +296,7 @@ export async function archiveJob(jobId: string): Promise<JobOffer> {
 }
 
 export async function clearAllJobs(): Promise<{ status: string; message: string }> {
-  const res = await fetch(`${API_BASE_URL}/api/jobs/clear`, {
+  const res = await authFetch(`${API_BASE_URL}/api/jobs/clear`, {
     method: "DELETE",
   });
   if (!res.ok) {
@@ -361,7 +391,7 @@ export interface ATSMatchResult {
 }
 
 export async function fetchJobATSScore(jobId: string): Promise<ATSMatchResult> {
-  const res = await fetch(`${API_BASE_URL}/api/ats/match/${jobId}`, {
+  const res = await authFetch(`${API_BASE_URL}/api/ats/match/${jobId}`, {
     cache: "no-store",
   });
   if (!res.ok) {
@@ -371,7 +401,7 @@ export async function fetchJobATSScore(jobId: string): Promise<ATSMatchResult> {
 }
 
 export async function fetchBatchATSScores(): Promise<Record<string, ATSMatchResult>> {
-  const res = await fetch(`${API_BASE_URL}/api/ats/batch`, {
+  const res = await authFetch(`${API_BASE_URL}/api/ats/batch`, {
     cache: "no-store",
   });
   if (!res.ok) {
@@ -397,7 +427,7 @@ export interface TargetedCV {
 }
 
 export async function generateTargetedCV(jobId: string, lang: string = "fr"): Promise<TargetedCV> {
-  const res = await fetch(`${API_BASE_URL}/api/cv/generate/${jobId}?lang=${lang}`, {
+  const res = await authFetch(`${API_BASE_URL}/api/cv/generate/${jobId}?lang=${lang}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -496,7 +526,7 @@ export async function uploadCVFile(
   const formData = new FormData();
   formData.append("file", file);
 
-  const res = await fetch(`${API_BASE_URL}/api/cv/upload?sync_to_profile=${syncToProfile}`, {
+  const res = await authFetch(`${API_BASE_URL}/api/cv/upload?sync_to_profile=${syncToProfile}`, {
     method: "POST",
     body: formData,
   });
@@ -509,7 +539,7 @@ export async function uploadCVFile(
 }
 
 export async function renderCustomCV(data: CustomCVData): Promise<string> {
-  const res = await fetch(`${API_BASE_URL}/api/cv/render`, {
+  const res = await authFetch(`${API_BASE_URL}/api/cv/render`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -527,7 +557,7 @@ export async function compileCustomCVPdf(
   htmlContent: string,
   filename: string = "CV_Candidat.pdf"
 ): Promise<Blob> {
-  const res = await fetch(`${API_BASE_URL}/api/cv/compile-pdf`, {
+  const res = await authFetch(`${API_BASE_URL}/api/cv/compile-pdf`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ html_content: htmlContent, filename }),
@@ -541,7 +571,7 @@ export async function compileCustomCVPdf(
 }
 
 export async function downloadProfileCVPdf(lang: string = "fr"): Promise<Blob> {
-  const res = await fetch(`${API_BASE_URL}/api/cv/profile-pdf?lang=${lang}`);
+  const res = await authFetch(`${API_BASE_URL}/api/cv/profile-pdf?lang=${lang}`);
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(errorData?.detail?.message || "Erreur lors du téléchargement du CV.");
@@ -552,7 +582,7 @@ export async function downloadProfileCVPdf(lang: string = "fr"): Promise<Blob> {
 export async function fetchCVFromProfile(
   lang: "fr" | "en" = "fr"
 ): Promise<{ data: CustomCVData; html_content: string }> {
-  const res = await fetch(`${API_BASE_URL}/api/cv/from-profile?lang=${lang}`, {
+  const res = await authFetch(`${API_BASE_URL}/api/cv/from-profile?lang=${lang}`, {
     cache: "no-store",
   });
   if (!res.ok) {
@@ -563,7 +593,7 @@ export async function fetchCVFromProfile(
 }
 
 export async function saveCVDraft(data: CustomCVData): Promise<{ status: string; id: string; updated_at: string }> {
-  const res = await fetch(`${API_BASE_URL}/api/cv/save-draft`, {
+  const res = await authFetch(`${API_BASE_URL}/api/cv/save-draft`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -581,7 +611,7 @@ export async function fetchCVDraft(): Promise<{
   has_draft: boolean;
   updated_at?: string;
 }> {
-  const res = await fetch(`${API_BASE_URL}/api/cv/draft`, {
+  const res = await authFetch(`${API_BASE_URL}/api/cv/draft`, {
     cache: "no-store",
   });
   if (!res.ok) {
@@ -604,7 +634,7 @@ export interface CoverLetter {
 }
 
 export async function generateCoverLetter(jobId: string): Promise<CoverLetter> {
-  const res = await fetch(`${API_BASE_URL}/api/letter/generate/${jobId}`, {
+  const res = await authFetch(`${API_BASE_URL}/api/letter/generate/${jobId}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -620,7 +650,7 @@ export async function generateCoverLetter(jobId: string): Promise<CoverLetter> {
 }
 
 export async function fetchCoverLetter(jobId: string): Promise<CoverLetter> {
-  const res = await fetch(`${API_BASE_URL}/api/letter/${jobId}`, {
+  const res = await authFetch(`${API_BASE_URL}/api/letter/${jobId}`, {
     cache: "no-store",
   });
   if (!res.ok) {
@@ -633,7 +663,7 @@ export async function updateCoverLetter(
   jobId: string,
   contentMarkdown: string
 ): Promise<CoverLetter> {
-  const res = await fetch(`${API_BASE_URL}/api/letter/${jobId}`, {
+  const res = await authFetch(`${API_BASE_URL}/api/letter/${jobId}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -653,7 +683,7 @@ export async function transitionJobStatus(
   jobId: string,
   newStatus: string
 ): Promise<JobOffer> {
-  const res = await fetch(`${API_BASE_URL}/api/jobs/${jobId}/transition`, {
+  const res = await authFetch(`${API_BASE_URL}/api/jobs/${jobId}/transition`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -683,7 +713,7 @@ export interface PipelineMetrics {
 }
 
 export async function fetchPipelineMetrics(): Promise<PipelineMetrics> {
-  const res = await fetch(`${API_BASE_URL}/api/jobs/metrics`, {
+  const res = await authFetch(`${API_BASE_URL}/api/jobs/metrics`, {
     cache: "no-store",
   });
   if (!res.ok) {
@@ -715,7 +745,7 @@ export interface EmailSimulatePayload {
 }
 
 export async function fetchRecentEmails(limit = 30): Promise<EmailInteraction[]> {
-  const res = await fetch(`${API_BASE_URL}/api/emails/recent?limit=${limit}`, {
+  const res = await authFetch(`${API_BASE_URL}/api/emails/recent?limit=${limit}`, {
     cache: "no-store",
   });
   if (!res.ok) {
@@ -727,7 +757,7 @@ export async function fetchRecentEmails(limit = 30): Promise<EmailInteraction[]>
 export async function simulateIncomingEmail(
   payload: EmailSimulatePayload
 ): Promise<EmailInteraction> {
-  const res = await fetch(`${API_BASE_URL}/api/emails/simulate`, {
+  const res = await authFetch(`${API_BASE_URL}/api/emails/simulate`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -746,7 +776,7 @@ export async function triggerEmailSync(): Promise<{
   total_archived: number;
   last_sync: string;
 }> {
-  const res = await fetch(`${API_BASE_URL}/api/emails/ingest`, {
+  const res = await authFetch(`${API_BASE_URL}/api/emails/ingest`, {
     method: "POST",
   });
   if (!res.ok) {
@@ -768,7 +798,7 @@ export interface LoginResponse {
 }
 
 export async function loginUser(username: string, password: string): Promise<LoginResponse> {
-  const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+  const res = await authFetch(`${API_BASE_URL}/api/auth/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -784,7 +814,7 @@ export async function loginUser(username: string, password: string): Promise<Log
 }
 
 export async function fetchCurrentUser(token: string): Promise<User> {
-  const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
+  const res = await authFetch(`${API_BASE_URL}/api/auth/me`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
