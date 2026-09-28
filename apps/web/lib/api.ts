@@ -403,6 +403,166 @@ export function getCVPdfDownloadUrl(jobId: string, lang: string = "fr"): string 
   return `${API_BASE_URL}/api/cv/pdf/${jobId}?lang=${lang}`;
 }
 
+// ============================================================================
+// Studio CV — Interactive Editor & Pixel-Perfect PDF Types and APIs
+// ============================================================================
+
+export interface ParsedEducation {
+  school: string;
+  degree: string;
+  field_of_study: string;
+  start_date: string;
+  end_date: string;
+  description: string;
+}
+
+export interface ParsedExperience {
+  company: string;
+  role: string;
+  location: string;
+  start_date: string;
+  end_date: string;
+  description: string;
+  technologies: string[];
+}
+
+export interface ParsedProject {
+  title: string;
+  role: string;
+  url: string;
+  description: string;
+  technologies: string[];
+}
+
+export interface ParsedSkillCategory {
+  title: string;
+  skills: string[];
+}
+
+export interface ParsedExtracurricular {
+  role: string;
+  organization: string;
+  date: string;
+  description: string;
+}
+
+export interface CustomCVData {
+  full_name: string;
+  headline: string;
+  email: string;
+  phone: string;
+  location: string;
+  portfolio_url: string;
+  linkedin_url: string;
+  github_url: string;
+  summary: string;
+  educations: ParsedEducation[];
+  experiences: ParsedExperience[];
+  projects: ParsedProject[];
+  skills_categories: ParsedSkillCategory[];
+  extracurricular: ParsedExtracurricular[];
+  languages: string[];
+  language: "fr" | "en";
+  font_size_pt: number;
+  line_height: number;
+  margin_top_mm: number;
+  margin_bottom_mm: number;
+  margin_left_mm: number;
+  margin_right_mm: number;
+}
+
+export async function uploadCVFile(
+  file: File,
+  syncToProfile: boolean = false
+): Promise<{ filename: string; data: CustomCVData; html_content: string }> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch(`${API_BASE_URL}/api/cv/upload?sync_to_profile=${syncToProfile}`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData?.detail?.message || "Échec de l'analyse du CV.");
+  }
+  return res.json();
+}
+
+export async function renderCustomCV(data: CustomCVData): Promise<string> {
+  const res = await fetch(`${API_BASE_URL}/api/cv/render`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData?.detail?.message || "Échec du rendu du CV.");
+  }
+  const json = await res.json();
+  return json.html_content;
+}
+
+export async function compileCustomCVPdf(
+  htmlContent: string,
+  filename: string = "CV_Candidat.pdf"
+): Promise<Blob> {
+  const res = await fetch(`${API_BASE_URL}/api/cv/compile-pdf`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ html_content: htmlContent, filename }),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData?.detail?.message || "Échec de la compilation PDF vectorielle.");
+  }
+  return res.blob();
+}
+
+export async function fetchCVFromProfile(
+  lang: "fr" | "en" = "fr"
+): Promise<{ data: CustomCVData; html_content: string }> {
+  const res = await fetch(`${API_BASE_URL}/api/cv/from-profile?lang=${lang}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData?.detail?.message || "Impossible de charger le Master Profile.");
+  }
+  return res.json();
+}
+
+export async function saveCVDraft(data: CustomCVData): Promise<{ status: string; id: string; updated_at: string }> {
+  const res = await fetch(`${API_BASE_URL}/api/cv/save-draft`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData?.detail?.message || "Échec de la sauvegarde du brouillon.");
+  }
+  return res.json();
+}
+
+export async function fetchCVDraft(): Promise<{
+  data: CustomCVData | null;
+  html_content: string;
+  has_draft: boolean;
+  updated_at?: string;
+}> {
+  const res = await fetch(`${API_BASE_URL}/api/cv/draft`, {
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    throw new Error(`Échec de récupération du brouillon: ${res.statusText}`);
+  }
+  return res.json();
+}
+
 export interface CoverLetter {
   id: string;
   job_id: string;

@@ -10,6 +10,7 @@ import {
   Settings,
   ShieldCheck,
   Server,
+  FileText,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { checkEngineHealth } from "@/lib/api";
@@ -18,6 +19,7 @@ const navigationItems = [
   { name: "Cockpit", href: "/", icon: LayoutDashboard, shortcut: "g d" },
   { name: "Radar d'Offres", href: "/radar", icon: Radar, shortcut: "g r" },
   { name: "Master Profile", href: "/profile", icon: UserCheck, shortcut: "g p" },
+  { name: "Studio CV", href: "/cv", icon: FileText, shortcut: "g c" },
   { name: "Tableau Kanban", href: "/kanban", icon: KanbanSquare, shortcut: "g k" },
   { name: "Paramètres", href: "/settings", icon: Settings, shortcut: "g s" },
 ];
