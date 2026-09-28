@@ -1,59 +1,68 @@
 ---
 name: ArcApply
-description: Copilote intelligent et cockpit de candidature PFE pour étudiants ingénieurs. Style haute précision, ingénierie soignée, basé sur les primitives shadcn/ui + Tailwind CSS.
+description: Copilote intelligent et cockpit de candidature PFE pour étudiants ingénieurs. Direction artistique 'Atelier d'Ingénierie' — Thème clair, chaleureux (Beige lin & Orange terracotta), typographie éditoriale d'auteur et composants tactiles human-made.
 status: final
-updated: 2026-09-26
+updated: 2026-09-28
 colors:
-  background: '#0B0F19'
-  foreground: '#F8FAFC'
-  muted: '#1E293B'
-  muted-foreground: '#A1B0CB' # Rehaussé pour contraste WCAG AA > 5:1
-  border: '#334155'
-  input: '#1E293B'
-  ring: '#3B82F6' # Anneau de focus clavier accessible
-  card: '#0F172A'
-  card-foreground: '#F8FAFC'
-  primary: '#3B82F6'
+  background: '#FAF7F2' # Beige lin doux / Warm Sand
+  foreground: '#1C1917' # Encre d'imprimerie chaude / Deep Warm Espresso
+  muted: '#F3EDE4' # Lin brut feutré
+  muted-foreground: '#78716C' # Pierre de taille (WCAG AAA > 7:1)
+  border: '#E7DFD4' # Liseré lin artisanal
+  input: '#FFFFFF' # Papier velin immaculé
+  ring: '#EA580C' # Orange terracotta focus accessible
+  card: '#FFFFFF' # Craie naturelle pressée
+  card-foreground: '#1C1917'
+  primary: '#EA580C' # Orange terracotta d'atelier
   primary-foreground: '#FFFFFF'
-  primary-hover: '#2563EB'
-  match-high: '#10B981'
-  match-medium: '#F59E0B'
-  match-low: '#EF4444'
-  ai-accent: '#8B5CF6'
-  human-review: '#F97316'
-  success: '#10B981'
-  destructive: '#EF4444'
+  primary-hover: '#C2410C' # Cuivre brûlé
+  primary-light: '#FFF7ED' # Pêche très douce
+  accent: '#D97706' # Ambre doré d'artisan
+  accent-foreground: '#FFFFFF'
+  match-high: '#16A34A' # Vert sauge / Feuillage frais
+  match-medium: '#D97706' # Ocre ambré chaud
+  match-low: '#DC2626' # Terracotta carmin
+  ai-accent: '#C2410C' # Cuivre artisanal
+  human-review: '#EA580C' # Orange signature d'atelier
+  success: '#16A34A'
+  destructive: '#DC2626'
 typography:
   display:
-    fontFamily: 'Inter, system-ui, -apple-system, sans-serif'
+    fontFamily: "'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif"
     fontSize: '28px'
     fontWeight: '700'
     lineHeight: '1.2'
-    letterSpacing: '-0.02em'
+    letterSpacing: '-0.03em'
   heading:
-    fontFamily: 'Inter, system-ui, -apple-system, sans-serif'
+    fontFamily: "'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif"
     fontSize: '18px'
     fontWeight: '600'
     lineHeight: '1.3'
-    letterSpacing: '-0.01em'
+    letterSpacing: '-0.02em'
   body:
-    fontFamily: 'Inter, system-ui, -apple-system, sans-serif'
+    fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, sans-serif"
     fontSize: '14px'
-    fontWeight: '400'
-    lineHeight: '1.5'
+    fontWeight: '450'
+    lineHeight: '1.6'
+    letterSpacing: '-0.01em'
   mono:
-    fontFamily: 'JetBrains Mono, ui-monospace, monospace'
+    fontFamily: "'JetBrains Mono', ui-monospace, monospace"
     fontSize: '13px'
     fontWeight: '500'
     lineHeight: '1.4'
 rounded:
-  sm: '4px'
-  md: '8px'
-  lg: '12px'
-  xl: '16px'
+  sm: '6px'
+  md: '10px'
+  lg: '14px'
+  xl: '20px'
   full: '9999px'
+shadows:
+  artisan: '0 1px 3px rgba(44, 28, 16, 0.04), 0 8px 24px -4px rgba(44, 28, 16, 0.06)'
+  artisan-card: '0 2px 4px rgba(44, 28, 16, 0.03), 0 12px 32px -6px rgba(44, 28, 16, 0.07)'
+  artisan-button: '0 2px 0 0 #9A3412, 0 4px 12px rgba(234, 88, 12, 0.22)'
+  artisan-hover: '0 4px 16px -2px rgba(44, 28, 16, 0.08), 0 16px 36px -4px rgba(234, 88, 12, 0.12)'
 spacing:
-  cockpit-gap: '16px'
+  cockpit-gap: '18px'
   drawer-width: '560px'
   kanban-col: '320px'
 components:
@@ -65,133 +74,94 @@ components:
     background: '{colors.primary}'
     foreground: '{colors.primary-foreground}'
     radius: '{rounded.md}'
+    shadow: '{shadows.artisan-button}'
   ai-generate-button:
-    background: '{colors.ai-accent}'
-    foreground: '#FFFFFF'
+    background: '{colors.primary-light}'
+    foreground: '{colors.primary}'
+    border: '1px solid #FDBA74'
     radius: '{rounded.md}'
   review-drawer:
     background: '{colors.card}'
     border-left: '1px solid {colors.border}'
     width: '{spacing.drawer-width}'
+    shadow: '-8px 0 32px rgba(44, 28, 16, 0.08)'
   external-package-modal:
     background: '{colors.card}'
     border: '1px solid {colors.border}'
-    radius: '{rounded.lg}'
+    radius: '{rounded.xl}'
+    shadow: '{shadows.artisan-card}'
 ---
 
 # ArcApply — Visual Identity Spine (DESIGN.md)
 
-## Brand & Style
+## Brand & Style : L'Atelier de Haute Précision (Human-Made & Crafted)
 
-**ArcApply** est un outil de productivité haute précision destiné aux élèves-ingénieurs recherchant un stage de fin d'études (PFE) d'élite. Ce n'est ni un portail RH aseptisé, ni un bot agressif d'automatisation opaque. C'est un **cockpit de pilotage stratégique**, un instrument d'ingénieur qui allie rigueur analytique, transparence algorithmique totale et efficacité d'exécution.
+**ArcApply** rompt délibérément avec les interfaces d'intelligence artificielle stéréotypées (dark mode générique, dégradés violets criards et cartes froides sans âme). 
 
-L'esthétique visuelle s'inspire des meilleurs outils pour développeurs (Linear, Raycast, Vercel Dashboard) :
-- **Dark mode immersif par défaut** (`{colors.background}`) avec contraste maîtrisé, évitant la fatigue oculaire lors des sessions intensives de recherche de stage.
-- **Densité d'information calibrée** : présentation compacte et sans fioritures superflues, permettant d'évaluer une offre en un coup d'œil.
-- **Transparence visuelle des données d'analyse** : le score ATS et les correspondances de compétences sont mis en scène avec une précision télémétrique (badges monospace, jauges de précision).
-- **Sobriété et autorité technique** : les micro-animations sont fonctionnelles (transition de statut, validation en un clic, ouverture latérale du tiroir de révision), renforçant le sentiment de contrôle absolu.
-
-ArcApply hérite des fondations de **shadcn/ui** combinées à **Tailwind CSS**. Le présent document définit la couche spécifique d'identité de marque (Brand Layer), les composants spécialisés (tiroir de validation humaine, jauges ATS, badge de provenance) et les règles d'agencement du cockpit.
+Le design system adopte l'esthétique d'un **Atelier d'ingénierie et d'architecture contemporain** :
+- **Atmosphère claire et chaleureuse** : Un fond couleur beige lin chaud (`#FAF7F2`) qui repose le regard et évoque le papier millimétré de haute facture.
+- **Palette signature Orange Terracotta & Ambre** (`#EA580C` & `#D97706`) : Évoque le cuivre, l'artisanat, la braise créative et l'énergie d'exécution, contrastant avec des encres d'imprimerie profondes (`#1C1917`).
+- **Typographie éditoriale d'auteur** :
+  - **Space Grotesk** pour les titres majeurs : caractère géométrique affirmé, angles singuliers, look humain et non générique.
+  - **Plus Jakarta Sans** pour le texte courant : proportions humanistes généreuses, excellente lisibilité, nuances subtiles.
+  - **JetBrains Mono** pour les scores ATS et les télémétries : la précision du poinçon d'artisan.
+- **Composants physiques et tactiles** :
+  - Boutons avec relief ressenti (biseau inférieur subtil, micro-déplacement au clic).
+  - Cartes épaisses en craie naturelle avec doubles ombres diffuses chaudes (`shadow-artisan`).
+  - Badges façon étiquettes cousues ou tampons d'atelier avec liserés organiques.
 
 ---
 
-## Colors
-
-La palette repose sur un fond sombre structuré, ponctué d'accents fonctionnels rigoureusement attribués à des rôles sémantiques stricts avec un ratio de contraste WCAG AA $> 5:1$ garanti :
+## Palette de Couleurs Fonctionnelles
 
 | Token | Teinte / Hex | Usage fonctionnel | Ce qu'il NE doit PAS faire |
 |---|---|---|---|
-| `{colors.background}` | `#0B0F19` (Obsidian Blue) | Toile de fond principale de l'application. | Ne pas utiliser pour les cartes ou conteneurs flottants. |
-| `{colors.card}` | `#0F172A` (Slate Dark) | Surfaces des cartes d'offres, colonnes Kanban et tiroirs. | Ne pas confondre avec le fond global. |
-| `{colors.muted}` | `#1E293B` (Slate Subtile) | Arrière-plan des blocs de code, badges neutres, séparateurs. | Ne pas utiliser pour le texte principal. |
-| `{colors.muted-foreground}` | `#A1B0CB` (Cool Muted) | Métadonnées, labels secondaires, mentions de dates (contraste garanti $> 5:1$). | Ne pas utiliser sur fond blanc. |
-| `{colors.border}` | `#334155` | Lignes de séparation, contours de cartes et de tiroirs. | Ne pas surcharger avec des bordures trop épaisses. |
-| `{colors.ring}` | `#3B82F6` (Electric Focus) | Anneau de surbrillance du focus clavier accessible (`2px solid`). | Ne jamais masquer ou désactiver au clavier. |
-| `{colors.primary}` | `#3B82F6` (Electric Blue) | Actions principales de navigation, boutons de confirmation neutres. | Ne pas utiliser pour les alertes ou le scoring. |
-| `{colors.match-high}` | `#10B981` (Emerald) | Score ATS optimal ($\ge 75\%$), compétences vérifiées dans le profil, succès d'envoi. | Ne pas utiliser pour des actions destructives. |
-| `{colors.match-medium}`| `#F59E0B` (Amber) | Score ATS moyen ($60-74\%$), compétences à valoriser ou adapter. | Ne pas utiliser pour des erreurs bloquantes. |
-| `{colors.match-low}` | `#EF4444` (Ruby) | Score ATS insuffisant ($<60\%$), lacunes majeures identifiées. | Ne pas utiliser comme couleur décorative. |
-| `{colors.ai-accent}` | `#8B5CF6` (Violet AI) | Déclenchement de génération de lettre, reformulation contextuelle de CV. | Ne pas utiliser pour la validation finale d'envoi. |
-| `{colors.human-review}`| `#F97316` (Warm Orange) | Écran d'attente de validation humaine obligatoire (*Human-in-the-loop*). | Ne pas dissimuler ou atténuer dans l'interface. |
+| `{colors.background}` | `#FAF7F2` (Beige Lin) | Toile de fond principale de l'application, douce et chaleureuse. | Ne pas remplacer par un blanc criard `#FFFFFF` ou du gris froid. |
+| `{colors.card}` | `#FFFFFF` (Craie Pure) | Surfaces des cartes d'offres, colonnes Kanban et tiroirs. | Ne pas laisser flotter sans bordure lin subtile `{colors.border}`. |
+| `{colors.muted}` | `#F3EDE4` (Lin Écru) | Arrière-plan des blocs techniques, badges neutres, barres d'outils. | Ne pas utiliser pour le texte principal. |
+| `{colors.muted-foreground}` | `#78716C` (Pierre Chaude) | Métadonnées, labels secondaires, mentions de dates (contraste garanti $> 7:1$). | Ne pas utiliser de gris délavé illisible. |
+| `{colors.border}` | `#E7DFD4` (Lin Ouvré) | Lignes de séparation fines et contours des cartes. | Ne pas utiliser de bordures noires dures. |
+| `{colors.ring}` | `#EA580C` (Terracotta Focus) | Anneau de surbrillance du focus clavier accessible (`2px solid`). | Ne jamais masquer ou désactiver au clavier. |
+| `{colors.primary}` | `#EA580C` (Orange Terracotta) | Actions majeures, boutons d'action d'atelier, sélection active. | Ne pas utiliser pour les alertes d'erreur. |
+| `{colors.primary-hover}` | `#C2410C` (Cuivre Chaud) | État survolé des actions primaires. | Ne pas saturer excessivement. |
+| `{colors.match-high}` | `#16A34A` (Vert Feuillage) | Score ATS optimal ($\ge 75\%$), compétences vérifiées, candidatures acceptées. | Ne pas utiliser pour des actions destructives. |
+| `{colors.match-medium}`| `#D97706` (Ocre Ambré) | Score ATS moyen ($60-74\%$), compétences à valoriser ou adapter. | Ne pas confondre avec le bouton d'action primaire. |
+| `{colors.match-low}` | `#DC2626` (Terracotta Carmin) | Score ATS insuffisant ($<60\%$), lacunes majeures identifiées. | Ne pas utiliser comme couleur décorative. |
+| `{colors.human-review}`| `#EA580C` (Orange Signature) | Écran d'attente de validation humaine obligatoire (*Human-in-the-loop*). | Ne pas dissimuler ou atténuer dans l'interface. |
 
 ---
 
-## Typography
+## Typographie "Human-Made"
 
-Le système typographique associe une police sans-serif géométrique d'ingénierie (**Inter**) à une police à chasse fixe de haute lisibilité (**JetBrains Mono**) pour toutes les métriques de scoring et données techniques.
-
-- **`{typography.display}`** (`Inter 28px / 700 / -0.02em`) : Titres de sections majeures (ex. *Tableau de bord de campagne*, *Master Profile*).
-- **`{typography.heading}`** (`Inter 18px / 600 / -0.01em`) : Titres d'offres d'emploi, en-têtes de colonnes Kanban, noms d'entreprises.
-- **`{typography.body}`** (`Inter 14px / 400 / 1.5`) : Descriptions d'offres, corps des lettres de motivation, notes de synthèse.
-- **`{typography.mono}`** (`JetBrains Mono 13px / 500 / 1.4`) : Scores ATS (ex. `✓ 88% MATCH`), tags de compétences techniques (`Python`, `FastAPI`, `Docker`), balises de statut et métadonnées de dates.
+1. **`{typography.display}`** (`Space Grotesk 28px / 700 / -0.03em`) : Titres de tableaux de bord, en-têtes d'atelier, branding majeur.
+2. **`{typography.heading}`** (`Space Grotesk 18px / 600 / -0.02em`) : Intitulés d'offres, en-têtes de colonnes Kanban, noms d'entreprises.
+3. **`{typography.body}`** (`Plus Jakarta Sans 14px / 450 / 1.6`) : Descriptions, corps des lettres de motivation, synthèses de profil.
+4. **`{typography.mono}`** (`JetBrains Mono 13px / 500 / 1.4`) : Scores ATS (ex. `✓ 88% MATCH`), compétences techniques (`Python`, `FastAPI`), métadonnées de dates.
 
 ---
 
-## Layout & Spacing
-
-Le cockpit ArcApply est conçu pour des écrans desktop (résolution cible minimale : 1280×800) avec une mise en page à haute efficacité spatiale :
-
-1. **Navigation latérale rétractable (64px replié / 240px déployé)** : Accès rapide aux 4 vues maîtresses (Dashboard, Radar Offres, Kanban Candidatures, Master Profile).
-2. **Zone de travail principale fluide** : Grille modulaire avec espacement standardisé (`{spacing.cockpit-gap}` = `16px`).
-3. **Tiroir d'action contextuel (Review Drawer)** : Largeur fixe de `{spacing.drawer-width}` (`560px`), s'ouvrant depuis le bord droit avec confinement de focus modal accessible.
-4. **Colonnes Kanban** : Largeur fixe `{spacing.kanban-col}` (`320px`), avec défilement horizontal fluide et barres de progression discrètes.
-
----
-
-## Elevation & Depth
-
-Le cockpit privilégie une profondeur par étagement de tons plutôt que par des ombres portées lourdes :
-
-- **Niveau 0 (Toile de fond)** : `{colors.background}` (`#0B0F19`).
-- **Niveau 1 (Conteneurs et colonnes)** : `{colors.card}` (`#0F172A`) avec bordure subtile `{colors.border}` (`1px solid #334155`).
-- **Niveau 2 (Cartes interactives survolées / actives)** : Teinte légèrement rehaussée (`#1E293B`), contour d'accès clavier `{colors.ring}`, ombre portée diffuse : `0 4px 20px -2px rgba(0, 0, 0, 0.5)`.
-- **Niveau 3 (Tiroir de révision et Modales)** : Fond `{colors.card}`, bordure gauche `{colors.border}`, ombre latérale profonde `box-shadow: -8px 0 32px rgba(0, 0, 0, 0.6)`.
-
----
-
-## Shapes
-
-- **Cartes et panneaux** : Rayon modéré `{rounded.md}` (`8px`), conférant un aspect net et structuré.
-- **Boutons et champs de saisie** : Rayon `{rounded.md}` (`8px`) pour une prise en main tactile et visuelle équilibrée.
-- **Badges de statut, scores ATS et tags de stack** : Rayon complet `{rounded.full}` (`9999px`) pour un contraste morphologique immédiat avec les cartes rectangulaires.
-- **Modales et tiroirs** : Rayon `{rounded.lg}` (`12px`) sur les coins intérieurs ou flottants.
-
----
-
-## Components
+## Composants & Signature Visuelle
 
 ### 1. ATS Score Badge (`ats-score-badge`)
-- **Composition** : Double encodage accessible : icône distinctive vectorielle (`✓` succès, `⚠` alerte, `✕` lacune) + pourcentage en `{typography.mono}`.
-- **Règles d'état** :
-  - Score $\ge 75\%$ : Texte `{colors.match-high}`, icône `✓`, bordure vert émeraude subtile (`rgba(16, 185, 129, 0.2)`).
-  - Score $60-74\%$ : Texte `{colors.match-medium}`, icône `⚠`, bordure ambre.
-  - Score $< 60\%$ : Texte `{colors.match-low}`, icône `✕`, bordure rouge.
+- **Composition** : Double encodage accessible : icône distinctive vectorielle (`✓`, `⚠`, `✕`) + pourcentage en monospace d'ingénieur.
+- **Styling** : Aspect tampon d'artisan / cartouche technique, fond pastel chaud et texte foncé contrasté :
+  - Score $\ge 75\%$ : Fond vert sauge clair (`#F0FDF4`), texte émeraude forêt (`#15803D`), bordure (`#BBF7D0`).
+  - Score $60-74\%$ : Fond ambre clair (`#FEF3C7`), texte ambre profond (`#B45309`), bordure (`#FDE68A`).
+  - Score $< 60\%$ : Fond pêche claire (`#FEF2F2`), texte carmin (`#B91C1C`), bordure (`#FECACA`).
 
-### 2. Validation Drawer — Human-in-the-Loop (`review-drawer`)
-- **Anatomie** :
-  - En-tête fixe avec intitulé de poste, entreprise, statut de plateforme (LinkedIn Easy Apply / Jobteaser / Externe), bouton de fermeture accessible (`Esc`) et score ATS global.
-  - **Vue miroir / Split-view synchrone** : volet gauche escamotable affichant les exigences de l'offre surlignées, volet droit présentant le CV adapté et la lettre générée avec correspondance visuelle directe.
-  - Barre d'action inférieure sticky : bouton d'ajustement IA (`{colors.ai-accent}`), bouton d'édition manuelle directe, bouton d'archivage (`x`), et bouton de validation finale (`{colors.action-button-primary}`).
+### 2. Boutons d'Action Tactiles (`tactile-button`)
+- **Physique** : Ombre portée inférieure pressée (`shadow-artisan-button`), bordure supérieure imperceptible, micro-déplacement vertical au clic (`active:translate-y-[1px]`).
+- Donne l'impression physique de manipuler un bel objet d'atelier plutôt qu'un rectangle plat généré par IA.
 
-### 3. External Package Modal (`external-package-modal`)
-- Surface modale `{colors.card}` avec bordure `{colors.border}` et rayon `{rounded.lg}`.
-- Propose en 1 clic :
-  - `[1] Télécharger le PDF adapté (Optimisé ATS)`
-  - `[2] Copier la lettre de motivation dans le presse-papier` (toast de confirmation)
-  - `[3] Ouvrir le portail externe`
-  - Prompt d'acquittement au retour : *"Candidature finalisée sur le site externe ? [Oui, marquer Postulé] [Non, annuler]"*.
+### 3. Cartes d'Atelier (`artisan-card`)
+- Surface blanc pur immaculé (`#FFFFFF`), reposant sur le beige lin (`#FAF7F2`).
+- Bordure artisanale douce (`#E7DFD4`), double ombre diffuse (`shadow-artisan-card`).
+- Coins doucement arrondis (`14px` / `rounded-lg`).
 
 ---
 
-## Do's and Don'ts
+## Règles d'Implémentation & Invariants
 
-### Do
-- **Garantir un contraste supérieur à 5:1** sur tous les libellés secondaires via `{colors.muted-foreground}` (`#A1B0CB`).
-- **Afficher un double encodage (icône + texte)** pour ne jamais faire reposer l'interprétation du score ATS sur la couleur seule.
-- **Assurer un cycle de focus strict (`aria-modal="true"`)** à l'ouverture du tiroir de révision avec retour du focus sur l'élément déclencheur à la fermeture via `Escape`.
-- **Offrir un délai de grâce de 5 secondes** après soumission directe avec option d'annulation immédiate.
-
-### Don't
-- **Ne jamais supprimer le focus ring au clavier** (`outline: none` interdit sans remplacement par `{colors.ring}`).
-- **Ne jamais soumettre silencieusement une candidature en arrière-plan** sans confirmation explicite de l'utilisateur.
-- **Ne jamais masquer les lacunes de compétences** : si une offre requiert une technologie absente du Master Profile, l'afficher en rouge avec la mention "Non couvert dans votre profil".
+- **Zéro-Hallucination & Human-in-the-Loop** : L'esthétique chaleureuse et humaine renforce le pacte de confiance : chaque action d'envoi exige la main de l'utilisateur.
+- **Accessibilité Contrastée (WCAG AA/AAA)** : Tous les textes et badges respectent scrupuleusement les ratios de contraste sur fond beige ou blanc.
+- **Cohérence Globale** : Navigation latérale, Cockpit, Radar d'Offres, Studio CV, Kanban et Paramètres partagent la même atmosphère harmonieuse.
