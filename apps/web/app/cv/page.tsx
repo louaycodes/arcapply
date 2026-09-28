@@ -36,6 +36,7 @@ import {
   GraduationCap,
   FolderGit2,
   Code2,
+  Award,
   Undo2,
   Redo2,
   ShieldCheck,
@@ -487,6 +488,42 @@ export default function StudioCVPage() {
     newSkillRow.scrollIntoView({ behavior: "smooth", block: "center" });
     setHasUnsavedEdits(true);
     currentHtmlRef.current = doc.documentElement.outerHTML;
+    updateIframeHeight();
+  };
+
+  const insertExtracurricularBlock = () => {
+    if (!iframeRef.current || !iframeRef.current.contentDocument) return;
+    const doc = iframeRef.current.contentDocument;
+
+    let extraSection = Array.from(doc.querySelectorAll(".section")).find((s) => {
+      const title = s.querySelector(".section-title")?.textContent || "";
+      return /extra|associati|activité|activite/i.test(title);
+    });
+
+    if (!extraSection) {
+      extraSection = doc.createElement("section");
+      extraSection.className = "section";
+      extraSection.innerHTML = `<h2 class="section-title">ACTIVITÉS EXTRA-PROFESSIONNELLES</h2>`;
+      const container = doc.querySelector(".cv-container") || doc.body;
+      container.appendChild(extraSection);
+    }
+
+    const newExtra = doc.createElement("div");
+    newExtra.className = "item";
+    newExtra.innerHTML = `
+      <div class="item-header">
+        <span class="item-role">Club ou Association</span> — Responsable Projets
+        <span class="item-date">2025 – 2026</span>
+      </div>
+      <div class="item-desc">Organisation d'événements, hackathons ou engagement associatif.</div>
+    `;
+
+    extraSection.appendChild(newExtra);
+    newExtra.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHasUnsavedEdits(true);
+    currentHtmlRef.current = doc.documentElement.outerHTML;
+    updateIframeHeight();
+    showNotification("info", "Nouvelle activité extra-professionnelle insérée directement sur la page.");
   };
 
   // 6. Delete Selected Item Block
@@ -883,6 +920,15 @@ export default function StudioCVPage() {
           >
             <Code2 className="w-3 h-3" />
             <span>+ Compétences</span>
+          </button>
+          <button
+            type="button"
+            onClick={insertExtracurricularBlock}
+            className="px-2 py-1 rounded bg-primary/15 hover:bg-primary/25 text-primary text-[11px] font-bold flex items-center gap-1 transition-colors"
+            title="Insérer une activité extra-professionnelle (club, association, hackathon)"
+          >
+            <Award className="w-3 h-3" />
+            <span>+ Extra-pro</span>
           </button>
           <button
             type="button"
