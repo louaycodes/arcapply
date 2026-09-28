@@ -1,3 +1,4 @@
+import io
 import pytest
 from sqlmodel import Session
 
@@ -309,5 +310,177 @@ async def test_cv_pdf_two_pages_flow_balance():
     p2_lines = [l.strip() for l in reader.pages[1].extract_text().splitlines() if l.strip()]
     assert len(p1_lines) >= 40, f"La page 1 doit être remplie jusqu'en bas, seulement {len(p1_lines)} lignes trouvées"
     assert len(p2_lines) >= 5, f"La page 2 doit contenir le reste des sections, {len(p2_lines)} lignes trouvées"
+
+
+def test_cv_upload_and_parsing_endpoint():
+    sample_cv_text = """
+    LOUAY ZORAI
+    Élève-Ingénieur Architectures Cloud / DevOps
+    louay@louaycodes.tn • +216 28 898 908 • Tunis • www.louaycodes.tn • linkedin.com/in/louay-zorai • github.com/louayzorai
+
+    PROFIL PROFESSIONNEL
+    Élève-ingénieur passionné par les architectures cloud-native, Kubernetes et Terraform.
+
+    FORMATION
+    Diplôme National d'Ingénieur en informatique — ESPRIT (2022 – 2027)
+    Spécialisation Systèmes Distribués et Cloud.
+
+    EXPÉRIENCES PROFESSIONNELLES (STAGES)
+    Stagiaire FinOps — Capgemini Tunisie (06/2026 – 08/2026)
+    Plateforme multi-agents pour la détection d'anomalies de coûts AWS.
+    Technologies : AWS, Python, Angular, Docker
+
+    PROJETS SÉLECTIONNÉS
+    Pipeline CI/CD auto-hébergé — Ingénieur DevOps
+    Mise en place d'un pipeline Jenkins avec Kubernetes et Docker.
+    Technologies : Jenkins, Kubernetes, Docker
+
+    COMPÉTENCES TECHNIQUES
+    Cloud : AWS, Docker, Kubernetes, Terraform, Ansible
+    Backend : Python, FastAPI, Spring Boot
+
+    LANGUES
+    Arabe : Langue maternelle • Français : Courant • Anglais : Technique
+    """
+
+    files = {"file": ("test_cv.txt", io.BytesIO(sample_cv_text.encode("utf-8")), "text/plain")}
+    res = client.post("/api/cv/upload?sync_to_profile=true", files=files)
+    assert res.status_code == 200
+    data = res.json()
+
+    assert "data" in data
+    assert "html_content" in data
+    cv_data = data["data"]
+    assert "LOUAY ZORAI" in cv_data["full_name"]
+    assert cv_data["email"] == "louay@louaycodes.tn"
+    assert "28 898 908" in cv_data["phone"]
+    assert len(cv_data["educations"]) >= 1
+    assert "ESPRIT" in cv_data["educations"][0]["school"]
+    assert len(cv_data["experiences"]) >= 1
+    assert "Capgemini" in cv_data["experiences"][0]["company"]
+    assert any("AWS" in s or "Docker" in s for cat in cv_data["skills_categories"] for s in cat["skills"])
+
+
+def test_cv_render_custom_endpoint():
+    payload = {
+        "full_name": "Sarah Connor",
+        "headline": "Lead Cloud Security Engineer",
+        "email": "sarah@cyberdyne.org",
+        "phone": "+33 6 12 34 56 78",
+        "location": "Paris, France",
+        "portfolio_url": "https://sarah.dev",
+        "linkedin_url": "https://linkedin.com/in/sarah-connor",
+        "github_url": "https://github.com/sarah-connor",
+        "summary": "Experte en résilience d'infrastructures et Zero Trust.",
+        "educations": [
+            {
+                "school": "Polytech",
+                "degree": "Diplôme d'Ingénieur",
+                "field_of_study": "Cybersécurité",
+                "start_date": "2020",
+                "end_date": "2025",
+                "description": "Sécurité des systèmes distribués",
+            }
+        ],
+        "experiences": [
+            {
+                "company": "CyberDyne Systems",
+                "role": "SecOps Intern",
+                "location": "Paris",
+                "start_date": "02/2025",
+                "end_date": "08/2025",
+                "description": "Hardening de clusters Kubernetes et détection d'intrusions.",
+                "technologies": ["Kubernetes", "Falco", "Docker"],
+            }
+        ],
+        "projects": [
+            {
+                "title": "ZeroTrust Enforcer",
+                "role": "Creator",
+                "url": "https://sarah.dev/project",
+                "description": "Agent eBPF open-source.",
+                "technologies": ["eBPF", "Go", "Linux"],
+            }
+        ],
+        "skills_categories": [
+            {
+                "title": "Cloud & Sécurité",
+                "skills": ["Kubernetes", "Docker", "eBPF", "Linux", "Terraform"],
+            }
+        ],
+        "extracurricular": [],
+        "languages": ["Français : Courant", "Anglais : Bilingue"],
+        "language": "fr",
+        "font_size_pt": 9.2,
+        "line_height": 1.4,
+        "margin_top_mm": 10.0,
+        "margin_bottom_mm": 10.0,
+        "margin_left_mm": 14.0,
+        "margin_right_mm": 14.0,
+    }
+
+    res = client.post("/api/cv/render", json=payload)
+    assert res.status_code == 200
+    html = res.json()["html_content"]
+    assert "Sarah Connor" in html
+    assert "Lead Cloud Security Engineer" in html
+    assert "sarah@cyberdyne.org" in html
+    assert "CyberDyne Systems" in html
+    assert "ZeroTrust Enforcer" in html
+    assert "font-size: 9.2pt;" in html
+    assert "line-height: 1.4;" in html
+    assert "margin: 10.0mm 14.0mm 10.0mm 14.0mm;" in html
+
+
+@pytest.mark.asyncio
+async def test_compile_custom_pdf_endpoint():
+    sample_html = """<!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            @page { size: A4; margin: 8mm 12mm; }
+            body { font-family: -apple-system, sans-serif; font-size: 9pt; }
+        </style>
+    </head>
+    <body>
+        <h1>Louay Zorai</h1>
+        <p>Aperçu identique au PDF exporté.</p>
+    </body>
+    </html>
+    """
+
+    res = client.post(
+        "/api/cv/compile-pdf",
+        json={"html_content": sample_html, "filename": "CV_Louay_Zorai.pdf"},
+    )
+    assert res.status_code == 200
+    assert res.headers["content-type"] == "application/pdf"
+    assert "CV_Louay_Zorai.pdf" in res.headers.get("content-disposition", "")
+    assert res.content.startswith(b"%PDF")
+    assert len(res.content) > 1000
+
+
+def test_cv_draft_and_from_profile_persistence():
+    # 1. GET /api/cv/from-profile
+    res_prof = client.get("/api/cv/from-profile?lang=fr")
+    assert res_prof.status_code == 200
+    prof_data = res_prof.json()
+    assert "data" in prof_data
+    assert "html_content" in prof_data
+
+    # 2. POST /api/cv/save-draft
+    custom_cv = prof_data["data"]
+    custom_cv["headline"] = "Architecte Cloud Senior (Test Brouillon)"
+    res_save = client.post("/api/cv/save-draft", json=custom_cv)
+    assert res_save.status_code == 200
+    assert res_save.json()["status"] == "saved"
+
+    # 3. GET /api/cv/draft
+    res_draft = client.get("/api/cv/draft")
+    assert res_draft.status_code == 200
+    draft_resp = res_draft.json()
+    assert draft_resp["has_draft"] is True
+    assert draft_resp["data"]["headline"] == "Architecte Cloud Senior (Test Brouillon)"
+    assert "Architecte Cloud Senior" in draft_resp["html_content"]
 
 

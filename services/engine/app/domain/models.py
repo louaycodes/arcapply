@@ -453,4 +453,84 @@ class EmailSimulateRequest(SQLModel):
     company_hint: Optional[str] = None
 
 
+# ============================================================================
+# Studio CV — Custom CV Editor & Parser Models
+# ============================================================================
 
+class ParsedEducation(SQLModel):
+    school: str = ""
+    degree: str = ""
+    field_of_study: str = ""
+    start_date: str = ""
+    end_date: str = ""
+    description: str = ""
+
+
+class ParsedExperience(SQLModel):
+    company: str = ""
+    role: str = ""
+    location: str = ""
+    start_date: str = ""
+    end_date: str = ""
+    description: str = ""
+    technologies: list[str] = []
+
+
+class ParsedProject(SQLModel):
+    title: str = ""
+    role: str = ""
+    url: str = ""
+    description: str = ""
+    technologies: list[str] = []
+
+
+class ParsedSkillCategory(SQLModel):
+    title: str = ""
+    skills: list[str] = []
+
+
+class ParsedExtracurricular(SQLModel):
+    role: str = ""
+    organization: str = ""
+    date: str = ""
+    description: str = ""
+
+
+class CustomCVData(SQLModel):
+    full_name: str = ""
+    headline: str = ""
+    email: str = ""
+    phone: str = ""
+    location: str = ""
+    portfolio_url: str = ""
+    linkedin_url: str = ""
+    github_url: str = ""
+    summary: str = ""
+    educations: list[ParsedEducation] = []
+    experiences: list[ParsedExperience] = []
+    projects: list[ParsedProject] = []
+    skills_categories: list[ParsedSkillCategory] = []
+    extracurricular: list[ParsedExtracurricular] = []
+    languages: list[str] = []
+    language: str = "fr"
+    font_size_pt: float = 9.0
+    line_height: float = 1.35
+    margin_top_mm: float = 8.0
+    margin_bottom_mm: float = 8.0
+    margin_left_mm: float = 12.0
+    margin_right_mm: float = 12.0
+
+
+class CompilePDFRequest(SQLModel):
+    html_content: str
+    filename: Optional[str] = "CV_Candidat.pdf"
+
+
+class CustomCVDraft(SQLModel, table=True):
+    __tablename__ = "custom_cv_drafts"
+    id: str = Field(default="default-draft", primary_key=True)
+    title: str = Field(default="Mon CV")
+    data_json: str = Field(default="{}")
+    html_content: str = Field(default="")
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)

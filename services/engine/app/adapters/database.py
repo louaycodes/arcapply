@@ -58,6 +58,21 @@ def _migrate_db(engine) -> None:
             except Exception:
                 pass
 
+        try:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS custom_cv_drafts (
+                    id VARCHAR PRIMARY KEY,
+                    title VARCHAR DEFAULT 'Mon CV',
+                    data_json TEXT DEFAULT '{}',
+                    html_content TEXT DEFAULT '',
+                    created_at TIMESTAMP,
+                    updated_at TIMESTAMP
+                )
+            """))
+            conn.commit()
+        except Exception:
+            pass
+
 
 def init_db() -> None:
     engine = get_engine()

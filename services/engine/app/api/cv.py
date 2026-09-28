@@ -1,12 +1,16 @@
+import json
 import re
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile, status
 from sqlmodel import Session, select
 
 from app.adapters.pdf import PDFCompilerService
 from app.adapters.database import get_session
 from app.domain.ats import ATSMatchingEngine
-from app.domain.cv import CVGeneratorService
+from app.domain.cv import CVGeneratorService, CVParserService, render_custom_cv_html
 from app.domain.models import (
+    CompilePDFRequest,
+    CustomCVData,
+    CustomCVDraft,
     JobOffer,
     MasterProfile,
     TargetedCV,
@@ -201,3 +205,162 @@ async def download_cv_pdf(
             "Content-Type": "application/pdf",
         },
     )
+
+
+# ============================================================================
+# Studio CV — Interactive Editor & Pixel-Perfect PDF Endpoints
+# ============================================================================
+
+@router.post("/upload")
+async def upload_and_parse_cv(
+    file: UploadFile = File(...),
+    sync_to_profile: bool = Query(False, description="Mettre à jour le Master Profile avec les données extraites"),
+    session: Session = Depends(get_session),
+):
+    """
+    Reçoit un fichier de CV (PDF, JSON ou TXT), en extrait les données de manière résiliente
+    et retourne les données structurées et le HTML vectoriel prêt à être affiché et modifié.
+    """
+    content = await file.read()
+    if not content:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"error_code": "EMPTY_FILE", "message": "Le fichier transmis est vide."},
+        )
+
+    parsed_cv = CVParserService.parse_cv_file(content, file.filename or "cv.pdf")
+    html_content = render_custom_cv_html(parsed_cv)
+
+    if sync_to_profile:
+        profile = session.get(MasterProfile, "default-profile")
+        if profile:
+            if parsed_cv.full_name and (not profile.full_name or profile.full_name == "Candidat Ingénieur"):
+                profile.full_name = parsed_cv.full_name
+            if parsed_cv.headline and not profile.headline:
+                profile.headline = parsed_cv.headline
+            if parsed_cv.email and not profile.email:
+                profile.email = parsed_cv.email
+            if parsed_cv.phone and not profile.phone:
+                profile.phone = parsed_cv.phone
+            if parsed_cv.portfolio_url and not profile.website_url:
+                profile.website_url = parsed_cv.portfolio_url
+            if parsed_cv.linkedin_url and not profile.linkedin_url:
+                profile.linkedin_url = parsed_cv.linkedin_url
+            if parsed_cv.github_url and not profile.github_url:
+                profile.github_url = parsed_cv.github_url
+            if parsed_cv.summary and not profile.bio:
+                profile.bio = parsed_cv.summary
+            session.add(profile)
+            session.commit()
+
+    return {
+        "filename": file.filename,
+        "data": parsed_cv,
+        "html_content": html_content,
+    }
+
+
+@router.post("/render")
+def render_cv_preview(data: CustomCVData):
+    """Génère le HTML A4 vectoriel à partir des données éditées du CV."""
+    html_content = render_custom_cv_html(data)
+    return {"html_content": html_content}
+
+
+@router.post("/compile-pdf", response_class=Response)
+async def compile_custom_pdf(req: CompilePDFRequest) -> Response:
+    """
+    Compile l'exact contenu HTML/CSS en PDF vectoriel A4 via Playwright (Chromium).
+    Garantit une fidélité visuelle 100% absolue avec la prévisualisation de l'éditeur.
+    """
+    if not req.html_content.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"error_code": "EMPTY_HTML", "message": "Le contenu HTML est requis pour la compilation PDF."},
+        )
+
+    pdf_bytes = await PDFCompilerService.compile_html_to_pdf(req.html_content)
+    clean_name = sanitize_filename(req.filename or "CV_Personnalise.pdf")
+    if not clean_name.lower().endswith(".pdf"):
+        clean_name += ".pdf"
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{clean_name}"',
+            "Content-Type": "application/pdf",
+        },
+    )
+
+
+@router.get("/from-profile")
+def get_cv_from_profile(
+    lang: str = Query("fr", description="Langue : 'fr' ou 'en'"),
+    session: Session = Depends(get_session),
+):
+    """Charge les données du Master Profile souverain et les projette en structure CustomCVData."""
+    profile = session.get(MasterProfile, "default-profile")
+    if not profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error_code": "PROFILE_NOT_FOUND", "message": "Master Profile introuvable."},
+        )
+    custom_cv = CVParserService.convert_profile_to_custom_cv(profile, language=lang)
+    html_content = render_custom_cv_html(custom_cv)
+    return {
+        "data": custom_cv,
+        "html_content": html_content,
+    }
+
+
+@router.post("/save-draft")
+def save_cv_draft(data: CustomCVData, session: Session = Depends(get_session)):
+    """Sauvegarde le brouillon du CV dans SQLite."""
+    draft = session.get(CustomCVDraft, "default-draft")
+    html_content = render_custom_cv_html(data)
+    data_json = json.dumps(data.model_dump(), default=str)
+    if not draft:
+        draft = CustomCVDraft(
+            id="default-draft",
+            title=f"CV {data.full_name}".strip() or "Mon CV",
+            data_json=data_json,
+            html_content=html_content,
+        )
+    else:
+        draft.title = f"CV {data.full_name}".strip() or "Mon CV"
+        draft.data_json = data_json
+        draft.html_content = html_content
+    session.add(draft)
+    session.commit()
+    session.refresh(draft)
+    return {"status": "saved", "id": draft.id, "updated_at": draft.updated_at}
+
+
+@router.get("/draft")
+def get_cv_draft(session: Session = Depends(get_session)):
+    """Récupère le dernier brouillon de CV sauvegardé."""
+    draft = session.get(CustomCVDraft, "default-draft")
+    if not draft:
+        profile = session.get(MasterProfile, "default-profile")
+        if profile:
+            custom_cv = CVParserService.convert_profile_to_custom_cv(profile, language="fr")
+            html_content = render_custom_cv_html(custom_cv)
+            return {"data": custom_cv, "html_content": html_content, "has_draft": False}
+        return {"data": None, "html_content": "", "has_draft": False}
+
+    try:
+        data_dict = json.loads(draft.data_json)
+        custom_cv = CustomCVData(**data_dict)
+    except Exception:
+        profile = session.get(MasterProfile, "default-profile")
+        custom_cv = CVParserService.convert_profile_to_custom_cv(profile, language="fr") if profile else None
+
+    html_content = draft.html_content if draft.html_content else (render_custom_cv_html(custom_cv) if custom_cv else "")
+
+    return {
+        "data": custom_cv,
+        "html_content": html_content,
+        "has_draft": True,
+        "updated_at": draft.updated_at,
+    }

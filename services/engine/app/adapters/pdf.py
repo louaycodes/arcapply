@@ -21,12 +21,15 @@ class PDFCompilerService:
                 page = await browser.new_page()
                 await page.set_content(html_content, wait_until="load")
                 
-                pdf_bytes = await page.pdf(
-                    format="A4",
-                    print_background=True,
-                    prefer_css_page_size=True,
-                    margin={"top": "8mm", "bottom": "8mm", "left": "12mm", "right": "12mm"},
-                )
+                pdf_options = {
+                    "format": "A4",
+                    "print_background": True,
+                    "prefer_css_page_size": True,
+                }
+                if "@page" not in html_content:
+                    pdf_options["margin"] = {"top": "8mm", "bottom": "8mm", "left": "12mm", "right": "12mm"}
+
+                pdf_bytes = await page.pdf(**pdf_options)
                 return pdf_bytes
             except Exception as e:
                 logger.error(f"Erreur lors de la compilation PDF Playwright : {e}")

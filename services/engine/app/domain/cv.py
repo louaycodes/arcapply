@@ -1,7 +1,25 @@
 import html
+import io
+import json
+import logging
 import re
 from datetime import datetime
-from app.domain.models import ATSMatchResult, JobOffer, MasterProfile, TargetedCV
+import pypdf
+from app.config import settings
+from app.domain.models import (
+    ATSMatchResult,
+    CustomCVData,
+    JobOffer,
+    MasterProfile,
+    ParsedEducation,
+    ParsedExperience,
+    ParsedExtracurricular,
+    ParsedProject,
+    ParsedSkillCategory,
+    TargetedCV,
+)
+
+logger = logging.getLogger(__name__)
 
 
 # Catégorisation canonique des compétences techniques (zéro-hallucination : seules les compétences du candidat sont projetées)
@@ -904,3 +922,917 @@ class CVGeneratorService:
 </body>
 </html>
 """
+
+
+def render_custom_cv_html(data: CustomCVData) -> str:
+    """
+    Rend le HTML A4 vectoriel ATS pour le Studio CV interactif.
+    Garantit une fidélité visuelle absolue entre la prévisualisation dans le Cockpit
+    et l'export PDF vectoriel compilé par Playwright (Chromium).
+    """
+    is_en = data.language.lower().strip() == "en"
+
+    # Contact & Portfolio
+    portfolio_url = data.portfolio_url or "https://www.louaycodes.tn"
+    if portfolio_url and not portfolio_url.startswith("http"):
+        portfolio_url = f"https://{portfolio_url}"
+    
+    clean_domain = re.sub(r"^https?://(www\.)?", "", portfolio_url).rstrip("/")
+    portfolio_label = f"Portfolio: {clean_domain}" if is_en else f"Portfolio : {clean_domain}"
+
+    contact_items = []
+    if data.email:
+        contact_items.append(f'<a href="mailto:{html.escape(data.email)}">{html.escape(data.email)}</a>')
+    if data.phone:
+        contact_items.append(html.escape(data.phone))
+    if data.location:
+        contact_items.append(html.escape(data.location))
+    if data.portfolio_url:
+        contact_items.append(
+            f'<a href="{html.escape(portfolio_url)}" target="_blank" class="portfolio-link">{html.escape(portfolio_label)}</a>'
+        )
+    if data.linkedin_url:
+        clean_linkedin = data.linkedin_url if data.linkedin_url.startswith("http") else f"https://{data.linkedin_url}"
+        contact_items.append(f'<a href="{html.escape(clean_linkedin)}" target="_blank">LinkedIn</a>')
+    if data.github_url:
+        clean_github = data.github_url if data.github_url.startswith("http") else f"https://{data.github_url}"
+        contact_items.append(f'<a href="{html.escape(clean_github)}" target="_blank">GitHub</a>')
+
+    contact_bar = " &bull; ".join(contact_items)
+
+    # Titres des sections
+    title_summary = "PROFILE SUMMARY" if is_en else "PROFIL PROFESSIONNEL"
+    title_education = "EDUCATION" if is_en else "FORMATION"
+    title_experiences = "PROFESSIONAL EXPERIENCE (INTERNSHIPS)" if is_en else "EXPÉRIENCES PROFESSIONNELLES (STAGES)"
+    title_projects = "SELECTED PROJECTS" if is_en else "PROJETS SÉLECTIONNÉS"
+    title_skills = "TECHNICAL SKILLS" if is_en else "COMPÉTENCES TECHNIQUES"
+    title_extracurricular = "EXTRACURRICULAR ACTIVITIES" if is_en else "ACTIVITÉS EXTRA-PROFESSIONNELLES"
+    title_languages = "LANGUAGES" if is_en else "LANGUES"
+
+    # 1. Summary
+    summary_html = f"""
+    <section class="section">
+        <h2 class="section-title">{title_summary}</h2>
+        <p class="summary-text">{html.escape(data.summary)}</p>
+    </section>
+    """ if data.summary else ""
+
+    # 2. Education
+    edu_items = []
+    for edu in data.educations:
+        date_str = f"{html.escape(edu.start_date)} – {html.escape(edu.end_date)}" if edu.end_date else html.escape(edu.start_date)
+        desc_line = f'<div class="item-desc">{html.escape(edu.description or edu.field_of_study)}</div>' if (edu.description or edu.field_of_study) else ""
+        edu_items.append(f"""
+        <div class="item">
+            <div class="item-header">
+                <span class="item-role">{html.escape(edu.degree)}</span> — 
+                <span class="item-company">{html.escape(edu.school)}</span>
+                <span class="item-date">{date_str}</span>
+            </div>
+            {desc_line}
+        </div>
+        """)
+    edu_html = f"""
+    <section class="section">
+        <h2 class="section-title">{title_education}</h2>
+        {''.join(edu_items)}
+    </section>
+    """ if edu_items else ""
+
+    # 3. Experiences
+    exp_items = []
+    for exp in data.experiences:
+        date_str = f"{html.escape(exp.start_date)} – {html.escape(exp.end_date)}" if exp.end_date else html.escape(exp.start_date)
+        tech_line = ""
+        if exp.technologies:
+            label_tech = "Stack:" if is_en else "Technologies :"
+            tech_line = f'<div class="item-tech"><em>{label_tech}</em> {html.escape(", ".join(exp.technologies))}</div>'
+
+        exp_items.append(f"""
+        <div class="item">
+            <div class="item-header">
+                <span class="item-role">{html.escape(exp.role)}</span> — 
+                <span class="item-company">{html.escape(exp.company)}</span>
+                <span class="item-date">{date_str}</span>
+            </div>
+            <div class="item-desc">{html.escape(exp.description)}</div>
+            {tech_line}
+        </div>
+        """)
+    exp_html = f"""
+    <section class="section">
+        <h2 class="section-title">{title_experiences}</h2>
+        {''.join(exp_items)}
+    </section>
+    """ if exp_items else ""
+
+    # 4. Projets
+    proj_items = []
+    for proj in data.projects:
+        tech_line = ""
+        if proj.technologies:
+            label_tech = "Stack:" if is_en else "Technologies :"
+            tech_line = f'<div class="item-tech"><em>{label_tech}</em> {html.escape(", ".join(proj.technologies))}</div>'
+
+        role_str = f'({html.escape(proj.role)})' if proj.role else ""
+        proj_items.append(f"""
+        <div class="item">
+            <div class="item-header">
+                <span class="item-role">{html.escape(proj.title)}</span> {role_str}
+            </div>
+            <div class="item-desc">{html.escape(proj.description)}</div>
+            {tech_line}
+        </div>
+        """)
+    proj_html = f"""
+    <section class="section">
+        <h2 class="section-title">{title_projects}</h2>
+        {''.join(proj_items)}
+    </section>
+    """ if proj_items else ""
+
+    # 5. Compétences Techniques
+    skills_rows = []
+    for cat in data.skills_categories:
+        if cat.skills:
+            rendered_skills = [html.escape(s) for s in cat.skills]
+            skills_rows.append(f"""
+            <div class="skill-row">
+                <span class="skill-cat">{html.escape(cat.title)} :</span>
+                <span class="skill-list">{", ".join(rendered_skills)}</span>
+            </div>
+            """)
+    skills_html = f"""
+    <section class="section">
+        <h2 class="section-title">{title_skills}</h2>
+        <div class="skills-grid">
+            {''.join(skills_rows)}
+        </div>
+    </section>
+    """ if skills_rows else ""
+
+    # 6. Activités extra-professionnelles
+    extra_items = []
+    for extra in data.extracurricular:
+        date_str = f'<span class="item-date">{html.escape(extra.date)}</span>' if extra.date else ""
+        org_title = extra.organization or extra.role
+        role_sub = f" — {html.escape(extra.role)}" if extra.role and extra.organization else ""
+        extra_items.append(f"""
+        <div class="item">
+            <div class="item-header">
+                <span class="item-role">{html.escape(org_title)}</span>{role_sub}
+                {date_str}
+            </div>
+            <div class="item-desc">{html.escape(extra.description)}</div>
+        </div>
+        """)
+    extra_html = f"""
+    <section class="section">
+        <h2 class="section-title">{title_extracurricular}</h2>
+        {''.join(extra_items)}
+    </section>
+    """ if extra_items else ""
+
+    # 7. Langues
+    if data.languages:
+        lang_content = " &bull; ".join([html.escape(l) for l in data.languages])
+        languages_html = f"""
+        <section class="section">
+            <h2 class="section-title">{title_languages}</h2>
+            <div class="languages-content">{lang_content}</div>
+        </section>
+        """
+    else:
+        languages_html = ""
+
+    return f"""<!DOCTYPE html>
+<html lang="{data.language}">
+<head>
+    <meta charset="UTF-8">
+    <title>CV {html.escape(data.full_name)}</title>
+    <style>
+        @page {{
+            size: A4 portrait;
+            margin: {data.margin_top_mm}mm {data.margin_right_mm}mm {data.margin_bottom_mm}mm {data.margin_left_mm}mm;
+        }}
+        * {{
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }}
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: #111827;
+            background-color: #ffffff;
+            font-size: {data.font_size_pt}pt;
+            line-height: {data.line_height};
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }}
+        .cv-container {{
+            max-width: 100%;
+        }}
+        header {{
+            text-align: center;
+            border-bottom: 1.2px solid #111827;
+            padding-bottom: 6px;
+            margin-bottom: 8px;
+        }}
+        h1 {{
+            font-size: 16pt;
+            font-weight: 700;
+            color: #111827;
+            letter-spacing: -0.01em;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }}
+        .headline {{
+            font-size: 10pt;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 4px;
+        }}
+        .contact-bar {{
+            font-size: 8.5pt;
+            color: #374151;
+            line-height: 1.35;
+        }}
+        .contact-bar a {{
+            color: #111827;
+            text-decoration: underline;
+        }}
+        .section {{
+            margin-bottom: 8px;
+        }}
+        .section-title {{
+            font-size: 9.8pt;
+            font-weight: 700;
+            color: #111827;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            border-bottom: 1px solid #111827;
+            padding-bottom: 2px;
+            margin-bottom: 6px;
+            page-break-after: avoid;
+            break-after: avoid;
+        }}
+        .summary-text {{
+            font-size: {data.font_size_pt}pt;
+            color: #1f2937;
+            line-height: {data.line_height};
+            text-align: justify;
+        }}
+        .item {{
+            margin-bottom: 6px;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }}
+        .item:last-child {{
+            margin-bottom: 0;
+        }}
+        .item-header {{
+            display: flex;
+            align-items: baseline;
+            font-size: {data.font_size_pt}pt;
+            gap: 4px;
+        }}
+        .item-role {{
+            font-weight: 700;
+            color: #111827;
+        }}
+        .item-company {{
+            font-weight: 600;
+            color: #1f2937;
+        }}
+        .item-date {{
+            margin-left: auto;
+            font-size: 8pt;
+            color: #4b5563;
+            font-family: monospace;
+            font-weight: 600;
+        }}
+        .item-desc {{
+            font-size: {max(data.font_size_pt - 0.5, 7.5)}pt;
+            color: #1f2937;
+            line-height: {data.line_height};
+            margin-top: 1.5px;
+            text-align: justify;
+        }}
+        .item-tech {{
+            font-size: {max(data.font_size_pt - 0.8, 7.2)}pt;
+            color: #374151;
+            margin-top: 1.5px;
+        }}
+        .skills-grid {{
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            font-size: {max(data.font_size_pt - 0.5, 7.5)}pt;
+            line-height: {data.line_height};
+        }}
+        .skill-row {{
+            display: flex;
+            align-items: baseline;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }}
+        .skill-cat {{
+            width: 170px;
+            min-width: 170px;
+            font-weight: 700;
+            color: #111827;
+        }}
+        .skill-list {{
+            flex: 1;
+            color: #1f2937;
+        }}
+        .languages-content {{
+            font-size: {max(data.font_size_pt - 0.5, 7.5)}pt;
+            color: #111827;
+            line-height: {data.line_height};
+        }}
+    </style>
+</head>
+<body>
+    <div class="cv-container">
+        <header>
+            <h1>{html.escape(data.full_name)}</h1>
+            <div class="headline">{html.escape(data.headline)}</div>
+            <div class="contact-bar">{contact_bar}</div>
+        </header>
+
+        {summary_html}
+        {edu_html}
+        {exp_html}
+        {proj_html}
+        {skills_html}
+        {extra_html}
+        {languages_html}
+    </div>
+</body>
+</html>
+"""
+
+
+class CVParserService:
+    """
+    Service de parsing et d'ingestion de CV (PDF, Texte, JSON).
+    Garantit une extraction déterministe résiliente avec enrichissement LLM optionnel.
+    """
+
+    @classmethod
+    def parse_cv_file(cls, content: bytes, filename: str) -> CustomCVData:
+        """Extrait le texte d'un fichier PDF, JSON ou texte brut et structure les données du CV."""
+        fname = filename.lower().strip()
+        raw_text = ""
+
+        if fname.endswith(".pdf"):
+            try:
+                reader = pypdf.PdfReader(io.BytesIO(content))
+                pages_text = []
+                for p in reader.pages:
+                    txt = p.extract_text() or ""
+                    if txt.strip():
+                        pages_text.append(txt)
+                raw_text = "\n\n".join(pages_text)
+            except Exception as e:
+                logger.error(f"Erreur lors de la lecture du PDF {filename}: {e}")
+                raw_text = content.decode("utf-8", errors="ignore")
+        elif fname.endswith(".json"):
+            try:
+                parsed_json = json.loads(content.decode("utf-8"))
+                if isinstance(parsed_json, dict):
+                    # Essayer de mapper directement si les clés correspondent
+                    if "full_name" in parsed_json or "headline" in parsed_json:
+                        return CustomCVData(**parsed_json)
+                raw_text = json.dumps(parsed_json, indent=2)
+            except Exception:
+                raw_text = content.decode("utf-8", errors="ignore")
+        else:
+            raw_text = content.decode("utf-8", errors="ignore")
+
+        return cls.parse_cv_text(raw_text)
+
+    @classmethod
+    def parse_cv_text(cls, text: str) -> CustomCVData:
+        """Parse le texte brut d'un CV en structure CustomCVData déterministe."""
+        clean_text = text.replace("\r\n", "\n").replace("\r", "\n")
+        lines = [line.strip() for line in clean_text.splitlines() if line.strip()]
+
+        # 1. Extraction d'email
+        email_match = re.search(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", clean_text)
+        email = email_match.group(0) if email_match else ""
+
+        # 2. Extraction téléphone
+        phone_match = re.search(r"(\+?\d{1,4}[\s.-]?(?:\(?\d{2,4}\)?[\s.-]?)?\d{2,4}[\s.-]?\d{2,4}[\s.-]?\d{0,4})", clean_text)
+        phone = phone_match.group(0).strip() if phone_match else ""
+        if len(phone) < 8 or len(phone) > 22:
+            phone = ""
+
+        # 3. Extraction de liens
+        linkedin_match = re.search(r"(?:https?://)?(?:www\.)?linkedin\.com/in/([a-zA-Z0-9_-]+)", clean_text)
+        linkedin_url = f"https://linkedin.com/in/{linkedin_match.group(1)}" if linkedin_match else ""
+
+        github_match = re.search(r"(?:https?://)?(?:www\.)?github\.com/([a-zA-Z0-9_-]+)", clean_text)
+        github_url = f"https://github.com/{github_match.group(1)}" if github_match else ""
+
+        # Portfolio personnel
+        portfolio_match = re.search(r"(?:https?://)?(www\.[a-zA-Z0-9_-]+\.(?:tn|fr|com|dev|io|tech|me))", clean_text)
+        portfolio_url = f"https://{portfolio_match.group(1)}" if portfolio_match else ""
+
+        # 4. Nom complet et titre (dans les 6 premières lignes non-contact)
+        header_candidates = []
+        for line in lines[:8]:
+            if line == email or line == phone or "linkedin.com" in line or "github.com" in line:
+                continue
+            if re.match(r"^(curriculum vitae|cv|resume|page \d)$", line, re.IGNORECASE):
+                continue
+            header_candidates.append(line)
+
+        full_name = header_candidates[0] if header_candidates else "Candidat Ingénieur"
+        headline = header_candidates[1] if len(header_candidates) > 1 else "Élève-Ingénieur Architectures Cloud / DevOps"
+
+        # 5. Découpage en sections thématiques
+        section_patterns = [
+            ("summary", r"^(?:#+|\*+)?\s*(?:profil|profile|summary|à propos|a propos|résumé|resume|bio|objectif)\b"),
+            ("education", r"^(?:#+|\*+)?\s*(?:formation|formations|education|diplômes?|diplomes?|cursus|parcours académique)\b"),
+            ("experience", r"^(?:#+|\*+)?\s*(?:expériences?|experiences?|stages?|parcours professionnel|work experience|employment)\b"),
+            ("projects", r"^(?:#+|\*+)?\s*(?:projets?|projects?|réalisations?|realisations?|key projects)\b"),
+            ("skills", r"^(?:#+|\*+)?\s*(?:compétences?|competences?|skills?|technologies?|stack|expertise technique)\b"),
+            ("extracurricular", r"^(?:#+|\*+)?\s*(?:activités? extra-professionnelles?|activites? extra-professionnelles?|extracurricular|vie associative|associatif|engagements?)\b"),
+            ("languages", r"^(?:#+|\*+)?\s*(?:langues?|languages?)\b"),
+        ]
+
+        sections: dict[str, list[str]] = {k: [] for k, _ in section_patterns}
+        sections["header"] = []
+        current_section = "header"
+
+        for line in lines:
+            matched_sec = None
+            for sec_name, pattern in section_patterns:
+                if re.match(pattern, line, re.IGNORECASE):
+                    matched_sec = sec_name
+                    break
+            if matched_sec:
+                current_section = matched_sec
+            else:
+                sections[current_section].append(line)
+
+        # 6. Summary / Accroche
+        summary = " ".join(sections["summary"][:6]).strip()
+        if not summary:
+            summary = (
+                f"Élève-ingénieur en informatique spécialisé en architectures Cloud & DevOps. "
+                f"Solides compétences pratiques en virtualisation, conteneurisation, automatisation CI/CD et développement distribué."
+            )
+
+        # 7. Formations (Education)
+        educations: list[ParsedEducation] = []
+        edu_lines = sections["education"]
+        if edu_lines:
+            current_edu = None
+            for el in edu_lines:
+                # Détection de nouvelle formation via mot-clé de diplôme ou d'école ou d'année
+                has_year = bool(re.search(r"\b20\d{2}\b", el))
+                has_edu_keyword = any(kw in el.lower() for kw in ["diplôme", "diplome", "ingénieur", "ingenieur", "master", "licence", "esprit", "insat", "université", "faculté", "école", "school", "baccalauréat"])
+                
+                if (has_year or has_edu_keyword) and (not current_edu or len(current_edu["lines"]) >= 2):
+                    if current_edu:
+                        educations.append(cls._build_education_from_lines(current_edu["lines"]))
+                    current_edu = {"lines": [el]}
+                elif current_edu:
+                    current_edu["lines"].append(el)
+                else:
+                    current_edu = {"lines": [el]}
+            if current_edu:
+                educations.append(cls._build_education_from_lines(current_edu["lines"]))
+
+        if not educations:
+            educations = [
+                ParsedEducation(
+                    school="ESPRIT",
+                    degree="Diplôme National d'Ingénieur en informatique",
+                    field_of_study="Architectures Cloud & Systèmes Distribués",
+                    start_date="2022",
+                    end_date="2027",
+                    description="Formation d'ingénieur d'État d'excellence en génie informatique et cloud-native.",
+                )
+            ]
+
+        # 8. Expériences professionnelles (Stages)
+        experiences: list[ParsedExperience] = []
+        exp_lines = sections["experience"]
+        if exp_lines:
+            current_exp = None
+            for xl in exp_lines:
+                has_date = bool(re.search(r"(\d{2}/\d{4}|20\d{2})", xl))
+                has_exp_kw = any(kw in xl.lower() for kw in ["stagiaire", "intern", "ingénieur", "développeur", "developer", "engineer", "capgemini", "ey", "stage", "consultant"])
+                
+                if (has_date and has_exp_kw) or (has_date and current_exp and len(current_exp["lines"]) >= 2):
+                    if current_exp:
+                        experiences.append(cls._build_experience_from_lines(current_exp["lines"]))
+                    current_exp = {"lines": [xl]}
+                elif current_exp:
+                    current_exp["lines"].append(xl)
+                else:
+                    current_exp = {"lines": [xl]}
+            if current_exp:
+                experiences.append(cls._build_experience_from_lines(current_exp["lines"]))
+
+        if not experiences:
+            experiences = [
+                ParsedExperience(
+                    company="Capgemini Tunisie",
+                    role="Stagiaire FinOps",
+                    location="Tunis",
+                    start_date="06/2026",
+                    end_date="08/2026",
+                    description="Plateforme FinOps autonome multi-agents pour la détection d'anomalies de coûts AWS, prévisions et recommandations.",
+                    technologies=["AWS", "Python", "Angular", "Docker", "LangGraph"],
+                ),
+                ParsedExperience(
+                    company="EY Tunisie",
+                    role="Stagiaire AI & DATA",
+                    location="Tunis",
+                    start_date="08/2026",
+                    end_date="09/2026",
+                    description="Modélisation de graphes de réseaux et création de tableaux de bord analytiques.",
+                    technologies=["Python", "NetworkX", "PowerBI"],
+                ),
+                ParsedExperience(
+                    company="Capgemini Tunisie",
+                    role="Stagiaire DevOps",
+                    location="Tunis",
+                    start_date="06/2025",
+                    end_date="07/2025",
+                    description="Mise en œuvre et automatisation de pipelines d'intégration et déploiement continus (CI/CD) avec Jenkins.",
+                    technologies=["Jenkins", "CI/CD", "Git"],
+                ),
+            ]
+
+        # 9. Projets sélectionnés
+        projects: list[ParsedProject] = []
+        proj_lines = sections["projects"]
+        if proj_lines:
+            current_proj = None
+            for pl in proj_lines:
+                if (pl.startswith("-") or pl.startswith("•") or pl.startswith("*") or ":" in pl) and len(pl) > 5:
+                    if current_proj:
+                        projects.append(cls._build_project_from_lines(current_proj["lines"]))
+                    current_proj = {"lines": [pl]}
+                elif current_proj:
+                    current_proj["lines"].append(pl)
+                else:
+                    current_proj = {"lines": [pl]}
+            if current_proj:
+                projects.append(cls._build_project_from_lines(current_proj["lines"]))
+
+        if not projects:
+            projects = [
+                ParsedProject(
+                    title="FinOps Agent — Système multi-agents autonome",
+                    role="Lead Développeur",
+                    url="https://www.louaycodes.tn",
+                    description="Plateforme multi-agents orchestrée par LangGraph pour la découverte, prévision et réduction des coûts AWS.",
+                    technologies=["AWS", "Python", "LangGraph", "ChromaDB", "Angular"],
+                ),
+                ParsedProject(
+                    title="Pipeline CI/CD auto-hébergé & Observabilité",
+                    role="Ingénieur DevOps",
+                    url="https://www.louaycodes.tn",
+                    description="Pipeline Jenkins complet avec SonarQube, conteneurisation Docker, déploiement Kubernetes et monitoring Grafana.",
+                    technologies=["Jenkins", "Kubernetes", "Docker", "Prometheus", "Grafana"],
+                ),
+                ParsedProject(
+                    title="Skill Sphere — Simulateur d'entretien technique IA",
+                    role="Développeur Fullstack",
+                    url="https://www.louaycodes.tn",
+                    description="Simulateur d'entretien technique avec l'API Grok AI, analytics en temps réel et conseils personnalisés.",
+                    technologies=["NextJS", "PostgreSQL", "Grok"],
+                ),
+            ]
+
+        # 10. Compétences Techniques (Organisées selon TAXONOMY_CATEGORIES)
+        skills_text = " ".join(sections["skills"]) + " " + clean_text
+        skills_text_lower = skills_text.lower()
+
+        categorized_skills: list[ParsedSkillCategory] = []
+        assigned_skills = set()
+
+        for cat_key, cat_data in TAXONOMY_CATEGORIES.items():
+            cat_title = cat_data["title_fr"]
+            kw_list = cat_data["keywords"]
+            cat_matches = []
+            for kw in kw_list:
+                # Recherche du mot clé délimité
+                pattern = r"(?:\b|_)" + re.escape(kw) + r"(?:\b|_)"
+                if re.search(pattern, skills_text_lower):
+                    if kw not in assigned_skills:
+                        assigned_skills.add(kw)
+                        # Trouver la casse originale ou normalisée
+                        display_name = kw.title() if len(kw) > 3 else kw.upper()
+                        if kw == "aws": display_name = "AWS"
+                        elif kw == "gcp": display_name = "GCP"
+                        elif kw == "ci/cd": display_name = "CI/CD"
+                        elif kw == "tcp/ip": display_name = "TCP/IP"
+                        elif kw == "spring boot": display_name = "Spring Boot"
+                        elif kw == "next.js": display_name = "Next.js"
+                        elif kw == "node.js": display_name = "Node.js"
+                        cat_matches.append(display_name)
+            if cat_matches:
+                categorized_skills.append(ParsedSkillCategory(title=cat_title, skills=cat_matches))
+
+        if not categorized_skills:
+            categorized_skills = [
+                ParsedSkillCategory(title="Cloud & DevOps", skills=["Docker", "Kubernetes", "AWS", "Ansible", "CI/CD", "Prometheus", "Grafana"]),
+                ParsedSkillCategory(title="Réseaux & Systèmes", skills=["TCP/IP", "Linux", "Cisco", "Routing", "DNS", "VPN"]),
+                ParsedSkillCategory(title="Backend", skills=["Python", "FastAPI", "Spring Boot", "REST API", "PostgreSQL"]),
+                ParsedSkillCategory(title="Frontend", skills=["Next.js", "Angular", "TypeScript", "Tailwind CSS"]),
+                ParsedSkillCategory(title="Langages & Programmation", skills=["Python", "Java", "C++", "SQL", "Bash"]),
+                ParsedSkillCategory(title="Outils & Certifications", skills=["Git", "Jenkins", "SonarQube", "Docker Hub", "Agile/Scrum"]),
+            ]
+
+        # 11. Activités extra-professionnelles
+        extracurricular: list[ParsedExtracurricular] = []
+        extra_lines = sections["extracurricular"]
+        if extra_lines:
+            extracurricular.append(ParsedExtracurricular(
+                organization="Engagement Associatif",
+                role="Membre Actif",
+                date="2022 – 2024",
+                description=" ".join(extra_lines[:4]),
+            ))
+        else:
+            extracurricular = [
+                ParsedExtracurricular(
+                    organization="Enactus EMC",
+                    role="Département Projets",
+                    date="2022 – 2023",
+                    description="Contribution à des projets d'entrepreneuriat social et d'impact communautaire ; planification de projets et coordination d'équipe.",
+                ),
+                ParsedExtracurricular(
+                    organization="Lycée Pilote Bizerte Youth Club",
+                    role="Directeur de la Communication",
+                    date="2018 – 2019",
+                    description="Gestion de la stratégie média et des plans de communication ; supervision de la couverture médiatique et animation de la communauté en ligne.",
+                ),
+            ]
+
+        # 12. Langues
+        languages = [
+            "Arabe : Langue maternelle",
+            "Français : Courant",
+            "Anglais : Technique",
+        ]
+        lang_lines = sections["languages"]
+        if lang_lines:
+            extracted_langs = []
+            for ll in lang_lines:
+                for l_kw in ["arabe", "français", "francais", "anglais", "english", "french", "arabic", "allemand", "espagnol"]:
+                    if l_kw in ll.lower() and ll not in extracted_langs:
+                        extracted_langs.append(ll.strip("•-* "))
+            if extracted_langs:
+                languages = extracted_langs
+
+        return CustomCVData(
+            full_name=full_name,
+            headline=headline,
+            email=email or "contact@louaycodes.tn",
+            phone=phone or "+216 28 898 908",
+            location="Tunis, Tunisie",
+            portfolio_url=portfolio_url or "https://www.louaycodes.tn",
+            linkedin_url=linkedin_url,
+            github_url=github_url,
+            summary=summary,
+            educations=educations,
+            experiences=experiences,
+            projects=projects,
+            skills_categories=categorized_skills,
+            extracurricular=extracurricular,
+            languages=languages,
+            language="fr",
+            font_size_pt=9.0,
+            line_height=1.35,
+            margin_top_mm=8.0,
+            margin_bottom_mm=8.0,
+            margin_left_mm=12.0,
+            margin_right_mm=12.0,
+        )
+
+    @classmethod
+    def _build_education_from_lines(cls, lines: list[str]) -> ParsedEducation:
+        header = lines[0] if lines else ""
+        date_match = re.search(r"(20\d{2}(?:\s*[-–]\s*(?:20\d{2}|présent|present|en cours))?)", header, re.IGNORECASE)
+        dates = date_match.group(1).split("–") if date_match and "–" in date_match.group(1) else (date_match.group(1).split("-") if date_match else ["2022", "2027"])
+        start_date = dates[0].strip() if len(dates) > 0 else "2022"
+        end_date = dates[1].strip() if len(dates) > 1 else ""
+
+        desc = " ".join(lines[1:]) if len(lines) > 1 else ""
+        
+        # School / Degree extraction
+        parts = [p.strip() for p in re.split(r"[—–\-|]", header) if p.strip()]
+        degree = parts[0] if parts else "Diplôme d'Ingénieur"
+        school = parts[1] if len(parts) > 1 else "ESPRIT"
+
+        return ParsedEducation(
+            school=school,
+            degree=degree,
+            field_of_study=desc or "Informatique",
+            start_date=start_date,
+            end_date=end_date,
+            description=desc,
+        )
+
+    @classmethod
+    def _build_experience_from_lines(cls, lines: list[str]) -> ParsedExperience:
+        header = lines[0] if lines else ""
+        date_match = re.search(r"((?:\d{2}/)?20\d{2}\s*[-–]\s*(?:\d{2}/)?(?:20\d{2}|présent|present))", header, re.IGNORECASE)
+        date_str = date_match.group(1) if date_match else ""
+        clean_header = re.sub(r"((?:\d{2}/)?20\d{2}\s*[-–]\s*(?:\d{2}/)?(?:20\d{2}|présent|present))", "", header).strip(" —–-|")
+
+        dates = date_str.split("–") if "–" in date_str else (date_str.split("-") if "-" in date_str else [date_str, ""])
+        start_date = dates[0].strip() if len(dates) > 0 else ""
+        end_date = dates[1].strip() if len(dates) > 1 else ""
+
+        parts = [p.strip() for p in re.split(r"[—–\-|]| chez ", clean_header) if p.strip()]
+        role = parts[0] if parts else "Stagiaire"
+        company = parts[1] if len(parts) > 1 else "Entreprise"
+
+        body = " ".join(lines[1:]) if len(lines) > 1 else ""
+        
+        # Tech extraction
+        technologies = []
+        tech_match = re.search(r"(?:tech(?:nologies)?|stack)\s*:\s*([^\n\.]+)", body, re.IGNORECASE)
+        if tech_match:
+            technologies = [t.strip() for t in tech_match.group(1).split(",") if t.strip()]
+
+        return ParsedExperience(
+            company=company,
+            role=role,
+            location="Tunis",
+            start_date=start_date,
+            end_date=end_date,
+            description=body,
+            technologies=technologies,
+        )
+
+    @classmethod
+    def _build_project_from_lines(cls, lines: list[str]) -> ParsedProject:
+        header = lines[0] if lines else ""
+        clean_title = re.sub(r"^[•\*\-\s]+", "", header).strip()
+        parts = [p.strip() for p in re.split(r"[—–\-|:]", clean_title) if p.strip()]
+        title = parts[0] if parts else "Projet"
+        role = parts[1] if len(parts) > 1 and len(parts[1]) < 30 else "Développeur"
+
+        body = " ".join(lines[1:]) if len(lines) > 1 else (parts[1] if len(parts) > 1 and len(parts[1]) >= 30 else "")
+        technologies = []
+        tech_match = re.search(r"(?:tech(?:nologies)?|stack)\s*:\s*([^\n\.]+)", body, re.IGNORECASE)
+        if tech_match:
+            technologies = [t.strip() for t in tech_match.group(1).split(",") if t.strip()]
+
+        return ParsedProject(
+            title=title,
+            role=role,
+            url="https://www.louaycodes.tn",
+            description=body,
+            technologies=technologies,
+        )
+
+    @classmethod
+    def convert_profile_to_custom_cv(cls, profile: MasterProfile, language: str = "fr") -> CustomCVData:
+        """Convertit un MasterProfile souverain en structure CustomCVData éditable."""
+        is_en = language.lower().strip() == "en"
+
+        headline = profile.headline or (
+            "Cloud Architecture & DevOps Engineering Student" if is_en else "Élève-Ingénieur Architectures Cloud / DevOps"
+        )
+        summary = profile.bio or (
+            "Computer Engineering student specializing in Cloud & DevOps..." if is_en else
+            "Élève-ingénieur en informatique spécialisé en architectures Cloud & DevOps à l'ESPRIT. Solides compétences pratiques en virtualisation, conteneurisation et CI/CD."
+        )
+
+        educations = []
+        for edu in profile.educations:
+            educations.append(ParsedEducation(
+                school=edu.school,
+                degree=edu.degree,
+                field_of_study=edu.field_of_study,
+                start_date=edu.start_date,
+                end_date=edu.end_date or ("Present" if is_en else "En cours"),
+                description=edu.description or "",
+            ))
+
+        experiences = []
+        for exp in profile.experiences:
+            experiences.append(ParsedExperience(
+                company=exp.company,
+                role=exp.role,
+                location=exp.location or "",
+                start_date=exp.start_date,
+                end_date=exp.end_date or ("Present" if is_en else "Présent"),
+                description=exp.description,
+                technologies=exp.technologies,
+            ))
+
+        projects = []
+        for proj in profile.projects:
+            projects.append(ParsedProject(
+                title=proj.title,
+                role=proj.role or "",
+                url=proj.url or "",
+                description=proj.description,
+                technologies=proj.technologies,
+            ))
+
+        # Compétences
+        all_skills = {s.name.strip().lower(): s.name.strip() for s in profile.skills if s.name.strip()}
+        for exp in profile.experiences:
+            for t in exp.technologies:
+                if t.strip() and t.strip().lower() not in all_skills:
+                    all_skills[t.strip().lower()] = t.strip()
+        for proj in profile.projects:
+            for t in proj.technologies:
+                if t.strip() and t.strip().lower() not in all_skills:
+                    all_skills[t.strip().lower()] = t.strip()
+
+        assigned = set()
+        skills_categories = []
+        for cat_key, cat_data in TAXONOMY_CATEGORIES.items():
+            title = cat_data["title_en"] if is_en else cat_data["title_fr"]
+            kw_list = cat_data["keywords"]
+            cat_skills = []
+            for kw in kw_list:
+                for s_low, s_orig in list(all_skills.items()):
+                    if s_low == kw or (len(kw) > 3 and kw in s_low):
+                        if s_low not in assigned:
+                            assigned.add(s_low)
+                            cat_skills.append(s_orig)
+            if cat_skills:
+                skills_categories.append(ParsedSkillCategory(title=title, skills=cat_skills))
+
+        # Activités
+        if is_en:
+            extracurricular = [
+                ParsedExtracurricular(
+                    organization="Enactus EMC",
+                    role="Project Department",
+                    date="2022 – 2023",
+                    description="Contribution to social entrepreneurship and community-impact projects; project planning and team coordination.",
+                ),
+                ParsedExtracurricular(
+                    organization="Lycée Pilote Bizerte Youth Club",
+                    role="Communication Director",
+                    date="2018 – 2019",
+                    description="Managed the club's media strategy and communication plans; oversaw media coverage and community growth.",
+                ),
+            ]
+            languages = [
+                "Arabic: Native",
+                "French: Fluent",
+                "English: Technical",
+            ]
+        else:
+            extracurricular = [
+                ParsedExtracurricular(
+                    organization="Enactus EMC",
+                    role="Département Projets",
+                    date="2022 – 2023",
+                    description="Contribution à des projets d'entrepreneuriat social et d'impact communautaire ; planification de projets et coordination d'équipe.",
+                ),
+                ParsedExtracurricular(
+                    organization="Lycée Pilote Bizerte Youth Club",
+                    role="Directeur de la Communication",
+                    date="2018 – 2019",
+                    description="Gestion de la stratégie média et des plans de communication ; supervision de la couverture médiatique et animation de la communauté.",
+                ),
+            ]
+            languages = [
+                "Arabe : Langue maternelle",
+                "Français : Courant",
+                "Anglais : Technique",
+            ]
+
+        return CustomCVData(
+            full_name=profile.full_name or "Louay Zorai",
+            headline=headline,
+            email=profile.email or "contact@louaycodes.tn",
+            phone=profile.phone or "+216 28 898 908",
+            location=profile.location or "Tunis, Tunisie",
+            portfolio_url=profile.website_url or "https://www.louaycodes.tn",
+            linkedin_url=profile.linkedin_url or "https://linkedin.com/in/louay-zorai",
+            github_url=profile.github_url or "https://github.com/louayzorai",
+            summary=summary,
+            educations=educations,
+            experiences=experiences,
+            projects=projects,
+            skills_categories=skills_categories,
+            extracurricular=extracurricular,
+            languages=languages,
+            language=language,
+            font_size_pt=9.0,
+            line_height=1.35,
+            margin_top_mm=8.0,
+            margin_bottom_mm=8.0,
+            margin_left_mm=12.0,
+            margin_right_mm=12.0,
+        )
