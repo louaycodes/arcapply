@@ -755,6 +755,47 @@ export async function triggerEmailSync(): Promise<{
   return res.json();
 }
 
+export interface User {
+  id: string;
+  username: string;
+  full_name: string;
+  role: string;
+}
+
+export interface LoginResponse {
+  token: string;
+  user: User;
+}
+
+export async function loginUser(username: string, password: string): Promise<LoginResponse> {
+  const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ username, password }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const message = errorData.detail?.message || errorData.detail || "Nom d'utilisateur ou mot de passe incorrect";
+    throw new Error(message);
+  }
+  return res.json();
+}
+
+export async function fetchCurrentUser(token: string): Promise<User> {
+  const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!res.ok) {
+    throw new Error("Session invalide ou expirée");
+  }
+  return res.json();
+}
+
+
 
 
 

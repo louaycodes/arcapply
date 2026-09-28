@@ -11,9 +11,11 @@ import {
   ShieldCheck,
   Server,
   FileText,
+  LogOut,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { checkEngineHealth } from "@/lib/api";
+import { useAuth } from "@/components/auth/auth-context";
 
 const navigationItems = [
   { name: "Tableau de bord", href: "/", icon: LayoutDashboard, shortcut: "g d" },
@@ -27,6 +29,7 @@ const navigationItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const [isEngineOnline, setIsEngineOnline] = useState<boolean | null>(null);
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     let mounted = true;
@@ -102,41 +105,70 @@ export function Sidebar() {
         </nav>
       </div>
 
-      {/* Engine Status & System Info */}
-      <div className="pt-4 border-t border-border/80">
-        <div className="px-3 py-2.5 rounded-xl bg-white border border-border shadow-artisan text-xs flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Server className="w-4 h-4 text-stone-500" />
-            <span className="text-stone-600 font-mono text-[11px] font-medium">Service d'IA</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span
-              className={`w-2 h-2 rounded-full ${
-                isEngineOnline === null
-                  ? "bg-amber-500"
-                  : isEngineOnline
-                  ? "bg-emerald-600"
-                  : "bg-rose-600"
-              }`}
-            />
-            <span
-              className={`font-mono text-[11px] ${
-                isEngineOnline === null
-                  ? "text-amber-700"
-                  : isEngineOnline
-                  ? "text-emerald-700 font-semibold"
-                  : "text-red-700 font-semibold"
-              }`}
+      <div className="space-y-3">
+        {/* User Card */}
+        {user && (
+          <div className="px-3 py-2.5 rounded-xl bg-white border border-border shadow-artisan flex items-center justify-between">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary/20 to-orange-200 text-primary font-bold flex items-center justify-center text-[11px] shrink-0 border border-primary/30">
+                {user.full_name?.substring(0, 2).toUpperCase() || user.username.substring(0, 2).toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-stone-800 truncate leading-tight">
+                  {user.full_name || user.username}
+                </p>
+                <p className="text-[10px] text-muted-foreground font-mono">
+                  @{user.username}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={logout}
+              title="Se déconnecter"
+              className="p-1.5 rounded-lg text-stone-400 hover:text-red-600 hover:bg-red-50 transition-colors"
             >
-              {isEngineOnline === null
-                ? "Connexion..."
-                : isEngineOnline
-                ? "Connecté"
-                : "Hors-ligne"}
-            </span>
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
+        {/* Engine Status & System Info */}
+        <div>
+          <div className="px-3 py-2.5 rounded-xl bg-white border border-border shadow-artisan text-xs flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Server className="w-4 h-4 text-stone-500" />
+              <span className="text-stone-600 font-mono text-[11px] font-medium">Service d'IA</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  isEngineOnline === null
+                    ? "bg-amber-500"
+                    : isEngineOnline
+                    ? "bg-emerald-600"
+                    : "bg-rose-600"
+                }`}
+              />
+              <span
+                className={`font-mono text-[11px] ${
+                  isEngineOnline === null
+                    ? "text-amber-700"
+                    : isEngineOnline
+                    ? "text-emerald-700 font-semibold"
+                    : "text-red-700 font-semibold"
+                }`}
+              >
+                {isEngineOnline === null
+                  ? "Connexion..."
+                  : isEngineOnline
+                  ? "Connecté"
+                  : "Hors-ligne"}
+              </span>
+            </div>
           </div>
         </div>
       </div>
     </aside>
   );
 }
+
