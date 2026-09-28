@@ -714,7 +714,7 @@ export default function StudioCVPage() {
       />
 
       {/* Top Cockpit Header: Identity & Global Actions */}
-      <header className="px-5 py-2.5 border-b border-border bg-white/95 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-sm z-20">
+      <header className="px-5 py-2.5 border-b border-stone-200/80 bg-white/85 backdrop-blur-xl flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-xs z-20">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-orange-100 border border-orange-200 flex items-center justify-center text-primary shadow-sm">
             <FileText className="w-5 h-5" />
@@ -844,7 +844,7 @@ export default function StudioCVPage() {
       )}
 
       {/* Floating Canvas Formatting Toolbar (Like Google Docs / Acrobat / Sejda) */}
-      <div className="px-5 py-2 border-b border-border bg-[#FAF7F2] flex flex-wrap items-center justify-between gap-3 shrink-0 text-xs z-10 shadow-xs">
+      <div className="sticky top-0 z-10 px-5 py-2 border-b border-stone-200/80 bg-white/80 backdrop-blur-xl flex flex-wrap items-center justify-between gap-3 shrink-0 text-xs shadow-xs">
         {/* Left: Text Formatting Controls */}
         <div className="flex items-center flex-wrap gap-1">
           <span className="text-[11px] font-semibold text-muted-foreground mr-1 hidden sm:inline">Mise en forme :</span>

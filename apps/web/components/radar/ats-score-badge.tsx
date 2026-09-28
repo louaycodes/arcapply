@@ -43,10 +43,10 @@ export function AtsScoreBadge({ match, loading = false }: AtsScoreBadgeProps) {
   const isMedium = score >= 40 && score < 70;
 
   const badgeStyle = isHigh
-    ? "bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300"
+    ? "backdrop-blur-md bg-emerald-500/15 text-emerald-950 border border-emerald-400/50 shadow-xs ring-1 ring-emerald-500/20 hover:bg-emerald-500/25 hover:border-emerald-500/60"
     : isMedium
-    ? "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100 hover:border-amber-300"
-    : "bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100 hover:border-rose-300";
+    ? "backdrop-blur-md bg-amber-500/15 text-amber-950 border border-amber-400/50 shadow-xs ring-1 ring-amber-500/20 hover:bg-amber-500/25 hover:border-amber-500/60"
+    : "backdrop-blur-md bg-rose-500/15 text-rose-950 border border-rose-400/50 shadow-xs ring-1 ring-rose-500/20 hover:bg-rose-500/25 hover:border-rose-500/60";
 
   const progressBg = isHigh
     ? "bg-emerald-600"
@@ -62,11 +62,11 @@ export function AtsScoreBadge({ match, loading = false }: AtsScoreBadgeProps) {
           e.stopPropagation();
           setIsOpen(true);
         }}
-        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-mono font-bold transition-all cursor-pointer shadow-sm ${badgeStyle}`}
+        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-bold transition-all cursor-pointer ${badgeStyle}`}
         title="Cliquer pour voir l'inventaire des compétences et l'audit ATS"
       >
         <span
-          className="w-2 h-2 rounded-full mr-1 shrink-0"
+          className="w-2 h-2 rounded-full mr-0.5 shrink-0 shadow-xs"
           style={{
             backgroundColor: isHigh ? "#15803D" : isMedium ? "#B45309" : "#B91C1C",
           }}
@@ -79,11 +79,11 @@ export function AtsScoreBadge({ match, loading = false }: AtsScoreBadgeProps) {
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/40 backdrop-blur-md animate-in fade-in duration-150"
           onClick={() => setIsOpen(false)}
         >
           <div
-            className="w-full max-w-lg rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150"
+            className="w-full max-w-lg rounded-3xl border border-white/80 bg-white/90 backdrop-blur-2xl p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150 ring-1 ring-stone-900/5"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}

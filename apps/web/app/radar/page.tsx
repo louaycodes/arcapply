@@ -478,7 +478,7 @@ export default function RadarPage() {
       )}
 
       {/* 1. Barre Temporelle Intelligente & Métriques de Vélocité */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-2 bg-muted/40 rounded-xl border border-border/60">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-2.5 bg-white/70 backdrop-blur-xl rounded-2xl border border-stone-200/80 shadow-xs">
         {/* Onglets temporels */}
         <div className="flex flex-wrap items-center gap-1.5">
           <button

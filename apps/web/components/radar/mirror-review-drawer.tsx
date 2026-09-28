@@ -211,17 +211,17 @@ export function MirrorReviewDrawer({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-stone-900/40 backdrop-blur-xs animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-stone-950/40 backdrop-blur-md animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-7xl h-[95vh] rounded-2xl border border-stone-200 bg-white shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+        className="w-full max-w-7xl h-[95vh] rounded-3xl border border-white/80 bg-white/95 backdrop-blur-2xl shadow-2xl ring-1 ring-stone-900/10 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-4 sm:px-6 py-4 border-b border-stone-200 flex items-center justify-between gap-4 bg-stone-50/70">
+        <div className="p-4 sm:px-6 py-4 border-b border-stone-200/80 flex items-center justify-between gap-4 bg-white/85 backdrop-blur-xl">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary font-bold">
+            <div className="w-10 h-10 rounded-xl bg-orange-100/80 border border-orange-200/80 flex items-center justify-center text-primary font-bold shadow-xs">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
@@ -532,7 +532,7 @@ export function MirrorReviewDrawer({
         </div>
 
         {/* BOTTOM ACTION BAR (FSM Workflow & 5-Second Grace Guard) */}
-        <div className="p-4 sm:px-6 py-3.5 border-t border-border bg-stone-50/80 flex items-center justify-between gap-4">
+        <div className="p-4 sm:px-6 py-3.5 border-t border-stone-200/80 bg-white/85 backdrop-blur-xl flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-stone-600 hidden sm:inline font-mono">
               Workflow :
