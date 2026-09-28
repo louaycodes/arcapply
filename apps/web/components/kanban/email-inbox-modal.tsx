@@ -182,11 +182,11 @@ export function EmailInboxModal({
                   Boîte de réception des recruteurs
                 </h3>
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-100 text-orange-900 border border-orange-200">
-                  Ingestion Auto IMAP
+                  Synchronisation active
                 </span>
               </div>
               <p className="text-xs text-stone-500 font-serif italic">
-                Détection sémantique, classification automatique et mise à jour de statut Kanban.
+                Détection automatique des réponses et mise à jour de vos candidatures.
               </p>
             </div>
           </div>
@@ -230,7 +230,7 @@ export function EmailInboxModal({
             <div className="flex items-center gap-2">
               <Zap className="w-4 h-4 text-amber-600" />
               <span className="text-xs font-bold uppercase tracking-wider text-stone-800 font-mono">
-                Simulateur de retours recruteurs (Test en direct)
+                Ajouter ou tester un email reçu
               </span>
             </div>
             <button
@@ -238,7 +238,7 @@ export function EmailInboxModal({
               onClick={() => setShowCustomSim(!showCustomSim)}
               className="text-xs text-primary hover:text-orange-700 font-semibold flex items-center gap-1 transition-colors"
             >
-              <span>{showCustomSim ? "Masquer le formulaire" : "Formulaire personnalisé"}</span>
+              <span>{showCustomSim ? "Masquer le formulaire" : "Saisir un email manuellement"}</span>
               {showCustomSim ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
             </button>
           </div>
@@ -259,7 +259,7 @@ export function EmailInboxModal({
               className="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-50 shadow-xs"
             >
               <CalendarCheck className="w-3.5 h-3.5 text-emerald-700" />
-              <span>Simuler Entretien ({activeCompany})</span>
+              <span>Exemple Entretien ({activeCompany})</span>
             </button>
 
             <button
@@ -276,7 +276,7 @@ export function EmailInboxModal({
               className="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-900 border border-rose-300 text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-50 shadow-xs"
             >
               <XCircle className="w-3.5 h-3.5 text-rose-700" />
-              <span>Simuler Refus ({activeCompany})</span>
+              <span>Exemple Réponse Négative ({activeCompany})</span>
             </button>
 
             <button
@@ -292,7 +292,7 @@ export function EmailInboxModal({
               className="px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-300 text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-50 shadow-xs"
             >
               <CheckCircle2 className="w-3.5 h-3.5 text-blue-700" />
-              <span>Simuler Accusé de réception</span>
+              <span>Exemple Accusé Réception</span>
             </button>
           </div>
 
@@ -353,10 +353,10 @@ export function EmailInboxModal({
                   type="button"
                   disabled={simulating}
                   onClick={() => handleSimulate()}
-                  className="px-4 py-1.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm disabled:opacity-50"
+                  className="px-4 py-1.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm disabled:opacity-50 cursor-pointer"
                 >
                   {simulating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                  <span>Injecter et tester la classification</span>
+                  <span>Enregistrer et analyser ce message</span>
                 </button>
               </div>
             </div>
@@ -366,21 +366,21 @@ export function EmailInboxModal({
         {/* Emails List */}
         <div className="flex-1 overflow-y-auto p-4 sm:px-6 space-y-3">
           <div className="flex items-center justify-between text-xs text-muted-foreground pb-1">
-            <span>Historique des retours recruteurs classifiés ({emails.length})</span>
-            <span className="font-mono text-[11px]">Ordre chronologique inversé</span>
+            <span>Historique des messages reçus ({emails.length})</span>
+            <span className="font-mono text-[11px]">Plus récents d'abord</span>
           </div>
 
           {loading ? (
             <div className="p-12 text-center space-y-3">
               <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto" />
-              <p className="text-xs text-muted-foreground font-mono">Lecture de la boîte mail...</p>
+              <p className="text-xs text-muted-foreground font-medium">Recherche des nouveaux messages...</p>
             </div>
           ) : emails.length === 0 ? (
             <div className="p-12 border border-dashed border-border/60 rounded-xl text-center space-y-2">
               <Mail className="w-8 h-8 text-muted-foreground/40 mx-auto" />
-              <p className="text-xs font-semibold text-foreground">Aucun email recruteur ingéré pour le moment</p>
+              <p className="text-xs font-semibold text-foreground">Aucun message de recruteur pour le moment</p>
               <p className="text-[11px] text-muted-foreground max-w-sm mx-auto">
-                Utilisez les boutons de simulation ci-dessus pour tester la bascule automatique du Kanban.
+                Vos réponses de recruteurs apparaîtront ici et mettront à jour vos candidatures automatiquement.
               </p>
             </div>
           ) : (

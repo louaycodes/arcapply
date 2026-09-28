@@ -75,7 +75,7 @@ export default function ProfilePage() {
       setStatus(newStatus);
       setNotification({
         type: "success",
-        message: "Master Profile synchronisé et sauvegardé avec succès en base SQLite souveraine.",
+        message: "Votre profil a été enregistré avec succès.",
       });
     } catch (err: any) {
       setNotification({
@@ -264,7 +264,7 @@ export default function ProfilePage() {
       <div className="flex-1 flex items-center justify-center p-12">
         <div className="text-center space-y-4">
           <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-sm font-mono text-muted-foreground">Chargement du Master Profile souverain...</p>
+          <p className="text-sm font-medium text-muted-foreground">Chargement de votre profil...</p>
         </div>
       </div>
     );
@@ -273,12 +273,12 @@ export default function ProfilePage() {
   if (!profile) {
     return (
       <div className="p-8 max-w-4xl mx-auto">
-        <div className="p-6 rounded-xl border border-destructive/40 bg-destructive/10 text-destructive">
+        <div className="p-6 rounded-2xl border border-destructive/30 bg-destructive/10 text-destructive">
           <h2 className="text-lg font-bold mb-2">Erreur de chargement</h2>
-          <p className="text-sm mb-4">Impossible de joindre le moteur local SQLite (`~/.arcapply/arcapply.db`). Assurez-vous que le backend FastAPI est actif.</p>
+          <p className="text-sm mb-4">Impossible de récupérer votre profil. Veuillez vérifier la connexion ou actualiser la page.</p>
           <button
             onClick={loadData}
-            className="px-4 py-2 rounded-md bg-destructive text-white text-sm font-medium hover:bg-destructive/90 transition-colors"
+            className="px-4 py-2 rounded-xl bg-destructive text-white text-sm font-medium hover:bg-destructive/90 transition-colors shadow-xs"
           >
             Réessayer
           </button>
@@ -296,15 +296,15 @@ export default function ProfilePage() {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-border/60 pb-6">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Master Profile
+            <h1 className="text-2xl font-bold tracking-tight text-foreground font-display">
+              Mon Profil Professionnel
             </h1>
-            <span className="text-xs font-mono px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
-              Socle Immuable
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-orange-100 text-orange-900 border border-orange-200">
+              Certifié
             </span>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            Source unique et souveraine de vérité. Aucune compétence en dehors de ce profil ne sera générée.
+            Renseignez vos coordonnées, compétences et expériences pour générer des candidatures sur-mesure.
           </p>
         </div>
 
@@ -367,28 +367,28 @@ export default function ProfilePage() {
               )}
               <div>
                 <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
-                  <span>Garde-fou Zéro-Hallucination (CAP-1)</span>
+                  <span>État de complétude</span>
                   <span
-                    className={`text-xs font-mono px-2 py-0.5 rounded-full ${
+                    className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                       isComplete
-                        ? "bg-success/15 text-success border border-success/30"
-                        : "bg-warning/15 text-warning border border-warning/30"
+                        ? "bg-emerald-50 text-emerald-900 border border-emerald-300"
+                        : "bg-amber-50 text-amber-900 border border-amber-300"
                     }`}
                   >
-                    {isComplete ? "Débloqué (Prêt)" : "Bloqué (Incomplet)"}
+                    {isComplete ? "Profil complet" : "Profil à compléter"}
                   </span>
                 </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {isComplete
-                    ? "Toutes les conditions de validation sont remplies. La génération de CV et de lettre est autorisée."
-                    : "La génération de candidatures est strictement verrouillée tant que le profil n'est pas exhaustif."}
+                    ? "Toutes les informations nécessaires sont renseignées. Vous pouvez générer vos CV et lettres."
+                    : "Complétez les éléments ci-dessous pour débloquer la génération automatique de vos candidatures."}
                 </p>
               </div>
             </div>
 
             <div className="text-right">
               <span className="text-2xl font-bold font-mono text-foreground">{percentage}%</span>
-              <p className="text-[11px] text-muted-foreground font-mono">Complétude</p>
+              <p className="text-[11px] text-muted-foreground">Complétude</p>
             </div>
           </div>
 
@@ -410,7 +410,7 @@ export default function ProfilePage() {
           {!isComplete && status && status.missing_fields.length > 0 && (
             <div className="pt-2">
               <p className="text-xs font-semibold text-stone-700 mb-2">
-                Éléments requis manquants pour débloquer la génération :
+                Éléments recommandés pour optimiser votre profil :
               </p>
               <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                 {status.missing_fields.map((field, idx) => (
@@ -427,15 +427,15 @@ export default function ProfilePage() {
           )}
         </div>
 
-        {/* Verification Trigger Card */}
-        <div className="p-6 rounded-xl border border-border bg-card/80 flex flex-col justify-between space-y-4">
+        {/* Quality Check Card */}
+        <div className="p-6 rounded-2xl border border-stone-200 bg-white shadow-artisan flex flex-col justify-between space-y-4">
           <div>
-            <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Code2 className="w-4 h-4 text-primary" />
-              <span>Test du Garde-Fou CAP-1</span>
+            <h4 className="text-sm font-bold text-stone-900 font-display flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-primary" />
+              <span>Garantie de qualité</span>
             </h4>
-            <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-              Interroge l'endpoint moteur <code className="font-mono text-primary text-[11px]">POST /api/profile/can-generate</code> pour certifier le blocage ou le déblocage en direct.
+            <p className="text-xs text-stone-600 mt-1.5 leading-relaxed">
+              Pour assurer l'impact de vos candidatures auprès des recruteurs, ArcApply vérifie que vos coordonnées, formations, expériences et compétences sont bien prêtes.
             </p>
           </div>
 
@@ -443,19 +443,19 @@ export default function ProfilePage() {
             <button
               type="button"
               onClick={handleTestGeneration}
-              className="w-full py-2 px-3 rounded-md border border-border bg-muted/70 hover:bg-muted text-xs font-semibold text-foreground transition-colors"
+              className="w-full py-2 px-3 rounded-xl border border-stone-300 bg-stone-50 hover:bg-stone-100 text-xs font-semibold text-stone-800 transition-colors shadow-xs cursor-pointer"
             >
-              Tester l'autorisation de génération
+              Vérifier l'éligibilité de mon profil
             </button>
 
             {testGenResult && (
               <div
-                className={`p-2.5 rounded text-[11px] font-mono border ${
+                className={`p-2.5 rounded-lg text-xs font-medium border ${
                   testGenResult.startsWith("✓")
-                    ? "bg-success/10 border-success/30 text-success"
+                    ? "bg-emerald-50 border-emerald-300 text-emerald-950"
                     : testGenResult.startsWith("✕")
-                    ? "bg-destructive/10 border-destructive/30 text-destructive"
-                    : "bg-muted border-border text-foreground"
+                    ? "bg-rose-50 border-rose-300 text-rose-950"
+                    : "bg-stone-50 border-stone-200 text-stone-800"
                 }`}
               >
                 {testGenResult}

@@ -128,7 +128,7 @@ export function KanbanCard({
               onClick={() => onTransition(job.id, "REVIEWING")}
               className="px-2 py-1 rounded-lg bg-orange-50 hover:bg-primary text-primary hover:text-white border border-orange-200 text-[10px] font-bold flex items-center gap-1 transition-all disabled:opacity-50 cursor-pointer"
             >
-              <span>Réviser</span>
+              <span>Préparer</span>
               <ChevronRight className="w-3 h-3" />
             </button>
           )}
@@ -140,7 +140,7 @@ export function KanbanCard({
               onClick={() => onTransition(job.id, "READY")}
               className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-600 text-emerald-800 hover:text-white border border-emerald-200 text-[10px] font-bold flex items-center gap-1 transition-all disabled:opacity-50 cursor-pointer"
             >
-              <span>Valider Prêt</span>
+              <span>Valider</span>
               <CheckCircle2 className="w-3 h-3" />
             </button>
           )}
@@ -151,7 +151,7 @@ export function KanbanCard({
               onClick={() => onOpenMirror(job)}
               className="px-2.5 py-1 rounded-lg bg-primary hover:bg-primary-hover text-white text-[10px] font-bold flex items-center gap-1 shadow-artisan-button tactile-button transition-all cursor-pointer"
             >
-              <span>Soumettre (5s)</span>
+              <span>Finaliser</span>
               <ArrowRight className="w-3 h-3" />
             </button>
           )}
@@ -172,7 +172,7 @@ export function KanbanCard({
                 disabled={isTransitioning}
                 onClick={() => onTransition(job.id, "REJECTED")}
                 className="p-1 rounded-lg text-stone-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 cursor-pointer"
-                title="Consigner un refus"
+                title="Marquer comme non retenu"
               >
                 <XCircle className="w-3.5 h-3.5" />
               </button>

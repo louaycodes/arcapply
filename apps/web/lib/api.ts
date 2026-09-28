@@ -531,7 +531,7 @@ export async function fetchCVFromProfile(
   });
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData?.detail?.message || "Impossible de charger le Master Profile.");
+    throw new Error(errorData?.detail?.message || "Impossible de charger votre profil.");
   }
   return res.json();
 }

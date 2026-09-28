@@ -658,7 +658,7 @@ export default function StudioCVPage() {
         margin_bottom_mm: marginMm,
       });
       setHasUnsavedEdits(false);
-      showNotification("success", "Modifications et texte enregistrés dans votre base SQLite locale.");
+      showNotification("success", "Votre CV a été enregistré avec succès.");
     } catch (err: any) {
       showNotification("error", err.message || "Échec de la sauvegarde.");
     } finally {
@@ -666,7 +666,7 @@ export default function StudioCVPage() {
     }
   };
 
-  // 12. Reset with Master Profile
+  // 12. Reset with Profile
   const handleResetMasterProfile = async () => {
     try {
       setIsLoading(true);
@@ -675,7 +675,7 @@ export default function StudioCVPage() {
       setHtmlContent(res.html_content);
       currentHtmlRef.current = res.html_content;
       setHasUnsavedEdits(false);
-      showNotification("success", "Données du Master Profile rechargées.");
+      showNotification("success", "Données de votre profil rechargées.");
     } catch (err: any) {
       showNotification("error", err.message || "Échec du rechargement.");
     } finally {
@@ -723,12 +723,12 @@ export default function StudioCVPage() {
             <div className="flex items-center gap-2">
               <h1 className="text-sm sm:text-base font-bold text-stone-900 tracking-tight font-display flex items-center gap-2">
                 Éditeur Visuel de CV
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold">
-                  WYSIWYG Direct
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                  Édition Directe
                 </span>
               </h1>
               {hasUnsavedEdits && (
-                <span className="text-[10px] text-amber-900 font-mono bg-amber-50 px-1.5 py-0.5 rounded border border-amber-300 font-semibold">
+                <span className="text-[10px] text-amber-900 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-300 font-semibold">
                   Modifications non enregistrées
                 </span>
               )}
@@ -767,15 +767,15 @@ export default function StudioCVPage() {
             <span>{isUploading ? "Lecture..." : "Importer CV (PDF/TXT)"}</span>
           </button>
 
-          {/* Reset from Master Profile */}
+          {/* Reset from Profile */}
           <button
             type="button"
             onClick={handleResetMasterProfile}
             className="px-3 py-1.5 rounded-lg border border-border/80 bg-muted/40 hover:bg-muted text-xs font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-all shadow-sm"
-            title="Recharger les données certifiées du Master Profile"
+            title="Recharger les données de mon profil"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">Master Profile</span>
+            <span className="hidden md:inline">Mon Profil</span>
           </button>
 
           {/* Save Draft */}
@@ -1030,7 +1030,7 @@ export default function StudioCVPage() {
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
           <div className="px-3.5 py-1 rounded-full bg-white/95 border border-orange-200 text-stone-900 text-[11px] font-medium backdrop-blur-md shadow-md flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-600" />
-            <span>Mode Éditeur Visuel Actif : Cliquez pour éditer &bull; Le texte collé adopte fidèlement le style du CV</span>
+            <span>Cliquez sur un élément pour le modifier &bull; Le texte s'adapte automatiquement</span>
           </div>
         </div>
 

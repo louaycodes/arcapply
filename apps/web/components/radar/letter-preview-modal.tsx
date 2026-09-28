@@ -131,18 +131,18 @@ export function LetterPreviewModal({
             {isClean ? (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-900 border border-emerald-300 font-semibold">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
-                Anti-Clichés validé (0 formule stéréotypée)
+                Ton naturel et professionnel (0 formule générique)
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-900 border border-amber-300 font-semibold">
                 <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-                {letter?.cliche_score} cliché(s) d'IA détecté(s)
+                {letter?.cliche_score} formulation(s) générique(s) détectée(s)
               </span>
             )}
 
-            <span className="inline-flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded-full bg-stone-100 text-stone-700 border border-stone-200 font-semibold">
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-700 border border-stone-200">
               <ShieldCheck className="w-3.5 h-3.5 text-primary" />
-              Zéro-Hallucination
+              100% Fidèle au profil
             </span>
           </div>
 

@@ -16,11 +16,11 @@ import { useEffect, useState } from "react";
 import { checkEngineHealth } from "@/lib/api";
 
 const navigationItems = [
-  { name: "Cockpit", href: "/", icon: LayoutDashboard, shortcut: "g d" },
-  { name: "Radar d'Offres", href: "/radar", icon: Radar, shortcut: "g r" },
-  { name: "Master Profile", href: "/profile", icon: UserCheck, shortcut: "g p" },
-  { name: "Studio CV", href: "/cv", icon: FileText, shortcut: "g c" },
-  { name: "Tableau Kanban", href: "/kanban", icon: KanbanSquare, shortcut: "g k" },
+  { name: "Tableau de bord", href: "/", icon: LayoutDashboard, shortcut: "g d" },
+  { name: "Offres d'emploi", href: "/radar", icon: Radar, shortcut: "g r" },
+  { name: "Mon Profil", href: "/profile", icon: UserCheck, shortcut: "g p" },
+  { name: "Éditeur de CV", href: "/cv", icon: FileText, shortcut: "g c" },
+  { name: "Suivi Candidatures", href: "/kanban", icon: KanbanSquare, shortcut: "g k" },
   { name: "Paramètres", href: "/settings", icon: Settings, shortcut: "g s" },
 ];
 
@@ -57,7 +57,7 @@ export function Sidebar() {
                 PFE 2027
               </span>
             </h1>
-            <p className="text-xs text-muted-foreground font-medium">Atelier de Candidature</p>
+            <p className="text-xs text-muted-foreground font-medium">Assistant Candidatures</p>
           </div>
         </div>
 
@@ -107,7 +107,7 @@ export function Sidebar() {
         <div className="px-3 py-2.5 rounded-xl bg-white border border-border shadow-artisan text-xs flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Server className="w-4 h-4 text-stone-500" />
-            <span className="text-stone-600 font-mono text-[11px] font-medium">Engine local</span>
+            <span className="text-stone-600 font-mono text-[11px] font-medium">Service d'IA</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span
@@ -129,9 +129,9 @@ export function Sidebar() {
               }`}
             >
               {isEngineOnline === null
-                ? "..."
+                ? "Connexion..."
                 : isEngineOnline
-                ? ":8000 OK"
+                ? "Connecté"
                 : "Hors-ligne"}
             </span>
           </div>

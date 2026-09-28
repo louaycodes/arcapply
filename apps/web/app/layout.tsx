@@ -3,9 +3,9 @@ import "./globals.css";
 import { Sidebar } from "@/components/navigation/sidebar";
 
 export const metadata: Metadata = {
-  title: "ArcApply — Atelier & Cockpit PFE Ingénieur",
+  title: "ArcApply — Vos candidatures d'ingénieur en toute simplicité",
   description:
-    "Cockpit haute précision pour stages PFE France et Tunisie. Adaptation de CV zéro-hallucination, matching ATS déterministe et suivi Kanban.",
+    "Préparez, adaptez et suivez vos candidatures de stage PFE et premier emploi d'ingénieur en France et en Tunisie avec un score de compatibilité en temps réel.",
 };
 
 export default function RootLayout({

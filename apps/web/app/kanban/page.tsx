@@ -141,7 +141,7 @@ export default function KanbanPage() {
     },
     {
       id: "REVIEWING",
-      title: "En révision",
+      title: "En préparation",
       icon: Eye,
       colorClass: "text-amber-800",
       badgeBg: "bg-amber-50 border border-amber-200",
@@ -155,7 +155,7 @@ export default function KanbanPage() {
     },
     {
       id: "SUBMITTED",
-      title: "Postulé / Transmis",
+      title: "Candidatures envoyées",
       icon: Send,
       colorClass: "text-purple-800",
       badgeBg: "bg-purple-50 border border-purple-200",
@@ -176,7 +176,7 @@ export default function KanbanPage() {
     },
     {
       id: "REJECTED",
-      title: "Classé / Refus",
+      title: "Non retenu",
       icon: XCircle,
       colorClass: "text-stone-700",
       badgeBg: "bg-stone-100 border border-stone-200",
@@ -194,15 +194,15 @@ export default function KanbanPage() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-                  Suivi Kanban du Pipeline
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground font-display">
+                  Suivi de vos Candidatures
                 </h1>
-                <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30">
-                  7 Étapes FSM
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-100 text-orange-900 border border-orange-200">
+                  En temps réel
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Pilotage souverain et métriques de conversion des candidatures PFE.
+                Consultez l'avancement de chaque candidature et vos taux de réponse.
               </p>
             </div>
           </div>
@@ -225,10 +225,10 @@ export default function KanbanPage() {
             type="button"
             onClick={() => setShowEmailModal(true)}
             className="px-3 py-1.5 rounded-lg border border-primary/30 bg-primary/10 hover:bg-primary text-primary hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
-            title="Consulter les emails recruteurs et simuler des retours"
+            title="Consulter les emails et réponses des recruteurs"
           >
             <Mail className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Boîte Recruteurs</span>
+            <span className="hidden sm:inline">Emails Recruteurs</span>
           </button>
 
           <button

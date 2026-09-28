@@ -117,7 +117,7 @@ export function AtsScoreBadge({ match, loading = false }: AtsScoreBadgeProps) {
             {/* Score Progress Bar */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-xs font-mono">
-                <span className="text-stone-500">Adéquation mathématique</span>
+                <span className="text-stone-500">Niveau de correspondance</span>
                 <span className="font-semibold text-stone-900">{score} / 100</span>
               </div>
               <div className="h-2 w-full bg-stone-100 rounded-full overflow-hidden border border-stone-200">
@@ -134,7 +134,7 @@ export function AtsScoreBadge({ match, loading = false }: AtsScoreBadgeProps) {
               <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/50 space-y-2">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  <span>Validées dans votre Master Profile ({match.matched_skills.length})</span>
+                  <span>Présentes sur votre profil ({match.matched_skills.length})</span>
                 </div>
                 {match.matched_skills.length > 0 ? (
                   <div className="flex flex-wrap gap-1.5 pt-1">
@@ -156,7 +156,7 @@ export function AtsScoreBadge({ match, loading = false }: AtsScoreBadgeProps) {
               <div className="p-4 rounded-xl border border-amber-200 bg-amber-50/50 space-y-2">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-amber-800">
                   <AlertTriangle className="w-4 h-4 text-amber-600" />
-                  <span>Transférables / Proximité Sémantique (0.6x) ({match.transferable_skills.length})</span>
+                  <span>Compétences proches ou transférables ({match.transferable_skills.length})</span>
                 </div>
                 {match.transferable_skills.length > 0 ? (
                   <div className="flex flex-wrap gap-1.5 pt-1">
@@ -174,16 +174,16 @@ export function AtsScoreBadge({ match, loading = false }: AtsScoreBadgeProps) {
                 )}
               </div>
 
-              {/* 3. Missing Skills (Strict Zero Hallucination Quarantine) */}
+              {/* 3. Missing Skills */}
               <div className="p-4 rounded-xl border border-rose-200 bg-rose-50/50 space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-rose-800">
                     <XCircle className="w-4 h-4 text-rose-600" />
-                    <span>Compétences Manquantes ({match.missing_skills.length})</span>
+                    <span>Compétences à acquérir ({match.missing_skills.length})</span>
                   </div>
                   <span className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-200 font-semibold">
                     <ShieldAlert className="w-3 h-3 text-rose-600" />
-                    Zéro-Hallucination
+                    Non inventées
                   </span>
                 </div>
                 {match.missing_skills.length > 0 ? (
@@ -207,11 +207,7 @@ export function AtsScoreBadge({ match, loading = false }: AtsScoreBadgeProps) {
             <div className="p-3 rounded-xl bg-stone-50 border border-stone-200 text-xs text-stone-600 flex items-start gap-2">
               <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
               <p className="leading-relaxed">
-                Ce score est calculé déterministement selon la formule :
-                <code className="text-stone-900 font-mono ml-1 font-semibold">
-                  (validées + 0.6 × transférables) / total
-                </code>
-                . Aucune compétence manquante ne sera inventée dans vos livrables.
+                Ce score évalue la compatibilité entre votre profil et les attentes du recruteur. Vos candidatures n'incluent que vos compétences réelles pour garantir la crédibilité de votre dossier.
               </p>
             </div>
           </div>

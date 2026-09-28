@@ -353,7 +353,7 @@ export function JobCard({
             type="button"
             onClick={() => onOpenLetter?.(job)}
             className="px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 hover:text-stone-900 text-xs font-semibold flex items-center gap-1 shadow-xs transition-colors cursor-pointer"
-            title="Rédiger une lettre de motivation sobre"
+            title="Générer une lettre de motivation adaptée"
           >
             <Mail className="w-3.5 h-3.5 text-primary" />
             <span>Lettre</span>
@@ -363,7 +363,7 @@ export function JobCard({
             type="button"
             onClick={() => onOpenCV?.(job)}
             className="px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 hover:text-stone-900 text-xs font-semibold flex items-center gap-1 shadow-xs transition-colors cursor-pointer"
-            title="Aperçu du CV ciblé ATS"
+            title="Aperçu du CV personnalisé pour cette offre"
           >
             <span>CV</span>
           </button>
@@ -372,7 +372,7 @@ export function JobCard({
             type="button"
             onClick={() => onOpenMirror?.(job)}
             className="px-3.5 py-1.5 rounded-lg bg-primary hover:bg-primary-hover text-white text-xs font-semibold flex items-center gap-1.5 transition-all tactile-button shadow-artisan-button cursor-pointer"
-            title="Ouvrir la vue miroir de révision et déclencher la soumission assistée"
+            title="Préparer et vérifier ma candidature"
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>Postuler</span>

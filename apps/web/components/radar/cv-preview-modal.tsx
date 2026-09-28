@@ -83,11 +83,11 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base sm:text-lg font-bold text-stone-900 font-display">
-                  CV Ciblé ATS — 2 Pages A4
+                  CV Adapté à l'offre
                 </h2>
-                <span className="inline-flex items-center gap-1 text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-900 border border-emerald-300 font-semibold">
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-900 border border-emerald-300">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
-                  Zéro-Hallucination
+                  100% Vérifié
                 </span>
               </div>
               <p className="text-xs text-stone-600 mt-0.5 line-clamp-1">
@@ -231,10 +231,10 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
             <div className="h-full overflow-y-auto p-6 max-w-3xl mx-auto space-y-6 bg-white border border-stone-200 rounded-2xl m-4 shadow-artisan">
               <div>
                 <h3 className="text-sm font-bold text-stone-900 font-display">
-                  Synthèse d'ordonnancement du CV
+                  Correspondance des compétences
                 </h3>
                 <p className="text-xs text-stone-600 mt-0.5">
-                  Seules les réalisations et compétences issues de votre Master Profile sont projetées.
+                  Ce CV met en valeur les compétences et expériences de votre profil les plus pertinentes pour ce poste.
                 </p>
               </div>
 

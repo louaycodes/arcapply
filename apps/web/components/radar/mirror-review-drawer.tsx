@@ -341,8 +341,8 @@ export function MirrorReviewDrawer({
 
             {/* Scrollable Job Description */}
             <div className="flex-1 p-4 sm:p-5 overflow-y-auto space-y-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Description brute du recruteur
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground font-display">
+                Description du poste
               </span>
               <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap font-sans">
                 {job.description_raw}
@@ -365,7 +365,7 @@ export function MirrorReviewDrawer({
                   }`}
                 >
                   <FileText className="w-3.5 h-3.5" />
-                  <span>CV Ciblé (A4)</span>
+                  <span>CV Adapté</span>
                 </button>
 
                 <button
@@ -558,7 +558,7 @@ export function MirrorReviewDrawer({
                 className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold flex items-center gap-2 transition-all tactile-button shadow-artisan-button cursor-pointer disabled:opacity-50"
               >
                 {loadingAction ? <Loader2 className="w-4 h-4 animate-spin" /> : <ChevronRight className="w-4 h-4" />}
-                <span>Passer en révision (REVIEWING)</span>
+                <span>Préparer ma candidature</span>
               </button>
             )}
 
@@ -572,7 +572,7 @@ export function MirrorReviewDrawer({
                   className="px-3 py-2 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-xs font-semibold text-stone-700 hover:text-stone-900 transition-colors cursor-pointer disabled:opacity-50"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Retour Découvert</span>
+                  <span className="hidden sm:inline">Retour</span>
                 </button>
 
                 <button
@@ -582,7 +582,7 @@ export function MirrorReviewDrawer({
                   className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-sm cursor-pointer disabled:opacity-50"
                 >
                   {loadingAction ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                  <span>Valider & Marquer Prêt (READY)</span>
+                  <span>Valider mon dossier</span>
                 </button>
               </>
             )}
@@ -637,7 +637,7 @@ export function MirrorReviewDrawer({
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs font-semibold">
                   <CheckCircle2 className="w-4 h-4 text-emerald-700" />
-                  <span>Dossier soumis & consigné</span>
+                  <span>Candidature transmise</span>
                 </div>
                 {job.url && (
                   <a
