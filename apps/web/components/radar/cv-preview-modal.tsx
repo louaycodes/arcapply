@@ -71,7 +71,7 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-5xl h-[92vh] rounded-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-150"
+        className="w-full max-w-6xl h-[96vh] rounded-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -124,6 +124,15 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
                 🇬🇧 EN
               </button>
             </div>
+
+            <a
+              href="/cv"
+              className="px-3 py-2 rounded-lg border border-border/80 bg-muted/40 hover:bg-muted text-foreground text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm"
+              title="Ouvrir dans le Studio CV pour modifier le texte directement"
+            >
+              <FileText className="w-3.5 h-3.5 text-primary" />
+              <span className="hidden sm:inline">Modifier dans Studio CV</span>
+            </a>
 
             <a
               href={pdfUrl}
@@ -219,7 +228,7 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
               </button>
             </div>
           ) : activeTab === "preview" ? (
-            <div className="w-full max-w-[800px] bg-white rounded-lg shadow-2xl border border-border/80 overflow-hidden flex flex-col h-[74vh]">
+            <div className="w-full max-w-[950px] bg-white rounded-lg shadow-2xl border border-border/80 overflow-hidden flex flex-col h-[83vh]">
               <iframe
                 src={previewUrl}
                 title="Aperçu CV A4"

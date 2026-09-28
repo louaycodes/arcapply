@@ -318,7 +318,10 @@ def get_cv_from_profile(
 def save_cv_draft(data: CustomCVData, session: Session = Depends(get_session)):
     """Sauvegarde le brouillon du CV dans SQLite."""
     draft = session.get(CustomCVDraft, "default-draft")
-    html_content = render_custom_cv_html(data)
+    if data.html_content and data.html_content.strip():
+        html_content = data.html_content
+    else:
+        html_content = render_custom_cv_html(data)
     data_json = json.dumps(data.model_dump(), default=str)
     if not draft:
         draft = CustomCVDraft(

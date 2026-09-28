@@ -469,6 +469,7 @@ export interface CustomCVData {
   margin_bottom_mm: number;
   margin_left_mm: number;
   margin_right_mm: number;
+  html_content?: string;
 }
 
 export async function uploadCVFile(

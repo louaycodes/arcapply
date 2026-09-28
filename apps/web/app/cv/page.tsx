@@ -27,6 +27,7 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize2,
+  Minimize2,
   Eye,
   Sliders,
   CheckCircle2,
@@ -51,7 +52,9 @@ export default function StudioCVPage() {
   const [isCompiling, setIsCompiling] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [isUploading, setIsUploading] = useState<boolean>(false);
-  const [zoomScale, setZoomScale] = useState<number>(0.92);
+  const [zoomScale, setZoomScale] = useState<number>(1.0);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const [iframeHeightPx, setIframeHeightPx] = useState<number>(1123);
   const [showHelperDrawer, setShowHelperDrawer] = useState<boolean>(false);
   const [fontSizePt, setFontSizePt] = useState<number>(9.0);
   const [lineHeight, setLineHeight] = useState<number>(1.35);
@@ -64,12 +67,56 @@ export default function StudioCVPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
   const currentHtmlRef = useRef<string>("");
 
   const showNotification = (type: "success" | "error" | "info", message: string) => {
     setNotification({ type, message });
     setTimeout(() => setNotification(null), 5000);
   };
+
+  // Exit fullscreen on Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isFullscreen]);
+
+  // Dynamic iframe height adjustment (no nested scrollbars, full continuous document)
+  const updateIframeHeight = useCallback(() => {
+    if (!iframeRef.current) return;
+    const doc = iframeRef.current.contentDocument;
+    if (!doc || !doc.body) return;
+
+    requestAnimationFrame(() => {
+      try {
+        const bodyHeight = doc.body.scrollHeight;
+        const docHeight = doc.documentElement.scrollHeight;
+        const naturalHeight = Math.max(bodyHeight, docHeight, 1123);
+        const finalHeight = naturalHeight + 25;
+        if (iframeRef.current) {
+          iframeRef.current.style.height = `${finalHeight}px`;
+        }
+        setIframeHeightPx(finalHeight);
+      } catch (err) {
+        // Safe fallback
+      }
+    });
+  }, []);
+
+  // Fit to screen width for maximum visual clarity
+  const fitWidth = useCallback(() => {
+    if (!canvasContainerRef.current) return;
+    const containerWidth = canvasContainerRef.current.clientWidth;
+    // A4 width: 210mm ≈ 794px + 64px comfortable margins
+    const targetZoom = Math.min(1.5, Math.max(0.7, (containerWidth - 64) / 794));
+    setZoomScale(Number(targetZoom.toFixed(2)));
+    showNotification("info", `Zoom ajusté à la largeur de votre écran (${Math.round(targetZoom * 100)}%).`);
+  }, []);
 
   // 1. Initial Load: Check for draft or load from Master Profile
   const loadInitialData = async () => {
@@ -117,6 +164,7 @@ export default function StudioCVPage() {
     doc.body.spellcheck = false;
 
     // Inject editor visual styles (hover dashed outline, focus ring, visual page break line)
+    // AND enforce strict font and style inheritance for any edited or pasted content
     const existingStyle = doc.getElementById("cv-studio-editor-styles");
     if (!existingStyle) {
       const styleEl = doc.createElement("style");
@@ -125,6 +173,16 @@ export default function StudioCVPage() {
         body {
           outline: none !important;
           cursor: text;
+        }
+        /* Enforce uniform typography: pasted or edited text inherits CV font & colors */
+        body * {
+          font-family: inherit !important;
+        }
+        span:not([class]), font {
+          color: inherit !important;
+          font-size: inherit !important;
+          background: transparent !important;
+          background-color: transparent !important;
         }
         .item, .section, header, p, .skill-row {
           position: relative;
@@ -171,24 +229,81 @@ export default function StudioCVPage() {
       doc.head.appendChild(styleEl);
     }
 
+    // Helper to strip foreign inline styles (color, font-family, font-size, background)
+    const stripForeignStyles = (root: Element) => {
+      const styledElements = root.querySelectorAll("[style]");
+      styledElements.forEach((el) => {
+        const htmlEl = el as HTMLElement;
+        if (htmlEl.classList.contains("cv-editor-page-break")) return;
+        htmlEl.style.removeProperty("font-family");
+        htmlEl.style.removeProperty("font-size");
+        htmlEl.style.removeProperty("color");
+        htmlEl.style.removeProperty("background");
+        htmlEl.style.removeProperty("background-color");
+        htmlEl.style.removeProperty("line-height");
+        if (!htmlEl.getAttribute("style")?.trim()) {
+          htmlEl.removeAttribute("style");
+        }
+      });
+    };
+
     // Attach input & keyup listeners to capture direct in-place edits
     const handleInput = () => {
       setHasUnsavedEdits(true);
       if (iframeRef.current?.contentDocument) {
         currentHtmlRef.current = iframeRef.current.contentDocument.documentElement.outerHTML;
       }
+      updateIframeHeight();
+    };
+
+    // Intercept clipboard paste to guarantee 100% style inheritance
+    const handlePaste = (e: ClipboardEvent) => {
+      e.preventDefault();
+      // Extract clean plain text from clipboard
+      const text = e.clipboardData?.getData("text/plain") || "";
+      if (!text) return;
+
+      const cleanText = text.replace(/\r\n/g, "\n");
+
+      // Insert plain text using execCommand to preserve browser Undo/Redo stack (Cmd+Z / Ctrl+Z)
+      const success = doc.execCommand("insertText", false, cleanText);
+
+      // Fallback if execCommand was not supported
+      if (!success && doc.defaultView) {
+        const sel = doc.defaultView.getSelection();
+        if (sel && sel.rangeCount > 0) {
+          const range = sel.getRangeAt(0);
+          range.deleteContents();
+          
+          const lines = cleanText.split("\n");
+          const fragment = doc.createDocumentFragment();
+          lines.forEach((line, idx) => {
+            if (idx > 0) fragment.appendChild(doc.createElement("br"));
+            if (line) fragment.appendChild(doc.createTextNode(line));
+          });
+          range.insertNode(fragment);
+          sel.collapseToEnd();
+        }
+      }
+
+      // Strip any accidental inline style attributes in the current block
+      stripForeignStyles(doc.body);
+
+      handleInput();
     };
 
     doc.addEventListener("input", handleInput);
     doc.addEventListener("keyup", handleInput);
-    doc.addEventListener("paste", handleInput);
+    doc.addEventListener("paste", handlePaste);
+
+    updateIframeHeight();
 
     return () => {
       doc.removeEventListener("input", handleInput);
       doc.removeEventListener("keyup", handleInput);
-      doc.removeEventListener("paste", handleInput);
+      doc.removeEventListener("paste", handlePaste);
     };
-  }, []);
+  }, [updateIframeHeight]);
 
   // 3. Clean HTML extractor for 100% Identical Vector PDF Compilation
   const getCleanHtmlForPdf = (): string => {
@@ -209,6 +324,19 @@ export default function StudioCVPage() {
       body.removeAttribute("spellcheck");
       body.removeAttribute("style");
     }
+
+    // Strip any rogue inline foreign styles from pasted content
+    docClone.querySelectorAll("[style]").forEach((el) => {
+      const htmlEl = el as HTMLElement;
+      htmlEl.style.removeProperty("font-family");
+      htmlEl.style.removeProperty("font-size");
+      htmlEl.style.removeProperty("color");
+      htmlEl.style.removeProperty("background");
+      htmlEl.style.removeProperty("background-color");
+      if (!htmlEl.getAttribute("style")?.trim()) {
+        htmlEl.removeAttribute("style");
+      }
+    });
 
     // Remove editor helper CSS
     const editorStyles = docClone.querySelector("#cv-studio-editor-styles");
@@ -390,6 +518,7 @@ export default function StudioCVPage() {
     doc.body.style.fontSize = `${newSize}pt`;
     setHasUnsavedEdits(true);
     currentHtmlRef.current = doc.documentElement.outerHTML;
+    updateIframeHeight();
   };
 
   const handleLineHeightChange = (newLineHeight: number) => {
@@ -399,6 +528,7 @@ export default function StudioCVPage() {
     doc.body.style.lineHeight = `${newLineHeight}`;
     setHasUnsavedEdits(true);
     currentHtmlRef.current = doc.documentElement.outerHTML;
+    updateIframeHeight();
   };
 
   const handleMarginChange = (newMargin: number) => {
@@ -414,6 +544,7 @@ export default function StudioCVPage() {
     }
     setHasUnsavedEdits(true);
     currentHtmlRef.current = doc.documentElement.outerHTML;
+    updateIframeHeight();
   };
 
   // 8. File Upload (PDF, TXT, JSON)
@@ -483,6 +614,7 @@ export default function StudioCVPage() {
       const currentHtml = getCleanHtmlForPdf();
       await saveCVDraft({
         ...cvData,
+        html_content: currentHtml,
         font_size_pt: fontSizePt,
         line_height: lineHeight,
         margin_top_mm: marginMm,
@@ -528,7 +660,13 @@ export default function StudioCVPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-2rem)] min-w-0 overflow-hidden bg-[#0A0D14]">
+    <div
+      className={`flex flex-col min-w-0 transition-all ${
+        isFullscreen
+          ? "fixed inset-0 z-50 w-screen h-screen bg-[#080B11]"
+          : "h-full min-h-screen bg-[#0A0D14]"
+      }`}
+    >
       {/* Hidden file upload input */}
       <input
         ref={fileInputRef}
@@ -566,6 +704,21 @@ export default function StudioCVPage() {
 
         {/* Global Toolbar Buttons */}
         <div className="flex items-center flex-wrap gap-2">
+          {/* Fullscreen Toggle */}
+          <button
+            type="button"
+            onClick={() => setIsFullscreen((prev) => !prev)}
+            className={`px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm ${
+              isFullscreen
+                ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20"
+                : "border-border/80 bg-muted/40 hover:bg-muted text-foreground"
+            }`}
+            title={isFullscreen ? "Quitter le mode plein écran (Échap)" : "Agrandir en plein écran pour un visuel maximal"}
+          >
+            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+            <span className="hidden sm:inline">{isFullscreen ? "Fenêtre normale" : "Plein Écran"}</span>
+          </button>
+
           {/* Upload Button */}
           <button
             type="button"
@@ -781,18 +934,18 @@ export default function StudioCVPage() {
           <div className="flex items-center gap-1">
             <button
               type="button"
-              onClick={() => setZoomScale((z) => Math.max(0.6, z - 0.1))}
+              onClick={() => setZoomScale((z) => Math.max(0.6, Number((z - 0.1).toFixed(2))))}
               className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
               title="Zoom -"
             >
               <ZoomOut className="w-3.5 h-3.5" />
             </button>
-            <span className="font-mono text-[11px] text-muted-foreground w-9 text-center">
+            <span className="font-mono text-[11px] text-muted-foreground w-10 text-center font-bold">
               {Math.round(zoomScale * 100)}%
             </span>
             <button
               type="button"
-              onClick={() => setZoomScale((z) => Math.min(1.4, z + 0.1))}
+              onClick={() => setZoomScale((z) => Math.min(1.6, Number((z + 0.1).toFixed(2))))}
               className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
               title="Zoom +"
             >
@@ -800,33 +953,50 @@ export default function StudioCVPage() {
             </button>
             <button
               type="button"
-              onClick={() => setZoomScale(0.92)}
-              className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-border/60 hover:bg-muted text-muted-foreground hover:text-foreground ml-0.5"
+              onClick={() => setZoomScale(1.0)}
+              className={`text-[10px] font-mono px-2 py-0.5 rounded border transition-colors ${
+                zoomScale === 1.0
+                  ? "bg-primary/20 text-primary border-primary/40 font-bold"
+                  : "border-border/60 hover:bg-muted text-muted-foreground hover:text-foreground"
+              }`}
+              title="Taille réelle A4 (100%)"
             >
-              A4
+              100%
+            </button>
+            <button
+              type="button"
+              onClick={fitWidth}
+              className="text-[10px] font-mono px-2 py-0.5 rounded border border-border/60 hover:bg-primary/15 hover:text-primary hover:border-primary/30 text-muted-foreground transition-colors"
+              title="Ajuster à la largeur de votre écran pour un visuel agrandi et clair"
+            >
+              Ajuster Largeur
             </button>
           </div>
         </div>
       </div>
 
       {/* Main Full-Focus Visual Canvas (Desk / Page Environment) */}
-      <div className="flex-1 overflow-auto p-4 sm:p-8 flex justify-center items-start bg-[#080B11] relative select-none">
+      <div
+        ref={canvasContainerRef}
+        className="flex-1 overflow-auto p-2 sm:p-6 md:p-8 flex justify-center items-start bg-[#080B11] relative select-none"
+      >
         {/* Floating Instruction Pill */}
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
           <div className="px-3 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary-foreground/90 text-[11px] font-medium backdrop-blur-md shadow-lg flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Mode Éditeur Visuel Actif : Cliquez n'importe où sur la page pour modifier le texte</span>
+            <span>Mode Éditeur Visuel Actif : Cliquez pour éditer &bull; Le texte collé adopte fidèlement le style du CV</span>
           </div>
         </div>
 
-        {/* Real A4 Paper Sheet (210mm x 297mm) */}
+        {/* Real A4 Paper Sheet (210mm x dynamic height for 1 or 2 pages) */}
         <div
           style={{
             transform: `scale(${zoomScale})`,
             transformOrigin: "top center",
             transition: "transform 0.15s ease-out",
+            height: `${iframeHeightPx}px`,
           }}
-          className="w-[210mm] min-h-[297mm] bg-white text-black shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] rounded-sm border border-neutral-300 overflow-hidden shrink-0 flex flex-col relative select-text"
+          className="w-[210mm] bg-white text-black shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] rounded-sm border border-neutral-300 overflow-hidden shrink-0 flex flex-col relative select-text"
         >
           <iframe
             ref={iframeRef}
@@ -835,8 +1005,8 @@ export default function StudioCVPage() {
             title="Éditeur de CV Direct A4"
             className="w-full flex-1 border-0 bg-white"
             style={{
-              minHeight: "297mm",
-              height: "100%",
+              height: `${iframeHeightPx}px`,
+              minHeight: "1123px",
             }}
           />
         </div>

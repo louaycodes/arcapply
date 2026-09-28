@@ -519,6 +519,7 @@ class CustomCVData(SQLModel):
     margin_bottom_mm: float = 8.0
     margin_left_mm: float = 12.0
     margin_right_mm: float = 12.0
+    html_content: Optional[str] = None
 
 
 class CompilePDFRequest(SQLModel):
