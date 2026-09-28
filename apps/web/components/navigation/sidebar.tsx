@@ -15,6 +15,8 @@ import {
 import { useEffect, useState } from "react";
 import { checkEngineHealth } from "@/lib/api";
 
+import { LiquidGlassBadge } from "@/components/ui/liquid-glass";
+
 const navigationItems = [
   { name: "Tableau de bord", href: "/", icon: LayoutDashboard, shortcut: "g d" },
   { name: "Offres d'emploi", href: "/radar", icon: Radar, shortcut: "g r" },
@@ -51,11 +53,11 @@ export function Sidebar() {
             <ShieldCheck className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-lg font-bold tracking-tight text-foreground font-display flex items-center gap-1.5">
+            <h1 className="text-lg font-bold tracking-tight text-foreground font-display flex items-center gap-2">
               ArcApply
-              <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-800 border border-orange-200">
+              <LiquidGlassBadge className="text-[10px] px-2 py-0.5 font-mono text-orange-950 font-bold">
                 PFE 2027
-              </span>
+              </LiquidGlassBadge>
             </h1>
             <p className="text-xs text-muted-foreground font-medium">Assistant Candidatures</p>
           </div>
