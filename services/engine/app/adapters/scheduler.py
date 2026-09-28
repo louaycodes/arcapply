@@ -101,6 +101,7 @@ class CrawlerScheduler:
         locations: list[str] | None = None,
         platforms: list[str] | None = None,
         session: Session | None = None,
+        user_id: str = "louay",
     ) -> dict[str, Any]:
         """
         Déclenche l'ingestion sur l'ensemble ou une sélection de plateformes.
@@ -110,6 +111,7 @@ class CrawlerScheduler:
 
         cls._is_running = True
         cls._last_crawl_time = utc_now()
+        target_user = (user_id or "louay").strip().lower()
 
         target_platforms = platforms if platforms else list(ALL_CONNECTORS.keys())
         search_kw = keywords if keywords else ["PFE", "Stage Ingénieur"]
@@ -151,11 +153,12 @@ class CrawlerScheduler:
                     ext_id = j.get("external_id")
                     plat = j.get("platform", platform)
 
-                    # Déduplication stricte (platform, external_id)
+                    # Déduplication stricte (platform, external_id, user_id)
                     existing = sess.exec(
                         select(JobOffer).where(
                             JobOffer.platform == plat,
                             JobOffer.external_id == ext_id,
+                            JobOffer.user_id == target_user,
                         )
                     ).first()
 
@@ -190,6 +193,7 @@ class CrawlerScheduler:
                         department=enriched.get("department", ""),
                         is_direct_career_site=enriched.get("is_direct_career_site", False),
                         apply_url=enriched.get("apply_url", ""),
+                        user_id=target_user,
                     )
                     sess.add(new_job)
                     sess.commit()
@@ -197,6 +201,7 @@ class CrawlerScheduler:
 
                     total_new += 1
                     platform_new += 1
+
 
                     # Émission instantanée SSE pour le radar
                     await broadcast_event(

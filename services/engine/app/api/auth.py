@@ -62,3 +62,26 @@ def get_available_users(session: Session = Depends(get_session)):
         {"username": u.username, "full_name": u.full_name, "role": u.role}
         for u in users
     ]
+
+
+def get_current_username(
+    authorization: Optional[str] = Header(None),
+    x_username: Optional[str] = Header(None, alias="X-Username"),
+    session: Session = Depends(get_session),
+) -> str:
+    """Détermine l'utilisateur actif (Louay ou Chaima).
+    Par défaut, retombe sur 'louay' pour préserver la rétrocompatibilité des tests existants.
+    """
+    if x_username and x_username.strip():
+        return x_username.strip().lower()
+
+    if authorization:
+        token = authorization.replace("Bearer ", "").strip()
+        if token.startswith("arcapply-token-"):
+            user_id = token.replace("arcapply-token-", "")
+            user = session.exec(select(User).where(User.id == user_id)).first()
+            if user:
+                return user.username.lower()
+
+    return "louay"
+

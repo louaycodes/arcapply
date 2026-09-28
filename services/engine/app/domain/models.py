@@ -144,6 +144,7 @@ class MasterProfileBase(SQLModel):
     search_mode: str = Field(default="PFE", index=True)
     languages_raw: str = Field(default="[]")
     extracurriculars_raw: str = Field(default="[]")
+    user_id: str = Field(default="louay", index=True)
 
 
 class MasterProfile(MasterProfileBase, table=True):
@@ -293,6 +294,7 @@ class JobOfferBase(SQLModel):
     department: str = Field(default="")
     is_direct_career_site: bool = Field(default=False, index=True)
     apply_url: str = Field(default="")
+    user_id: str = Field(default="louay", index=True)
 
 
 class JobOffer(JobOfferBase, table=True):
@@ -353,6 +355,7 @@ class TargetedCVBase(SQLModel):
     educations_raw: str = Field(default="[]")
     html_content: str = Field(default="")
     language: str = Field(default="fr", index=True)
+    user_id: str = Field(default="louay", index=True)
 
 
 class TargetedCV(TargetedCVBase, table=True):
@@ -430,6 +433,7 @@ class CoverLetterBase(SQLModel):
     content_markdown: str = Field(default="")
     cliche_score: int = Field(default=0)
     banned_phrases_detected_raw: str = Field(default="[]")
+    user_id: str = Field(default="louay", index=True)
 
 
 class CoverLetter(CoverLetterBase, table=True):

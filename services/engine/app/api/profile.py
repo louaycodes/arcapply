@@ -14,18 +14,45 @@ from app.domain.models import (
     utc_now,
 )
 from app.domain.validation import evaluate_profile_completeness
+from app.api.auth import get_current_username
 
 router = APIRouter(prefix="/api/profile", tags=["Master Profile"])
 
 
-def _get_or_create_profile(session: Session) -> MasterProfile:
+def _get_or_create_profile(session: Session, username: str = "louay") -> MasterProfile:
+    uname = (username or "louay").strip().lower()
+    if uname == "louay":
+        profile = session.exec(
+            select(MasterProfile).where(
+                (MasterProfile.user_id == "louay") | (MasterProfile.id == "default-profile")
+            )
+        ).first()
+        if not profile:
+            profile = MasterProfile(
+                id="default-profile",
+                user_id="louay",
+                full_name="Louay",
+                email="",
+                is_complete=False,
+            )
+            session.add(profile)
+            session.commit()
+            session.refresh(profile)
+        elif profile.user_id != "louay":
+            profile.user_id = "louay"
+            session.add(profile)
+            session.commit()
+            session.refresh(profile)
+        return profile
+
     profile = session.exec(
-        select(MasterProfile).where(MasterProfile.id == "default-profile")
+        select(MasterProfile).where(MasterProfile.user_id == uname)
     ).first()
     if not profile:
         profile = MasterProfile(
-            id="default-profile",
-            full_name="",
+            id=f"profile-{uname}",
+            user_id=uname,
+            full_name=uname.capitalize(),
             email="",
             is_complete=False,
         )
@@ -36,19 +63,24 @@ def _get_or_create_profile(session: Session) -> MasterProfile:
 
 
 @router.get("", response_model=MasterProfileRead)
-def get_profile(session: Session = Depends(get_session)):
+def get_profile(
+    username: str = Depends(get_current_username),
+    session: Session = Depends(get_session),
+):
     """Récupère le Master Profile avec l'ensemble de ses formations, expériences et compétences."""
-    profile = _get_or_create_profile(session)
+    profile = _get_or_create_profile(session, username)
     return profile
 
 
 @router.put("", response_model=MasterProfileRead)
 def update_profile(
     data: MasterProfileUpdate,
+    username: str = Depends(get_current_username),
     session: Session = Depends(get_session),
 ):
     """Met à jour le Master Profile et recalcule son statut de complétude (CAP-1)."""
-    profile = _get_or_create_profile(session)
+    profile = _get_or_create_profile(session, username)
+
 
     # Mise à jour des champs scalaires
     update_dict = data.model_dump(exclude_unset=True)
@@ -158,16 +190,23 @@ def update_profile(
 
 
 @router.get("/status", response_model=ProfileCompletenessStatus)
-def get_profile_status(session: Session = Depends(get_session)):
+def get_profile_status(
+    username: str = Depends(get_current_username),
+    session: Session = Depends(get_session),
+):
     """Retourne l'état de complétude du Master Profile et les champs requis manquants."""
-    profile = _get_or_create_profile(session)
+    profile = _get_or_create_profile(session, username)
     return evaluate_profile_completeness(profile)
 
 
 @router.post("/can-generate")
-def verify_generation_eligibility(session: Session = Depends(get_session)):
+def verify_generation_eligibility(
+    username: str = Depends(get_current_username),
+    session: Session = Depends(get_session),
+):
     """Garde-fou strict CAP-1 : bloque toute génération si le Master Profile est incomplet."""
-    profile = _get_or_create_profile(session)
+    profile = _get_or_create_profile(session, username)
+
     status_result = evaluate_profile_completeness(profile)
 
     if not status_result.can_generate:

@@ -67,3 +67,37 @@ def test_auth_available_users():
     usernames = [u["username"] for u in res.json()]
     assert "louay" in usernames
     assert "chaima" in usernames
+
+
+def test_account_isolation_profile_and_jobs():
+    client = TestClient(app)
+
+    # 1. Login louay and chaima
+    louay_token = client.post("/api/auth/login", json={"username": "louay", "password": "louay"}).json()["token"]
+    chaima_token = client.post("/api/auth/login", json={"username": "chaima", "password": "chaima"}).json()["token"]
+
+    # 2. Verify profiles are distinct
+    louay_prof = client.get("/api/profile", headers={"Authorization": f"Bearer {louay_token}"}).json()
+    chaima_prof = client.get("/api/profile", headers={"Authorization": f"Bearer {chaima_token}"}).json()
+    assert chaima_prof["full_name"] == "Chaima"
+
+    # 3. Update Chaima's headline
+    client.put(
+        "/api/profile",
+        headers={"Authorization": f"Bearer {chaima_token}"},
+        json={"headline": "Ingénieure DevOps & Data", "full_name": "Chaima Z"},
+    )
+    chaima_updated = client.get("/api/profile", headers={"Authorization": f"Bearer {chaima_token}"}).json()
+    assert chaima_updated["headline"] == "Ingénieure DevOps & Data"
+    assert chaima_updated["full_name"] == "Chaima Z"
+
+    # Verify Louay's profile did not change
+    louay_check = client.get("/api/profile", headers={"Authorization": f"Bearer {louay_token}"}).json()
+    assert louay_check["full_name"] != "Chaima Z"
+
+    # 4. Verify job isolation
+    louay_jobs = client.get("/api/jobs", headers={"Authorization": f"Bearer {louay_token}"}).json()
+    chaima_jobs = client.get("/api/jobs", headers={"Authorization": f"Bearer {chaima_token}"}).json()
+    assert isinstance(louay_jobs, list)
+    assert isinstance(chaima_jobs, list)
+

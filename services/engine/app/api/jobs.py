@@ -21,6 +21,7 @@ from app.domain.models import (
     utc_now,
 )
 from app.ports.connectors import BaseJobConnector
+from app.api.auth import get_current_username
 
 class JobTransitionRequest(SQLModel):
     new_status: str
@@ -58,16 +59,11 @@ def list_jobs(
     direct_only: bool = Query(False, description="Uniquement sites carrières directs des entreprises"),
     search: Optional[str] = Query(None, description="Recherche textuelle dans le titre ou l'entreprise"),
     include_archived: bool = Query(False, description="Inclure les offres archivées"),
+    username: str = Depends(get_current_username),
     session: Session = Depends(get_session),
 ):
-    """Liste les offres du Radar, filtrées automatiquement selon le search_mode du profil.
-
-    Le type d'offre actif est déterminé dans cet ordre de priorité :
-    1. Le query param ``offer_type`` (surcharge explicite, pour les tests).
-    2. Le champ ``search_mode`` du profil ``default-profile`` (source de vérité).
-    3. ``"PFE"`` comme valeur de repli si le profil est absent.
-    """
-    query = select(JobOffer)
+    """Liste les offres du Radar, filtrées pour l'utilisateur courant selon le search_mode du profil."""
+    query = select(JobOffer).where(JobOffer.user_id == username)
 
     if not include_archived:
         query = query.where(JobOffer.status != "ARCHIVED")
@@ -95,11 +91,16 @@ def list_jobs(
             )
         query = query.where(JobOffer.offer_type == resolved_type)
     else:
-        # Lecture automatique du search_mode du profil
-        profile = session.get(MasterProfile, "default-profile")
+        # Lecture automatique du search_mode du profil de l'utilisateur
+        profile = session.exec(
+            select(MasterProfile).where(
+                (MasterProfile.user_id == username) | (MasterProfile.id == "default-profile")
+            )
+        ).first()
         active_mode = profile.search_mode if profile else "PFE"
         query = query.where(JobOffer.offer_type == active_mode)
     # -------------------------------------------------------
+
 
     # --- Filtrage direct carrière & temporel ---
     if direct_only:
@@ -163,7 +164,11 @@ async def clear_all_jobs(session: Session = Depends(get_session)):
 
 
 @router.get("/metrics", response_model=PipelineMetrics)
-def get_pipeline_metrics(session: Session = Depends(get_session)):
+def get_pipeline_metrics(
+    username: str = Depends(get_current_username),
+    session: Session = Depends(get_session),
+):
+
     """
     Calcule les métriques en temps réel du pipeline Kanban :
     - Répartition par statut
@@ -173,7 +178,7 @@ def get_pipeline_metrics(session: Session = Depends(get_session)):
     - Taux de réponse global
     - Candidatures soumises depuis plus de 7 jours nécessitant une relance
     """
-    all_jobs = session.exec(select(JobOffer)).all()
+    all_jobs = session.exec(select(JobOffer).where(JobOffer.user_id == username)).all()
     total = len(all_jobs)
 
     counts: dict[str, int] = {
@@ -246,9 +251,10 @@ def get_sources_status():
 @router.post("/crawl-all")
 async def trigger_full_crawl(
     payload: Optional[JobCollectRequest] = None,
+    username: str = Depends(get_current_username),
     session: Session = Depends(get_session),
 ):
-    """Déclenche l'ingestion multi-sources en temps réel avec diffusion SSE."""
+    """Déclenche l'ingestion multi-sources en temps réel avec diffusion SSE pour l'utilisateur."""
     kw = payload.keywords if payload else None
     loc = payload.locations if payload else None
     plat = payload.platforms if payload else None
@@ -257,7 +263,9 @@ async def trigger_full_crawl(
         locations=loc,
         platforms=plat,
         session=session,
+        user_id=username,
     )
+
     return summary
 
 
@@ -346,6 +354,7 @@ async def transition_job_status(
 @router.post("/collect", response_model=JobCollectSummary)
 async def trigger_collection(
     request: JobCollectRequest,
+    username: str = Depends(get_current_username),
     session: Session = Depends(get_session),
 ):
     """
@@ -383,11 +392,12 @@ async def trigger_collection(
 
         for raw in raw_jobs:
             total_collected += 1
-            # Vérification de déduplication stricte sur (platform, external_id)
+            # Vérification de déduplication stricte sur (platform, external_id, user_id)
             existing = session.exec(
                 select(JobOffer).where(
                     JobOffer.platform == raw["platform"],
                     JobOffer.external_id == raw["external_id"],
+                    JobOffer.user_id == username,
                 )
             ).first()
 
@@ -413,6 +423,7 @@ async def trigger_collection(
                 url=raw.get("url", ""),
                 status="DISCOVERED",
                 offer_type=inferred_type,
+                user_id=username,
             )
             session.add(new_job)
             session.commit()
@@ -457,3 +468,18 @@ async def trigger_collection(
         platforms=active_platforms,
         message=summary_msg,
     )
+
+
+@router.delete("/wipe")
+def wipe_user_jobs(
+    username: str = Depends(get_current_username),
+    session: Session = Depends(get_session),
+):
+    """Supprime toutes les offres d'emploi associées à l'utilisateur courant."""
+    jobs = session.exec(select(JobOffer).where(JobOffer.user_id == username)).all()
+    count = len(jobs)
+    for j in jobs:
+        session.delete(j)
+    session.commit()
+    return {"status": "ok", "deleted_count": count, "user": username}
+

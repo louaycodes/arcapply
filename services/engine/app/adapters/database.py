@@ -91,6 +91,13 @@ def _migrate_db(engine) -> None:
         except Exception:
             pass
 
+        for tbl in ["master_profiles", "job_offers", "targeted_cvs", "cover_letters"]:
+            try:
+                conn.execute(text(f"ALTER TABLE {tbl} ADD COLUMN user_id VARCHAR DEFAULT 'louay'"))
+                conn.commit()
+            except Exception:
+                pass
+
         try:
             conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS users (
@@ -140,24 +147,40 @@ def init_db(engine=None) -> None:
     _migrate_db(engine)
     seed_initial_users(engine)
 
-    # Assurer la présence du MasterProfile par défaut
+    # Assurer la présence et l'affectation du profil existant à Louay
     with Session(engine) as session:
-        profile = session.exec(select(MasterProfile).where(MasterProfile.id == "default-profile")).first()
-        if not profile:
-            profile = MasterProfile(
+        louay_profile = session.exec(select(MasterProfile).where(MasterProfile.id == "default-profile")).first()
+        if not louay_profile:
+            louay_profile = MasterProfile(
                 id="default-profile",
-                full_name="",
+                user_id="louay",
+                full_name="Louay",
                 email="",
                 headline="",
                 is_complete=False,
             )
-            session.add(profile)
-            session.commit()
+            session.add(louay_profile)
+        else:
+            louay_profile.user_id = "louay"
+            session.add(louay_profile)
 
-
+        # Assurer la présence du profil dédié à Chaima
+        chaima_profile = session.exec(select(MasterProfile).where(MasterProfile.user_id == "chaima")).first()
+        if not chaima_profile:
+            chaima_profile = MasterProfile(
+                id="profile-chaima",
+                user_id="chaima",
+                full_name="Chaima",
+                email="",
+                headline="Élève Ingénieur",
+                is_complete=False,
+            )
+            session.add(chaima_profile)
+        session.commit()
 
 
 def get_session() -> Generator[Session, None, None]:
     engine = get_engine()
     with Session(engine) as session:
         yield session
+
