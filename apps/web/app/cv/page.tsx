@@ -700,8 +700,8 @@ export default function StudioCVPage() {
     <div
       className={`flex flex-col min-w-0 transition-all ${
         isFullscreen
-          ? "fixed inset-0 z-50 w-screen h-screen bg-[#080B11]"
-          : "h-full min-h-screen bg-[#0A0D14]"
+          ? "fixed inset-0 z-50 w-screen h-screen bg-[#F0EBE1]"
+          : "h-full min-h-screen bg-[#F7F2EB]"
       }`}
     >
       {/* Hidden file upload input */}
@@ -714,26 +714,26 @@ export default function StudioCVPage() {
       />
 
       {/* Top Cockpit Header: Identity & Global Actions */}
-      <header className="px-5 py-2.5 border-b border-border/80 bg-[#0F1422]/90 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-sm z-20">
+      <header className="px-5 py-2.5 border-b border-border bg-white/95 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-sm z-20">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary shadow-sm">
+          <div className="w-9 h-9 rounded-xl bg-orange-100 border border-orange-200 flex items-center justify-center text-primary shadow-sm">
             <FileText className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-sm sm:text-base font-bold text-foreground tracking-tight flex items-center gap-2">
+              <h1 className="text-sm sm:text-base font-bold text-stone-900 tracking-tight font-display flex items-center gap-2">
                 Éditeur Visuel de CV
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold">
                   WYSIWYG Direct
                 </span>
               </h1>
               {hasUnsavedEdits && (
-                <span className="text-[10px] text-amber-400 font-mono bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                <span className="text-[10px] text-amber-900 font-mono bg-amber-50 px-1.5 py-0.5 rounded border border-amber-300 font-semibold">
                   Modifications non enregistrées
                 </span>
               )}
             </div>
-            <p className="text-[11px] text-muted-foreground line-clamp-1">
+            <p className="text-[11px] text-stone-600 line-clamp-1">
               Cliquez directement sur n'importe quel texte du CV pour le modifier en temps réel.
             </p>
           </div>
@@ -844,7 +844,7 @@ export default function StudioCVPage() {
       )}
 
       {/* Floating Canvas Formatting Toolbar (Like Google Docs / Acrobat / Sejda) */}
-      <div className="px-5 py-2 border-b border-border/70 bg-[#121829] flex flex-wrap items-center justify-between gap-3 shrink-0 text-xs z-10 shadow-sm">
+      <div className="px-5 py-2 border-b border-border bg-[#FAF7F2] flex flex-wrap items-center justify-between gap-3 shrink-0 text-xs z-10 shadow-xs">
         {/* Left: Text Formatting Controls */}
         <div className="flex items-center flex-wrap gap-1">
           <span className="text-[11px] font-semibold text-muted-foreground mr-1 hidden sm:inline">Mise en forme :</span>
@@ -1024,12 +1024,12 @@ export default function StudioCVPage() {
       {/* Main Full-Focus Visual Canvas (Desk / Page Environment) */}
       <div
         ref={canvasContainerRef}
-        className="flex-1 overflow-auto p-2 sm:p-6 md:p-8 flex justify-center items-start bg-[#080B11] relative select-none"
+        className="flex-1 overflow-auto p-2 sm:p-6 md:p-8 flex justify-center items-start bg-[#EFE8DD] relative select-none"
       >
         {/* Floating Instruction Pill */}
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
-          <div className="px-3 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary-foreground/90 text-[11px] font-medium backdrop-blur-md shadow-lg flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <div className="px-3.5 py-1 rounded-full bg-white/95 border border-orange-200 text-stone-900 text-[11px] font-medium backdrop-blur-md shadow-md flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span>Mode Éditeur Visuel Actif : Cliquez pour éditer &bull; Le texte collé adopte fidèlement le style du CV</span>
           </div>
         </div>
@@ -1042,7 +1042,7 @@ export default function StudioCVPage() {
             transition: "transform 0.15s ease-out",
             height: `${iframeHeightPx}px`,
           }}
-          className="w-[210mm] bg-white text-black shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] rounded-sm border border-neutral-300 overflow-hidden shrink-0 flex flex-col relative select-text"
+          className="w-[210mm] bg-white text-black shadow-[0_20px_50px_-10px_rgba(44,28,16,0.18)] rounded-sm border border-stone-300 overflow-hidden shrink-0 flex flex-col relative select-text"
         >
           <iframe
             ref={iframeRef}

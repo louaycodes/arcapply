@@ -136,50 +136,50 @@ export default function KanbanPage() {
       id: "DISCOVERED",
       title: "Découvertes",
       icon: Radio,
-      colorClass: "text-blue-400",
-      badgeBg: "bg-blue-500/15 border border-blue-500/30",
+      colorClass: "text-blue-800",
+      badgeBg: "bg-blue-50 border border-blue-200",
     },
     {
       id: "REVIEWING",
       title: "En révision",
       icon: Eye,
-      colorClass: "text-amber-400",
-      badgeBg: "bg-amber-500/15 border border-amber-500/30",
+      colorClass: "text-amber-800",
+      badgeBg: "bg-amber-50 border border-amber-200",
     },
     {
       id: "READY",
       title: "Prêt pour envoi",
       icon: Sparkles,
-      colorClass: "text-emerald-400",
-      badgeBg: "bg-emerald-500/15 border border-emerald-500/30",
+      colorClass: "text-emerald-800",
+      badgeBg: "bg-emerald-50 border border-emerald-200",
     },
     {
       id: "SUBMITTED",
       title: "Postulé / Transmis",
       icon: Send,
-      colorClass: "text-purple-400",
-      badgeBg: "bg-purple-500/15 border border-purple-500/30",
+      colorClass: "text-purple-800",
+      badgeBg: "bg-purple-50 border border-purple-200",
     },
     {
       id: "INTERVIEW",
       title: "Entretiens",
       icon: CalendarCheck,
-      colorClass: "text-sky-400",
-      badgeBg: "bg-sky-500/15 border border-sky-500/30",
+      colorClass: "text-sky-800",
+      badgeBg: "bg-sky-50 border border-sky-200",
     },
     {
       id: "OFFER",
       title: "Offres obtenues",
       icon: Trophy,
-      colorClass: "text-green-400",
-      badgeBg: "bg-green-500/20 border border-green-500/40",
+      colorClass: "text-emerald-800",
+      badgeBg: "bg-emerald-50 border border-emerald-200",
     },
     {
       id: "REJECTED",
       title: "Classé / Refus",
       icon: XCircle,
-      colorClass: "text-rose-400",
-      badgeBg: "bg-rose-500/15 border border-rose-500/30",
+      colorClass: "text-stone-700",
+      badgeBg: "bg-stone-100 border border-stone-200",
     },
   ];
 
@@ -280,94 +280,94 @@ export default function KanbanPage() {
       {/* Analytics KPI Widgets Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Metric 1: Candidatures Actives */}
-        <div className="p-4 rounded-xl border border-border/80 bg-card/80 shadow-sm flex items-center justify-between">
+        <div className="p-4 rounded-2xl border border-stone-200 bg-white shadow-artisan flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+            <span className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider font-mono">
               En cours actif
             </span>
-            <div className="text-2xl font-bold font-mono text-foreground mt-1">
+            <div className="text-2xl font-bold font-mono text-stone-900 mt-1">
               {metrics ? metrics.active_count : "--"}
             </div>
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-[10px] text-stone-500">
               {metrics ? `${metrics.submitted_total} soumises au total` : "Calcul..."}
             </span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400">
+          <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center text-primary shadow-xs">
             <Send className="w-5 h-5" />
           </div>
         </div>
 
         {/* Metric 2: Taux de conversion en entretien */}
-        <div className="p-4 rounded-xl border border-border/80 bg-card/80 shadow-sm flex items-center justify-between">
+        <div className="p-4 rounded-2xl border border-stone-200 bg-white shadow-artisan flex items-center justify-between">
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              <span className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider font-mono">
                 Taux d'entretien
               </span>
-              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
                 Cible &gt; 15%
               </span>
             </div>
-            <div className="text-2xl font-bold font-mono text-emerald-400 mt-1">
+            <div className="text-2xl font-bold font-mono text-emerald-700 mt-1">
               {metrics ? `${metrics.interview_rate_percent}%` : "--%"}
             </div>
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-[10px] text-stone-500">
               {metrics ? `${metrics.interview_count} entretiens décrochés` : "Calcul..."}
             </span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 shadow-xs">
             <TrendingUp className="w-5 h-5" />
           </div>
         </div>
 
         {/* Metric 3: Offres de stage reçues */}
-        <div className="p-4 rounded-xl border border-border/80 bg-card/80 shadow-sm flex items-center justify-between">
+        <div className="p-4 rounded-2xl border border-stone-200 bg-white shadow-artisan flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+            <span className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider font-mono">
               Offres reçues
             </span>
-            <div className="text-2xl font-bold font-mono text-green-400 mt-1">
+            <div className="text-2xl font-bold font-mono text-emerald-700 mt-1">
               {metrics ? metrics.offer_count : "--"}
             </div>
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-[10px] text-stone-500">
               Objectif stage PFE janvier 2027
             </span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-green-500/20 border border-green-500/40 flex items-center justify-center text-green-300">
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 shadow-xs">
             <Trophy className="w-5 h-5" />
           </div>
         </div>
 
         {/* Metric 4: Alertes de relance */}
         <div
-          className={`p-4 rounded-xl border shadow-sm flex items-center justify-between ${
+          className={`p-4 rounded-2xl border shadow-artisan flex items-center justify-between ${
             metrics && metrics.stale_relance_count > 0
-              ? "border-amber-500/40 bg-amber-500/10"
-              : "border-border/80 bg-card/80"
+              ? "border-amber-300 bg-amber-50/70"
+              : "border-stone-200 bg-white"
           }`}
         >
           <div>
-            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+            <span className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider font-mono">
               Relances à faire
             </span>
             <div
               className={`text-2xl font-bold font-mono mt-1 ${
                 metrics && metrics.stale_relance_count > 0
-                  ? "text-amber-400"
-                  : "text-foreground"
+                  ? "text-amber-800"
+                  : "text-stone-900"
               }`}
             >
               {metrics ? metrics.stale_relance_count : "--"}
             </div>
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-[10px] text-stone-500">
               Sans retour après 7 jours
             </span>
           </div>
           <div
             className={`w-10 h-10 rounded-xl flex items-center justify-center ${
               metrics && metrics.stale_relance_count > 0
-                ? "bg-amber-500/20 border border-amber-500/40 text-amber-400"
-                : "bg-muted border border-border text-muted-foreground"
+                ? "bg-amber-100 border border-amber-300 text-amber-800 shadow-xs"
+                : "bg-stone-100 border border-stone-200 text-stone-400"
             }`}
           >
             <Clock className="w-5 h-5" />

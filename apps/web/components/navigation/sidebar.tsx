@@ -43,47 +43,55 @@ export function Sidebar() {
   }, []);
 
   return (
-    <aside className="w-64 border-r border-border bg-[#0B0F19]/90 backdrop-blur-md flex flex-col justify-between p-4 min-h-screen">
+    <aside className="w-64 border-r border-border bg-[#F7F3EC] flex flex-col justify-between p-4 min-h-screen shrink-0">
       <div>
         {/* Brand / Logo */}
-        <div className="flex items-center gap-3 px-3 py-4 mb-6 border-b border-border/50">
-          <div className="w-9 h-9 rounded-lg bg-primary/20 border border-primary/40 flex items-center justify-center text-primary font-bold shadow-lg shadow-primary/10">
-            <ShieldCheck className="w-5 h-5 text-primary" />
+        <div className="flex items-center gap-3 px-3 py-4 mb-6 border-b border-border/80">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-orange-700 flex items-center justify-center text-white shadow-md shadow-orange-600/25 border border-orange-400/30">
+            <ShieldCheck className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-lg font-bold tracking-tight text-foreground flex items-center gap-1.5">
+            <h1 className="text-lg font-bold tracking-tight text-foreground font-display flex items-center gap-1.5">
               ArcApply
-              <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
+              <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-800 border border-orange-200">
                 PFE 2027
               </span>
             </h1>
-            <p className="text-xs text-muted-foreground">Copilote de Candidature</p>
+            <p className="text-xs text-muted-foreground font-medium">Atelier de Candidature</p>
           </div>
         </div>
 
         {/* Navigation Links */}
         <nav className="space-y-1.5">
           {navigationItems.map((item) => {
-            const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+            const isActive =
+              pathname === item.href ||
+              (item.href !== "/" && pathname.startsWith(item.href));
             const Icon = item.icon;
 
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center justify-between px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-150 ${
+                className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-all duration-150 ${
                   isActive
-                    ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20 font-semibold"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                    ? "bg-primary text-white shadow-sm shadow-orange-600/25 font-semibold"
+                    : "text-stone-600 hover:text-stone-900 hover:bg-[#EDE5DA] font-medium"
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <Icon className={`w-4 h-4 ${isActive ? "text-primary-foreground" : "text-muted-foreground"}`} />
+                  <Icon
+                    className={`w-4 h-4 ${
+                      isActive ? "text-white" : "text-stone-500"
+                    }`}
+                  />
                   <span>{item.name}</span>
                 </div>
                 <kbd
                   className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
-                    isActive ? "bg-primary-hover text-white" : "bg-muted text-muted-foreground border border-border/40"
+                    isActive
+                      ? "bg-orange-700/80 text-orange-100"
+                      : "bg-[#EAE1D4] text-stone-600 border border-[#DDD3C5]"
                   }`}
                 >
                   {item.shortcut}
@@ -95,32 +103,36 @@ export function Sidebar() {
       </div>
 
       {/* Engine Status & System Info */}
-      <div className="pt-4 border-t border-border/50">
-        <div className="px-3 py-2.5 rounded-lg bg-card border border-border/60 text-xs flex items-center justify-between">
+      <div className="pt-4 border-t border-border/80">
+        <div className="px-3 py-2.5 rounded-xl bg-white border border-border shadow-artisan text-xs flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Server className="w-4 h-4 text-muted-foreground" />
-            <span className="text-muted-foreground font-mono">Engine local</span>
+            <Server className="w-4 h-4 text-stone-500" />
+            <span className="text-stone-600 font-mono text-[11px] font-medium">Engine local</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span
               className={`w-2 h-2 rounded-full ${
                 isEngineOnline === null
-                  ? "bg-warning animate-pulse"
+                  ? "bg-amber-400 animate-pulse"
                   : isEngineOnline
-                  ? "bg-success shadow-[0_0_8px_rgba(16,185,129,0.6)]"
-                  : "bg-destructive"
+                  ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                  : "bg-red-500"
               }`}
             />
             <span
               className={`font-mono text-[11px] ${
                 isEngineOnline === null
-                  ? "text-warning"
+                  ? "text-amber-700"
                   : isEngineOnline
-                  ? "text-success font-medium"
-                  : "text-destructive font-medium"
+                  ? "text-emerald-700 font-semibold"
+                  : "text-red-700 font-semibold"
               }`}
             >
-              {isEngineOnline === null ? "..." : isEngineOnline ? ":8000 OK" : "Hors-ligne"}
+              {isEngineOnline === null
+                ? "..."
+                : isEngineOnline
+                ? ":8000 OK"
+                : "Hors-ligne"}
             </span>
           </div>
         </div>
