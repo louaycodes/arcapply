@@ -1770,8 +1770,17 @@ class CVParserService:
             if cat_skills:
                 skills_categories.append(ParsedSkillCategory(title=title, skills=cat_skills))
 
-        # Activités
-        if is_en:
+        # Activités extra-professionnelles
+        extracurricular = []
+        if profile.extracurriculars:
+            for extra in profile.extracurriculars:
+                extracurricular.append(ParsedExtracurricular(
+                    organization=extra.organization,
+                    role=extra.role,
+                    date=extra.date,
+                    description=extra.description,
+                ))
+        elif is_en:
             extracurricular = [
                 ParsedExtracurricular(
                     organization="Enactus EMC",
@@ -1785,11 +1794,6 @@ class CVParserService:
                     date="2018 – 2019",
                     description="Managed the club's media strategy and communication plans; oversaw media coverage and community growth.",
                 ),
-            ]
-            languages = [
-                "Arabic: Native",
-                "French: Fluent",
-                "English: Technical",
             ]
         else:
             extracurricular = [
@@ -1806,6 +1810,22 @@ class CVParserService:
                     description="Gestion de la stratégie média et des plans de communication ; supervision de la couverture médiatique et animation de la communauté.",
                 ),
             ]
+
+        # Langues
+        languages = []
+        if profile.languages:
+            for lang in profile.languages:
+                if lang.name:
+                    sep = ": " if is_en else " : "
+                    level_str = f"{sep}{lang.level}" if lang.level else ""
+                    languages.append(f"{lang.name}{level_str}")
+        elif is_en:
+            languages = [
+                "Arabic: Native",
+                "French: Fluent",
+                "English: Technical",
+            ]
+        else:
             languages = [
                 "Arabe : Langue maternelle",
                 "Français : Courant",

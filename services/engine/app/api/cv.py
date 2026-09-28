@@ -314,6 +314,42 @@ def get_cv_from_profile(
     }
 
 
+@router.get("/profile-pdf", response_class=Response)
+async def download_profile_cv_pdf(
+    lang: str = Query("fr", description="Langue : 'fr' ou 'en'"),
+    session: Session = Depends(get_session),
+) -> Response:
+    """
+    Génère et télécharge le CV complet vectoriel A4 (PDF) reflétant l'intégralité
+    des données saisies dans le Master Profile (coordonnées, formations, stages,
+    expériences, projets, compétences, activités extra-professionnelles et langues).
+    """
+    profile = session.get(MasterProfile, "default-profile")
+    if not profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error_code": "PROFILE_NOT_FOUND", "message": "Master Profile introuvable."},
+        )
+
+    custom_cv = CVParserService.convert_profile_to_custom_cv(profile, language=lang)
+    html_content = render_custom_cv_html(custom_cv)
+    pdf_bytes = await PDFCompilerService.compile_html_to_pdf(html_content)
+
+    candidat_name = profile.full_name.strip() if profile.full_name else "Candidat"
+    clean_name = sanitize_filename(f"CV_{candidat_name}.pdf")
+    if not clean_name.lower().endswith(".pdf"):
+        clean_name += ".pdf"
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{clean_name}"',
+            "Content-Type": "application/pdf",
+        },
+    )
+
+
 @router.post("/save-draft")
 def save_cv_draft(data: CustomCVData, session: Session = Depends(get_session)):
     """Sauvegarde le brouillon du CV dans SQLite."""

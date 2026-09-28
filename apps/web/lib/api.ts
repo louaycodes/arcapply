@@ -10,6 +10,18 @@ export interface Education {
   description?: string | null;
 }
 
+export interface Language {
+  name: string;
+  level: string;
+}
+
+export interface Extracurricular {
+  organization: string;
+  role: string;
+  date: string;
+  description: string;
+}
+
 export interface Experience {
   id?: string;
   company: string;
@@ -19,6 +31,7 @@ export interface Experience {
   end_date?: string | null;
   description: string;
   technologies: string[];
+  experience_type?: "stage" | "job";
 }
 
 export interface Project {
@@ -48,6 +61,8 @@ export interface MasterProfile {
   linkedin_url?: string | null;
   github_url?: string | null;
   website_url?: string | null;
+  languages_raw?: string;
+  extracurriculars_raw?: string;
   is_complete: boolean;
   /** Préférence de recherche : "PFE" (stage) ou "JOB" (emploi CDI/CDD). Défaut : "PFE". */
   search_mode: "PFE" | "JOB";
@@ -57,6 +72,8 @@ export interface MasterProfile {
   experiences: Experience[];
   projects: Project[];
   skills: Skill[];
+  languages: Language[];
+  extracurriculars: Extracurricular[];
 }
 
 export interface ProfileCompletenessStatus {
@@ -519,6 +536,15 @@ export async function compileCustomCVPdf(
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(errorData?.detail?.message || "Échec de la compilation PDF vectorielle.");
+  }
+  return res.blob();
+}
+
+export async function downloadProfileCVPdf(lang: string = "fr"): Promise<Blob> {
+  const res = await fetch(`${API_BASE_URL}/api/cv/profile-pdf?lang=${lang}`);
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData?.detail?.message || "Erreur lors du téléchargement du CV.");
   }
   return res.blob();
 }

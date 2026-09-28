@@ -34,6 +34,18 @@ class Education(EducationBase, table=True):
     profile: Optional["MasterProfile"] = Relationship(back_populates="educations")
 
 
+class LanguageBase(SQLModel):
+    name: str = Field(default="")
+    level: str = Field(default="Courant")
+
+
+class ExtracurricularBase(SQLModel):
+    organization: str = Field(default="")
+    role: str = Field(default="")
+    date: str = Field(default="")
+    description: str = Field(default="")
+
+
 class ExperienceBase(SQLModel):
     company: str = Field(default="")
     role: str = Field(default="")
@@ -42,6 +54,7 @@ class ExperienceBase(SQLModel):
     end_date: Optional[str] = Field(default=None)
     description: str = Field(default="")
     technologies: list[str] = Field(default_factory=list)
+    experience_type: str = Field(default="stage")  # "stage" | "job"
 
 
 class Experience(SQLModel, table=True):
@@ -55,6 +68,7 @@ class Experience(SQLModel, table=True):
     end_date: Optional[str] = Field(default=None)
     description: str = Field(default="")
     technologies_raw: str = Field(default="")  # Comma separated or JSON
+    experience_type: str = Field(default="stage")
 
     profile: Optional["MasterProfile"] = Relationship(back_populates="experiences")
 
@@ -128,6 +142,8 @@ class MasterProfileBase(SQLModel):
     website_url: Optional[str] = Field(default=None)
     # Préférence de recherche : "PFE" (stage de fin d'études) ou "JOB" (emploi CDI/CDD)
     search_mode: str = Field(default="PFE", index=True)
+    languages_raw: str = Field(default="[]")
+    extracurriculars_raw: str = Field(default="[]")
 
 
 class MasterProfile(MasterProfileBase, table=True):
@@ -153,6 +169,32 @@ class MasterProfile(MasterProfileBase, table=True):
         back_populates="profile",
         sa_relationship_kwargs={"cascade": "all, delete-orphan", "lazy": "selectin"},
     )
+
+    @property
+    def languages(self) -> list[LanguageBase]:
+        try:
+            items = json.loads(self.languages_raw or "[]")
+            return [LanguageBase(**item) if isinstance(item, dict) else LanguageBase(name=str(item)) for item in items]
+        except Exception:
+            return []
+
+    @languages.setter
+    def languages(self, values: list) -> None:
+        raw_list = [v.model_dump() if hasattr(v, "model_dump") else v for v in (values or [])]
+        self.languages_raw = json.dumps(raw_list, ensure_ascii=False)
+
+    @property
+    def extracurriculars(self) -> list[ExtracurricularBase]:
+        try:
+            items = json.loads(self.extracurriculars_raw or "[]")
+            return [ExtracurricularBase(**item) if isinstance(item, dict) else ExtracurricularBase(organization=str(item)) for item in items]
+        except Exception:
+            return []
+
+    @extracurriculars.setter
+    def extracurriculars(self, values: list) -> None:
+        raw_list = [v.model_dump() if hasattr(v, "model_dump") else v for v in (values or [])]
+        self.extracurriculars_raw = json.dumps(raw_list, ensure_ascii=False)
 
 
 # ============================================================================
@@ -189,6 +231,8 @@ class MasterProfileRead(MasterProfileBase):
     experiences: list[ExperienceRead] = []
     projects: list[ProjectRead] = []
     skills: list[SkillRead] = []
+    languages: list[LanguageBase] = []
+    extracurriculars: list[ExtracurricularBase] = []
 
 
 VALID_SEARCH_MODES = {"PFE", "JOB"}
@@ -210,6 +254,8 @@ class MasterProfileUpdate(SQLModel):
     experiences: Optional[list[ExperienceBase]] = None
     projects: Optional[list[ProjectBase]] = None
     skills: Optional[list[SkillBase]] = None
+    languages: Optional[list[LanguageBase]] = None
+    extracurriculars: Optional[list[ExtracurricularBase]] = None
 
 
 class ProfileCompletenessStatus(SQLModel):
@@ -474,6 +520,7 @@ class ParsedExperience(SQLModel):
     end_date: str = ""
     description: str = ""
     technologies: list[str] = []
+    experience_type: str = "stage"
 
 
 class ParsedProject(SQLModel):

@@ -1,17 +1,21 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   fetchProfile,
   updateProfile,
   fetchProfileStatus,
   verifyGenerationEligibility,
+  downloadProfileCVPdf,
   MasterProfile,
   ProfileCompletenessStatus,
   Education,
   Experience,
   Project,
   Skill,
+  Language,
+  Extracurricular,
 } from "@/lib/api";
 import {
   ShieldAlert,
@@ -28,6 +32,13 @@ import {
   CheckCircle2,
   AlertTriangle,
   ArrowRight,
+  Download,
+  FileDown,
+  Globe2,
+  Award,
+  Layers,
+  ExternalLink,
+  Check,
 } from "lucide-react";
 
 export default function ProfilePage() {
@@ -35,6 +46,8 @@ export default function ProfilePage() {
   const [status, setStatus] = useState<ProfileCompletenessStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDownloadingCv, setIsDownloadingCv] = useState(false);
+  const [cvDownloadLang, setCvDownloadLang] = useState<"fr" | "en">("fr");
   const [notification, setNotification] = useState<{
     type: "success" | "error" | "info";
     message: string;
@@ -49,7 +62,15 @@ export default function ProfilePage() {
         fetchProfile(),
         fetchProfileStatus(),
       ]);
-      setProfile(profileData);
+      setProfile({
+        ...profileData,
+        languages: profileData.languages || [],
+        extracurriculars: profileData.extracurriculars || [],
+        experiences: profileData.experiences || [],
+        educations: profileData.educations || [],
+        projects: profileData.projects || [],
+        skills: profileData.skills || [],
+      });
       setStatus(statusData);
     } catch (err: any) {
       setNotification({
@@ -71,7 +92,15 @@ export default function ProfilePage() {
       setIsSaving(true);
       const updated = await updateProfile(profile);
       const newStatus = await fetchProfileStatus();
-      setProfile(updated);
+      setProfile({
+        ...updated,
+        languages: updated.languages || [],
+        extracurriculars: updated.extracurriculars || [],
+        experiences: updated.experiences || [],
+        educations: updated.educations || [],
+        projects: updated.projects || [],
+        skills: updated.skills || [],
+      });
       setStatus(newStatus);
       setNotification({
         type: "success",
@@ -95,6 +124,37 @@ export default function ProfilePage() {
       setTestGenResult(`✓ Succès : ${result.message} (${result.completion_percentage}%)`);
     } catch (err: any) {
       setTestGenResult(`✕ Bloqué (CAP-1) : ${err.message}`);
+    }
+  };
+
+  const handleDownloadCV = async () => {
+    if (!profile) return;
+    try {
+      setIsDownloadingCv(true);
+      // Sauvegarde automatique préalable pour garantir que tous les champs saisis sont pris en compte
+      await updateProfile(profile);
+      const blob = await downloadProfileCVPdf(cvDownloadLang);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const cleanName = (profile.full_name.trim() || "Candidat").replace(/[^a-zA-Z0-9_\u00C0-\u017F-]/g, "_");
+      a.download = `CV_${cleanName}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      setNotification({
+        type: "success",
+        message: "Votre CV complet a été téléchargé avec succès (format PDF A4 vectoriel) !",
+      });
+    } catch (err: any) {
+      setNotification({
+        type: "error",
+        message: err.message || "Échec du téléchargement du CV.",
+      });
+    } finally {
+      setIsDownloadingCv(false);
+      setTimeout(() => setNotification(null), 5000);
     }
   };
 
@@ -125,12 +185,33 @@ export default function ProfilePage() {
       experiences: [
         {
           company: "CloudScale Technologies",
-          role: "Stagiaire Ingénieur Backend",
+          role: "Stagiaire Ingénieur Backend & Cloud",
           location: "Tunis / Hybride",
           start_date: "Juin 2025",
           end_date: "Août 2025",
           description: "Développement de microservices de traitement asynchrone d'événements à haut débit. Optimisation du temps de réponse de 35%.",
           technologies: ["Python", "FastAPI", "PostgreSQL", "Redis", "Docker"],
+          experience_type: "stage",
+        },
+        {
+          company: "FinTech Innovation Lab",
+          role: "Stagiaire Développeur Outils & DevOps",
+          location: "Tunis, Tunisie",
+          start_date: "Juin 2024",
+          end_date: "Août 2024",
+          description: "Automatisation des pipelines CI/CD sous Jenkins et conteneurisation des services financiers internes avec Docker.",
+          technologies: ["Docker", "Linux", "Bash", "Jenkins", "GitLab CI"],
+          experience_type: "stage",
+        },
+        {
+          company: "TechConsulting Freelance",
+          role: "Développeur Backend & Automatisation",
+          location: "Télétravail / France & Tunisie",
+          start_date: "Septembre 2024",
+          end_date: "Présent",
+          description: "Conception d'APIs REST modulaires et dashboards de monitoring pour des PME européennes.",
+          technologies: ["FastAPI", "TypeScript", "Next.js", "Docker"],
+          experience_type: "job",
         },
       ],
       projects: [
@@ -141,6 +222,13 @@ export default function ProfilePage() {
           url: "https://github.com/yassine-bs/arcapply",
           technologies: ["FastAPI", "SQLModel", "Next.js", "Tailwind CSS"],
         },
+        {
+          title: "Autonomous FinOps Agent",
+          role: "Lead Developer",
+          description: "Plateforme multi-agents pour la détection d'anomalies de coûts AWS et l'optimisation continue des ressources cloud.",
+          url: "https://github.com/yassine-bs/finops-agent",
+          technologies: ["Python", "LangGraph", "Groq LLM", "ChromaDB"],
+        },
       ],
       skills: [
         { name: "Python", category: "Languages", level: "Avancé" },
@@ -149,12 +237,32 @@ export default function ProfilePage() {
         { name: "Next.js", category: "Frameworks", level: "Intermédiaire" },
         { name: "Docker", category: "DevOps", level: "Avancé" },
         { name: "SQL / SQLite", category: "Database", level: "Avancé" },
+        { name: "Kubernetes", category: "DevOps", level: "Intermédiaire" },
+      ],
+      extracurriculars: [
+        {
+          organization: "Club Robotique & IA INSAT",
+          role: "Responsable Technique & Formateur",
+          date: "2023 – 2024",
+          description: "Animation d'ateliers d'initiation à Python et aux systèmes embarqués pour 60+ étudiants ; finaliste TuniRobots 2024.",
+        },
+        {
+          organization: "Junior Entreprise INSAT",
+          role: "Chef de Projet Digital",
+          date: "2022 – 2023",
+          description: "Coordination d'une équipe de 5 développeurs pour la digitalisation de processus opérationnels d'entreprises partenaires.",
+        },
+      ],
+      languages: [
+        { name: "Français", level: "Courant / Bilingue (C2)" },
+        { name: "Anglais", level: "Professionnel / Technique (C1 - TOEIC 945)" },
+        { name: "Arabe", level: "Langue maternelle" },
       ],
     };
     setProfile(demo);
     setNotification({
       type: "info",
-      message: "Modèle de profil PFE injecté ! Cliquez sur 'Sauvegarder les modifications' pour valider la complétude.",
+      message: "Modèle de profil complet injecté ! Cliquez sur 'Sauvegarder' ou téléchargez votre CV.",
     });
   };
 
@@ -185,32 +293,108 @@ export default function ProfilePage() {
     });
   };
 
-  // Experience Helpers
-  const addExperience = () => {
+  // Stages & Expériences Helpers (séparation demandée par l'utilisateur)
+  const stages = (profile?.experiences || []).filter(
+    (exp) => (exp.experience_type || "stage") === "stage"
+  );
+  const jobs = (profile?.experiences || []).filter(
+    (exp) => exp.experience_type === "job"
+  );
+
+  const addStage = () => {
     if (!profile) return;
+    const newStage: Experience = {
+      company: "",
+      role: "",
+      location: "",
+      start_date: "",
+      end_date: "",
+      description: "",
+      technologies: [],
+      experience_type: "stage",
+    };
     setProfile({
       ...profile,
-      experiences: [
-        ...profile.experiences,
-        {
-          company: "",
-          role: "",
-          location: "",
-          start_date: "",
-          end_date: "",
-          description: "",
-          technologies: [],
-        },
-      ],
+      experiences: [...profile.experiences, newStage],
     });
   };
 
-  const removeExperience = (index: number) => {
+  const updateStage = (stageIdx: number, updatedStage: Experience) => {
     if (!profile) return;
+    let count = 0;
+    const newExperiences = profile.experiences.map((exp) => {
+      if ((exp.experience_type || "stage") === "stage") {
+        if (count === stageIdx) {
+          count++;
+          return updatedStage;
+        }
+        count++;
+      }
+      return exp;
+    });
+    setProfile({ ...profile, experiences: newExperiences });
+  };
+
+  const removeStage = (stageIdx: number) => {
+    if (!profile) return;
+    let count = 0;
+    const newExperiences = profile.experiences.filter((exp) => {
+      if ((exp.experience_type || "stage") === "stage") {
+        const matches = count === stageIdx;
+        count++;
+        return !matches;
+      }
+      return true;
+    });
+    setProfile({ ...profile, experiences: newExperiences });
+  };
+
+  const addJob = () => {
+    if (!profile) return;
+    const newJob: Experience = {
+      company: "",
+      role: "",
+      location: "",
+      start_date: "",
+      end_date: "",
+      description: "",
+      technologies: [],
+      experience_type: "job",
+    };
     setProfile({
       ...profile,
-      experiences: profile.experiences.filter((_, i) => i !== index),
+      experiences: [...profile.experiences, newJob],
     });
+  };
+
+  const updateJob = (jobIdx: number, updatedJob: Experience) => {
+    if (!profile) return;
+    let count = 0;
+    const newExperiences = profile.experiences.map((exp) => {
+      if (exp.experience_type === "job") {
+        if (count === jobIdx) {
+          count++;
+          return updatedJob;
+        }
+        count++;
+      }
+      return exp;
+    });
+    setProfile({ ...profile, experiences: newExperiences });
+  };
+
+  const removeJob = (jobIdx: number) => {
+    if (!profile) return;
+    let count = 0;
+    const newExperiences = profile.experiences.filter((exp) => {
+      if (exp.experience_type === "job") {
+        const matches = count === jobIdx;
+        count++;
+        return !matches;
+      }
+      return true;
+    });
+    setProfile({ ...profile, experiences: newExperiences });
   };
 
   // Project Helpers
@@ -259,6 +443,64 @@ export default function ProfilePage() {
     });
   };
 
+  // Activités Extra-Professionnelles Helpers
+  const addExtracurricular = () => {
+    if (!profile) return;
+    const newExtra: Extracurricular = {
+      organization: "",
+      role: "",
+      date: "",
+      description: "",
+    };
+    setProfile({
+      ...profile,
+      extracurriculars: [...(profile.extracurriculars || []), newExtra],
+    });
+  };
+
+  const updateExtracurricular = (index: number, updatedExtra: Extracurricular) => {
+    if (!profile) return;
+    const updated = [...(profile.extracurriculars || [])];
+    updated[index] = updatedExtra;
+    setProfile({ ...profile, extracurriculars: updated });
+  };
+
+  const removeExtracurricular = (index: number) => {
+    if (!profile) return;
+    setProfile({
+      ...profile,
+      extracurriculars: (profile.extracurriculars || []).filter((_, i) => i !== index),
+    });
+  };
+
+  // Langues Helpers
+  const addLanguage = () => {
+    if (!profile) return;
+    const newLang: Language = {
+      name: "",
+      level: "Courant",
+    };
+    setProfile({
+      ...profile,
+      languages: [...(profile.languages || []), newLang],
+    });
+  };
+
+  const updateLanguage = (index: number, updatedLang: Language) => {
+    if (!profile) return;
+    const updated = [...(profile.languages || [])];
+    updated[index] = updatedLang;
+    setProfile({ ...profile, languages: updated });
+  };
+
+  const removeLanguage = (index: number) => {
+    if (!profile) return;
+    setProfile({
+      ...profile,
+      languages: (profile.languages || []).filter((_, i) => i !== index),
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center p-12">
@@ -304,7 +546,7 @@ export default function ProfilePage() {
             </span>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            Renseignez vos coordonnées, compétences et expériences pour générer des candidatures sur-mesure.
+            Renseignez vos coordonnées, stages, expériences, compétences, activités extra-professionnelles et langues pour générer votre CV complet.
           </p>
         </div>
 
@@ -312,8 +554,8 @@ export default function ProfilePage() {
           <button
             type="button"
             onClick={populateDemoProfile}
-            className="px-3.5 py-2 rounded-md border border-border/80 bg-card hover:bg-muted text-xs font-medium text-foreground flex items-center gap-2 transition-colors"
-            title="Remplir avec des données de test réalistes pour valider immédiatement le profil"
+            className="px-3.5 py-2 rounded-md border border-border/80 bg-card hover:bg-muted text-xs font-medium text-foreground flex items-center gap-2 transition-colors cursor-pointer"
+            title="Remplir avec des données d'ingénieur réalistes (stages, projets, langues, activités)"
           >
             <Sparkles className="w-3.5 h-3.5 text-accent" />
             <span>Exemple PFE</span>
@@ -323,7 +565,7 @@ export default function ProfilePage() {
             type="button"
             onClick={handleSave}
             disabled={isSaving}
-            className="px-4 py-2 rounded-md bg-primary hover:bg-primary-hover text-white text-sm font-semibold flex items-center gap-2 shadow-lg shadow-primary/20 transition-all disabled:opacity-50"
+            className="px-4 py-2 rounded-md bg-primary hover:bg-primary-hover text-white text-sm font-semibold flex items-center gap-2 shadow-lg shadow-primary/20 transition-all disabled:opacity-50 cursor-pointer"
           >
             <Save className="w-4 h-4" />
             <span>{isSaving ? "Sauvegarde..." : "Sauvegarder"}</span>
@@ -358,42 +600,31 @@ export default function ProfilePage() {
             <div className="flex items-center gap-3">
               {isComplete ? (
                 <div className="w-10 h-10 rounded-lg bg-success/20 border border-success/40 flex items-center justify-center text-success">
-                  <ShieldCheck className="w-5 h-5" />
+                  <ShieldCheck className="w-6 h-6" />
                 </div>
               ) : (
                 <div className="w-10 h-10 rounded-lg bg-warning/20 border border-warning/40 flex items-center justify-center text-warning">
-                  <ShieldAlert className="w-5 h-5" />
+                  <ShieldAlert className="w-6 h-6" />
                 </div>
               )}
               <div>
-                <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
-                  <span>État de complétude</span>
-                  <span
-                    className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                      isComplete
-                        ? "bg-emerald-50 text-emerald-900 border border-emerald-300"
-                        : "bg-amber-50 text-amber-900 border border-amber-300"
-                    }`}
-                  >
-                    {isComplete ? "Profil complet" : "Profil à compléter"}
-                  </span>
+                <h3 className="text-base font-semibold text-foreground">
+                  {isComplete ? "Profil Complet & Vérifié" : "Profil Incomplet"}
                 </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="text-xs text-muted-foreground">
                   {isComplete
-                    ? "Toutes les informations nécessaires sont renseignées. Vous pouvez générer vos CV et lettres."
-                    : "Complétez les éléments ci-dessous pour débloquer la génération automatique de vos candidatures."}
+                    ? "Toutes les conditions requises sont remplies pour générer des candidatures ciblées."
+                    : "Renseignez les champs manquants pour débloquer la génération automatique de CV et lettres."}
                 </p>
               </div>
             </div>
-
-            <div className="text-right">
-              <span className="text-2xl font-bold font-mono text-foreground">{percentage}%</span>
-              <p className="text-[11px] text-muted-foreground">Complétude</p>
-            </div>
+            <span className="text-sm font-bold font-mono text-primary">
+              {percentage}%
+            </span>
           </div>
 
           {/* Progress Bar */}
-          <div className="w-full bg-stone-100 rounded-full h-2.5 overflow-hidden border border-stone-200">
+          <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
             <div
               className={`h-full transition-all duration-500 rounded-full ${
                 percentage === 100
@@ -488,7 +719,7 @@ export default function ProfilePage() {
               <button
                 type="button"
                 onClick={() => setProfile({ ...profile, search_mode: "PFE" })}
-                className={`flex items-center gap-3 p-3 rounded-lg border text-left transition-all ${
+                className={`flex items-center gap-3 p-3 rounded-lg border text-left transition-all cursor-pointer ${
                   (profile.search_mode || "PFE") === "PFE"
                     ? "border-primary bg-primary/10 text-primary shadow-sm ring-1 ring-primary/30"
                     : "border-border bg-card/60 text-muted-foreground hover:border-border/80 hover:bg-muted/40"
@@ -508,7 +739,7 @@ export default function ProfilePage() {
               <button
                 type="button"
                 onClick={() => setProfile({ ...profile, search_mode: "JOB" })}
-                className={`flex items-center gap-3 p-3 rounded-lg border text-left transition-all ${
+                className={`flex items-center gap-3 p-3 rounded-lg border text-left transition-all cursor-pointer ${
                   profile.search_mode === "JOB"
                     ? "border-primary bg-primary/10 text-primary shadow-sm ring-1 ring-primary/30"
                     : "border-border bg-card/60 text-muted-foreground hover:border-border/80 hover:bg-muted/40"
@@ -631,10 +862,23 @@ export default function ProfilePage() {
                 className="w-full px-3.5 py-2 rounded-md bg-muted/60 border border-border focus:outline-none focus:border-primary text-sm text-foreground placeholder:text-muted-foreground/50 transition-colors"
               />
             </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+                Site Web / Portfolio
+              </label>
+              <input
+                type="url"
+                value={profile.website_url || ""}
+                onChange={(e) => setProfile({ ...profile, website_url: e.target.value })}
+                placeholder="https://www.monportfolio.com"
+                className="w-full px-3.5 py-2 rounded-md bg-muted/60 border border-border focus:outline-none focus:border-primary text-sm text-foreground placeholder:text-muted-foreground/50 transition-colors"
+              />
+            </div>
           </div>
         </div>
 
-        {/* Section 2: Formations */}
+        {/* Section 2: Formations Académiques */}
         <div className="p-6 rounded-xl border border-border bg-card space-y-5">
           <div className="flex items-center justify-between border-b border-border/50 pb-3">
             <div className="flex items-center gap-3">
@@ -644,7 +888,7 @@ export default function ProfilePage() {
             <button
               type="button"
               onClick={addEducation}
-              className="text-xs px-3 py-1.5 rounded-md bg-muted hover:bg-muted/80 text-foreground border border-border flex items-center gap-1.5 transition-colors"
+              className="text-xs px-3 py-1.5 rounded-md bg-muted hover:bg-muted/80 text-foreground border border-border flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Ajouter une formation</span>
@@ -664,7 +908,7 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={() => removeEducation(idx)}
-                      className="text-muted-foreground hover:text-destructive transition-colors"
+                      className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -705,7 +949,7 @@ export default function ProfilePage() {
                     />
                     <input
                       type="text"
-                      placeholder="Année début"
+                      placeholder="Année début (ex: 2022)"
                       value={edu.start_date}
                       onChange={(e) => {
                         const updated = [...profile.educations];
@@ -716,7 +960,7 @@ export default function ProfilePage() {
                     />
                     <input
                       type="text"
-                      placeholder="Année fin (ou prévision PFE)"
+                      placeholder="Année fin (ou prévision 2027)"
                       value={edu.end_date || ""}
                       onChange={(e) => {
                         const updated = [...profile.educations];
@@ -743,118 +987,105 @@ export default function ProfilePage() {
           )}
         </div>
 
-        {/* Section 3: Expériences Professionnelles */}
+        {/* Section 3: Stages & Immersion en Entreprise (SÉPARÉ) */}
         <div className="p-6 rounded-xl border border-border bg-card space-y-5">
           <div className="flex items-center justify-between border-b border-border/50 pb-3">
             <div className="flex items-center gap-3">
               <Briefcase className="w-5 h-5 text-primary" />
-              <h2 className="text-base font-semibold text-foreground">Expériences & Stages</h2>
+              <div>
+                <h2 className="text-base font-semibold text-foreground">Stages & Immersion en Entreprise</h2>
+                <p className="text-xs text-muted-foreground">Stages PFE, stages ingénieur / technicien, ouvrier ou stages d'été.</p>
+              </div>
             </div>
             <button
               type="button"
-              onClick={addExperience}
-              className="text-xs px-3 py-1.5 rounded-md bg-muted hover:bg-muted/80 text-foreground border border-border flex items-center gap-1.5 transition-colors"
+              onClick={addStage}
+              className="text-xs px-3 py-1.5 rounded-md bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 flex items-center gap-1.5 transition-colors cursor-pointer font-medium"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Ajouter une expérience</span>
+              <span>Ajouter un stage</span>
             </button>
           </div>
 
-          {profile.experiences.length === 0 ? (
+          {stages.length === 0 ? (
             <p className="text-xs text-muted-foreground italic py-3">
-              Aucune expérience renseignée.
+              Aucun stage renseigné. Renseignez vos stages d'ingénieur pour alimenter la section dédiée de votre CV.
             </p>
           ) : (
             <div className="space-y-4">
-              {profile.experiences.map((exp, idx) => (
+              {stages.map((stage, idx) => (
                 <div key={idx} className="p-4 rounded-lg bg-muted/40 border border-border/70 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono font-medium text-primary">Expérience #{idx + 1}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-primary/15 text-primary border border-primary/20">
+                        Stage #{idx + 1}
+                      </span>
+                      <span className="text-xs font-medium text-foreground">
+                        {stage.company ? `${stage.role || "Stagiaire"} @ ${stage.company}` : "Nouveau stage"}
+                      </span>
+                    </div>
                     <button
                       type="button"
-                      onClick={() => removeExperience(idx)}
-                      className="text-muted-foreground hover:text-destructive transition-colors"
+                      onClick={() => removeStage(idx)}
+                      className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                     <input
                       type="text"
-                      placeholder="Entreprise *"
-                      value={exp.company}
-                      onChange={(e) => {
-                        const updated = [...profile.experiences];
-                        updated[idx].company = e.target.value;
-                        setProfile({ ...profile, experiences: updated });
-                      }}
+                      placeholder="Entreprise d'accueil *"
+                      value={stage.company}
+                      onChange={(e) => updateStage(idx, { ...stage, company: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <input
                       type="text"
-                      placeholder="Poste / Rôle *"
-                      value={exp.role}
-                      onChange={(e) => {
-                        const updated = [...profile.experiences];
-                        updated[idx].role = e.target.value;
-                        setProfile({ ...profile, experiences: updated });
-                      }}
+                      placeholder="Intitulé du stage / Rôle * (ex: Stagiaire Ingénieur DevOps)"
+                      value={stage.role}
+                      onChange={(e) => updateStage(idx, { ...stage, role: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <input
                       type="text"
-                      placeholder="Ville, Pays"
-                      value={exp.location || ""}
-                      onChange={(e) => {
-                        const updated = [...profile.experiences];
-                        updated[idx].location = e.target.value;
-                        setProfile({ ...profile, experiences: updated });
-                      }}
+                      placeholder="Ville, Pays (ex: Tunis, Tunisie)"
+                      value={stage.location || ""}
+                      onChange={(e) => updateStage(idx, { ...stage, location: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <input
                       type="text"
-                      placeholder="Date début"
-                      value={exp.start_date}
-                      onChange={(e) => {
-                        const updated = [...profile.experiences];
-                        updated[idx].start_date = e.target.value;
-                        setProfile({ ...profile, experiences: updated });
-                      }}
+                      placeholder="Date début (ex: Juin 2025)"
+                      value={stage.start_date}
+                      onChange={(e) => updateStage(idx, { ...stage, start_date: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <input
                       type="text"
-                      placeholder="Date fin"
-                      value={exp.end_date || ""}
-                      onChange={(e) => {
-                        const updated = [...profile.experiences];
-                        updated[idx].end_date = e.target.value;
-                        setProfile({ ...profile, experiences: updated });
-                      }}
+                      placeholder="Date fin (ex: Août 2025)"
+                      value={stage.end_date || ""}
+                      onChange={(e) => updateStage(idx, { ...stage, end_date: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <input
                       type="text"
-                      placeholder="Technologies (séparées par des virgules)"
-                      value={exp.technologies ? exp.technologies.join(", ") : ""}
+                      placeholder="Technologies (ex: Python, Docker, AWS)"
+                      value={stage.technologies ? stage.technologies.join(", ") : ""}
                       onChange={(e) => {
-                        const updated = [...profile.experiences];
-                        updated[idx].technologies = e.target.value.split(",").map((s) => s.trim()).filter(Boolean);
-                        setProfile({ ...profile, experiences: updated });
+                        const techs = e.target.value.split(",").map((s) => s.trim()).filter(Boolean);
+                        updateStage(idx, { ...stage, technologies: techs });
                       }}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                   </div>
+
                   <textarea
                     rows={2}
-                    placeholder="Description concrète des réalisations d'ingénierie et impact mesurable *"
-                    value={exp.description}
-                    onChange={(e) => {
-                      const updated = [...profile.experiences];
-                      updated[idx].description = e.target.value;
-                      setProfile({ ...profile, experiences: updated });
-                    }}
+                    placeholder="Description concrète des missions, livrables techniques et impact mesurable du stage *"
+                    value={stage.description}
+                    onChange={(e) => updateStage(idx, { ...stage, description: e.target.value })}
                     className="w-full px-3 py-2 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                   />
                 </div>
@@ -863,7 +1094,114 @@ export default function ProfilePage() {
           )}
         </div>
 
-        {/* Section 4: Projets Techniques */}
+        {/* Section 4: Expériences Professionnelles (Hors Stages) */}
+        <div className="p-6 rounded-xl border border-border bg-card space-y-5">
+          <div className="flex items-center justify-between border-b border-border/50 pb-3">
+            <div className="flex items-center gap-3">
+              <Layers className="w-5 h-5 text-primary" />
+              <div>
+                <h2 className="text-base font-semibold text-foreground">Expériences Professionnelles (Hors Stages)</h2>
+                <p className="text-xs text-muted-foreground">Emplois CDI, CDD, alternance, freelance et missions professionnelles.</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={addJob}
+              className="text-xs px-3 py-1.5 rounded-md bg-muted hover:bg-muted/80 text-foreground border border-border flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Ajouter une expérience</span>
+            </button>
+          </div>
+
+          {jobs.length === 0 ? (
+            <p className="text-xs text-muted-foreground italic py-3">
+              Aucune expérience hors stage enregistrée (facultatif si vous êtes étudiant recherchant un PFE).
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {jobs.map((job, idx) => (
+                <div key={idx} className="p-4 rounded-lg bg-muted/40 border border-border/70 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-muted text-foreground border border-border">
+                        Expérience #{idx + 1}
+                      </span>
+                      <span className="text-xs font-medium text-foreground">
+                        {job.company ? `${job.role || "Poste"} @ ${job.company}` : "Nouvelle expérience"}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeJob(idx)}
+                      className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    <input
+                      type="text"
+                      placeholder="Entreprise / Client *"
+                      value={job.company}
+                      onChange={(e) => updateJob(idx, { ...job, company: e.target.value })}
+                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Poste / Rôle * (ex: Développeur Backend Freelance)"
+                      value={job.role}
+                      onChange={(e) => updateJob(idx, { ...job, role: e.target.value })}
+                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Ville, Pays"
+                      value={job.location || ""}
+                      onChange={(e) => updateJob(idx, { ...job, location: e.target.value })}
+                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Date début"
+                      value={job.start_date}
+                      onChange={(e) => updateJob(idx, { ...job, start_date: e.target.value })}
+                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Date fin (ou Présent)"
+                      value={job.end_date || ""}
+                      onChange={(e) => updateJob(idx, { ...job, end_date: e.target.value })}
+                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Technologies (ex: TypeScript, Next.js)"
+                      value={job.technologies ? job.technologies.join(", ") : ""}
+                      onChange={(e) => {
+                        const techs = e.target.value.split(",").map((s) => s.trim()).filter(Boolean);
+                        updateJob(idx, { ...job, technologies: techs });
+                      }}
+                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                  </div>
+
+                  <textarea
+                    rows={2}
+                    placeholder="Description concrète des responsabilités et réalisations *"
+                    value={job.description}
+                    onChange={(e) => updateJob(idx, { ...job, description: e.target.value })}
+                    className="w-full px-3 py-2 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Section 5: Projets Techniques */}
         <div className="p-6 rounded-xl border border-border bg-card space-y-5">
           <div className="flex items-center justify-between border-b border-border/50 pb-3">
             <div className="flex items-center gap-3">
@@ -873,7 +1211,7 @@ export default function ProfilePage() {
             <button
               type="button"
               onClick={addProject}
-              className="text-xs px-3 py-1.5 rounded-md bg-muted hover:bg-muted/80 text-foreground border border-border flex items-center gap-1.5 transition-colors"
+              className="text-xs px-3 py-1.5 rounded-md bg-muted hover:bg-muted/80 text-foreground border border-border flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Ajouter un projet</span>
@@ -882,7 +1220,7 @@ export default function ProfilePage() {
 
           {profile.projects.length === 0 ? (
             <p className="text-xs text-muted-foreground italic py-3">
-              Aucun projet enregistré.
+              Aucun projet enregistré. Les projets concrets renforcent fortement la crédibilité technique de votre profil.
             </p>
           ) : (
             <div className="space-y-4">
@@ -893,7 +1231,7 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={() => removeProject(idx)}
-                      className="text-muted-foreground hover:text-destructive transition-colors"
+                      className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -950,7 +1288,7 @@ export default function ProfilePage() {
           )}
         </div>
 
-        {/* Section 5: Compétences Techniques */}
+        {/* Section 6: Compétences Techniques */}
         <div className="p-6 rounded-xl border border-border bg-card space-y-5">
           <div className="flex items-center justify-between border-b border-border/50 pb-3">
             <div className="flex items-center gap-3">
@@ -960,7 +1298,7 @@ export default function ProfilePage() {
             <button
               type="button"
               onClick={addSkill}
-              className="text-xs px-3 py-1.5 rounded-md bg-muted hover:bg-muted/80 text-foreground border border-border flex items-center gap-1.5 transition-colors"
+              className="text-xs px-3 py-1.5 rounded-md bg-muted hover:bg-muted/80 text-foreground border border-border flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Ajouter une compétence</span>
@@ -1004,7 +1342,7 @@ export default function ProfilePage() {
                   <button
                     type="button"
                     onClick={() => removeSkill(idx)}
-                    className="text-muted-foreground hover:text-destructive p-1 transition-colors"
+                    className="text-muted-foreground hover:text-destructive p-1 transition-colors cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -1012,6 +1350,239 @@ export default function ProfilePage() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Section 7: Activités Extra-Professionnelles (AJOUT DEMANDÉ) */}
+        <div className="p-6 rounded-xl border border-border bg-card space-y-5">
+          <div className="flex items-center justify-between border-b border-border/50 pb-3">
+            <div className="flex items-center gap-3">
+              <Award className="w-5 h-5 text-primary" />
+              <div>
+                <h2 className="text-base font-semibold text-foreground">Activités Extra-Professionnelles & Vie Associative</h2>
+                <p className="text-xs text-muted-foreground">Clubs universitaires, associations, hackathons, responsabilités et engagement étudiant.</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={addExtracurricular}
+              className="text-xs px-3 py-1.5 rounded-md bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 flex items-center gap-1.5 transition-colors cursor-pointer font-medium"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Ajouter une activité</span>
+            </button>
+          </div>
+
+          {(profile.extracurriculars || []).length === 0 ? (
+            <p className="text-xs text-muted-foreground italic py-3">
+              Aucune activité extra-professionnelle renseignée. Ajoutez vos engagements en clubs (ex: Enactus, IEEE, Robotique) pour enrichir votre CV.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {(profile.extracurriculars || []).map((extra, idx) => (
+                <div key={idx} className="p-4 rounded-lg bg-muted/40 border border-border/70 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono font-medium text-primary">Activité #{idx + 1}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeExtracurricular(idx)}
+                      className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <input
+                      type="text"
+                      placeholder="Organisation / Club / Association * (ex: Enactus)"
+                      value={extra.organization}
+                      onChange={(e) => updateExtracurricular(idx, { ...extra, organization: e.target.value })}
+                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Rôle / Responsabilité * (ex: Chef de Projet, Membre Actif)"
+                      value={extra.role}
+                      onChange={(e) => updateExtracurricular(idx, { ...extra, role: e.target.value })}
+                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Année / Période (ex: 2023 – 2024)"
+                      value={extra.date}
+                      onChange={(e) => updateExtracurricular(idx, { ...extra, date: e.target.value })}
+                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                  <textarea
+                    rows={2}
+                    placeholder="Description concrète des actions, projets menés, événements organisés et réalisations..."
+                    value={extra.description}
+                    onChange={(e) => updateExtracurricular(idx, { ...extra, description: e.target.value })}
+                    className="w-full px-3 py-2 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Section 8: Langues Maîtrisées (AJOUT DEMANDÉ) */}
+        <div className="p-6 rounded-xl border border-border bg-card space-y-5">
+          <div className="flex items-center justify-between border-b border-border/50 pb-3">
+            <div className="flex items-center gap-3">
+              <Globe2 className="w-5 h-5 text-primary" />
+              <div>
+                <h2 className="text-base font-semibold text-foreground">Langues Maîtrisées</h2>
+                <p className="text-xs text-muted-foreground">Niveaux de compétences linguistiques pour vos candidatures internationales et locales.</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={addLanguage}
+              className="text-xs px-3 py-1.5 rounded-md bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 flex items-center gap-1.5 transition-colors cursor-pointer font-medium"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Ajouter une langue</span>
+            </button>
+          </div>
+
+          {(profile.languages || []).length === 0 ? (
+            <p className="text-xs text-muted-foreground italic py-3">
+              Aucune langue renseignée. Ajoutez vos langues maîtrisées (Français, Anglais, Arabe...) pour votre CV.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {(profile.languages || []).map((lang, idx) => (
+                <div key={idx} className="p-3 rounded-lg bg-muted/40 border border-border/70 flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="Langue (ex: Anglais) *"
+                    value={lang.name}
+                    onChange={(e) => updateLanguage(idx, { ...lang, name: e.target.value })}
+                    className="flex-1 px-2.5 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                  />
+                  <select
+                    value={lang.level}
+                    onChange={(e) => updateLanguage(idx, { ...lang, level: e.target.value })}
+                    className="px-2 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                  >
+                    <option value="Langue maternelle">Maternelle</option>
+                    <option value="Courant / Bilingue (C1/C2)">Courant (C1/C2)</option>
+                    <option value="Professionnel / Technique (B2)">Technique (B2)</option>
+                    <option value="Intermédiaire (B1)">Intermédiaire (B1)</option>
+                    <option value="Notions élémentaires (A1/A2)">Notions (A1/A2)</option>
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => removeLanguage(idx)}
+                    className="text-muted-foreground hover:text-destructive p-1 transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Section 9: Bouton de Téléchargement du CV Complet (DEMANDE FORMELLE DE L'UTILISATEUR) */}
+        <div className="p-6 md:p-8 rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-card via-card to-primary/5 shadow-xl space-y-6">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary flex-shrink-0">
+                <FileDown className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-foreground font-display flex items-center gap-2">
+                  <span>Télécharger mon CV Complet (PDF A4 Vectoriel)</span>
+                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                    100% Souverain
+                  </span>
+                </h3>
+                <p className="text-xs text-muted-foreground mt-1 max-w-2xl leading-relaxed">
+                  Générez et téléchargez instantanément votre CV vectoriel A4 officiel compilé par le moteur Playwright.
+                  Ce CV compile l'intégralité de vos informations déjà saisies : 
+                  <span className="font-semibold text-foreground"> Coordonnées, Formations, Stages, Expériences, Projets, Compétences, Activités Extra-Professionnelles et Langues</span>.
+                </p>
+              </div>
+            </div>
+
+            {/* Language toggle + Download trigger */}
+            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+              <div className="flex items-center rounded-lg border border-border bg-muted/60 p-1 text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setCvDownloadLang("fr")}
+                  className={`px-3 py-1.5 rounded-md transition-all cursor-pointer ${
+                    cvDownloadLang === "fr"
+                      ? "bg-primary text-white shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Version FR
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCvDownloadLang("en")}
+                  className={`px-3 py-1.5 rounded-md transition-all cursor-pointer ${
+                    cvDownloadLang === "en"
+                      ? "bg-primary text-white shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Version EN
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleDownloadCV}
+                disabled={isDownloadingCv}
+                className="flex-1 md:flex-none px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-sm font-bold flex items-center justify-center gap-2.5 shadow-lg shadow-primary/25 hover:shadow-primary/35 transition-all disabled:opacity-60 cursor-pointer"
+              >
+                {isDownloadingCv ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Compilation PDF...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    <span>Télécharger mon CV (PDF)</span>
+                  </>
+                )}
+              </button>
+
+              <Link
+                href="/cv"
+                className="px-3.5 py-2.5 rounded-xl border border-border/80 bg-card hover:bg-muted text-xs font-medium text-foreground flex items-center gap-1.5 transition-colors"
+                title="Ouvrir le Studio CV pour personnaliser les marges, polices ou sections"
+              >
+                <span>Studio CV</span>
+                <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Quick checklist of included elements */}
+          <div className="pt-4 border-t border-border/40 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <Check className="w-3.5 h-3.5 text-emerald-600" />
+              <span>{stages.length} Stage{stages.length > 1 ? "s" : ""}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Check className="w-3.5 h-3.5 text-emerald-600" />
+              <span>{profile.projects.length} Projet{profile.projects.length > 1 ? "s" : ""}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Check className="w-3.5 h-3.5 text-emerald-600" />
+              <span>{(profile.extracurriculars || []).length} Activité{(profile.extracurriculars || []).length > 1 ? "s" : ""} extra</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Check className="w-3.5 h-3.5 text-emerald-600" />
+              <span>{(profile.languages || []).length} Langue{(profile.languages || []).length > 1 ? "s" : ""}</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

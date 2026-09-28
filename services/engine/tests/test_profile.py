@@ -128,3 +128,63 @@ def test_database_init_on_disk(tmp_path, monkeypatch):
     assert settings.db_path.exists()
     assert settings.db_path.is_file()
 
+
+def test_profile_stages_extracurriculars_languages_and_pdf():
+    payload = {
+        "full_name": "Test Engineer",
+        "email": "engineer@test.com",
+        "experiences": [
+            {
+                "company": "Alpha Tech",
+                "role": "Stagiaire Cloud DevOps",
+                "location": "Tunis",
+                "start_date": "Juin 2025",
+                "end_date": "Août 2025",
+                "description": "Automatisation CI/CD et déploiement Kubernetes.",
+                "technologies": ["Kubernetes", "Docker", "GitLab CI"],
+                "experience_type": "stage",
+            },
+            {
+                "company": "Beta Consulting",
+                "role": "Consultant Développeur",
+                "location": "Paris",
+                "start_date": "Septembre 2025",
+                "end_date": "Présent",
+                "description": "Développement backend FastAPI.",
+                "technologies": ["FastAPI", "Python"],
+                "experience_type": "job",
+            },
+        ],
+        "extracurriculars": [
+            {
+                "organization": "Club Robotique ESPRIT",
+                "role": "Responsable Technique",
+                "date": "2023 - 2024",
+                "description": "Direction des projets et ateliers techniques.",
+            }
+        ],
+        "languages": [
+            {"name": "Français", "level": "Courant / C2"},
+            {"name": "Anglais", "level": "Technique / B2"},
+        ],
+    }
+
+    put_res = client.put("/api/profile", json=payload)
+    assert put_res.status_code == 200
+    data = put_res.json()
+
+    assert len(data["experiences"]) == 2
+    assert data["experiences"][0]["experience_type"] == "stage"
+    assert data["experiences"][1]["experience_type"] == "job"
+    assert len(data["extracurriculars"]) == 1
+    assert data["extracurriculars"][0]["organization"] == "Club Robotique ESPRIT"
+    assert len(data["languages"]) == 2
+    assert data["languages"][0]["name"] == "Français"
+
+    # Test PDF download endpoint
+    pdf_res = client.get("/api/cv/profile-pdf?lang=fr")
+    assert pdf_res.status_code == 200
+    assert pdf_res.headers["content-type"] == "application/pdf"
+    assert "attachment;" in pdf_res.headers["content-disposition"]
+    assert len(pdf_res.content) > 1000
+

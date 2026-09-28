@@ -40,6 +40,24 @@ def _migrate_db(engine) -> None:
         except Exception:
             pass
 
+        try:
+            conn.execute(text("ALTER TABLE experiences ADD COLUMN experience_type VARCHAR DEFAULT 'stage'"))
+            conn.commit()
+        except Exception:
+            pass
+
+        try:
+            conn.execute(text("ALTER TABLE master_profiles ADD COLUMN languages_raw TEXT DEFAULT '[]'"))
+            conn.commit()
+        except Exception:
+            pass
+
+        try:
+            conn.execute(text("ALTER TABLE master_profiles ADD COLUMN extracurriculars_raw TEXT DEFAULT '[]'"))
+            conn.commit()
+        except Exception:
+            pass
+
         # Migrations additives pour le Deep Scraping & Filtrage Temporel
         additive_columns = [
             ("published_at", "TIMESTAMP"),

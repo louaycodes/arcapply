@@ -108,6 +108,7 @@ def update_profile(
                 end_date=exp_data.end_date,
                 description=exp_data.description,
                 technologies_raw=",".join(exp_data.technologies) if exp_data.technologies else "",
+                experience_type=exp_data.experience_type or "stage",
             )
             profile.experiences.append(exp)
 
@@ -136,6 +137,14 @@ def update_profile(
                 level=skill_data.level,
             )
             profile.skills.append(skill)
+
+    # Mise à jour des langues si fournies
+    if data.languages is not None:
+        profile.languages = data.languages
+
+    # Mise à jour des activités extra-professionnelles si fournies
+    if data.extracurriculars is not None:
+        profile.extracurriculars = data.extracurriculars
 
     # Évaluation de la complétude
     status_result = evaluate_profile_completeness(profile)
