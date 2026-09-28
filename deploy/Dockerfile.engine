@@ -1,0 +1,46 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    DEBIAN_FRONTEND=noninteractive
+
+# Installation des dépendances système de base
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    git \
+    build-essential \
+    libglib2.0-0 \
+    libnss3 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    libgbm1 \
+    libpango-1.0-0 \
+    libasound2 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copie des fichiers de dépendances backend
+COPY services/engine/pyproject.toml services/engine/README.md /app/
+
+# Installation des dépendances Python
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir .
+
+# Installation des navigateurs Playwright pour le scraping
+RUN playwright install chromium --with-deps || true
+
+# Copie du code source backend
+COPY services/engine/app /app/app
+
+# Création du répertoire de données SQLite persistant
+RUN mkdir -p /root/.arcapply
+
+EXPOSE 8000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
