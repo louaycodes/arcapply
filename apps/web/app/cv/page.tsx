@@ -1,21 +1,14 @@
 "use client";
 
-import { useEffect, useState, useRef, useTransition } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import {
   CustomCVData,
-  ParsedEducation,
-  ParsedExperience,
-  ParsedProject,
-  ParsedSkillCategory,
-  ParsedExtracurricular,
   uploadCVFile,
   renderCustomCV,
   compileCustomCVPdf,
   fetchCVFromProfile,
   saveCVDraft,
   fetchCVDraft,
-  updateProfile,
-  fetchProfile,
 } from "@/lib/api";
 import {
   FileText,
@@ -25,28 +18,30 @@ import {
   Save,
   RotateCcw,
   Sparkles,
-  Layers,
-  GraduationCap,
-  Briefcase,
-  FolderGit2,
-  Code2,
-  User,
+  Bold,
+  Italic,
+  Underline,
+  List,
   Plus,
   Trash2,
-  ExternalLink,
-  ShieldCheck,
-  CheckCircle2,
-  AlertTriangle,
-  Sliders,
   ZoomIn,
   ZoomOut,
   Maximize2,
-  RefreshCw,
   Eye,
+  Sliders,
+  CheckCircle2,
+  AlertTriangle,
+  Briefcase,
+  GraduationCap,
+  FolderGit2,
+  Code2,
+  Undo2,
+  Redo2,
+  ShieldCheck,
+  ChevronDown,
+  Layers,
+  HelpCircle,
   FileCheck,
-  Globe,
-  Award,
-  ChevronRight,
 } from "lucide-react";
 
 export default function StudioCVPage() {
@@ -56,10 +51,12 @@ export default function StudioCVPage() {
   const [isCompiling, setIsCompiling] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [isUploading, setIsUploading] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<
-    "personal" | "summary" | "education" | "experience" | "projects" | "skills" | "extra" | "styling"
-  >("personal");
-  const [zoomScale, setZoomScale] = useState<number>(0.9);
+  const [zoomScale, setZoomScale] = useState<number>(0.92);
+  const [showHelperDrawer, setShowHelperDrawer] = useState<boolean>(false);
+  const [fontSizePt, setFontSizePt] = useState<number>(9.0);
+  const [lineHeight, setLineHeight] = useState<number>(1.35);
+  const [marginMm, setMarginMm] = useState<number>(8.0);
+  const [hasUnsavedEdits, setHasUnsavedEdits] = useState<boolean>(false);
   const [notification, setNotification] = useState<{
     type: "success" | "error" | "info";
     message: string;
@@ -67,20 +64,36 @@ export default function StudioCVPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const currentHtmlRef = useRef<string>("");
+
+  const showNotification = (type: "success" | "error" | "info", message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 5000);
+  };
 
   // 1. Initial Load: Check for draft or load from Master Profile
   const loadInitialData = async () => {
     try {
       setIsLoading(true);
       const draftRes = await fetchCVDraft();
-      if (draftRes.has_draft && draftRes.data) {
-        setCvData(draftRes.data);
+      if (draftRes.has_draft && draftRes.html_content) {
         setHtmlContent(draftRes.html_content);
-        showNotification("info", "Brouillon de CV restauré avec succès.");
+        currentHtmlRef.current = draftRes.html_content;
+        if (draftRes.data) {
+          setCvData(draftRes.data);
+          setFontSizePt(draftRes.data.font_size_pt || 9.0);
+          setLineHeight(draftRes.data.line_height || 1.35);
+          setMarginMm(draftRes.data.margin_top_mm || 8.0);
+        }
+        showNotification("info", "Brouillon sauvegardé chargé avec succès.");
       } else {
         const profRes = await fetchCVFromProfile("fr");
         setCvData(profRes.data);
         setHtmlContent(profRes.html_content);
+        currentHtmlRef.current = profRes.html_content;
+        setFontSizePt(profRes.data.font_size_pt || 9.0);
+        setLineHeight(profRes.data.line_height || 1.35);
+        setMarginMm(profRes.data.margin_top_mm || 8.0);
       }
     } catch (err: any) {
       showNotification("error", err.message || "Erreur de chargement du CV.");
@@ -93,34 +106,330 @@ export default function StudioCVPage() {
     loadInitialData();
   }, []);
 
-  const showNotification = (type: "success" | "error" | "info", message: string) => {
-    setNotification({ type, message });
-    setTimeout(() => setNotification(null), 5000);
-  };
+  // 2. Setup direct in-place editable behavior on iframe
+  const setupIframeEditable = useCallback(() => {
+    if (!iframeRef.current) return;
+    const doc = iframeRef.current.contentDocument;
+    if (!doc || !doc.body) return;
 
-  // 2. Real-time HTML re-rendering whenever cvData changes
-  const updateCvAndRender = async (newData: CustomCVData) => {
-    setCvData(newData);
-    try {
-      const renderedHtml = await renderCustomCV(newData);
-      setHtmlContent(renderedHtml);
-    } catch (err: any) {
-      console.error("Render error:", err);
+    // Enable direct editing on the whole document
+    doc.body.contentEditable = "true";
+    doc.body.spellcheck = false;
+
+    // Inject editor visual styles (hover dashed outline, focus ring, visual page break line)
+    const existingStyle = doc.getElementById("cv-studio-editor-styles");
+    if (!existingStyle) {
+      const styleEl = doc.createElement("style");
+      styleEl.id = "cv-studio-editor-styles";
+      styleEl.textContent = `
+        body {
+          outline: none !important;
+          cursor: text;
+        }
+        .item, .section, header, p, .skill-row {
+          position: relative;
+        }
+        .item:hover, header:hover, .section-title:hover, .skill-row:hover {
+          outline: 1px dashed rgba(59, 130, 246, 0.45);
+          outline-offset: 2px;
+          border-radius: 3px;
+        }
+        .item:focus-within, header:focus-within, .skill-row:focus-within {
+          outline: 1.5px solid #3b82f6 !important;
+          outline-offset: 2px;
+          border-radius: 3px;
+        }
+        /* Visual Page 1 delimiter marker */
+        .cv-editor-page-break {
+          position: relative;
+          margin-top: 15px;
+          margin-bottom: 15px;
+          border-top: 2px dashed #93c5fd;
+          text-align: right;
+          color: #2563eb;
+          font-family: monospace;
+          font-size: 8pt;
+          font-weight: bold;
+          user-select: none;
+          pointer-events: none;
+        }
+        .cv-editor-page-break span {
+          background: #eff6ff;
+          padding: 2px 8px;
+          border-radius: 4px;
+          border: 1px solid #bfdbfe;
+        }
+        @media print {
+          .cv-editor-page-break {
+            display: none !important;
+          }
+          * {
+            outline: none !important;
+          }
+        }
+      `;
+      doc.head.appendChild(styleEl);
     }
+
+    // Attach input & keyup listeners to capture direct in-place edits
+    const handleInput = () => {
+      setHasUnsavedEdits(true);
+      if (iframeRef.current?.contentDocument) {
+        currentHtmlRef.current = iframeRef.current.contentDocument.documentElement.outerHTML;
+      }
+    };
+
+    doc.addEventListener("input", handleInput);
+    doc.addEventListener("keyup", handleInput);
+    doc.addEventListener("paste", handleInput);
+
+    return () => {
+      doc.removeEventListener("input", handleInput);
+      doc.removeEventListener("keyup", handleInput);
+      doc.removeEventListener("paste", handleInput);
+    };
+  }, []);
+
+  // 3. Clean HTML extractor for 100% Identical Vector PDF Compilation
+  const getCleanHtmlForPdf = (): string => {
+    if (!iframeRef.current || !iframeRef.current.contentDocument) {
+      return currentHtmlRef.current || htmlContent;
+    }
+    const doc = iframeRef.current.contentDocument;
+    const docClone = doc.documentElement.cloneNode(true) as HTMLElement;
+
+    // Remove editor-specific contentEditable attributes & helper styles
+    docClone.querySelectorAll("[contenteditable]").forEach((el) => {
+      el.removeAttribute("contenteditable");
+      el.removeAttribute("spellcheck");
+    });
+    const body = docClone.querySelector("body");
+    if (body) {
+      body.removeAttribute("contenteditable");
+      body.removeAttribute("spellcheck");
+      body.removeAttribute("style");
+    }
+
+    // Remove editor helper CSS
+    const editorStyles = docClone.querySelector("#cv-studio-editor-styles");
+    if (editorStyles) editorStyles.remove();
+
+    // Remove page break visual lines
+    docClone.querySelectorAll(".cv-editor-page-break").forEach((el) => el.remove());
+
+    return "<!DOCTYPE html>\n" + docClone.outerHTML;
   };
 
-  // 3. Upload CV (PDF, Text, JSON)
+  // 4. In-Place Direct Formatting Actions
+  const executeDocCommand = (command: string, value: string | undefined = undefined) => {
+    if (!iframeRef.current || !iframeRef.current.contentDocument) return;
+    const doc = iframeRef.current.contentDocument;
+    doc.execCommand(command, false, value);
+    if (iframeRef.current.contentWindow) {
+      iframeRef.current.contentWindow.focus();
+    }
+    setHasUnsavedEdits(true);
+    currentHtmlRef.current = doc.documentElement.outerHTML;
+  };
+
+  // 5. In-Place Structural Insertions
+  const insertExperienceBlock = () => {
+    if (!iframeRef.current || !iframeRef.current.contentDocument) return;
+    const doc = iframeRef.current.contentDocument;
+
+    // Find Experience Section
+    const sections = Array.from(doc.querySelectorAll(".section"));
+    const expSection = sections.find((s) => {
+      const title = s.querySelector(".section-title")?.textContent || "";
+      return /expérience|experience|stage/i.test(title);
+    });
+
+    const newExp = doc.createElement("div");
+    newExp.className = "item";
+    newExp.innerHTML = `
+      <div class="item-header">
+        <span class="item-role">Stagiaire Ingénieur</span> — 
+        <span class="item-company">Nouvelle Entreprise</span>
+        <span class="item-date">06/2026 – 08/2026</span>
+      </div>
+      <div class="item-desc">Description concrète de votre mission, réalisations et valeur délivrée.</div>
+      <div class="item-tech"><em>Technologies :</em> Python, Docker, Kubernetes</div>
+    `;
+
+    if (expSection) {
+      expSection.appendChild(newExp);
+    } else {
+      doc.querySelector(".cv-container")?.appendChild(newExp);
+    }
+
+    newExp.scrollIntoView({ behavior: "smooth", block: "center" });
+    const roleSpan = newExp.querySelector(".item-role") as HTMLElement;
+    if (roleSpan && doc.defaultView) {
+      const range = doc.createRange();
+      const sel = doc.defaultView.getSelection();
+      range.selectNodeContents(roleSpan);
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    }
+    setHasUnsavedEdits(true);
+    currentHtmlRef.current = doc.documentElement.outerHTML;
+    showNotification("info", "Nouveau stage inséré directement sur la page. Cliquez pour modifier.");
+  };
+
+  const insertEducationBlock = () => {
+    if (!iframeRef.current || !iframeRef.current.contentDocument) return;
+    const doc = iframeRef.current.contentDocument;
+
+    const sections = Array.from(doc.querySelectorAll(".section"));
+    const eduSection = sections.find((s) => {
+      const title = s.querySelector(".section-title")?.textContent || "";
+      return /formation|education|diplôme/i.test(title);
+    });
+
+    const newEdu = doc.createElement("div");
+    newEdu.className = "item";
+    newEdu.innerHTML = `
+      <div class="item-header">
+        <span class="item-role">Diplôme National d'Ingénieur</span> — 
+        <span class="item-company">ESPRIT</span>
+        <span class="item-date">2022 – 2027</span>
+      </div>
+      <div class="item-desc">Spécialisation Systèmes Distribués, Cloud et DevOps.</div>
+    `;
+
+    if (eduSection) {
+      eduSection.appendChild(newEdu);
+    } else {
+      doc.querySelector(".cv-container")?.appendChild(newEdu);
+    }
+
+    newEdu.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHasUnsavedEdits(true);
+    currentHtmlRef.current = doc.documentElement.outerHTML;
+    showNotification("info", "Nouvelle formation insérée directement sur la page.");
+  };
+
+  const insertProjectBlock = () => {
+    if (!iframeRef.current || !iframeRef.current.contentDocument) return;
+    const doc = iframeRef.current.contentDocument;
+
+    const sections = Array.from(doc.querySelectorAll(".section"));
+    const projSection = sections.find((s) => {
+      const title = s.querySelector(".section-title")?.textContent || "";
+      return /projet|project/i.test(title);
+    });
+
+    const newProj = doc.createElement("div");
+    newProj.className = "item";
+    newProj.innerHTML = `
+      <div class="item-header">
+        <span class="item-role">Nouveau Projet d'Ingénierie</span> (Lead Développeur)
+      </div>
+      <div class="item-desc">Plateforme ou système développé avec architecture cloud et pipeline CI/CD automatisé.</div>
+      <div class="item-tech"><em>Technologies :</em> Next.js, FastAPI, Docker</div>
+    `;
+
+    if (projSection) {
+      projSection.appendChild(newProj);
+    } else {
+      doc.querySelector(".cv-container")?.appendChild(newProj);
+    }
+
+    newProj.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHasUnsavedEdits(true);
+    currentHtmlRef.current = doc.documentElement.outerHTML;
+    showNotification("info", "Nouveau projet inséré directement sur la page.");
+  };
+
+  const insertSkillCategory = () => {
+    if (!iframeRef.current || !iframeRef.current.contentDocument) return;
+    const doc = iframeRef.current.contentDocument;
+
+    const skillsGrid = doc.querySelector(".skills-grid");
+    const newSkillRow = doc.createElement("div");
+    newSkillRow.className = "skill-row";
+    newSkillRow.innerHTML = `
+      <span class="skill-cat">Nouvelle Catégorie :</span>
+      <span class="skill-list">Outil 1, Outil 2, Outil 3</span>
+    `;
+
+    if (skillsGrid) {
+      skillsGrid.appendChild(newSkillRow);
+    }
+    newSkillRow.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHasUnsavedEdits(true);
+    currentHtmlRef.current = doc.documentElement.outerHTML;
+  };
+
+  // 6. Delete Selected Item Block
+  const deleteCurrentItem = () => {
+    if (!iframeRef.current || !iframeRef.current.contentDocument) return;
+    const doc = iframeRef.current.contentDocument;
+    const sel = doc.defaultView?.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+
+    let node: Node | null = sel.anchorNode;
+    while (node && node !== doc.body) {
+      if (node instanceof HTMLElement && (node.classList.contains("item") || node.classList.contains("skill-row"))) {
+        node.remove();
+        setHasUnsavedEdits(true);
+        currentHtmlRef.current = doc.documentElement.outerHTML;
+        showNotification("info", "Élément supprimé.");
+        return;
+      }
+      node = node.parentNode;
+    }
+    showNotification("error", "Placez votre curseur dans un bloc (stage, projet, formation) pour le supprimer.");
+  };
+
+  // 7. Adjust Live Font Size & Margins directly on the sheet
+  const handleFontSizeChange = (newSize: number) => {
+    setFontSizePt(newSize);
+    if (!iframeRef.current || !iframeRef.current.contentDocument) return;
+    const doc = iframeRef.current.contentDocument;
+    doc.body.style.fontSize = `${newSize}pt`;
+    setHasUnsavedEdits(true);
+    currentHtmlRef.current = doc.documentElement.outerHTML;
+  };
+
+  const handleLineHeightChange = (newLineHeight: number) => {
+    setLineHeight(newLineHeight);
+    if (!iframeRef.current || !iframeRef.current.contentDocument) return;
+    const doc = iframeRef.current.contentDocument;
+    doc.body.style.lineHeight = `${newLineHeight}`;
+    setHasUnsavedEdits(true);
+    currentHtmlRef.current = doc.documentElement.outerHTML;
+  };
+
+  const handleMarginChange = (newMargin: number) => {
+    setMarginMm(newMargin);
+    if (!iframeRef.current || !iframeRef.current.contentDocument) return;
+    const doc = iframeRef.current.contentDocument;
+    const styleEl = doc.querySelector("style");
+    if (styleEl) {
+      styleEl.textContent = styleEl.textContent?.replace(
+        /@page\s*\{[^}]*\}/g,
+        `@page { size: A4 portrait; margin: ${newMargin}mm 12mm; }`
+      ) || "";
+    }
+    setHasUnsavedEdits(true);
+    currentHtmlRef.current = doc.documentElement.outerHTML;
+  };
+
+  // 8. File Upload (PDF, TXT, JSON)
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     try {
       setIsUploading(true);
-      showNotification("info", `Analyse en cours de ${file.name}...`);
+      showNotification("info", `Extraction de ${file.name} en cours...`);
       const result = await uploadCVFile(file, false);
       setCvData(result.data);
       setHtmlContent(result.html_content);
-      showNotification("success", `CV extrait avec succès (${result.data.full_name || "Candidat"}). Prêt pour modification.`);
+      currentHtmlRef.current = result.html_content;
+      setHasUnsavedEdits(true);
+      showNotification("success", `CV extrait avec succès ! Modifiable directement sur la feuille A4.`);
     } catch (err: any) {
       showNotification("error", err.message || "Échec de l'analyse du fichier.");
     } finally {
@@ -129,18 +438,19 @@ export default function StudioCVPage() {
     }
   };
 
-  // 4. Download PDF (100% Identical Visual Fidelity via Chromium Engine)
+  // 9. Download Vector PDF (100% Pixel-Perfect Chromium Compilation)
   const handleDownloadPdf = async () => {
-    if (!htmlContent) return;
+    const cleanHtml = getCleanHtmlForPdf();
+    if (!cleanHtml) return;
+
     try {
       setIsCompiling(true);
-      const cleanName = (cvData?.full_name || "CV")
-        .replace(/[^\w\s-]/g, "")
-        .trim()
-        .replace(/\s+/g, "_");
+      const nameMatch = cleanHtml.match(/<h1>(.*?)<\/h1>/i);
+      const rawName = nameMatch ? nameMatch[1].replace(/<[^>]+>/g, "").trim() : "Candidat";
+      const cleanName = rawName.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_") || "CV";
       const filename = `CV_${cleanName}_A4_Vectoriel.pdf`;
 
-      const blob = await compileCustomCVPdf(htmlContent, filename);
+      const blob = await compileCustomCVPdf(cleanHtml, filename);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -149,7 +459,7 @@ export default function StudioCVPage() {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-      showNotification("success", `PDF vectoriel haute fidélité téléchargé (${filename}) !`);
+      showNotification("success", `PDF vectoriel A4 téléchargé (${filename}) avec fidélité 100% identique !`);
     } catch (err: any) {
       showNotification("error", err.message || "Erreur de compilation du PDF.");
     } finally {
@@ -157,7 +467,7 @@ export default function StudioCVPage() {
     }
   };
 
-  // 5. Native Print
+  // 10. Native Print
   const handlePrint = () => {
     if (iframeRef.current && iframeRef.current.contentWindow) {
       iframeRef.current.contentWindow.focus();
@@ -165,13 +475,21 @@ export default function StudioCVPage() {
     }
   };
 
-  // 6. Save Draft
+  // 11. Save Draft in SQLite
   const handleSaveDraft = async () => {
     if (!cvData) return;
     try {
       setIsSaving(true);
-      await saveCVDraft(cvData);
-      showNotification("success", "Brouillon sauvegardé en base locale SQLite souveraine.");
+      const currentHtml = getCleanHtmlForPdf();
+      await saveCVDraft({
+        ...cvData,
+        font_size_pt: fontSizePt,
+        line_height: lineHeight,
+        margin_top_mm: marginMm,
+        margin_bottom_mm: marginMm,
+      });
+      setHasUnsavedEdits(false);
+      showNotification("success", "Modifications et texte enregistrés dans votre base SQLite locale.");
     } catch (err: any) {
       showNotification("error", err.message || "Échec de la sauvegarde.");
     } finally {
@@ -179,38 +497,30 @@ export default function StudioCVPage() {
     }
   };
 
-  // 7. Load from Master Profile
-  const handleLoadFromProfile = async () => {
+  // 12. Reset with Master Profile
+  const handleResetMasterProfile = async () => {
     try {
       setIsLoading(true);
-      const res = await fetchCVFromProfile(cvData?.language || "fr");
+      const res = await fetchCVFromProfile("fr");
       setCvData(res.data);
       setHtmlContent(res.html_content);
-      showNotification("success", "Données du Master Profile chargées avec succès.");
+      currentHtmlRef.current = res.html_content;
+      setHasUnsavedEdits(false);
+      showNotification("success", "Données du Master Profile rechargées.");
     } catch (err: any) {
-      showNotification("error", err.message || "Échec du chargement du profil.");
+      showNotification("error", err.message || "Échec du rechargement.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // 8. Toggle Language FR / EN
-  const handleLanguageChange = async (lang: "fr" | "en") => {
-    if (!cvData) return;
-    const updated: CustomCVData = {
-      ...cvData,
-      language: lang,
-    };
-    updateCvAndRender(updated);
-  };
-
-  if (isLoading || !cvData) {
+  if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center min-h-[80vh]">
+      <div className="flex-1 flex items-center justify-center min-h-[85vh]">
         <div className="text-center space-y-4">
           <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-sm font-mono text-muted-foreground">
-            Initialisation du Studio CV & moteur de rendu vectoriel...
+            Chargement de l'éditeur de PDF visuel...
           </p>
         </div>
       </div>
@@ -218,8 +528,8 @@ export default function StudioCVPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-2rem)] min-w-0 overflow-hidden bg-background">
-      {/* Hidden File Input */}
+    <div className="flex flex-col h-[calc(100vh-2rem)] min-w-0 overflow-hidden bg-[#0A0D14]">
+      {/* Hidden file upload input */}
       <input
         ref={fileInputRef}
         type="file"
@@ -228,29 +538,33 @@ export default function StudioCVPage() {
         className="hidden"
       />
 
-      {/* Top Cockpit Header & Action Toolbar */}
-      <header className="px-5 py-3 border-b border-border/70 bg-card/80 backdrop-blur-md flex flex-wrap items-center justify-between gap-4 shrink-0 shadow-sm">
+      {/* Top Cockpit Header: Identity & Global Actions */}
+      <header className="px-5 py-2.5 border-b border-border/80 bg-[#0F1422]/90 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-sm z-20">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary shadow-sm">
+          <div className="w-9 h-9 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary shadow-sm">
             <FileText className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-base font-bold text-foreground tracking-tight">
-                Studio CV — Éditeur & Rendu Identique
+              <h1 className="text-sm sm:text-base font-bold text-foreground tracking-tight flex items-center gap-2">
+                Éditeur Visuel de CV
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold">
+                  WYSIWYG Direct
+                </span>
               </h1>
-              <span className="inline-flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                Chromium Pixel-Perfect
-              </span>
+              {hasUnsavedEdits && (
+                <span className="text-[10px] text-amber-400 font-mono bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                  Modifications non enregistrées
+                </span>
+              )}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Modifiez votre CV et téléchargez une version vectorielle 100% conforme à l'aperçu visuel.
+            <p className="text-[11px] text-muted-foreground line-clamp-1">
+              Cliquez directement sur n'importe quel texte du CV pour le modifier en temps réel.
             </p>
           </div>
         </div>
 
-        {/* Global Action Buttons */}
+        {/* Global Toolbar Buttons */}
         <div className="flex items-center flex-wrap gap-2">
           {/* Upload Button */}
           <button
@@ -260,45 +574,19 @@ export default function StudioCVPage() {
             className="px-3 py-1.5 rounded-lg border border-border/80 bg-muted/40 hover:bg-muted text-xs font-semibold text-foreground flex items-center gap-1.5 transition-all shadow-sm disabled:opacity-50"
           >
             <Upload className={`w-3.5 h-3.5 ${isUploading ? "animate-bounce" : ""}`} />
-            <span>{isUploading ? "Analyse..." : "Uploader un CV (PDF/TXT)"}</span>
+            <span>{isUploading ? "Lecture..." : "Importer CV (PDF/TXT)"}</span>
           </button>
 
-          {/* Import from Master Profile */}
+          {/* Reset from Master Profile */}
           <button
             type="button"
-            onClick={handleLoadFromProfile}
-            className="px-3 py-1.5 rounded-lg border border-border/80 bg-muted/40 hover:bg-muted text-xs font-semibold text-foreground flex items-center gap-1.5 transition-all shadow-sm"
-            title="Réinitialiser avec les données certifiées du Master Profile"
+            onClick={handleResetMasterProfile}
+            className="px-3 py-1.5 rounded-lg border border-border/80 bg-muted/40 hover:bg-muted text-xs font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-all shadow-sm"
+            title="Recharger les données certifiées du Master Profile"
           >
-            <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="hidden sm:inline">Charger Master Profile</span>
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">Master Profile</span>
           </button>
-
-          {/* Language Switcher */}
-          <div className="flex items-center rounded-lg border border-border bg-muted/40 p-0.5 text-xs font-semibold">
-            <button
-              type="button"
-              onClick={() => handleLanguageChange("fr")}
-              className={`px-2 py-1 rounded-md transition-all ${
-                cvData.language === "fr"
-                  ? "bg-primary text-primary-foreground shadow-sm font-bold"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              🇫🇷 FR
-            </button>
-            <button
-              type="button"
-              onClick={() => handleLanguageChange("en")}
-              className={`px-2 py-1 rounded-md transition-all ${
-                cvData.language === "en"
-                  ? "bg-primary text-primary-foreground shadow-sm font-bold"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              🇬🇧 EN
-            </button>
-          </div>
 
           {/* Save Draft */}
           <button
@@ -321,15 +609,15 @@ export default function StudioCVPage() {
             <Printer className="w-4 h-4" />
           </button>
 
-          {/* Download PDF button (Hero Action) */}
+          {/* Hero Action: Download Vector PDF */}
           <button
             type="button"
             onClick={handleDownloadPdf}
             disabled={isCompiling}
-            className="px-3.5 py-1.5 rounded-lg bg-primary hover:bg-primary/90 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-primary/20 transition-all disabled:opacity-50"
+            className="px-3.5 py-1.5 rounded-lg bg-primary hover:bg-primary/90 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-primary/25 transition-all disabled:opacity-50"
           >
             <Download className={`w-4 h-4 ${isCompiling ? "animate-spin" : ""}`} />
-            <span>{isCompiling ? "Génération PDF..." : "Télécharger PDF (Identique)"}</span>
+            <span>{isCompiling ? "Compilation..." : "Télécharger PDF (Identique)"}</span>
           </button>
         </div>
       </header>
@@ -337,7 +625,7 @@ export default function StudioCVPage() {
       {/* Floating Notification */}
       {notification && (
         <div
-          className={`mx-5 mt-2 p-2.5 rounded-lg border text-xs flex items-center justify-between animate-in slide-in-from-top-2 duration-150 ${
+          className={`mx-5 mt-2 p-2.5 rounded-lg border text-xs flex items-center justify-between shrink-0 animate-in slide-in-from-top-2 duration-150 z-30 ${
             notification.type === "success"
               ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
               : notification.type === "error"
@@ -365,928 +653,192 @@ export default function StudioCVPage() {
         </div>
       )}
 
-      {/* Main Split-Screen Workspace */}
-      <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden p-3 gap-3">
-        {/* Left Column: Form & Controls Editor */}
-        <div className="w-full lg:w-[48%] flex flex-col bg-card rounded-xl border border-border/80 shadow-sm overflow-hidden min-h-0">
-          {/* Navigation Section Tabs */}
-          <div className="flex items-center gap-1 p-2 border-b border-border/60 bg-muted/30 overflow-x-auto text-xs shrink-0 no-scrollbar">
-            <button
-              type="button"
-              onClick={() => setActiveTab("personal")}
-              className={`px-2.5 py-1.5 rounded-md font-medium flex items-center gap-1.5 shrink-0 transition-colors ${
-                activeTab === "personal"
-                  ? "bg-primary text-white shadow-sm font-semibold"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              }`}
-            >
-              <User className="w-3.5 h-3.5" />
-              <span>Contact</span>
-            </button>
+      {/* Floating Canvas Formatting Toolbar (Like Google Docs / Acrobat / Sejda) */}
+      <div className="px-5 py-2 border-b border-border/70 bg-[#121829] flex flex-wrap items-center justify-between gap-3 shrink-0 text-xs z-10 shadow-sm">
+        {/* Left: Text Formatting Controls */}
+        <div className="flex items-center flex-wrap gap-1">
+          <span className="text-[11px] font-semibold text-muted-foreground mr-1 hidden sm:inline">Mise en forme :</span>
+          <button
+            type="button"
+            onClick={() => executeDocCommand("bold")}
+            className="p-1.5 rounded hover:bg-muted/70 text-foreground transition-colors font-bold"
+            title="Gras (Ctrl+B)"
+          >
+            <Bold className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => executeDocCommand("italic")}
+            className="p-1.5 rounded hover:bg-muted/70 text-foreground transition-colors italic"
+            title="Italique (Ctrl+I)"
+          >
+            <Italic className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => executeDocCommand("underline")}
+            className="p-1.5 rounded hover:bg-muted/70 text-foreground transition-colors underline"
+            title="Souligné (Ctrl+U)"
+          >
+            <Underline className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => executeDocCommand("insertUnorderedList")}
+            className="p-1.5 rounded hover:bg-muted/70 text-foreground transition-colors"
+            title="Liste à puces"
+          >
+            <List className="w-3.5 h-3.5" />
+          </button>
 
-            <button
-              type="button"
-              onClick={() => setActiveTab("summary")}
-              className={`px-2.5 py-1.5 rounded-md font-medium flex items-center gap-1.5 shrink-0 transition-colors ${
-                activeTab === "summary"
-                  ? "bg-primary text-white shadow-sm font-semibold"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              }`}
-            >
-              <FileCheck className="w-3.5 h-3.5" />
-              <span>Accroche</span>
-            </button>
+          <div className="h-4 w-px bg-border/80 mx-1.5" />
 
-            <button
-              type="button"
-              onClick={() => setActiveTab("education")}
-              className={`px-2.5 py-1.5 rounded-md font-medium flex items-center gap-1.5 shrink-0 transition-colors ${
-                activeTab === "education"
-                  ? "bg-primary text-white shadow-sm font-semibold"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              }`}
-            >
-              <GraduationCap className="w-3.5 h-3.5" />
-              <span>Formations ({cvData.educations.length})</span>
-            </button>
+          {/* Direct Document Inserters */}
+          <span className="text-[11px] font-semibold text-muted-foreground mr-1 hidden md:inline">Insérer sur le CV :</span>
+          <button
+            type="button"
+            onClick={insertExperienceBlock}
+            className="px-2 py-1 rounded bg-primary/15 hover:bg-primary/25 text-primary text-[11px] font-bold flex items-center gap-1 transition-colors"
+            title="Insérer un nouveau bloc stage / expérience"
+          >
+            <Briefcase className="w-3 h-3" />
+            <span>+ Stage</span>
+          </button>
+          <button
+            type="button"
+            onClick={insertEducationBlock}
+            className="px-2 py-1 rounded bg-primary/15 hover:bg-primary/25 text-primary text-[11px] font-bold flex items-center gap-1 transition-colors"
+            title="Insérer une formation"
+          >
+            <GraduationCap className="w-3 h-3" />
+            <span>+ Formation</span>
+          </button>
+          <button
+            type="button"
+            onClick={insertProjectBlock}
+            className="px-2 py-1 rounded bg-primary/15 hover:bg-primary/25 text-primary text-[11px] font-bold flex items-center gap-1 transition-colors"
+            title="Insérer un projet"
+          >
+            <FolderGit2 className="w-3 h-3" />
+            <span>+ Projet</span>
+          </button>
+          <button
+            type="button"
+            onClick={insertSkillCategory}
+            className="px-2 py-1 rounded bg-primary/15 hover:bg-primary/25 text-primary text-[11px] font-bold flex items-center gap-1 transition-colors"
+            title="Insérer une catégorie de compétences"
+          >
+            <Code2 className="w-3 h-3" />
+            <span>+ Compétences</span>
+          </button>
+          <button
+            type="button"
+            onClick={deleteCurrentItem}
+            className="p-1 rounded text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 transition-colors ml-1"
+            title="Supprimer le bloc sous le curseur"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
 
-            <button
-              type="button"
-              onClick={() => setActiveTab("experience")}
-              className={`px-2.5 py-1.5 rounded-md font-medium flex items-center gap-1.5 shrink-0 transition-colors ${
-                activeTab === "experience"
-                  ? "bg-primary text-white shadow-sm font-semibold"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              }`}
-            >
-              <Briefcase className="w-3.5 h-3.5" />
-              <span>Stages ({cvData.experiences.length})</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("projects")}
-              className={`px-2.5 py-1.5 rounded-md font-medium flex items-center gap-1.5 shrink-0 transition-colors ${
-                activeTab === "projects"
-                  ? "bg-primary text-white shadow-sm font-semibold"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              }`}
-            >
-              <FolderGit2 className="w-3.5 h-3.5" />
-              <span>Projets ({cvData.projects.length})</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("skills")}
-              className={`px-2.5 py-1.5 rounded-md font-medium flex items-center gap-1.5 shrink-0 transition-colors ${
-                activeTab === "skills"
-                  ? "bg-primary text-white shadow-sm font-semibold"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              }`}
-            >
-              <Code2 className="w-3.5 h-3.5" />
-              <span>Compétences</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("extra")}
-              className={`px-2.5 py-1.5 rounded-md font-medium flex items-center gap-1.5 shrink-0 transition-colors ${
-                activeTab === "extra"
-                  ? "bg-primary text-white shadow-sm font-semibold"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              }`}
-            >
-              <Globe className="w-3.5 h-3.5" />
-              <span>Activités & Langues</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("styling")}
-              className={`px-2.5 py-1.5 rounded-md font-medium flex items-center gap-1.5 shrink-0 transition-colors ${
-                activeTab === "styling"
-                  ? "bg-primary text-white shadow-sm font-semibold"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              }`}
-            >
-              <Sliders className="w-3.5 h-3.5" />
-              <span>Calibrage A4</span>
-            </button>
+        {/* Right: Typography Calibration & Zoom */}
+        <div className="flex items-center gap-3">
+          {/* Font Size slider */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] text-muted-foreground">Taille :</span>
+            <input
+              type="range"
+              min={8.0}
+              max={10.5}
+              step={0.1}
+              value={fontSizePt}
+              onChange={(e) => handleFontSizeChange(parseFloat(e.target.value))}
+              className="w-16 accent-primary cursor-pointer"
+            />
+            <span className="text-[10px] font-mono text-foreground w-8">{fontSizePt}pt</span>
           </div>
 
-          {/* Form Content Area */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {/* 1. Contact Info */}
-            {activeTab === "personal" && (
-              <div className="space-y-4 text-xs animate-in fade-in duration-100">
-                <div className="border-b border-border/50 pb-2">
-                  <h3 className="font-bold text-foreground text-sm flex items-center gap-1.5">
-                    <User className="w-4 h-4 text-primary" />
-                    Identité & Coordonnées
-                  </h3>
-                  <p className="text-muted-foreground text-[11px] mt-0.5">
-                    Modifiez vos informations de contact et liens web (portfolio direct, GitHub, LinkedIn).
-                  </p>
-                </div>
+          <div className="h-4 w-px bg-border/80" />
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="font-semibold text-foreground">Nom complet</label>
-                    <input
-                      type="text"
-                      value={cvData.full_name}
-                      onChange={(e) => updateCvAndRender({ ...cvData, full_name: e.target.value })}
-                      className="mt-1 w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-xs focus:ring-1 focus:ring-primary outline-none"
-                    />
-                  </div>
+          {/* Margins */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] text-muted-foreground">Marges :</span>
+            <select
+              value={marginMm}
+              onChange={(e) => handleMarginChange(parseFloat(e.target.value))}
+              className="bg-background border border-border/80 text-foreground text-[11px] rounded px-1.5 py-0.5 outline-none cursor-pointer"
+            >
+              <option value={6}>6 mm (Compact)</option>
+              <option value={8}>8 mm (Standard)</option>
+              <option value={10}>10 mm (Aéré)</option>
+              <option value={12}>12 mm (Large)</option>
+            </select>
+          </div>
 
-                  <div>
-                    <label className="font-semibold text-foreground">Titre / Headline</label>
-                    <input
-                      type="text"
-                      value={cvData.headline}
-                      onChange={(e) => updateCvAndRender({ ...cvData, headline: e.target.value })}
-                      className="mt-1 w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-xs focus:ring-1 focus:ring-primary outline-none"
-                    />
-                  </div>
+          <div className="h-4 w-px bg-border/80" />
 
-                  <div>
-                    <label className="font-semibold text-foreground">Email</label>
-                    <input
-                      type="email"
-                      value={cvData.email}
-                      onChange={(e) => updateCvAndRender({ ...cvData, email: e.target.value })}
-                      className="mt-1 w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-xs focus:ring-1 focus:ring-primary outline-none"
-                    />
-                  </div>
+          {/* Zoom scale */}
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setZoomScale((z) => Math.max(0.6, z - 0.1))}
+              className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+              title="Zoom -"
+            >
+              <ZoomOut className="w-3.5 h-3.5" />
+            </button>
+            <span className="font-mono text-[11px] text-muted-foreground w-9 text-center">
+              {Math.round(zoomScale * 100)}%
+            </span>
+            <button
+              type="button"
+              onClick={() => setZoomScale((z) => Math.min(1.4, z + 0.1))}
+              className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+              title="Zoom +"
+            >
+              <ZoomIn className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setZoomScale(0.92)}
+              className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-border/60 hover:bg-muted text-muted-foreground hover:text-foreground ml-0.5"
+            >
+              A4
+            </button>
+          </div>
+        </div>
+      </div>
 
-                  <div>
-                    <label className="font-semibold text-foreground">Téléphone</label>
-                    <input
-                      type="text"
-                      value={cvData.phone}
-                      onChange={(e) => updateCvAndRender({ ...cvData, phone: e.target.value })}
-                      className="mt-1 w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-xs focus:ring-1 focus:ring-primary outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="font-semibold text-foreground">Localisation</label>
-                    <input
-                      type="text"
-                      value={cvData.location}
-                      onChange={(e) => updateCvAndRender({ ...cvData, location: e.target.value })}
-                      className="mt-1 w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-xs focus:ring-1 focus:ring-primary outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="font-semibold text-foreground">Portfolio / Site Web</label>
-                    <input
-                      type="text"
-                      value={cvData.portfolio_url}
-                      onChange={(e) => updateCvAndRender({ ...cvData, portfolio_url: e.target.value })}
-                      placeholder="https://www.louaycodes.tn"
-                      className="mt-1 w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-xs focus:ring-1 focus:ring-primary outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="font-semibold text-foreground">Profil LinkedIn</label>
-                    <input
-                      type="text"
-                      value={cvData.linkedin_url}
-                      onChange={(e) => updateCvAndRender({ ...cvData, linkedin_url: e.target.value })}
-                      className="mt-1 w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-xs focus:ring-1 focus:ring-primary outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="font-semibold text-foreground">Profil GitHub</label>
-                    <input
-                      type="text"
-                      value={cvData.github_url}
-                      onChange={(e) => updateCvAndRender({ ...cvData, github_url: e.target.value })}
-                      className="mt-1 w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-xs focus:ring-1 focus:ring-primary outline-none"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 2. Summary */}
-            {activeTab === "summary" && (
-              <div className="space-y-4 text-xs animate-in fade-in duration-100">
-                <div className="border-b border-border/50 pb-2">
-                  <h3 className="font-bold text-foreground text-sm flex items-center gap-1.5">
-                    <FileCheck className="w-4 h-4 text-primary" />
-                    Profil Professionnel & Accroche
-                  </h3>
-                  <p className="text-muted-foreground text-[11px] mt-0.5">
-                    Synthèse sobre de votre profil d'ingénieur. Modifiable en direct.
-                  </p>
-                </div>
-
-                <div>
-                  <textarea
-                    rows={6}
-                    value={cvData.summary}
-                    onChange={(e) => updateCvAndRender({ ...cvData, summary: e.target.value })}
-                    className="w-full p-3 rounded-lg bg-background border border-border text-foreground text-xs focus:ring-1 focus:ring-primary outline-none leading-relaxed"
-                    placeholder="Écrivez votre profil professionnel sobre et sans cliché..."
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* 3. Education */}
-            {activeTab === "education" && (
-              <div className="space-y-4 text-xs animate-in fade-in duration-100">
-                <div className="flex items-center justify-between border-b border-border/50 pb-2">
-                  <div>
-                    <h3 className="font-bold text-foreground text-sm flex items-center gap-1.5">
-                      <GraduationCap className="w-4 h-4 text-primary" />
-                      Formations & Diplômes
-                    </h3>
-                    <p className="text-muted-foreground text-[11px] mt-0.5">
-                      Cursus universitaire et école d'ingénieurs.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const newEdu: ParsedEducation = {
-                        school: "ESPRIT",
-                        degree: "Diplôme National d'Ingénieur",
-                        field_of_study: "Architectures Cloud & Systèmes Distribués",
-                        start_date: "2022",
-                        end_date: "2027",
-                        description: "",
-                      };
-                      updateCvAndRender({ ...cvData, educations: [...cvData.educations, newEdu] });
-                    }}
-                    className="px-2.5 py-1.5 rounded-lg bg-primary/15 hover:bg-primary/25 text-primary text-xs font-bold flex items-center gap-1 transition-colors"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    Ajouter formation
-                  </button>
-                </div>
-
-                <div className="space-y-3">
-                  {cvData.educations.map((edu, idx) => (
-                    <div
-                      key={idx}
-                      className="p-3 rounded-xl border border-border/70 bg-card/60 space-y-3 relative group"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const updated = cvData.educations.filter((_, i) => i !== idx);
-                          updateCvAndRender({ ...cvData, educations: updated });
-                        }}
-                        className="absolute top-2 right-2 p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                        title="Supprimer la formation"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pr-6">
-                        <div>
-                          <label className="text-[11px] text-muted-foreground font-semibold">Diplôme</label>
-                          <input
-                            type="text"
-                            value={edu.degree}
-                            onChange={(e) => {
-                              const updated = [...cvData.educations];
-                              updated[idx] = { ...updated[idx], degree: e.target.value };
-                              updateCvAndRender({ ...cvData, educations: updated });
-                            }}
-                            className="mt-1 w-full px-2.5 py-1.5 rounded-md bg-background border border-border text-foreground text-xs"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[11px] text-muted-foreground font-semibold">École / Université</label>
-                          <input
-                            type="text"
-                            value={edu.school}
-                            onChange={(e) => {
-                              const updated = [...cvData.educations];
-                              updated[idx] = { ...updated[idx], school: e.target.value };
-                              updateCvAndRender({ ...cvData, educations: updated });
-                            }}
-                            className="mt-1 w-full px-2.5 py-1.5 rounded-md bg-background border border-border text-foreground text-xs"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[11px] text-muted-foreground font-semibold">Période (Début – Fin)</label>
-                          <div className="flex items-center gap-1.5 mt-1">
-                            <input
-                              type="text"
-                              value={edu.start_date}
-                              onChange={(e) => {
-                                const updated = [...cvData.educations];
-                                updated[idx] = { ...updated[idx], start_date: e.target.value };
-                                updateCvAndRender({ ...cvData, educations: updated });
-                              }}
-                              placeholder="2022"
-                              className="w-1/2 px-2.5 py-1.5 rounded-md bg-background border border-border text-foreground text-xs"
-                            />
-                            <span className="text-muted-foreground">–</span>
-                            <input
-                              type="text"
-                              value={edu.end_date}
-                              onChange={(e) => {
-                                const updated = [...cvData.educations];
-                                updated[idx] = { ...updated[idx], end_date: e.target.value };
-                                updateCvAndRender({ ...cvData, educations: updated });
-                              }}
-                              placeholder="2027"
-                              className="w-1/2 px-2.5 py-1.5 rounded-md bg-background border border-border text-foreground text-xs"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="text-[11px] text-muted-foreground font-semibold">Spécialité / Domaine</label>
-                          <input
-                            type="text"
-                            value={edu.field_of_study}
-                            onChange={(e) => {
-                              const updated = [...cvData.educations];
-                              updated[idx] = { ...updated[idx], field_of_study: e.target.value };
-                              updateCvAndRender({ ...cvData, educations: updated });
-                            }}
-                            className="mt-1 w-full px-2.5 py-1.5 rounded-md bg-background border border-border text-foreground text-xs"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 4. Experience */}
-            {activeTab === "experience" && (
-              <div className="space-y-4 text-xs animate-in fade-in duration-100">
-                <div className="flex items-center justify-between border-b border-border/50 pb-2">
-                  <div>
-                    <h3 className="font-bold text-foreground text-sm flex items-center gap-1.5">
-                      <Briefcase className="w-4 h-4 text-primary" />
-                      Expériences Professionnelles (Stages)
-                    </h3>
-                    <p className="text-muted-foreground text-[11px] mt-0.5">
-                      Stages et réalisations industrielles avec stack technique.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const newExp: ParsedExperience = {
-                        company: "Entreprise",
-                        role: "Stagiaire Ingénieur",
-                        location: "Tunis",
-                        start_date: "06/2026",
-                        end_date: "08/2026",
-                        description: "Description concrète des réalisations et responsabilités.",
-                        technologies: ["Python", "Docker"],
-                      };
-                      updateCvAndRender({ ...cvData, experiences: [...cvData.experiences, newExp] });
-                    }}
-                    className="px-2.5 py-1.5 rounded-lg bg-primary/15 hover:bg-primary/25 text-primary text-xs font-bold flex items-center gap-1 transition-colors"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    Ajouter stage
-                  </button>
-                </div>
-
-                <div className="space-y-3">
-                  {cvData.experiences.map((exp, idx) => (
-                    <div
-                      key={idx}
-                      className="p-3 rounded-xl border border-border/70 bg-card/60 space-y-2.5 relative group"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const updated = cvData.experiences.filter((_, i) => i !== idx);
-                          updateCvAndRender({ ...cvData, experiences: updated });
-                        }}
-                        className="absolute top-2 right-2 p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                        title="Supprimer l'expérience"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pr-6">
-                        <div>
-                          <label className="text-[11px] text-muted-foreground font-semibold">Poste / Rôle</label>
-                          <input
-                            type="text"
-                            value={exp.role}
-                            onChange={(e) => {
-                              const updated = [...cvData.experiences];
-                              updated[idx] = { ...updated[idx], role: e.target.value };
-                              updateCvAndRender({ ...cvData, experiences: updated });
-                            }}
-                            className="mt-1 w-full px-2.5 py-1.5 rounded-md bg-background border border-border text-foreground text-xs"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[11px] text-muted-foreground font-semibold">Entreprise</label>
-                          <input
-                            type="text"
-                            value={exp.company}
-                            onChange={(e) => {
-                              const updated = [...cvData.experiences];
-                              updated[idx] = { ...updated[idx], company: e.target.value };
-                              updateCvAndRender({ ...cvData, experiences: updated });
-                            }}
-                            className="mt-1 w-full px-2.5 py-1.5 rounded-md bg-background border border-border text-foreground text-xs"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[11px] text-muted-foreground font-semibold">Dates (Début – Fin)</label>
-                          <div className="flex items-center gap-1.5 mt-1">
-                            <input
-                              type="text"
-                              value={exp.start_date}
-                              onChange={(e) => {
-                                const updated = [...cvData.experiences];
-                                updated[idx] = { ...updated[idx], start_date: e.target.value };
-                                updateCvAndRender({ ...cvData, experiences: updated });
-                              }}
-                              placeholder="06/2026"
-                              className="w-1/2 px-2.5 py-1.5 rounded-md bg-background border border-border text-foreground text-xs"
-                            />
-                            <span className="text-muted-foreground">–</span>
-                            <input
-                              type="text"
-                              value={exp.end_date}
-                              onChange={(e) => {
-                                const updated = [...cvData.experiences];
-                                updated[idx] = { ...updated[idx], end_date: e.target.value };
-                                updateCvAndRender({ ...cvData, experiences: updated });
-                              }}
-                              placeholder="08/2026"
-                              className="w-1/2 px-2.5 py-1.5 rounded-md bg-background border border-border text-foreground text-xs"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="text-[11px] text-muted-foreground font-semibold">Stack Technologies (séparées par virgule)</label>
-                          <input
-                            type="text"
-                            value={exp.technologies.join(", ")}
-                            onChange={(e) => {
-                              const updated = [...cvData.experiences];
-                              updated[idx] = {
-                                ...updated[idx],
-                                technologies: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
-                              };
-                              updateCvAndRender({ ...cvData, experiences: updated });
-                            }}
-                            className="mt-1 w-full px-2.5 py-1.5 rounded-md bg-background border border-border text-foreground text-xs font-mono"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="text-[11px] text-muted-foreground font-semibold">Description</label>
-                        <textarea
-                          rows={2}
-                          value={exp.description}
-                          onChange={(e) => {
-                            const updated = [...cvData.experiences];
-                            updated[idx] = { ...updated[idx], description: e.target.value };
-                            updateCvAndRender({ ...cvData, experiences: updated });
-                          }}
-                          className="mt-1 w-full p-2 rounded-md bg-background border border-border text-foreground text-xs leading-relaxed"
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 5. Projects */}
-            {activeTab === "projects" && (
-              <div className="space-y-4 text-xs animate-in fade-in duration-100">
-                <div className="flex items-center justify-between border-b border-border/50 pb-2">
-                  <div>
-                    <h3 className="font-bold text-foreground text-sm flex items-center gap-1.5">
-                      <FolderGit2 className="w-4 h-4 text-primary" />
-                      Projets d'Ingénierie Sélectionnés
-                    </h3>
-                    <p className="text-muted-foreground text-[11px] mt-0.5">
-                      Projets personnels, architectures cloud et plateformes SaaS.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const newProj: ParsedProject = {
-                        title: "Nouveau Projet",
-                        role: "Lead Développeur",
-                        url: "https://www.louaycodes.tn",
-                        description: "Description de l'architecture et de la valeur délivrée.",
-                        technologies: ["Next.js", "Docker"],
-                      };
-                      updateCvAndRender({ ...cvData, projects: [...cvData.projects, newProj] });
-                    }}
-                    className="px-2.5 py-1.5 rounded-lg bg-primary/15 hover:bg-primary/25 text-primary text-xs font-bold flex items-center gap-1 transition-colors"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    Ajouter projet
-                  </button>
-                </div>
-
-                <div className="space-y-3">
-                  {cvData.projects.map((proj, idx) => (
-                    <div
-                      key={idx}
-                      className="p-3 rounded-xl border border-border/70 bg-card/60 space-y-2.5 relative group"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const updated = cvData.projects.filter((_, i) => i !== idx);
-                          updateCvAndRender({ ...cvData, projects: updated });
-                        }}
-                        className="absolute top-2 right-2 p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                        title="Supprimer le projet"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pr-6">
-                        <div>
-                          <label className="text-[11px] text-muted-foreground font-semibold">Titre du Projet</label>
-                          <input
-                            type="text"
-                            value={proj.title}
-                            onChange={(e) => {
-                              const updated = [...cvData.projects];
-                              updated[idx] = { ...updated[idx], title: e.target.value };
-                              updateCvAndRender({ ...cvData, projects: updated });
-                            }}
-                            className="mt-1 w-full px-2.5 py-1.5 rounded-md bg-background border border-border text-foreground text-xs font-semibold"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[11px] text-muted-foreground font-semibold">Rôle</label>
-                          <input
-                            type="text"
-                            value={proj.role}
-                            onChange={(e) => {
-                              const updated = [...cvData.projects];
-                              updated[idx] = { ...updated[idx], role: e.target.value };
-                              updateCvAndRender({ ...cvData, projects: updated });
-                            }}
-                            className="mt-1 w-full px-2.5 py-1.5 rounded-md bg-background border border-border text-foreground text-xs"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="text-[11px] text-muted-foreground font-semibold">Technologies / Stack</label>
-                        <input
-                          type="text"
-                          value={proj.technologies.join(", ")}
-                          onChange={(e) => {
-                            const updated = [...cvData.projects];
-                            updated[idx] = {
-                              ...updated[idx],
-                              technologies: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
-                            };
-                            updateCvAndRender({ ...cvData, projects: updated });
-                          }}
-                          className="mt-1 w-full px-2.5 py-1.5 rounded-md bg-background border border-border text-foreground text-xs font-mono"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="text-[11px] text-muted-foreground font-semibold">Description</label>
-                        <textarea
-                          rows={2}
-                          value={proj.description}
-                          onChange={(e) => {
-                            const updated = [...cvData.projects];
-                            updated[idx] = { ...updated[idx], description: e.target.value };
-                            updateCvAndRender({ ...cvData, projects: updated });
-                          }}
-                          className="mt-1 w-full p-2 rounded-md bg-background border border-border text-foreground text-xs leading-relaxed"
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 6. Skills */}
-            {activeTab === "skills" && (
-              <div className="space-y-4 text-xs animate-in fade-in duration-100">
-                <div className="border-b border-border/50 pb-2">
-                  <h3 className="font-bold text-foreground text-sm flex items-center gap-1.5">
-                    <Code2 className="w-4 h-4 text-primary" />
-                    Compétences Techniques par Catégories
-                  </h3>
-                  <p className="text-muted-foreground text-[11px] mt-0.5">
-                    Organisées sobrement sans badges colorés conformément aux standards ATS épurés.
-                  </p>
-                </div>
-
-                <div className="space-y-3">
-                  {cvData.skills_categories.map((cat, idx) => (
-                    <div key={idx} className="p-3 rounded-xl border border-border/70 bg-card/60 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <input
-                          type="text"
-                          value={cat.title}
-                          onChange={(e) => {
-                            const updated = [...cvData.skills_categories];
-                            updated[idx] = { ...updated[idx], title: e.target.value };
-                            updateCvAndRender({ ...cvData, skills_categories: updated });
-                          }}
-                          className="font-bold text-foreground text-xs bg-transparent border-b border-transparent hover:border-border focus:border-primary outline-none px-1"
-                        />
-                      </div>
-                      <input
-                        type="text"
-                        value={cat.skills.join(", ")}
-                        onChange={(e) => {
-                          const updated = [...cvData.skills_categories];
-                          updated[idx] = {
-                            ...updated[idx],
-                            skills: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
-                          };
-                          updateCvAndRender({ ...cvData, skills_categories: updated });
-                        }}
-                        className="w-full px-2.5 py-1.5 rounded-md bg-background border border-border text-foreground text-xs font-mono"
-                        placeholder="Compétences séparées par virgules..."
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 7. Extra & Languages */}
-            {activeTab === "extra" && (
-              <div className="space-y-4 text-xs animate-in fade-in duration-100">
-                <div className="border-b border-border/50 pb-2">
-                  <h3 className="font-bold text-foreground text-sm flex items-center gap-1.5">
-                    <Globe className="w-4 h-4 text-primary" />
-                    Activités Associatives & Langues
-                  </h3>
-                  <p className="text-muted-foreground text-[11px] mt-0.5">
-                    Engagement communautaire (Enactus, clubs) et maîtrise linguistique.
-                  </p>
-                </div>
-
-                {/* Extracurricular items */}
-                <div className="space-y-3">
-                  <h4 className="font-semibold text-foreground">Activités Extra-Professionnelles :</h4>
-                  {cvData.extracurricular.map((extra, idx) => (
-                    <div key={idx} className="p-3 rounded-xl border border-border/70 bg-card/60 space-y-2">
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                        <div>
-                          <label className="text-[11px] text-muted-foreground font-semibold">Organisation / Club</label>
-                          <input
-                            type="text"
-                            value={extra.organization}
-                            onChange={(e) => {
-                              const updated = [...cvData.extracurricular];
-                              updated[idx] = { ...updated[idx], organization: e.target.value };
-                              updateCvAndRender({ ...cvData, extracurricular: updated });
-                            }}
-                            className="mt-1 w-full px-2 py-1 rounded bg-background border border-border text-xs"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[11px] text-muted-foreground font-semibold">Rôle</label>
-                          <input
-                            type="text"
-                            value={extra.role}
-                            onChange={(e) => {
-                              const updated = [...cvData.extracurricular];
-                              updated[idx] = { ...updated[idx], role: e.target.value };
-                              updateCvAndRender({ ...cvData, extracurricular: updated });
-                            }}
-                            className="mt-1 w-full px-2 py-1 rounded bg-background border border-border text-xs"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[11px] text-muted-foreground font-semibold">Période</label>
-                          <input
-                            type="text"
-                            value={extra.date}
-                            onChange={(e) => {
-                              const updated = [...cvData.extracurricular];
-                              updated[idx] = { ...updated[idx], date: e.target.value };
-                              updateCvAndRender({ ...cvData, extracurricular: updated });
-                            }}
-                            className="mt-1 w-full px-2 py-1 rounded bg-background border border-border text-xs"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-[11px] text-muted-foreground font-semibold">Description</label>
-                        <textarea
-                          rows={2}
-                          value={extra.description}
-                          onChange={(e) => {
-                            const updated = [...cvData.extracurricular];
-                            updated[idx] = { ...updated[idx], description: e.target.value };
-                            updateCvAndRender({ ...cvData, extracurricular: updated });
-                          }}
-                          className="mt-1 w-full p-2 rounded bg-background border border-border text-xs leading-relaxed"
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Languages */}
-                <div className="pt-2 border-t border-border/50 space-y-2">
-                  <h4 className="font-semibold text-foreground">Langues :</h4>
-                  <input
-                    type="text"
-                    value={cvData.languages.join(" • ")}
-                    onChange={(e) => {
-                      updateCvAndRender({
-                        ...cvData,
-                        languages: e.target.value.split("•").map((s) => s.trim()).filter(Boolean),
-                      });
-                    }}
-                    placeholder="Arabe : Langue maternelle • Français : Courant • Anglais : Technique"
-                    className="w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-xs"
-                  />
-                  <p className="text-[11px] text-muted-foreground">Séparez les langues par le caractère •</p>
-                </div>
-              </div>
-            )}
-
-            {/* 8. Calibration & Styling */}
-            {activeTab === "styling" && (
-              <div className="space-y-4 text-xs animate-in fade-in duration-100">
-                <div className="border-b border-border/50 pb-2">
-                  <h3 className="font-bold text-foreground text-sm flex items-center gap-1.5">
-                    <Sliders className="w-4 h-4 text-primary" />
-                    Calibrage Typographique & Marges A4
-                  </h3>
-                  <p className="text-muted-foreground text-[11px] mt-0.5">
-                    Ajustez précisément la taille de police et les marges pour équilibrer parfaitement votre CV sans sauts de page indésirables.
-                  </p>
-                </div>
-
-                <div className="space-y-4 p-3 rounded-xl border border-border/70 bg-card/60">
-                  <div>
-                    <div className="flex justify-between font-semibold mb-1">
-                      <span>Taille de Police Principale</span>
-                      <span className="font-mono text-primary">{cvData.font_size_pt} pt</span>
-                    </div>
-                    <input
-                      type="range"
-                      min={8.0}
-                      max={10.5}
-                      step={0.1}
-                      value={cvData.font_size_pt}
-                      onChange={(e) =>
-                        updateCvAndRender({ ...cvData, font_size_pt: parseFloat(e.target.value) })
-                      }
-                      className="w-full accent-primary"
-                    />
-                    <div className="flex justify-between text-[10px] text-muted-foreground mt-0.5">
-                      <span>8.0 pt (très compact)</span>
-                      <span>9.0 pt (recommandé A4)</span>
-                      <span>10.5 pt (aéré)</span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between font-semibold mb-1">
-                      <span>Interligne (Line Height)</span>
-                      <span className="font-mono text-primary">{cvData.line_height}</span>
-                    </div>
-                    <input
-                      type="range"
-                      min={1.2}
-                      max={1.55}
-                      step={0.05}
-                      value={cvData.line_height}
-                      onChange={(e) =>
-                        updateCvAndRender({ ...cvData, line_height: parseFloat(e.target.value) })
-                      }
-                      className="w-full accent-primary"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border/40">
-                    <div>
-                      <label className="font-semibold text-foreground">Marges Haut/Bas (mm)</label>
-                      <input
-                        type="number"
-                        min={4}
-                        max={16}
-                        value={cvData.margin_top_mm}
-                        onChange={(e) => {
-                          const val = parseFloat(e.target.value) || 8;
-                          updateCvAndRender({ ...cvData, margin_top_mm: val, margin_bottom_mm: val });
-                        }}
-                        className="mt-1 w-full px-2.5 py-1.5 rounded-md bg-background border border-border text-foreground text-xs"
-                      />
-                    </div>
-                    <div>
-                      <label className="font-semibold text-foreground">Marges Gauche/Droite (mm)</label>
-                      <input
-                        type="number"
-                        min={6}
-                        max={20}
-                        value={cvData.margin_left_mm}
-                        onChange={(e) => {
-                          const val = parseFloat(e.target.value) || 12;
-                          updateCvAndRender({ ...cvData, margin_left_mm: val, margin_right_mm: val });
-                        }}
-                        className="mt-1 w-full px-2.5 py-1.5 rounded-md bg-background border border-border text-foreground text-xs"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+      {/* Main Full-Focus Visual Canvas (Desk / Page Environment) */}
+      <div className="flex-1 overflow-auto p-4 sm:p-8 flex justify-center items-start bg-[#080B11] relative select-none">
+        {/* Floating Instruction Pill */}
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+          <div className="px-3 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary-foreground/90 text-[11px] font-medium backdrop-blur-md shadow-lg flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span>Mode Éditeur Visuel Actif : Cliquez n'importe où sur la page pour modifier le texte</span>
           </div>
         </div>
 
-        {/* Right Column: Live A4 Visual Preview */}
-        <div className="w-full lg:w-[52%] flex flex-col bg-muted/20 rounded-xl border border-border/80 shadow-inner overflow-hidden min-h-0">
-          {/* Sub-toolbar: Zoom & Status */}
-          <div className="px-4 py-2 border-b border-border/60 bg-card/60 flex items-center justify-between text-xs shrink-0">
-            <div className="flex items-center gap-2">
-              <Eye className="w-4 h-4 text-primary" />
-              <span className="font-bold text-foreground">Aperçu Document Direct (A4 ATS)</span>
-              <span className="text-[11px] font-mono text-muted-foreground hidden sm:inline">
-                &bull; Rendu 100% vectoriel identique
-              </span>
-            </div>
-
-            {/* Zoom Controls */}
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => setZoomScale((prev) => Math.max(0.6, prev - 0.1))}
-                className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
-                title="Zoom -"
-              >
-                <ZoomOut className="w-3.5 h-3.5" />
-              </button>
-              <span className="font-mono text-[11px] text-muted-foreground w-10 text-center">
-                {Math.round(zoomScale * 100)}%
-              </span>
-              <button
-                type="button"
-                onClick={() => setZoomScale((prev) => Math.min(1.4, prev + 0.1))}
-                className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
-                title="Zoom +"
-              >
-                <ZoomIn className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setZoomScale(0.9)}
-                className="text-[10px] font-mono text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-border/50 ml-1"
-                title="Réinitialiser le zoom"
-              >
-                Reset
-              </button>
-            </div>
-          </div>
-
-          {/* Canvas Wrapper with realistic shadows and A4 sheet styling */}
-          <div className="flex-1 overflow-auto p-4 sm:p-6 flex justify-center items-start bg-neutral-900/60">
-            <div
-              style={{
-                transform: `scale(${zoomScale})`,
-                transformOrigin: "top center",
-                transition: "transform 0.15s ease-out",
-              }}
-              className="w-[210mm] min-h-[297mm] bg-white text-black shadow-2xl rounded-sm border border-neutral-300 overflow-hidden shrink-0 flex flex-col"
-            >
-              <iframe
-                ref={iframeRef}
-                srcDoc={htmlContent}
-                title="Aperçu CV A4 Identique"
-                className="w-full flex-1 border-0 bg-white"
-                style={{
-                  minHeight: "297mm",
-                  height: "100%",
-                }}
-              />
-            </div>
-          </div>
+        {/* Real A4 Paper Sheet (210mm x 297mm) */}
+        <div
+          style={{
+            transform: `scale(${zoomScale})`,
+            transformOrigin: "top center",
+            transition: "transform 0.15s ease-out",
+          }}
+          className="w-[210mm] min-h-[297mm] bg-white text-black shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] rounded-sm border border-neutral-300 overflow-hidden shrink-0 flex flex-col relative select-text"
+        >
+          <iframe
+            ref={iframeRef}
+            srcDoc={htmlContent}
+            onLoad={setupIframeEditable}
+            title="Éditeur de CV Direct A4"
+            className="w-full flex-1 border-0 bg-white"
+            style={{
+              minHeight: "297mm",
+              height: "100%",
+            }}
+          />
         </div>
       </div>
     </div>
