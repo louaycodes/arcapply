@@ -91,11 +91,54 @@ def _migrate_db(engine) -> None:
         except Exception:
             pass
 
+        try:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id VARCHAR PRIMARY KEY,
+                    username VARCHAR UNIQUE NOT NULL,
+                    full_name VARCHAR DEFAULT '',
+                    role VARCHAR DEFAULT 'user',
+                    password_hash VARCHAR DEFAULT '',
+                    created_at TIMESTAMP
+                )
+            """))
+            conn.commit()
+        except Exception:
+            pass
 
-def init_db() -> None:
-    engine = get_engine()
+
+def seed_initial_users(engine) -> None:
+    from app.domain.models import User
+    from app.domain.auth import hash_password
+
+    with Session(engine) as session:
+        default_users = [
+            ("louay", "louay", "Louay", "admin"),
+            ("chaima", "chaima", "Chaima", "admin"),
+        ]
+        for uname, pwd, fname, role in default_users:
+            user = session.exec(select(User).where(User.username == uname)).first()
+            if not user:
+                user = User(
+                    username=uname,
+                    full_name=fname,
+                    role=role,
+                    password_hash=hash_password(pwd),
+                )
+                session.add(user)
+            else:
+                user.password_hash = hash_password(pwd)
+                user.full_name = fname
+                session.add(user)
+        session.commit()
+
+
+def init_db(engine=None) -> None:
+    if engine is None:
+        engine = get_engine()
     SQLModel.metadata.create_all(engine)
     _migrate_db(engine)
+    seed_initial_users(engine)
 
     # Assurer la présence du MasterProfile par défaut
     with Session(engine) as session:
@@ -110,6 +153,8 @@ def init_db() -> None:
             )
             session.add(profile)
             session.commit()
+
+
 
 
 def get_session() -> Generator[Session, None, None]:

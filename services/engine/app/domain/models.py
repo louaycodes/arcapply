@@ -582,3 +582,38 @@ class CustomCVDraft(SQLModel, table=True):
     html_content: str = Field(default="")
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
+
+
+# ============================================================================
+# User & Authentication Models
+# ============================================================================
+
+class UserBase(SQLModel):
+    username: str = Field(unique=True, index=True)
+    full_name: str = Field(default="")
+    role: str = Field(default="user")
+
+
+class User(UserBase, table=True):
+    __tablename__ = "users"
+    id: str = Field(default_factory=generate_uuid, primary_key=True)
+    password_hash: str = Field(default="")
+    created_at: datetime = Field(default_factory=utc_now)
+
+
+class UserRead(SQLModel):
+    id: str
+    username: str
+    full_name: str
+    role: str
+
+
+class UserLoginRequest(SQLModel):
+    username: str
+    password: str
+
+
+class UserLoginResponse(SQLModel):
+    token: str
+    user: UserRead
+
