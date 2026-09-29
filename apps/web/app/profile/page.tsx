@@ -41,6 +41,61 @@ import {
   Check,
 } from "lucide-react";
 
+function StackInput({
+  value = [],
+  onChange,
+  placeholder = "Technologies / Stack (ex: Python, Docker, AWS)",
+  className = "px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary",
+}: {
+  value?: string[];
+  onChange: (techs: string[]) => void;
+  placeholder?: string;
+  className?: string;
+}) {
+  const [text, setText] = useState<string>((value || []).join(", "));
+
+  // Synchronise le texte lorsque la valeur externe change (ex: chargement API ou switch de profil)
+  useEffect(() => {
+    const currentParsed = text
+      .split(/[,;]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const incoming = value || [];
+    if (JSON.stringify(currentParsed) !== JSON.stringify(incoming)) {
+      setText(incoming.join(", "));
+    }
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newText = e.target.value;
+    setText(newText);
+    const parsed = newText
+      .split(/[,;]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    onChange(parsed);
+  };
+
+  const handleBlur = () => {
+    const parsed = text
+      .split(/[,;]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    setText(parsed.join(", "));
+  };
+
+  return (
+    <input
+      type="text"
+      placeholder={placeholder}
+      value={text}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      className={className}
+    />
+  );
+}
+
 export default function ProfilePage() {
   const [profile, setProfile] = useState<MasterProfile | null>(null);
   const [status, setStatus] = useState<ProfileCompletenessStatus | null>(null);
@@ -1069,14 +1124,10 @@ export default function ProfilePage() {
                       onChange={(e) => updateStage(idx, { ...stage, end_date: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
-                    <input
-                      type="text"
-                      placeholder="Technologies (ex: Python, Docker, AWS)"
-                      value={stage.technologies ? stage.technologies.join(", ") : ""}
-                      onChange={(e) => {
-                        const techs = e.target.value.split(",").map((s) => s.trim()).filter(Boolean);
-                        updateStage(idx, { ...stage, technologies: techs });
-                      }}
+                    <StackInput
+                      placeholder="Technologies / Stack (ex: Python, Docker, AWS)"
+                      value={stage.technologies}
+                      onChange={(techs) => updateStage(idx, { ...stage, technologies: techs })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                   </div>
@@ -1176,14 +1227,10 @@ export default function ProfilePage() {
                       onChange={(e) => updateJob(idx, { ...job, end_date: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
-                    <input
-                      type="text"
-                      placeholder="Technologies (ex: TypeScript, Next.js)"
-                      value={job.technologies ? job.technologies.join(", ") : ""}
-                      onChange={(e) => {
-                        const techs = e.target.value.split(",").map((s) => s.trim()).filter(Boolean);
-                        updateJob(idx, { ...job, technologies: techs });
-                      }}
+                    <StackInput
+                      placeholder="Technologies / Stack (ex: TypeScript, Next.js)"
+                      value={job.technologies}
+                      onChange={(techs) => updateJob(idx, { ...job, technologies: techs })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                   </div>
@@ -1259,13 +1306,12 @@ export default function ProfilePage() {
                       }}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
-                    <input
-                      type="text"
-                      placeholder="Technologies clés (ex: Docker, Python)"
-                      value={proj.technologies ? proj.technologies.join(", ") : ""}
-                      onChange={(e) => {
+                    <StackInput
+                      placeholder="Technologies clés / Stack (ex: Docker, Python)"
+                      value={proj.technologies}
+                      onChange={(techs) => {
                         const updated = [...profile.projects];
-                        updated[idx].technologies = e.target.value.split(",").map((s) => s.trim()).filter(Boolean);
+                        updated[idx].technologies = techs;
                         setProfile({ ...profile, projects: updated });
                       }}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
