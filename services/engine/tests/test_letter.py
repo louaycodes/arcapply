@@ -294,12 +294,12 @@ def test_letter_vous_moi_nous_structure_pfe():
     assert "entretien" in content.lower()
 
 
-def test_letter_vous_moi_nous_structure_job_no_pfe_mentions():
-    """En mode JOB (CDI), aucune mention de PFE ou stage ne doit exister dans la lettre."""
+def test_letter_always_generates_pfe_structure():
+    """Toutes les lettres générées sont impérativement orientées stage PFE."""
     profile = MasterProfile(
-        id="prof-vous-moi-job",
+        id="prof-vous-moi-pfe",
         full_name="Sami Karray",
-        search_mode="JOB",
+        search_mode="PFE",
         is_complete=True,
     )
     profile.skills = [Skill(name="Go", category="Languages"), Skill(name="Docker", category="Tools")]
@@ -315,11 +315,11 @@ def test_letter_vous_moi_nous_structure_job_no_pfe_mentions():
         )
     ]
     job = JobOffer(
-        id="job-cdi-vmn",
-        title="Ingénieur DevOps & Cloud (CDI)",
+        id="job-pfe-vmn",
+        title="Stage PFE Ingénieur DevOps & Cloud",
         company="Société Générale",
-        offer_type="JOB",
-        description_raw="Poste CDI : Go, Docker.",
+        offer_type="PFE",
+        description_raw="Stage PFE : Go, Docker.",
     )
 
     ats_match = ATSMatchingEngine.evaluate_alignment(job, profile)
@@ -327,15 +327,10 @@ def test_letter_vous_moi_nous_structure_job_no_pfe_mentions():
     content = letter.content_markdown
     content_lower = content.lower()
 
-    # Invariant absolu : aucune mention de stage / PFE
-    assert "stage" not in content_lower, "Une candidature en mode JOB ne doit pas mentionner 'stage'"
-    assert "pfe" not in content_lower, "Une candidature en mode JOB ne doit pas mentionner 'pfe'"
-    assert "stagiaire" not in content_lower, "Une candidature en mode JOB ne doit pas mentionner 'stagiaire'"
-
-    # VOUS & NOUS adaptés au contrat CDI et disponibilité immédiate
+    # Invariant absolu : mention explicite de PFE ou stage 6 mois
+    assert "stage" in content_lower or "pfe" in content_lower
+    assert "six mois" in content_lower or "6 mois" in content_lower
     assert "Société Générale" in content
-    assert "Ingénieur DevOps & Cloud (CDI)" in content
-    assert "disponible immédiatement" in content_lower
     assert "Go Reverse Proxy" in content
     assert letter.cliche_score == 0
 
@@ -356,4 +351,48 @@ def test_enriched_cliche_sanitization():
     assert "soif d'apprendre" not in sanitized.lower()
     assert "couteau suisse" not in sanitized.lower()
     assert "relever ce challenge" not in sanitized.lower()
+
+
+def test_letter_ai_truncation_triggers_deterministic_fallback(monkeypatch):
+    """Vérifie qu'une génération IA tronquée (finish_reason='length' ou phrase suspendue) est rejetée au profit du repli déterministe."""
+    from unittest.mock import MagicMock
+    from app.config import settings
+
+    profile = MasterProfile(
+        id="prof-trunc-1",
+        full_name="Louay Zorai",
+        is_complete=True,
+    )
+    profile.skills = [Skill(name="Python", category="Languages")]
+    profile.educations = [Education(school="ENSI", field_of_study="Informatique")]
+    profile.projects = [Project(title="Cloud Ops", description="Projet cloud.", technologies_raw="Python")]
+
+    job = JobOffer(
+        id="job-trunc-1",
+        title="Stage PFE Cloud",
+        company="TechCo",
+        offer_type="PFE",
+        description_raw="Stage PFE Python",
+    )
+    ats_match = ATSMatchingEngine.evaluate_alignment(job, profile)
+
+    monkeypatch.setattr(settings, "groq_api_key", "mock-key")
+
+    # Mock de Groq simulant une coupure par finish_reason="length"
+    mock_choice = MagicMock()
+    mock_choice.finish_reason = "length"
+    mock_choice.message.content = "Madame, Monsieur, ce texte est tronqué au milieu de la phrase et les"
+
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.return_value.choices = [mock_choice]
+
+    with monkeypatch.context() as m:
+        m.setattr("groq.Groq", lambda api_key: mock_client)
+        letter = CoverLetterService.generate_cover_letter(job, profile, ats_match, use_ai=True)
+
+        # La lettre tronquée doit être rejetée et le repli déterministe complet doit être utilisé
+        assert letter.content_markdown is not None
+        assert "Madame, Monsieur" in letter.content_markdown
+        assert letter.content_markdown.strip().endswith(profile.full_name)
+        assert "tronqué au milieu de la phrase et les" not in letter.content_markdown
 

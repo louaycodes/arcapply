@@ -216,12 +216,8 @@ class CoverLetterService:
 
     @classmethod
     def _is_job_target(cls, job: JobOffer, profile: MasterProfile) -> bool:
-        """Détermine si la cible est un emploi (CDI/CDD) ou un stage PFE."""
-        if getattr(job, "offer_type", None) == "JOB":
-            return True
-        if getattr(job, "offer_type", None) == "PFE":
-            return False
-        return getattr(profile, "search_mode", "PFE") == "JOB"
+        """ArcApply est dédié à 100% aux stages PFE (Projet de Fin d'Études)."""
+        return False
 
     @classmethod
     def _build_vous_paragraph(
@@ -372,12 +368,8 @@ Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distin
             if not realizations_text:
                 realizations_text = f"Formation académique en {degree_name} à {school_name} avec pratique de {target_skills_str}."
 
-            mode_label = "EMPLOI (CDI / CDD)" if is_job_mode else "STAGE PFE (Projet de Fin d'Études 6 mois)"
-            mode_prohibitions = (
-                "STRICTEMENT INTERDIT de mentionner les mots 'stage', 'stagiaire', 'PFE' ou 'fin d'études'. Le candidat postule pour un emploi CDI/CDD."
-                if is_job_mode
-                else "Le candidat recherche son stage de fin d'études PFE d'une durée de 6 mois."
-            )
+            mode_label = "STAGE PFE (Projet de Fin d'Études 6 mois)"
+            mode_prohibitions = "Le candidat recherche activement son stage de fin d'études PFE d'une durée de 6 mois."
 
             missing_prohibitions = ""
             if ats_match.missing_skills:
@@ -397,17 +389,18 @@ DONNÉES DU CANDIDAT (SOURCE UNIQUE DE VÉRITÉ - ZÉRO HALLUCINATION) :
 - Statut / Mode de candidature : {mode_label}
 
 RÈGLES IMPÉRATIVES DE RÉDACTION :
-1. Structure en 4 paragraphes distincts :
+1. Structure en 4 paragraphes distincts selon la méthode Apec :
    - Paragraphe 1 (VOUS) : L'entreprise ciblée et ses enjeux techniques sur le poste.
    - Paragraphe 2 (MOI) : Les réalisations concrètes fournies ci-dessus avec leurs technologies exactes.
    - Paragraphe 3 (NOUS) : La valeur ajoutée et la contribution opérationnelle immédiate apportée à l'équipe.
-   - Paragraphe 4 (DEMAIN) : Disponibilité et invitation sobre à un entretien technique.
+   - Paragraphe 4 (DEMAIN) : Disponibilité (6 mois pour ce stage PFE) et invitation sobre à un entretien technique.
 2. Tu DOIS obligatoirement citer le titre exact de chaque projet mentionné entre guillemets « Titre du Projet » tel qu'indiqué dans les données (sans inverser ni modifier les mots).
 3. {mode_prohibitions}
 4. {missing_prohibitions}
 5. Ne JAMAIS inventer de projets, de chiffres ou d'entreprises non listés.
 6. Proscrire les superlatifs et clichés (« dynamique », « passionné depuis toujours », « opportunité rêvée »).
-7. Débuter par « Madame, Monsieur, » et conclure par les salutations professionnelles usuelles suivies du nom du candidat."""
+7. Débuter par « Madame, Monsieur, » et conclure obligatoirement par les salutations professionnelles usuelles suivies du nom complet du candidat : « {profile.full_name} ».
+8. Concision et complétude impérative : La lettre doit faire environ 250 à 300 mots au total (3 à 4 phrases bien construites par paragraphe). Tu DOIS impérativement achever entièrement le texte sans jamais laisser de phrase inachevée."""
 
             response = client.chat.completions.create(
                 messages=[
@@ -419,10 +412,16 @@ RÈGLES IMPÉRATIVES DE RÉDACTION :
                 ],
                 model=settings.effective_groq_model,
                 temperature=0.2,
-                max_tokens=450,
+                max_tokens=1000,
             )
 
-            generated_text = (response.choices[0].message.content or "").strip()
+            choice = response.choices[0]
+            finish_reason = getattr(choice, "finish_reason", None)
+            if finish_reason == "length":
+                logger.warning("Rejet génération IA : la génération a été tronquée par la limite max_tokens (finish_reason='length'). Repli déterministe.")
+                return None
+
+            generated_text = (choice.message.content or "").strip()
             if not generated_text:
                 return None
 
@@ -433,11 +432,16 @@ RÈGLES IMPÉRATIVES DE RÉDACTION :
                     logger.warning(f"Rejet génération IA : détection de missing_skill '{missing}'.")
                     return None
 
-            # Garde-fou 2 : Invariant cohérence du mode JOB (interdiction de 'stage' / 'pfe')
-            if is_job_mode:
-                if re.search(r"\b(stage|stagiaire|pfe)\b", lower_text):
-                    logger.warning("Rejet génération IA : mention de stage/PFE en mode JOB.")
-                    return None
+            # Garde-fou 2 : Intégrité et complétude structurelle (détection de coupure prématurée)
+            paragraphs = [p.strip() for p in generated_text.split("\n\n") if p.strip()]
+            if len(paragraphs) < 3:
+                logger.warning(f"Rejet génération IA : structure incomplète ({len(paragraphs)} paragraphes). Repli déterministe.")
+                return None
+
+            last_line = generated_text.strip().splitlines()[-1].strip()
+            if last_line.endswith((",", ";", ":", "-", "et", "ou", "de", "des", "le", "la", "les", "du", "un", "une")):
+                logger.warning(f"Rejet génération IA : phrase finale suspendue ou tronquée ('{last_line[-30:]}'). Repli déterministe.")
+                return None
 
             return generated_text
 
