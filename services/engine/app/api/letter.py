@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
 
 from app.adapters.database import get_session
+from app.api.auth import get_current_username
 from app.domain.ats import ATSMatchingEngine
 from app.domain.letter import CoverLetterService
 from app.domain.models import (
@@ -16,19 +17,37 @@ from app.domain.models import (
 router = APIRouter(prefix="/api/letter", tags=["Cover Letter"])
 
 
+def _get_user_profile(session: Session, username: str) -> MasterProfile | None:
+    uname = (username or "louay").strip().lower()
+    profile = session.exec(
+        select(MasterProfile).where(MasterProfile.user_id == uname)
+    ).first()
+    if not profile and uname == "louay":
+        profile = session.exec(
+            select(MasterProfile).where(
+                (MasterProfile.user_id == "louay") | (MasterProfile.id == "default-profile")
+            )
+        ).first()
+    return profile
+
+
 @router.post("/generate/{job_id}", response_model=CoverLetterRead)
-def generate_cover_letter(job_id: str, session: Session = Depends(get_session)) -> CoverLetterRead:
+def generate_cover_letter(
+    job_id: str,
+    username: str = Depends(get_current_username),
+    session: Session = Depends(get_session),
+) -> CoverLetterRead:
     """
-    Génère ou rafraîchit la lettre de motivation sobre d'élève-ingénieur (AD-4).
+    Génère ou rafraîchit la lettre de motivation sobre d'élève-ingénieur (AD-4) pour l'utilisateur.
     """
     job = session.get(JobOffer, job_id)
-    if not job:
+    if not job or job.user_id != username:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"error_code": "JOB_NOT_FOUND", "message": f"Offre {job_id} introuvable."},
         )
 
-    profile = session.get(MasterProfile, "default-profile")
+    profile = _get_user_profile(session, username)
     if not profile:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -46,8 +65,12 @@ def generate_cover_letter(job_id: str, session: Session = Depends(get_session)) 
 
     ats_match = ATSMatchingEngine.evaluate_alignment(job, profile)
     new_letter = CoverLetterService.generate_cover_letter(job, profile, ats_match)
+    new_letter.user_id = username
 
-    statement = select(CoverLetter).where(CoverLetter.job_id == job_id)
+    statement = select(CoverLetter).where(
+        CoverLetter.job_id == job_id,
+        CoverLetter.user_id == username,
+    )
     existing_letter = session.exec(statement).first()
 
     if existing_letter:
@@ -82,13 +105,27 @@ def generate_cover_letter(job_id: str, session: Session = Depends(get_session)) 
 
 
 @router.get("/{job_id}", response_model=CoverLetterRead)
-def get_cover_letter(job_id: str, session: Session = Depends(get_session)) -> CoverLetterRead:
-    """Récupère la lettre générée pour une offre (la génère si elle n'existe pas encore)."""
-    statement = select(CoverLetter).where(CoverLetter.job_id == job_id)
+def get_cover_letter(
+    job_id: str,
+    username: str = Depends(get_current_username),
+    session: Session = Depends(get_session),
+) -> CoverLetterRead:
+    """Récupère la lettre générée pour une offre de l'utilisateur (la génère si elle n'existe pas encore)."""
+    job = session.get(JobOffer, job_id)
+    if not job or job.user_id != username:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error_code": "JOB_NOT_FOUND", "message": f"Offre {job_id} introuvable."},
+        )
+
+    statement = select(CoverLetter).where(
+        CoverLetter.job_id == job_id,
+        CoverLetter.user_id == username,
+    )
     letter = session.exec(statement).first()
 
     if not letter:
-        return generate_cover_letter(job_id, session)
+        return generate_cover_letter(job_id, username, session)
 
     return CoverLetterRead(
         id=letter.id,
@@ -108,10 +145,21 @@ def get_cover_letter(job_id: str, session: Session = Depends(get_session)) -> Co
 def update_cover_letter(
     job_id: str,
     payload: CoverLetterUpdate,
+    username: str = Depends(get_current_username),
     session: Session = Depends(get_session),
 ) -> CoverLetterRead:
     """Met à jour le contenu de la lettre édité par l'étudiant et recalcule l'audit anti-clichés."""
-    statement = select(CoverLetter).where(CoverLetter.job_id == job_id)
+    job = session.get(JobOffer, job_id)
+    if not job or job.user_id != username:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error_code": "JOB_NOT_FOUND", "message": f"Offre {job_id} introuvable."},
+        )
+
+    statement = select(CoverLetter).where(
+        CoverLetter.job_id == job_id,
+        CoverLetter.user_id == username,
+    )
     letter = session.exec(statement).first()
 
     if not letter:

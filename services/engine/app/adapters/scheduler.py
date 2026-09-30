@@ -80,17 +80,19 @@ class CrawlerScheduler:
     """
 
     _instance = None
-    _last_crawl_time: datetime | None = None
-    _is_running: bool = False
+    _last_crawl_times: dict[str, datetime] = {}
+    _running_users: set[str] = set()
     _stats_by_source: dict[str, int] = {}
 
     @classmethod
-    def get_status(cls) -> dict[str, Any]:
+    def get_status(cls, user_id: str = "louay") -> dict[str, Any]:
+        target = (user_id or "louay").strip().lower()
+        last_time = cls._last_crawl_times.get(target)
         return {
             "registered_connectors": list(ALL_CONNECTORS.keys()),
             "total_connectors": len(ALL_CONNECTORS),
-            "is_running": cls._is_running,
-            "last_crawl_time": cls._last_crawl_time.isoformat() if cls._last_crawl_time else None,
+            "is_running": target in cls._running_users,
+            "last_crawl_time": last_time.isoformat() if last_time else None,
             "stats_by_source": cls._stats_by_source,
         }
 
@@ -104,14 +106,14 @@ class CrawlerScheduler:
         user_id: str = "louay",
     ) -> dict[str, Any]:
         """
-        Déclenche l'ingestion sur l'ensemble ou une sélection de plateformes.
+        Déclenche l'ingestion sur l'ensemble ou une sélection de plateformes pour un utilisateur donné.
         """
-        if cls._is_running:
-            return {"status": "already_running", "message": "Un crawl est déjà en cours d'exécution."}
-
-        cls._is_running = True
-        cls._last_crawl_time = utc_now()
         target_user = (user_id or "louay").strip().lower()
+        if target_user in cls._running_users:
+            return {"status": "already_running", "message": f"Un crawl est déjà en cours d'exécution pour {target_user}."}
+
+        cls._running_users.add(target_user)
+        cls._last_crawl_times[target_user] = utc_now()
 
         target_platforms = platforms if platforms else list(ALL_CONNECTORS.keys())
         search_kw = keywords if keywords else ["PFE", "Stage Ingénieur"]
@@ -133,7 +135,8 @@ class CrawlerScheduler:
 
                 await broadcast_event(
                     "SCRAPE_PROGRESS",
-                    {"platform": platform, "status": "running", "message": f"Scan en cours sur {platform}..."}
+                    {"platform": platform, "status": "running", "message": f"Scan en cours sur {platform}..."},
+                    target_user=target_user,
                 )
 
                 connector = connector_cls()
@@ -226,7 +229,8 @@ class CrawlerScheduler:
                             "apply_url": new_job.apply_url,
                             "published_at": new_job.published_at.isoformat() if new_job.published_at else None,
                             "collected_at": new_job.collected_at.isoformat(),
-                        }
+                        },
+                        target_user=target_user,
                     )
 
                 source_counts[platform] = platform_new
@@ -238,11 +242,12 @@ class CrawlerScheduler:
                         "platform": platform,
                         "status": "completed",
                         "message": f"{platform_new} nouvelle(s) opportunité(s) découverte(s).",
-                    }
+                    },
+                    target_user=target_user,
                 )
 
         finally:
-            cls._is_running = False
+            cls._running_users.discard(target_user)
             if owns_session:
                 sess.close()
 

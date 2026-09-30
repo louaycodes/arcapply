@@ -91,9 +91,14 @@ def _migrate_db(engine) -> None:
         except Exception:
             pass
 
-        for tbl in ["master_profiles", "job_offers", "targeted_cvs", "cover_letters"]:
+        for tbl in ["master_profiles", "job_offers", "targeted_cvs", "cover_letters", "email_interactions", "custom_cv_drafts"]:
             try:
                 conn.execute(text(f"ALTER TABLE {tbl} ADD COLUMN user_id VARCHAR DEFAULT 'louay'"))
+                conn.commit()
+            except Exception:
+                pass
+            try:
+                conn.execute(text(f"CREATE INDEX IF NOT EXISTS ix_{tbl}_user_id ON {tbl} (user_id)"))
                 conn.commit()
             except Exception:
                 pass
