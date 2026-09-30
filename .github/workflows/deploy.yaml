@@ -3,6 +3,10 @@ name: Deploy to VPS
 on:
   push:
     branches: [main]
+    paths:
+      - 'apps/**'
+      - 'services/**'
+      - '.github/workflows/deploy.yaml'
 
 concurrency:
   group: deploy-prod
@@ -20,6 +24,7 @@ jobs:
           port: ${{ secrets.VPS_PORT }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script_stop: true
+          command_timeout: 30m
           script: |
             cd /opt/arcapply/arcapply
             git fetch origin
@@ -27,7 +32,7 @@ jobs:
             cd services/engine
             /home/louay/.local/bin/uv sync --no-dev
             cd ../../apps/web
-            npm ci
+            npm install --no-audit --no-fund
             npm run build
             sudo -n systemctl restart arcapply-engine
             sudo -n systemctl restart arcapply-web
