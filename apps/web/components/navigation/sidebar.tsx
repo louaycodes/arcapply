@@ -8,7 +8,6 @@ import {
   UserCheck,
   KanbanSquare,
   Settings,
-  ShieldCheck,
   Server,
   FileText,
   LogOut,
@@ -51,16 +50,15 @@ export function Sidebar() {
     <aside className="w-64 border-r border-border bg-[#F7F3EC] flex flex-col justify-between p-4 min-h-screen shrink-0">
       <div>
         {/* Brand / Logo */}
-        <div className="flex items-center gap-3 px-3 py-4 mb-6 border-b border-border/80">
-          <div className="w-10 h-10 rounded-xl overflow-hidden shadow-md border border-orange-400/30 flex items-center justify-center bg-white shrink-0">
-            <img src="/favicon.ico" alt="ArcApply" className="w-7 h-7 object-contain" />
-          </div>
+        <div className="flex items-center gap-3 px-2 py-3 mb-6 border-b border-border/80">
+          <img
+            src="/logo.png"
+            alt="ArcApply Logo"
+            className="w-14 h-14 shrink-0 object-contain drop-shadow-sm"
+          />
           <div>
-            <h1 className="text-lg font-bold tracking-tight text-foreground font-display flex items-center gap-1.5">
+            <h1 className="text-lg font-bold tracking-tight text-foreground font-display">
               ArcApply
-              <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-gradient-to-r from-orange-100 to-amber-100 text-orange-900 border border-orange-200/80 shadow-xs">
-                PFE 2027
-              </span>
             </h1>
             <p className="text-xs text-muted-foreground font-medium">Assistant Candidatures</p>
           </div>

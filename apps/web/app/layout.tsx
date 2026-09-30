@@ -10,7 +10,12 @@ export const metadata: Metadata = {
   description:
     "Préparez, adaptez et suivez vos candidatures de stage PFE et premier emploi d'ingénieur en France et en Tunisie avec un score de compatibilité en temps réel.",
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/logo.png", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/logo.png",
   },
 };
 
@@ -21,6 +26,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr">
+      <head>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" type="image/png" href="/logo.png" />
+        <link rel="apple-touch-icon" href="/logo.png" />
+      </head>
       <body className="bg-background text-foreground antialiased selection:bg-orange-100 selection:text-orange-900 flex min-h-screen">
         <AuthProvider>
           <LanguageProvider>
@@ -29,7 +39,7 @@ export default function RootLayout({
               <div className="flex-1 flex flex-col min-w-0">
                 <header className="h-13 border-b border-border/60 bg-background/80 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-30">
                   <div className="text-xs text-muted-foreground font-medium flex items-center gap-2">
-                    <img src="/favicon.ico" alt="ArcApply" className="w-4 h-4 object-contain rounded" />
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
                     <span>ArcApply Cockpit</span>
                   </div>
                   <div className="flex items-center gap-3">
