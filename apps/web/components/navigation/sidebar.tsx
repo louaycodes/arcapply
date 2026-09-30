@@ -52,8 +52,8 @@ export function Sidebar() {
       <div>
         {/* Brand / Logo */}
         <div className="flex items-center gap-3 px-3 py-4 mb-6 border-b border-border/80">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-orange-700 flex items-center justify-center text-white shadow-md shadow-orange-600/25 border border-orange-400/30">
-            <ShieldCheck className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-xl overflow-hidden shadow-md border border-orange-400/30 flex items-center justify-center bg-white shrink-0">
+            <img src="/favicon.ico" alt="ArcApply" className="w-7 h-7 object-contain" />
           </div>
           <div>
             <h1 className="text-lg font-bold tracking-tight text-foreground font-display flex items-center gap-1.5">

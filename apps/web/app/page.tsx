@@ -19,7 +19,26 @@ import {
 
 export default function HomePage() {
   return (
-    <div className="p-6 sm:p-10 max-w-6xl mx-auto space-y-10">
+    <div className="p-6 sm:p-10 max-w-6xl mx-auto space-y-8">
+      {/* ── Top Dashboard Visual Banner ── */}
+      <div className="relative w-full h-48 sm:h-64 md:h-72 rounded-3xl overflow-hidden border border-[#EADBCC] shadow-md bg-stone-900 group">
+        <img
+          src="/arcapply.jpeg"
+          alt="ArcApply Visual Header"
+          className="w-full h-full object-cover object-center group-hover:scale-[1.02] transition-transform duration-700"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-stone-950/30 to-transparent flex items-end p-6 sm:p-8">
+          <div className="text-white space-y-1.5">
+            <span className="text-[11px] font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-primary/90 text-white shadow-xs">
+              ArcApply Cockpit
+            </span>
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold font-display drop-shadow-sm">
+              Plateforme Intelligente de Candidatures d'Ingénieur
+            </h2>
+          </div>
+        </div>
+      </div>
+
       {/* ── Hero Welcome ── */}
       <div className="relative overflow-hidden rounded-3xl border border-[#EADBCC] bg-gradient-to-br from-[#FFFDF9] via-[#FFF7ED] to-[#F7EFE4] p-8 sm:p-12 shadow-artisan-card">
         <div className="relative z-10 max-w-2xl space-y-5">

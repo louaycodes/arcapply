@@ -9,6 +9,9 @@ export const metadata: Metadata = {
   title: "ArcApply — Vos candidatures d'ingénieur en toute simplicité",
   description:
     "Préparez, adaptez et suivez vos candidatures de stage PFE et premier emploi d'ingénieur en France et en Tunisie avec un score de compatibilité en temps réel.",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({
@@ -26,7 +29,7 @@ export default function RootLayout({
               <div className="flex-1 flex flex-col min-w-0">
                 <header className="h-13 border-b border-border/60 bg-background/80 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-30">
                   <div className="text-xs text-muted-foreground font-medium flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                    <img src="/favicon.ico" alt="ArcApply" className="w-4 h-4 object-contain rounded" />
                     <span>ArcApply Cockpit</span>
                   </div>
                   <div className="flex items-center gap-3">
