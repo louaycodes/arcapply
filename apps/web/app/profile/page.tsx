@@ -16,7 +16,9 @@ import {
   Skill,
   Language,
   Extracurricular,
+  SKILL_CATEGORIES,
 } from "@/lib/api";
+import { useAppLanguage } from "@/lib/language-context";
 import {
   ShieldAlert,
   ShieldCheck,
@@ -39,6 +41,7 @@ import {
   Layers,
   ExternalLink,
   Check,
+  X,
 } from "lucide-react";
 
 function StackInput({
@@ -97,18 +100,23 @@ function StackInput({
 }
 
 export default function ProfilePage() {
+  const { language: appLanguage } = useAppLanguage();
   const [profile, setProfile] = useState<MasterProfile | null>(null);
   const [status, setStatus] = useState<ProfileCompletenessStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDownloadingCv, setIsDownloadingCv] = useState(false);
-  const [cvDownloadLang, setCvDownloadLang] = useState<"fr" | "en">("fr");
+  const [cvDownloadLang, setCvDownloadLang] = useState<"fr" | "en">(appLanguage);
   const [notification, setNotification] = useState<{
     type: "success" | "error" | "info";
     message: string;
   } | null>(null);
 
   const [testGenResult, setTestGenResult] = useState<string | null>(null);
+
+  useEffect(() => {
+    setCvDownloadLang(appLanguage);
+  }, [appLanguage]);
 
   const loadData = async () => {
     try {
@@ -145,7 +153,14 @@ export default function ProfilePage() {
     if (!profile) return;
     try {
       setIsSaving(true);
-      const updated = await updateProfile(profile);
+      const profileToSave: MasterProfile = {
+        ...profile,
+        headline: profile.headline || profile.headline_fr,
+        headline_fr: profile.headline_fr || profile.headline,
+        bio: profile.bio || profile.bio_fr,
+        bio_fr: profile.bio_fr || profile.bio,
+      };
+      const updated = await updateProfile(profileToSave);
       const newStatus = await fetchProfileStatus();
       setProfile({
         ...updated,
@@ -187,7 +202,14 @@ export default function ProfilePage() {
     try {
       setIsDownloadingCv(true);
       // Sauvegarde automatique préalable pour garantir que tous les champs saisis sont pris en compte
-      await updateProfile(profile);
+      const profileToSave: MasterProfile = {
+        ...profile,
+        headline: profile.headline || profile.headline_fr,
+        headline_fr: profile.headline_fr || profile.headline,
+        bio: profile.bio || profile.bio_fr,
+        bio_fr: profile.bio_fr || profile.bio,
+      };
+      await updateProfile(profileToSave);
       const blob = await downloadProfileCVPdf(cvDownloadLang);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -223,7 +245,11 @@ export default function ProfilePage() {
       phone: "+33 6 42 18 90 12",
       location: "Paris, France / Tunis, Tunisie",
       headline: "Élève-Ingénieur Systèmes Distribués & Cloud | Recherche PFE Janvier 2027",
+      headline_fr: "Élève-Ingénieur Systèmes Distribués & Cloud | Recherche PFE Janvier 2027",
+      headline_en: "Distributed Systems & Cloud Engineering Student | Seeking Final Internship Jan 2027",
       bio: "Futur ingénieur diplômé passionné par la scalabilité, les architectures hexagonales et le DevOps moderne. Expérience concrète sur FastAPI, Go, Docker et Kubernetes.",
+      bio_fr: "Futur ingénieur diplômé passionné par la scalabilité, les architectures hexagonales et le DevOps moderne. Expérience concrète sur FastAPI, Go, Docker et Kubernetes.",
+      bio_en: "Graduating software engineer passionate about distributed scalability, hexagonal architecture, and modern DevOps. Hands-on experience with FastAPI, Go, Docker, and Kubernetes.",
       linkedin_url: "https://linkedin.com/in/yassine-bensalem",
       github_url: "https://github.com/yassine-bs",
       website_url: "https://yassine.dev",
@@ -231,40 +257,58 @@ export default function ProfilePage() {
         {
           school: "INSAT (Institut National des Sciences Appliquées et de Technologie)",
           degree: "Diplôme National d'Ingénieur",
+          degree_fr: "Diplôme National d'Ingénieur",
+          degree_en: "Master of Science in Software Engineering",
           field_of_study: "Génie Logiciel & Informatique",
+          field_of_study_fr: "Génie Logiciel & Informatique",
+          field_of_study_en: "Software Engineering & Computer Science",
           start_date: "Septembre 2022",
           end_date: "Juin 2027",
           description: "Formation d'excellence en génie logiciel, réseaux, bases de données avancées et systèmes distribués.",
+          description_fr: "Formation d'excellence en génie logiciel, réseaux, bases de données avancées et systèmes distribués.",
+          description_en: "Elite engineering curriculum focusing on software architecture, computer networks, advanced databases, and distributed systems.",
         },
       ],
       experiences: [
         {
           company: "CloudScale Technologies",
           role: "Stagiaire Ingénieur Backend & Cloud",
+          role_fr: "Stagiaire Ingénieur Backend & Cloud",
+          role_en: "Backend & Cloud Engineering Intern",
           location: "Tunis / Hybride",
           start_date: "Juin 2025",
           end_date: "Août 2025",
           description: "Développement de microservices de traitement asynchrone d'événements à haut débit. Optimisation du temps de réponse de 35%.",
+          description_fr: "Développement de microservices de traitement asynchrone d'événements à haut débit. Optimisation du temps de réponse de 35%.",
+          description_en: "Built asynchronous event processing microservices handling high throughput. Improved average response latency by 35%.",
           technologies: ["Python", "FastAPI", "PostgreSQL", "Redis", "Docker"],
           experience_type: "stage",
         },
         {
           company: "FinTech Innovation Lab",
           role: "Stagiaire Développeur Outils & DevOps",
+          role_fr: "Stagiaire Développeur Outils & DevOps",
+          role_en: "DevOps & Tools Engineering Intern",
           location: "Tunis, Tunisie",
           start_date: "Juin 2024",
           end_date: "Août 2024",
           description: "Automatisation des pipelines CI/CD sous Jenkins et conteneurisation des services financiers internes avec Docker.",
+          description_fr: "Automatisation des pipelines CI/CD sous Jenkins et conteneurisation des services financiers internes avec Docker.",
+          description_en: "Automated Jenkins CI/CD release pipelines and containerized internal financial services with Docker.",
           technologies: ["Docker", "Linux", "Bash", "Jenkins", "GitLab CI"],
           experience_type: "stage",
         },
         {
           company: "TechConsulting Freelance",
           role: "Développeur Backend & Automatisation",
+          role_fr: "Développeur Backend & Automatisation",
+          role_en: "Backend & Automation Engineer",
           location: "Télétravail / France & Tunisie",
           start_date: "Septembre 2024",
           end_date: "Présent",
           description: "Conception d'APIs REST modulaires et dashboards de monitoring pour des PME européennes.",
+          description_fr: "Conception d'APIs REST modulaires et dashboards de monitoring pour des PME européennes.",
+          description_en: "Architected modular REST APIs and automated observability dashboards for European scale-ups.",
           technologies: ["FastAPI", "TypeScript", "Next.js", "Docker"],
           experience_type: "job",
         },
@@ -272,40 +316,73 @@ export default function ProfilePage() {
       projects: [
         {
           title: "ArcApply Local Copilot",
+          title_fr: "ArcApply Copilote Local",
+          title_en: "ArcApply Local Copilot",
           role: "Architecte & Développeur Principal",
+          role_fr: "Architecte & Développeur Principal",
+          role_en: "Lead Architect & Developer",
           description: "Copilote de candidature haute performance avec matching d'offres déterministe et adaptation de CV sans hallucination.",
+          description_fr: "Copilote de candidature haute performance avec matching d'offres déterministe et adaptation de CV sans hallucination.",
+          description_en: "High-performance job application copilot featuring deterministic ATS matching and zero-hallucination CV tailoring.",
           url: "https://github.com/yassine-bs/arcapply",
           technologies: ["FastAPI", "SQLModel", "Next.js", "Tailwind CSS"],
         },
         {
           title: "Autonomous FinOps Agent",
+          title_fr: "Agent FinOps Autonome",
+          title_en: "Autonomous FinOps Agent",
           role: "Lead Developer",
+          role_fr: "Lead Développeur",
+          role_en: "Lead Developer",
           description: "Plateforme multi-agents pour la détection d'anomalies de coûts AWS et l'optimisation continue des ressources cloud.",
+          description_fr: "Plateforme multi-agents pour la détection d'anomalies de coûts AWS et l'optimisation continue des ressources cloud.",
+          description_en: "Multi-agent engine detecting AWS cost anomalies and dynamically optimizing cloud resources.",
           url: "https://github.com/yassine-bs/finops-agent",
           technologies: ["Python", "LangGraph", "Groq LLM", "ChromaDB"],
         },
       ],
       skills: [
-        { name: "Python", category: "Languages", level: "Avancé" },
         { name: "FastAPI", category: "Frameworks", level: "Avancé" },
-        { name: "TypeScript", category: "Languages", level: "Intermédiaire" },
-        { name: "Next.js", category: "Frameworks", level: "Intermédiaire" },
-        { name: "Docker", category: "DevOps", level: "Avancé" },
-        { name: "SQL / SQLite", category: "Database", level: "Avancé" },
-        { name: "Kubernetes", category: "DevOps", level: "Intermédiaire" },
+        { name: "React / Next.js", category: "Frameworks", level: "Avancé" },
+        { name: "Python", category: "Langages & Scripting", level: "Avancé" },
+        { name: "TypeScript", category: "Langages & Scripting", level: "Intermédiaire" },
+        { name: "Bash", category: "Langages & Scripting", level: "Avancé" },
+        { name: "PostgreSQL", category: "Bases de données", level: "Avancé" },
+        { name: "Redis", category: "Bases de données", level: "Intermédiaire" },
+        { name: "Git", category: "Versioning & Méthodes", level: "Avancé" },
+        { name: "Scrum / Agile", category: "Versioning & Méthodes", level: "Avancé" },
+        { name: "Linux (Debian/Ubuntu)", category: "Systèmes & Réseaux", level: "Avancé" },
+        { name: "TCP/IP & DNS", category: "Systèmes & Réseaux", level: "Intermédiaire" },
+        { name: "Prometheus", category: "Monitoring & Observabilité", level: "Intermédiaire" },
+        { name: "Grafana", category: "Monitoring & Observabilité", level: "Intermédiaire" },
+        { name: "Terraform", category: "Infrastructure as Code", level: "Intermédiaire" },
+        { name: "Ansible", category: "Infrastructure as Code", level: "Intermédiaire" },
+        { name: "AWS (EC2, S3, RDS)", category: "Cloud & Infrastructure", level: "Intermédiaire" },
+        { name: "Docker & Compose", category: "Conteneurisation & Orchestration", level: "Avancé" },
+        { name: "Kubernetes", category: "Conteneurisation & Orchestration", level: "Intermédiaire" },
+        { name: "OWASP Top 10", category: "Sécurité (DevSecOps)", level: "Intermédiaire" },
+        { name: "Trivy / SonarQube", category: "Sécurité (DevSecOps)", level: "Intermédiaire" },
       ],
       extracurriculars: [
         {
           organization: "Club Robotique & IA INSAT",
           role: "Responsable Technique & Formateur",
+          role_fr: "Responsable Technique & Formateur",
+          role_en: "Technical Lead & Instructor",
           date: "2023 – 2024",
           description: "Animation d'ateliers d'initiation à Python et aux systèmes embarqués pour 60+ étudiants ; finaliste TuniRobots 2024.",
+          description_fr: "Animation d'ateliers d'initiation à Python et aux systèmes embarqués pour 60+ étudiants ; finaliste TuniRobots 2024.",
+          description_en: "Conducted hands-on robotics and Python workshops for 60+ engineering students; finalist at TuniRobots 2024.",
         },
         {
           organization: "Junior Entreprise INSAT",
           role: "Chef de Projet Digital",
+          role_fr: "Chef de Projet Digital",
+          role_en: "Digital Project Manager",
           date: "2022 – 2023",
           description: "Coordination d'une équipe de 5 développeurs pour la digitalisation de processus opérationnels d'entreprises partenaires.",
+          description_fr: "Coordination d'une équipe de 5 développeurs pour la digitalisation de processus opérationnels d'entreprises partenaires.",
+          description_en: "Managed a team of 5 student developers building digital tools and process automations for corporate partners.",
         },
       ],
       languages: [
@@ -317,7 +394,7 @@ export default function ProfilePage() {
     setProfile(demo);
     setNotification({
       type: "info",
-      message: "Modèle de profil complet injecté ! Cliquez sur 'Sauvegarder' ou téléchargez votre CV.",
+      message: "Modèle de profil complet et bilingue injecté ! Cliquez sur 'Sauvegarder' pour valider.",
     });
   };
 
@@ -331,10 +408,16 @@ export default function ProfilePage() {
         {
           school: "",
           degree: "",
+          degree_fr: "",
+          degree_en: "",
           field_of_study: "",
+          field_of_study_fr: "",
+          field_of_study_en: "",
           start_date: "",
           end_date: "",
           description: "",
+          description_fr: "",
+          description_en: "",
         },
       ],
     });
@@ -361,10 +444,14 @@ export default function ProfilePage() {
     const newStage: Experience = {
       company: "",
       role: "",
+      role_fr: "",
+      role_en: "",
       location: "",
       start_date: "",
       end_date: "",
       description: "",
+      description_fr: "",
+      description_en: "",
       technologies: [],
       experience_type: "stage",
     };
@@ -409,10 +496,14 @@ export default function ProfilePage() {
     const newJob: Experience = {
       company: "",
       role: "",
+      role_fr: "",
+      role_en: "",
       location: "",
       start_date: "",
       end_date: "",
       description: "",
+      description_fr: "",
+      description_en: "",
       technologies: [],
       experience_type: "job",
     };
@@ -461,8 +552,14 @@ export default function ProfilePage() {
         ...profile.projects,
         {
           title: "",
+          title_fr: "",
+          title_en: "",
           role: "",
+          role_fr: "",
+          role_en: "",
           description: "",
+          description_fr: "",
+          description_en: "",
           url: "",
           technologies: [],
         },
@@ -478,14 +575,14 @@ export default function ProfilePage() {
     });
   };
 
-  // Skill Helpers
-  const addSkill = () => {
+  // Skill Helpers (défaut sur 10 catégories)
+  const addSkill = (category: string = "Frameworks") => {
     if (!profile) return;
     setProfile({
       ...profile,
       skills: [
         ...profile.skills,
-        { name: "", category: "Technologies", level: "Intermédiaire" },
+        { name: "", category, level: "Intermédiaire" },
       ],
     });
   };
@@ -504,8 +601,12 @@ export default function ProfilePage() {
     const newExtra: Extracurricular = {
       organization: "",
       role: "",
+      role_fr: "",
+      role_en: "",
       date: "",
       description: "",
+      description_fr: "",
+      description_en: "",
     };
     setProfile({
       ...profile,
@@ -813,30 +914,58 @@ export default function ProfilePage() {
               />
             </div>
 
-            <div className="md:col-span-2">
-              <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-                Titre professionnel / Accroche
-              </label>
-              <input
-                type="text"
-                value={profile.headline || ""}
-                onChange={(e) => setProfile({ ...profile, headline: e.target.value })}
-                placeholder="ex: Élève-ingénieur Systèmes Distribués & Cloud | Recherche Stage PFE 2027"
-                className="w-full px-3.5 py-2 rounded-md bg-muted/60 border border-border focus:outline-none focus:border-primary text-sm text-foreground placeholder:text-muted-foreground/50 transition-colors"
-              />
+            <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
+                  <span>🇫🇷 Titre professionnel / Accroche (Français) *</span>
+                </label>
+                <input
+                  type="text"
+                  value={profile.headline_fr ?? profile.headline ?? ""}
+                  onChange={(e) => setProfile({ ...profile, headline: e.target.value, headline_fr: e.target.value })}
+                  placeholder="ex: Élève-ingénieur Systèmes Distribués & Cloud | Recherche Stage PFE 2027"
+                  className="w-full px-3.5 py-2 rounded-md bg-muted/60 border border-border focus:outline-none focus:border-primary text-sm text-foreground placeholder:text-muted-foreground/50 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
+                  <span>🇬🇧 Professional Headline / Tagline (English)</span>
+                </label>
+                <input
+                  type="text"
+                  value={profile.headline_en ?? ""}
+                  onChange={(e) => setProfile({ ...profile, headline_en: e.target.value })}
+                  placeholder="ex: Distributed Systems & Cloud Engineering Student | Seeking Final Internship 2027"
+                  className="w-full px-3.5 py-2 rounded-md bg-muted/60 border border-border focus:outline-none focus:border-primary text-sm text-foreground placeholder:text-muted-foreground/50 transition-colors"
+                />
+              </div>
             </div>
 
-            <div className="md:col-span-2">
-              <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-                Bio / Synthèse de parcours
-              </label>
-              <textarea
-                rows={3}
-                value={profile.bio || ""}
-                onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                placeholder="Présentation synthétique et factuelle de vos objectifs d'ingénierie..."
-                className="w-full px-3.5 py-2 rounded-md bg-muted/60 border border-border focus:outline-none focus:border-primary text-sm text-foreground placeholder:text-muted-foreground/50 transition-colors"
-              />
+            <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
+                  <span>🇫🇷 Bio / Synthèse de parcours (Français)</span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={profile.bio_fr ?? profile.bio ?? ""}
+                  onChange={(e) => setProfile({ ...profile, bio: e.target.value, bio_fr: e.target.value })}
+                  placeholder="Présentation synthétique et factuelle de vos objectifs d'ingénierie..."
+                  className="w-full px-3.5 py-2 rounded-md bg-muted/60 border border-border focus:outline-none focus:border-primary text-sm text-foreground placeholder:text-muted-foreground/50 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
+                  <span>🇬🇧 Bio / Summary (English)</span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={profile.bio_en ?? ""}
+                  onChange={(e) => setProfile({ ...profile, bio_en: e.target.value })}
+                  placeholder="Concise and factual overview of your engineering background and goals..."
+                  className="w-full px-3.5 py-2 rounded-md bg-muted/60 border border-border focus:outline-none focus:border-primary text-sm text-foreground placeholder:text-muted-foreground/50 transition-colors"
+                />
+              </div>
             </div>
 
             <div>
@@ -915,7 +1044,7 @@ export default function ProfilePage() {
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <input
                       type="text"
                       placeholder="Établissement / École *"
@@ -923,28 +1052,6 @@ export default function ProfilePage() {
                       onChange={(e) => {
                         const updated = [...profile.educations];
                         updated[idx].school = e.target.value;
-                        setProfile({ ...profile, educations: updated });
-                      }}
-                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Diplôme préparé *"
-                      value={edu.degree}
-                      onChange={(e) => {
-                        const updated = [...profile.educations];
-                        updated[idx].degree = e.target.value;
-                        setProfile({ ...profile, educations: updated });
-                      }}
-                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Filière / Spécialité"
-                      value={edu.field_of_study}
-                      onChange={(e) => {
-                        const updated = [...profile.educations];
-                        updated[idx].field_of_study = e.target.value;
                         setProfile({ ...profile, educations: updated });
                       }}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
@@ -971,16 +1078,76 @@ export default function ProfilePage() {
                       }}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
                     <input
                       type="text"
-                      placeholder="Détails académiques"
-                      value={edu.description || ""}
+                      placeholder="🇫🇷 Diplôme préparé (ex: Diplôme National d'Ingénieur) *"
+                      value={edu.degree_fr ?? edu.degree}
                       onChange={(e) => {
                         const updated = [...profile.educations];
-                        updated[idx].description = e.target.value;
+                        updated[idx].degree = e.target.value;
+                        updated[idx].degree_fr = e.target.value;
                         setProfile({ ...profile, educations: updated });
                       }}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                    <input
+                      type="text"
+                      placeholder="🇬🇧 Degree (ex: Master of Science in Software Engineering)"
+                      value={edu.degree_en || ""}
+                      onChange={(e) => {
+                        const updated = [...profile.educations];
+                        updated[idx].degree_en = e.target.value;
+                        setProfile({ ...profile, educations: updated });
+                      }}
+                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                    <input
+                      type="text"
+                      placeholder="🇫🇷 Filière / Spécialité (ex: Génie Logiciel)"
+                      value={edu.field_of_study_fr ?? edu.field_of_study}
+                      onChange={(e) => {
+                        const updated = [...profile.educations];
+                        updated[idx].field_of_study = e.target.value;
+                        updated[idx].field_of_study_fr = e.target.value;
+                        setProfile({ ...profile, educations: updated });
+                      }}
+                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                    <input
+                      type="text"
+                      placeholder="🇬🇧 Field of study (ex: Software Engineering)"
+                      value={edu.field_of_study_en || ""}
+                      onChange={(e) => {
+                        const updated = [...profile.educations];
+                        updated[idx].field_of_study_en = e.target.value;
+                        setProfile({ ...profile, educations: updated });
+                      }}
+                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                    <textarea
+                      rows={2}
+                      placeholder="🇫🇷 Détails académiques (Français)"
+                      value={edu.description_fr ?? edu.description ?? ""}
+                      onChange={(e) => {
+                        const updated = [...profile.educations];
+                        updated[idx].description = e.target.value;
+                        updated[idx].description_fr = e.target.value;
+                        setProfile({ ...profile, educations: updated });
+                      }}
+                      className="w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                    <textarea
+                      rows={2}
+                      placeholder="🇬🇧 Academic details (English)"
+                      value={edu.description_en || ""}
+                      onChange={(e) => {
+                        const updated = [...profile.educations];
+                        updated[idx].description_en = e.target.value;
+                        setProfile({ ...profile, educations: updated });
+                      }}
+                      className="w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                   </div>
                 </div>
@@ -1045,16 +1212,15 @@ export default function ProfilePage() {
                     />
                     <input
                       type="text"
-                      placeholder="Intitulé du stage / Rôle * (ex: Stagiaire Ingénieur DevOps)"
-                      value={stage.role}
-                      onChange={(e) => updateStage(idx, { ...stage, role: e.target.value })}
-                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
-                    <input
-                      type="text"
                       placeholder="Ville, Pays (ex: Tunis, Tunisie)"
                       value={stage.location || ""}
                       onChange={(e) => updateStage(idx, { ...stage, location: e.target.value })}
+                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                    <StackInput
+                      placeholder="Technologies / Stack (ex: Python, Docker, AWS)"
+                      value={stage.technologies}
+                      onChange={(techs) => updateStage(idx, { ...stage, technologies: techs })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <input
@@ -1071,21 +1237,38 @@ export default function ProfilePage() {
                       onChange={(e) => updateStage(idx, { ...stage, end_date: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
-                    <StackInput
-                      placeholder="Technologies / Stack (ex: Python, Docker, AWS)"
-                      value={stage.technologies}
-                      onChange={(techs) => updateStage(idx, { ...stage, technologies: techs })}
-                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
                   </div>
 
-                  <textarea
-                    rows={2}
-                    placeholder="Description concrète des missions, livrables techniques et impact mesurable du stage *"
-                    value={stage.description}
-                    onChange={(e) => updateStage(idx, { ...stage, description: e.target.value })}
-                    className="w-full px-3 py-2 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                    <input
+                      type="text"
+                      placeholder="🇫🇷 Intitulé du stage / Rôle * (ex: Stagiaire Ingénieur DevOps)"
+                      value={stage.role_fr ?? stage.role}
+                      onChange={(e) => updateStage(idx, { ...stage, role: e.target.value, role_fr: e.target.value })}
+                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                    <input
+                      type="text"
+                      placeholder="🇬🇧 Internship Role (ex: DevOps Engineering Intern)"
+                      value={stage.role_en || ""}
+                      onChange={(e) => updateStage(idx, { ...stage, role_en: e.target.value })}
+                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                    <textarea
+                      rows={2}
+                      placeholder="🇫🇷 Description concrète des missions, livrables et impact *"
+                      value={stage.description_fr ?? stage.description}
+                      onChange={(e) => updateStage(idx, { ...stage, description: e.target.value, description_fr: e.target.value })}
+                      className="w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                    <textarea
+                      rows={2}
+                      placeholder="🇬🇧 Concrete description of missions, deliverables and impact"
+                      value={stage.description_en || ""}
+                      onChange={(e) => updateStage(idx, { ...stage, description_en: e.target.value })}
+                      className="w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                  </div>
                 </div>
               ))}
             </div>
@@ -1148,16 +1331,15 @@ export default function ProfilePage() {
                     />
                     <input
                       type="text"
-                      placeholder="Poste / Rôle * (ex: Développeur Backend Freelance)"
-                      value={job.role}
-                      onChange={(e) => updateJob(idx, { ...job, role: e.target.value })}
-                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
-                    <input
-                      type="text"
                       placeholder="Ville, Pays"
                       value={job.location || ""}
                       onChange={(e) => updateJob(idx, { ...job, location: e.target.value })}
+                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                    <StackInput
+                      placeholder="Technologies / Stack (ex: TypeScript, Next.js)"
+                      value={job.technologies}
+                      onChange={(techs) => updateJob(idx, { ...job, technologies: techs })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <input
@@ -1174,21 +1356,38 @@ export default function ProfilePage() {
                       onChange={(e) => updateJob(idx, { ...job, end_date: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
-                    <StackInput
-                      placeholder="Technologies / Stack (ex: TypeScript, Next.js)"
-                      value={job.technologies}
-                      onChange={(techs) => updateJob(idx, { ...job, technologies: techs })}
-                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
                   </div>
 
-                  <textarea
-                    rows={2}
-                    placeholder="Description concrète des responsabilités et réalisations *"
-                    value={job.description}
-                    onChange={(e) => updateJob(idx, { ...job, description: e.target.value })}
-                    className="w-full px-3 py-2 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                    <input
+                      type="text"
+                      placeholder="🇫🇷 Intitulé du poste / Rôle * (ex: Développeur Backend Freelance)"
+                      value={job.role_fr ?? job.role}
+                      onChange={(e) => updateJob(idx, { ...job, role: e.target.value, role_fr: e.target.value })}
+                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                    <input
+                      type="text"
+                      placeholder="🇬🇧 Position / Role (ex: Freelance Backend Developer)"
+                      value={job.role_en || ""}
+                      onChange={(e) => updateJob(idx, { ...job, role_en: e.target.value })}
+                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                    <textarea
+                      rows={2}
+                      placeholder="🇫🇷 Description des responsabilités et réalisations *"
+                      value={job.description_fr ?? job.description}
+                      onChange={(e) => updateJob(idx, { ...job, description: e.target.value, description_fr: e.target.value })}
+                      className="w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                    <textarea
+                      rows={2}
+                      placeholder="🇬🇧 Description of responsibilities and achievements"
+                      value={job.description_en || ""}
+                      onChange={(e) => updateJob(idx, { ...job, description_en: e.target.value })}
+                      className="w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                  </div>
                 </div>
               ))}
             </div>
@@ -1230,18 +1429,7 @@ export default function ProfilePage() {
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <input
-                      type="text"
-                      placeholder="Titre du projet *"
-                      value={proj.title}
-                      onChange={(e) => {
-                        const updated = [...profile.projects];
-                        updated[idx].title = e.target.value;
-                        setProfile({ ...profile, projects: updated });
-                      }}
-                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <input
                       type="text"
                       placeholder="Lien / Dépôt (URL)"
@@ -1264,33 +1452,96 @@ export default function ProfilePage() {
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                   </div>
-                  <textarea
-                    rows={2}
-                    placeholder="Description de l'architecture, de la problématique résolue et des performances *"
-                    value={proj.description}
-                    onChange={(e) => {
-                      const updated = [...profile.projects];
-                      updated[idx].description = e.target.value;
-                      setProfile({ ...profile, projects: updated });
-                    }}
-                    className="w-full px-3 py-2 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                    <input
+                      type="text"
+                      placeholder="🇫🇷 Titre du projet (ex: Copilote IA Local) *"
+                      value={proj.title_fr ?? proj.title}
+                      onChange={(e) => {
+                        const updated = [...profile.projects];
+                        updated[idx].title = e.target.value;
+                        updated[idx].title_fr = e.target.value;
+                        setProfile({ ...profile, projects: updated });
+                      }}
+                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                    <input
+                      type="text"
+                      placeholder="🇬🇧 Project Title (ex: Local AI Copilot)"
+                      value={proj.title_en || ""}
+                      onChange={(e) => {
+                        const updated = [...profile.projects];
+                        updated[idx].title_en = e.target.value;
+                        setProfile({ ...profile, projects: updated });
+                      }}
+                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                    <input
+                      type="text"
+                      placeholder="🇫🇷 Rôle (ex: Architecte & Lead Dev)"
+                      value={proj.role_fr ?? proj.role ?? ""}
+                      onChange={(e) => {
+                        const updated = [...profile.projects];
+                        updated[idx].role = e.target.value;
+                        updated[idx].role_fr = e.target.value;
+                        setProfile({ ...profile, projects: updated });
+                      }}
+                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                    <input
+                      type="text"
+                      placeholder="🇬🇧 Role (ex: Lead Architect & Developer)"
+                      value={proj.role_en || ""}
+                      onChange={(e) => {
+                        const updated = [...profile.projects];
+                        updated[idx].role_en = e.target.value;
+                        setProfile({ ...profile, projects: updated });
+                      }}
+                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                    <textarea
+                      rows={2}
+                      placeholder="🇫🇷 Description de l'architecture, problématique et performances *"
+                      value={proj.description_fr ?? proj.description}
+                      onChange={(e) => {
+                        const updated = [...profile.projects];
+                        updated[idx].description = e.target.value;
+                        updated[idx].description_fr = e.target.value;
+                        setProfile({ ...profile, projects: updated });
+                      }}
+                      className="w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                    <textarea
+                      rows={2}
+                      placeholder="🇬🇧 Architecture, technical challenge and performance achievements"
+                      value={proj.description_en || ""}
+                      onChange={(e) => {
+                        const updated = [...profile.projects];
+                        updated[idx].description_en = e.target.value;
+                        setProfile({ ...profile, projects: updated });
+                      }}
+                      className="w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        {/* Section 6: Compétences Techniques */}
+        {/* Section 6: Compétences Techniques (10 Catégories sur lignes distinctes) */}
         <div className="p-6 rounded-xl border border-border bg-card space-y-5">
           <div className="flex items-center justify-between border-b border-border/50 pb-3">
             <div className="flex items-center gap-3">
               <Code2 className="w-5 h-5 text-primary" />
-              <h2 className="text-base font-semibold text-foreground">Compétences Techniques Réelles</h2>
+              <div>
+                <h2 className="text-base font-semibold text-foreground">Compétences Techniques par Catégories</h2>
+                <p className="text-xs text-muted-foreground">10 catégories normalisées pour l'analyse ATS et la mise en page du CV (chacune sur sa ligne).</p>
+              </div>
             </div>
             <button
               type="button"
-              onClick={addSkill}
+              onClick={() => addSkill("Frameworks")}
               className="text-xs px-3 py-1.5 rounded-md bg-muted hover:bg-muted/80 text-foreground border border-border flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -1298,51 +1549,80 @@ export default function ProfilePage() {
             </button>
           </div>
 
-          {profile.skills.length === 0 ? (
-            <p className="text-xs text-muted-foreground italic py-3">
-              Aucune compétence renseignée. Au moins 3 compétences techniques sont requises.
-            </p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {profile.skills.map((skill, idx) => (
-                <div key={idx} className="p-3 rounded-lg bg-muted/40 border border-border/70 flex items-center gap-2">
-                  <input
-                    type="text"
-                    placeholder="Nom (ex: Python) *"
-                    value={skill.name}
-                    onChange={(e) => {
-                      const updated = [...profile.skills];
-                      updated[idx].name = e.target.value;
-                      setProfile({ ...profile, skills: updated });
-                    }}
-                    className="flex-1 px-2.5 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                  />
-                  <select
-                    value={skill.category}
-                    onChange={(e) => {
-                      const updated = [...profile.skills];
-                      updated[idx].category = e.target.value;
-                      setProfile({ ...profile, skills: updated });
-                    }}
-                    className="px-2 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                  >
-                    <option value="Languages">Languages</option>
-                    <option value="Frameworks">Frameworks</option>
-                    <option value="DevOps">DevOps</option>
-                    <option value="Database">Database</option>
-                    <option value="Tools">Outils</option>
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => removeSkill(idx)}
-                    className="text-muted-foreground hover:text-destructive p-1 transition-colors cursor-pointer"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+          <div className="space-y-2.5">
+            {SKILL_CATEGORIES.map((category) => {
+              const categorySkills = (profile.skills || [])
+                .map((skill, originalIndex) => ({ skill, originalIndex }))
+                .filter(
+                  ({ skill }) => (skill.category || "").trim().toLowerCase() === category.toLowerCase()
+                );
+
+              return (
+                <div
+                  key={category}
+                  className="p-3 rounded-lg border border-border/70 bg-muted/20 hover:bg-muted/40 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-3"
+                >
+                  <div className="md:w-64 flex-shrink-0 flex items-center gap-2">
+                    <span className="text-xs font-semibold text-foreground">{category}</span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                      {categorySkills.length}
+                    </span>
+                  </div>
+
+                  <div className="flex-1 flex flex-wrap items-center gap-2">
+                    {categorySkills.map(({ skill, originalIndex }) => (
+                      <span
+                        key={originalIndex}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs bg-card border border-border text-foreground shadow-2xs group"
+                      >
+                        <input
+                          type="text"
+                          value={skill.name}
+                          onChange={(e) => {
+                            const updated = [...profile.skills];
+                            updated[originalIndex] = { ...updated[originalIndex], name: e.target.value };
+                            setProfile({ ...profile, skills: updated });
+                          }}
+                          className="bg-transparent border-none focus:outline-none text-xs text-foreground w-auto min-w-[50px] max-w-[140px]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeSkill(originalIndex)}
+                          className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
+                          title={`Supprimer ${skill.name}`}
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const input = (e.currentTarget.elements.namedItem(`new-skill-${category}`) as HTMLInputElement);
+                        const val = input?.value.trim();
+                        if (val) {
+                          setProfile({
+                            ...profile,
+                            skills: [...profile.skills, { name: val, category, level: "Intermédiaire" }],
+                          });
+                          input.value = "";
+                        }
+                      }}
+                      className="inline-flex items-center gap-1.5"
+                    >
+                      <input
+                        name={`new-skill-${category}`}
+                        type="text"
+                        placeholder="+ Ajouter..."
+                        className="px-2 py-1 rounded bg-muted border border-border text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary w-24 focus:w-32 transition-all"
+                      />
+                    </form>
+                  </div>
                 </div>
-              ))}
-            </div>
-          )}
+              );
+            })}
+          </div>
         </div>
 
         {/* Section 7: Activités Extra-Professionnelles (AJOUT DEMANDÉ) */}
@@ -1383,19 +1663,12 @@ export default function ProfilePage() {
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <input
                       type="text"
                       placeholder="Organisation / Club / Association * (ex: Enactus)"
                       value={extra.organization}
                       onChange={(e) => updateExtracurricular(idx, { ...extra, organization: e.target.value })}
-                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Rôle / Responsabilité * (ex: Chef de Projet, Membre Actif)"
-                      value={extra.role}
-                      onChange={(e) => updateExtracurricular(idx, { ...extra, role: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <input
@@ -1406,13 +1679,36 @@ export default function ProfilePage() {
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                   </div>
-                  <textarea
-                    rows={2}
-                    placeholder="Description concrète des actions, projets menés, événements organisés et réalisations..."
-                    value={extra.description}
-                    onChange={(e) => updateExtracurricular(idx, { ...extra, description: e.target.value })}
-                    className="w-full px-3 py-2 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                    <input
+                      type="text"
+                      placeholder="🇫🇷 Rôle / Responsabilité * (ex: Chef de Projet, Membre Actif)"
+                      value={extra.role_fr ?? extra.role}
+                      onChange={(e) => updateExtracurricular(idx, { ...extra, role: e.target.value, role_fr: e.target.value })}
+                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                    <input
+                      type="text"
+                      placeholder="🇬🇧 Role / Responsibility (ex: Project Lead, Active Member)"
+                      value={extra.role_en || ""}
+                      onChange={(e) => updateExtracurricular(idx, { ...extra, role_en: e.target.value })}
+                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                    <textarea
+                      rows={2}
+                      placeholder="🇫🇷 Description des actions, projets menés et réalisations (Français)..."
+                      value={extra.description_fr ?? extra.description}
+                      onChange={(e) => updateExtracurricular(idx, { ...extra, description: e.target.value, description_fr: e.target.value })}
+                      className="w-full px-3 py-2 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                    <textarea
+                      rows={2}
+                      placeholder="🇬🇧 Description of actions, projects and achievements (English)..."
+                      value={extra.description_en || ""}
+                      onChange={(e) => updateExtracurricular(idx, { ...extra, description_en: e.target.value })}
+                      className="w-full px-3 py-2 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    />
+                  </div>
                 </div>
               ))}
             </div>

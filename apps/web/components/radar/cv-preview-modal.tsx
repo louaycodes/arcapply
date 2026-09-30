@@ -8,6 +8,7 @@ import {
   getCVPreviewUrl,
   getCVPdfDownloadUrl,
 } from "@/lib/api";
+import { useAppLanguage } from "@/lib/language-context";
 import {
   FileText,
   Download,
@@ -29,11 +30,16 @@ interface CVPreviewModalProps {
 }
 
 export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
+  const { language: appLanguage, setLanguage: setAppLanguage } = useAppLanguage();
   const [cv, setCv] = useState<TargetedCV | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"preview" | "audit">("preview");
-  const [language, setLanguage] = useState<"fr" | "en">("fr");
+  const [language, setLanguage] = useState<"fr" | "en">(appLanguage);
+
+  useEffect(() => {
+    setLanguage(appLanguage);
+  }, [appLanguage]);
 
   const loadOrGenerateCV = async () => {
     if (!job) return;
@@ -101,7 +107,10 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
             <div className="flex items-center rounded-lg border border-stone-200 bg-stone-100 p-0.5 text-xs font-semibold mr-1">
               <button
                 type="button"
-                onClick={() => setLanguage("fr")}
+                onClick={() => {
+                  setLanguage("fr");
+                  setAppLanguage("fr");
+                }}
                 className={`px-2.5 py-1 rounded-md transition-all ${
                   language === "fr"
                     ? "bg-stone-900 text-white shadow-xs font-bold"
@@ -113,7 +122,10 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
               </button>
               <button
                 type="button"
-                onClick={() => setLanguage("en")}
+                onClick={() => {
+                  setLanguage("en");
+                  setAppLanguage("en");
+                }}
                 className={`px-2.5 py-1 rounded-md transition-all ${
                   language === "en"
                     ? "bg-stone-900 text-white shadow-xs font-bold"
