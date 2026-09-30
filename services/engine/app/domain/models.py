@@ -480,6 +480,7 @@ class EmailInteractionBase(SQLModel):
     category: str = Field(default="OTHER", index=True)  # "INTERVIEW" | "REJECTION" | "ACKNOWLEDGEMENT" | "OTHER"
     raw_body: str = Field(default="")
     received_at: datetime = Field(default_factory=utc_now)
+    user_id: str = Field(default="louay", index=True)
 
 
 class EmailInteraction(EmailInteractionBase, table=True):
@@ -580,6 +581,7 @@ class CompilePDFRequest(SQLModel):
 class CustomCVDraft(SQLModel, table=True):
     __tablename__ = "custom_cv_drafts"
     id: str = Field(default="default-draft", primary_key=True)
+    user_id: str = Field(default="louay", index=True)
     title: str = Field(default="Mon CV")
     data_json: str = Field(default="{}")
     html_content: str = Field(default="")

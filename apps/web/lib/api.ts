@@ -316,7 +316,24 @@ export function createRadarEventSource(
 ): () => void {
   if (typeof window === "undefined") return () => {};
 
-  const eventSource = new EventSource(`${API_BASE_URL}/api/events`);
+  let sseUrl = `${API_BASE_URL}/api/events`;
+  const token = localStorage.getItem("arcapply_token");
+  const userStr = localStorage.getItem("arcapply_user");
+  const params = new URLSearchParams();
+  if (token) {
+    params.set("token", token);
+  }
+  if (userStr) {
+    try {
+      const u = JSON.parse(userStr);
+      if (u?.username) params.set("username", u.username);
+    } catch (_) {}
+  }
+  if (params.toString()) {
+    sseUrl += `?${params.toString()}`;
+  }
+
+  const eventSource = new EventSource(sseUrl);
 
   eventSource.addEventListener("JOB_DISCOVERED", (e: MessageEvent) => {
     try {

@@ -133,26 +133,34 @@ def list_jobs(
 
 @router.delete("/clear")
 @router.delete("")
-async def clear_all_jobs(session: Session = Depends(get_session)):
+async def clear_all_jobs(
+    username: str = Depends(get_current_username),
+    session: Session = Depends(get_session),
+):
     """
-    Supprime toutes les offres d'emploi de la base de données locale
+    Supprime toutes les offres d'emploi associées à l'utilisateur courant
     ainsi que les CVs ciblés et lettres de motivation associés.
     """
-    session.exec(delete(TargetedCV))
-    session.exec(delete(CoverLetter))
-    session.exec(delete(EmailInteraction))
-    session.exec(delete(JobOffer))
+    user_jobs = session.exec(select(JobOffer).where(JobOffer.user_id == username)).all()
+    for j in user_jobs:
+        session.exec(delete(TargetedCV).where(TargetedCV.job_id == j.id))
+        session.exec(delete(CoverLetter).where(CoverLetter.job_id == j.id))
+        session.exec(delete(EmailInteraction).where(EmailInteraction.job_id == j.id))
+        session.delete(j)
+
+    session.exec(delete(EmailInteraction).where(EmailInteraction.user_id == username))
     session.commit()
 
-    # Diffusion SSE pour actualisation immédiate de l'interface
+    # Diffusion SSE pour actualisation immédiate de l'interface du tenant
     await broadcast_event(
         "JOBS_CLEARED",
-        {"message": "Toutes les offres ont été supprimées avec succès."},
+        {"message": f"Toutes les offres de {username} ont été supprimées avec succès."},
+        target_user=username,
     )
 
     return {
         "status": "success",
-        "message": "Toutes les offres et documents associés ont été supprimés avec succès.",
+        "message": f"Toutes les offres de {username} et documents associés ont été supprimés avec succès.",
     }
 
 
@@ -236,9 +244,9 @@ def get_pipeline_metrics(
 
 
 @router.get("/sources")
-def get_sources_status():
-    """Retourne la liste des connecteurs enregistrés et leur télémétrie de scraping."""
-    return CrawlerScheduler.get_status()
+def get_sources_status(username: str = Depends(get_current_username)):
+    """Retourne la liste des connecteurs enregistrés et leur télémétrie de scraping pour l'utilisateur."""
+    return CrawlerScheduler.get_status(user_id=username)
 
 
 @router.post("/crawl-all")
@@ -263,10 +271,14 @@ async def trigger_full_crawl(
 
 
 @router.get("/{job_id}", response_model=JobOfferRead)
-def get_job(job_id: str, session: Session = Depends(get_session)):
-    """Récupère le détail d'une offre spécifique."""
+def get_job(
+    job_id: str,
+    username: str = Depends(get_current_username),
+    session: Session = Depends(get_session),
+):
+    """Récupère le détail d'une offre spécifique de l'utilisateur."""
     job = session.get(JobOffer, job_id)
-    if not job:
+    if not job or job.user_id != username:
         raise HTTPException(
             status_code=http_status.HTTP_404_NOT_FOUND,
             detail={"error_code": "JOB_NOT_FOUND", "message": f"Offre {job_id} introuvable."},
@@ -275,10 +287,14 @@ def get_job(job_id: str, session: Session = Depends(get_session)):
 
 
 @router.patch("/{job_id}/archive", response_model=JobOfferRead)
-async def archive_job(job_id: str, session: Session = Depends(get_session)):
-    """Archive une offre et la retire du flux Radar actif."""
+async def archive_job(
+    job_id: str,
+    username: str = Depends(get_current_username),
+    session: Session = Depends(get_session),
+):
+    """Archive une offre et la retire du flux Radar actif de l'utilisateur."""
     job = session.get(JobOffer, job_id)
-    if not job:
+    if not job or job.user_id != username:
         raise HTTPException(
             status_code=http_status.HTTP_404_NOT_FOUND,
             detail={"error_code": "JOB_NOT_FOUND", "message": f"Offre {job_id} introuvable."},
@@ -294,6 +310,7 @@ async def archive_job(job_id: str, session: Session = Depends(get_session)):
     await broadcast_event(
         "JOB_ARCHIVED",
         {"id": job.id, "title": job.title, "company": job.company},
+        target_user=username,
     )
 
     return job
@@ -303,6 +320,7 @@ async def archive_job(job_id: str, session: Session = Depends(get_session)):
 async def transition_job_status(
     job_id: str,
     payload: JobTransitionRequest,
+    username: str = Depends(get_current_username),
     session: Session = Depends(get_session),
 ):
     """
@@ -310,7 +328,7 @@ async def transition_job_status(
     Rejette toute transition illégale (ex: DISCOVERED -> SUBMITTED) avec HTTP 422.
     """
     job = session.get(JobOffer, job_id)
-    if not job:
+    if not job or job.user_id != username:
         raise HTTPException(
             status_code=http_status.HTTP_404_NOT_FOUND,
             detail={"error_code": "JOB_NOT_FOUND", "message": f"Offre {job_id} introuvable."},
@@ -339,6 +357,7 @@ async def transition_job_status(
     await broadcast_event(
         "JOB_STATUS_CHANGED",
         {"id": job.id, "title": job.title, "company": job.company, "status": job.status},
+        target_user=username,
     )
 
     return job
@@ -375,6 +394,7 @@ async def trigger_collection(
                 "status": "in_progress",
                 "message": f"Démarrage de la collecte sur {platform_key.capitalize()}...",
             },
+            target_user=username,
         )
 
         raw_jobs = await connector.search_jobs(
@@ -437,6 +457,7 @@ async def trigger_collection(
                     "url": new_job.url,
                     "collected_at": new_job.collected_at.isoformat(),
                 },
+                target_user=username,
             )
 
         # Événement SSE de fin de plateforme
@@ -447,6 +468,7 @@ async def trigger_collection(
                 "status": "completed",
                 "message": f"Collecte achevée sur {platform_key.capitalize()}.",
             },
+            target_user=username,
         )
 
     summary_msg = (

@@ -74,51 +74,6 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
         </p>
       </div>
 
-      {/* Quick Preset Buttons */}
-      <div className="bg-[#FAF7F2] rounded-xl p-3 border border-border/80">
-        <span className="text-[11px] font-semibold text-stone-600 block mb-2">
-          Comptes de test autorisés :
-        </span>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setUsernameInput("louay");
-              setPasswordInput("louay");
-              handleLogin("louay", "louay");
-            }}
-            disabled={isSubmitting}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white border border-stone-200 text-xs font-medium text-stone-800 hover:border-primary hover:text-primary transition-all shadow-2xs"
-          >
-            <div className="w-6 h-6 rounded-full bg-orange-100 text-orange-700 font-bold flex items-center justify-center text-[10px]">
-              LZ
-            </div>
-            <div className="text-left">
-              <div className="font-semibold leading-tight">Louay</div>
-              <div className="text-[9px] text-muted-foreground">louay</div>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setUsernameInput("chaima");
-              setPasswordInput("chaima");
-              handleLogin("chaima", "chaima");
-            }}
-            disabled={isSubmitting}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white border border-stone-200 text-xs font-medium text-stone-800 hover:border-primary hover:text-primary transition-all shadow-2xs"
-          >
-            <div className="w-6 h-6 rounded-full bg-amber-100 text-amber-700 font-bold flex items-center justify-center text-[10px]">
-              CH
-            </div>
-            <div className="text-left">
-              <div className="font-semibold leading-tight">Chaima</div>
-              <div className="text-[9px] text-muted-foreground">chaima</div>
-            </div>
-          </button>
-        </div>
-      </div>
 
       {/* Error alert */}
       {error && (
@@ -149,7 +104,7 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
               required
               value={usernameInput}
               onChange={(e) => setUsernameInput(e.target.value)}
-              placeholder="Ex: louay ou chaima"
+              placeholder="Votre nom d'utilisateur"
               className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-stone-900"
             />
           </div>

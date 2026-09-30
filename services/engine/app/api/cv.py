@@ -5,6 +5,7 @@ from sqlmodel import Session, select
 
 from app.adapters.pdf import PDFCompilerService
 from app.adapters.database import get_session
+from app.api.auth import get_current_username
 from app.domain.ats import ATSMatchingEngine
 from app.domain.cv import CVGeneratorService, CVParserService, render_custom_cv_html
 from app.domain.models import (
@@ -25,17 +26,36 @@ def sanitize_filename(name: str) -> str:
     return re.sub(r"[^\w\-_\.]", "_", name)
 
 
-def _get_or_create_cv(session: Session, job_id: str, lang: str = "fr") -> tuple[TargetedCV, MasterProfile, JobOffer]:
+def _get_user_profile(session: Session, username: str) -> MasterProfile | None:
+    uname = (username or "louay").strip().lower()
+    profile = session.exec(
+        select(MasterProfile).where(MasterProfile.user_id == uname)
+    ).first()
+    if not profile and uname == "louay":
+        profile = session.exec(
+            select(MasterProfile).where(
+                (MasterProfile.user_id == "louay") | (MasterProfile.id == "default-profile")
+            )
+        ).first()
+    return profile
+
+
+def _get_or_create_cv(
+    session: Session,
+    job_id: str,
+    lang: str = "fr",
+    username: str = "louay",
+) -> tuple[TargetedCV, MasterProfile, JobOffer]:
     normalized_lang = "en" if lang.lower().strip() == "en" else "fr"
 
     job = session.get(JobOffer, job_id)
-    if not job:
+    if not job or job.user_id != username:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"error_code": "JOB_NOT_FOUND", "message": f"Offre {job_id} introuvable."},
         )
 
-    profile = session.get(MasterProfile, "default-profile")
+    profile = _get_user_profile(session, username)
     if not profile:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -51,10 +71,11 @@ def _get_or_create_cv(session: Session, job_id: str, lang: str = "fr") -> tuple[
             },
         )
 
-    # Vérification si un CV existe déjà pour cette offre ET cette langue
+    # Recherche du CV pour ce job, cette langue ET cet utilisateur
     statement = select(TargetedCV).where(
         TargetedCV.job_id == job_id,
         TargetedCV.language == normalized_lang,
+        TargetedCV.user_id == username,
     )
     cv = session.exec(statement).first()
 
@@ -67,6 +88,7 @@ def _get_or_create_cv(session: Session, job_id: str, lang: str = "fr") -> tuple[
     if not cv:
         ats_match = ATSMatchingEngine.evaluate_alignment(job, profile)
         cv = CVGeneratorService.generate_cv(job, profile, ats_match, language=normalized_lang)
+        cv.user_id = username
         session.add(cv)
         session.commit()
         session.refresh(cv)
@@ -81,6 +103,7 @@ def _get_or_create_cv(session: Session, job_id: str, lang: str = "fr") -> tuple[
         cv.experiences_raw = fresh_cv.experiences_raw
         cv.projects_raw = fresh_cv.projects_raw
         cv.educations_raw = fresh_cv.educations_raw
+        cv.user_id = username
         session.add(cv)
         session.commit()
         session.refresh(cv)
@@ -92,22 +115,23 @@ def _get_or_create_cv(session: Session, job_id: str, lang: str = "fr") -> tuple[
 def generate_targeted_cv(
     job_id: str,
     lang: str = Query("fr", description="Langue du CV : 'fr' ou 'en'"),
+    username: str = Depends(get_current_username),
     session: Session = Depends(get_session),
 ) -> TargetedCVRead:
     """
-    Génère un CV personnalisé ciblé selon l'offre et le profil maître (AD-4).
+    Génère un CV personnalisé ciblé selon l'offre et le profil maître du candidat connecté (AD-4).
     Met à jour le CV existant si déjà généré pour cette langue.
     """
     normalized_lang = "en" if lang.lower().strip() == "en" else "fr"
 
     job = session.get(JobOffer, job_id)
-    if not job:
+    if not job or job.user_id != username:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"error_code": "JOB_NOT_FOUND", "message": f"Offre {job_id} introuvable."},
         )
 
-    profile = session.get(MasterProfile, "default-profile")
+    profile = _get_user_profile(session, username)
     if not profile:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -125,11 +149,12 @@ def generate_targeted_cv(
 
     ats_match = ATSMatchingEngine.evaluate_alignment(job, profile)
     new_cv = CVGeneratorService.generate_cv(job, profile, ats_match, language=normalized_lang)
+    new_cv.user_id = username
 
-    # Upsert dans la base pour la paire (job_id, language)
     statement = select(TargetedCV).where(
         TargetedCV.job_id == job_id,
         TargetedCV.language == normalized_lang,
+        TargetedCV.user_id == username,
     )
     existing_cv = session.exec(statement).first()
 
@@ -174,10 +199,11 @@ def generate_targeted_cv(
 def preview_targeted_cv(
     job_id: str,
     lang: str = Query("fr", description="Langue d'aperçu : 'fr' ou 'en'"),
+    username: str = Depends(get_current_username),
     session: Session = Depends(get_session),
 ) -> Response:
-    """Retourne le contenu HTML du CV ciblé pour affichage direct en iframe."""
-    cv, _, _ = _get_or_create_cv(session, job_id, lang=lang)
+    """Retourne le contenu HTML du CV ciblé pour affichage direct en iframe pour l'utilisateur."""
+    cv, _, _ = _get_or_create_cv(session, job_id, lang=lang, username=username)
     return Response(content=cv.html_content, media_type="text/html; charset=utf-8")
 
 
@@ -185,10 +211,11 @@ def preview_targeted_cv(
 async def download_cv_pdf(
     job_id: str,
     lang: str = Query("fr", description="Langue du PDF : 'fr' ou 'en'"),
+    username: str = Depends(get_current_username),
     session: Session = Depends(get_session),
 ) -> Response:
-    """Compile le CV en PDF vectoriel 1 page standardisée via Playwright (AD-7)."""
-    cv, profile, job = _get_or_create_cv(session, job_id, lang=lang)
+    """Compile le CV en PDF vectoriel 1 page standardisée via Playwright (AD-7) pour l'utilisateur."""
+    cv, profile, job = _get_or_create_cv(session, job_id, lang=lang, username=username)
 
     pdf_bytes = await PDFCompilerService.compile_html_to_pdf(cv.html_content)
 
@@ -215,11 +242,12 @@ async def download_cv_pdf(
 async def upload_and_parse_cv(
     file: UploadFile = File(...),
     sync_to_profile: bool = Query(False, description="Mettre à jour le Master Profile avec les données extraites"),
+    username: str = Depends(get_current_username),
     session: Session = Depends(get_session),
 ):
     """
     Reçoit un fichier de CV (PDF, JSON ou TXT), en extrait les données de manière résiliente
-    et retourne les données structurées et le HTML vectoriel prêt à être affiché et modifié.
+    et retourne les données structurées et le HTML vectoriel pour l'utilisateur connecté.
     """
     content = await file.read()
     if not content:
@@ -232,7 +260,7 @@ async def upload_and_parse_cv(
     html_content = render_custom_cv_html(parsed_cv)
 
     if sync_to_profile:
-        profile = session.get(MasterProfile, "default-profile")
+        profile = _get_user_profile(session, username)
         if profile:
             if parsed_cv.full_name and (not profile.full_name or profile.full_name == "Candidat Ingénieur"):
                 profile.full_name = parsed_cv.full_name
@@ -297,10 +325,11 @@ async def compile_custom_pdf(req: CompilePDFRequest) -> Response:
 @router.get("/from-profile")
 def get_cv_from_profile(
     lang: str = Query("fr", description="Langue : 'fr' ou 'en'"),
+    username: str = Depends(get_current_username),
     session: Session = Depends(get_session),
 ):
-    """Charge les données du Master Profile souverain et les projette en structure CustomCVData."""
-    profile = session.get(MasterProfile, "default-profile")
+    """Charge les données du Master Profile souverain de l'utilisateur et les projette en structure CustomCVData."""
+    profile = _get_user_profile(session, username)
     if not profile:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -317,14 +346,14 @@ def get_cv_from_profile(
 @router.get("/profile-pdf", response_class=Response)
 async def download_profile_cv_pdf(
     lang: str = Query("fr", description="Langue : 'fr' ou 'en'"),
+    username: str = Depends(get_current_username),
     session: Session = Depends(get_session),
 ) -> Response:
     """
     Génère et télécharge le CV complet vectoriel A4 (PDF) reflétant l'intégralité
-    des données saisies dans le Master Profile (coordonnées, formations, stages,
-    expériences, projets, compétences, activités extra-professionnelles et langues).
+    des données du Master Profile de l'utilisateur actif.
     """
-    profile = session.get(MasterProfile, "default-profile")
+    profile = _get_user_profile(session, username)
     if not profile:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -351,25 +380,37 @@ async def download_profile_cv_pdf(
 
 
 @router.post("/save-draft")
-def save_cv_draft(data: CustomCVData, session: Session = Depends(get_session)):
-    """Sauvegarde le brouillon du CV dans SQLite."""
-    draft = session.get(CustomCVDraft, "default-draft")
+def save_cv_draft(
+    data: CustomCVData,
+    username: str = Depends(get_current_username),
+    session: Session = Depends(get_session),
+):
+    """Sauvegarde le brouillon du CV propre à l'utilisateur dans SQLite."""
+    draft_id = f"draft-{username}"
+    draft = session.get(CustomCVDraft, draft_id)
+    if not draft:
+        draft = session.exec(select(CustomCVDraft).where(CustomCVDraft.user_id == username)).first()
+
     if data.html_content and data.html_content.strip():
         html_content = data.html_content
     else:
         html_content = render_custom_cv_html(data)
+
     data_json = json.dumps(data.model_dump(), default=str)
     if not draft:
         draft = CustomCVDraft(
-            id="default-draft",
+            id=draft_id,
+            user_id=username,
             title=f"CV {data.full_name}".strip() or "Mon CV",
             data_json=data_json,
             html_content=html_content,
         )
     else:
+        draft.user_id = username
         draft.title = f"CV {data.full_name}".strip() or "Mon CV"
         draft.data_json = data_json
         draft.html_content = html_content
+
     session.add(draft)
     session.commit()
     session.refresh(draft)
@@ -377,11 +418,18 @@ def save_cv_draft(data: CustomCVData, session: Session = Depends(get_session)):
 
 
 @router.get("/draft")
-def get_cv_draft(session: Session = Depends(get_session)):
-    """Récupère le dernier brouillon de CV sauvegardé."""
-    draft = session.get(CustomCVDraft, "default-draft")
+def get_cv_draft(
+    username: str = Depends(get_current_username),
+    session: Session = Depends(get_session),
+):
+    """Récupère le dernier brouillon de CV sauvegardé pour l'utilisateur courant."""
+    draft_id = f"draft-{username}"
+    draft = session.get(CustomCVDraft, draft_id)
     if not draft:
-        profile = session.get(MasterProfile, "default-profile")
+        draft = session.exec(select(CustomCVDraft).where(CustomCVDraft.user_id == username)).first()
+
+    if not draft:
+        profile = _get_user_profile(session, username)
         if profile:
             custom_cv = CVParserService.convert_profile_to_custom_cv(profile, language="fr")
             html_content = render_custom_cv_html(custom_cv)
@@ -392,7 +440,7 @@ def get_cv_draft(session: Session = Depends(get_session)):
         data_dict = json.loads(draft.data_json)
         custom_cv = CustomCVData(**data_dict)
     except Exception:
-        profile = session.get(MasterProfile, "default-profile")
+        profile = _get_user_profile(session, username)
         custom_cv = CVParserService.convert_profile_to_custom_cv(profile, language="fr") if profile else None
 
     html_content = draft.html_content if draft.html_content else (render_custom_cv_html(custom_cv) if custom_cv else "")

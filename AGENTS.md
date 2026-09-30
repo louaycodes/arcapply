@@ -45,10 +45,13 @@
    - Always run and pass relevant tests before committing.
    - Ensure `git status` contains only intentional, tracked changes. Never commit `.env`, secrets, `.sqlite` databases, or temporary caches.
 
-4. **Mandatory Remote Push After Every Completed Story (BLOCKING RULE):**
-   - Immediately after completing each story with passing tests and clean review, a push to the remote repository (`git push origin <current-branch>`) is STRICTLY MANDATORY before proposing the next step or story.
-   - If no remote origin is configured, halt immediately and ask the user for the repository URL.
-   - Confirm explicitly that the push succeeded (with commit hash and branch name) before proposing the next story or walkthrough.
+4. 4. **Push Policy (Deployment Cost Control):**
+   - Commit after every completed story, but do NOT push after each story.
+   - `main` triggers a production deployment (GitHub Actions). NEVER push to `main` unless the user explicitly asks for it.
+   - Work on a feature branch (`feat/<name>`), which does not trigger the pipeline.
+   - Push the feature branch only at the end of a work session or when the user asks.
+   - Deployment happens once: the user merges the branch into `main` after validation.
+   - For docs-only or BMAD-only commits, add `[skip ci]` to the commit message.
 
 ---
 
