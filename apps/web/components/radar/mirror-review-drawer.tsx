@@ -13,6 +13,7 @@ import {
   getCVPreviewUrl,
   getCVPdfDownloadUrl,
 } from "@/lib/api";
+import { useAppLanguage } from "@/lib/language-context";
 import { AtsScoreBadge } from "./ats-score-badge";
 import {
   X,
@@ -51,6 +52,7 @@ export function MirrorReviewDrawer({
   onClose,
   onJobUpdated,
 }: MirrorReviewDrawerProps) {
+  const { language: appLanguage, setLanguage: setAppLanguage } = useAppLanguage();
   const [activeTab, setActiveTab] = useState<"cv" | "letter">("cv");
   const [status, setStatus] = useState<string>("DISCOVERED");
   const [loadingAction, setLoadingAction] = useState(false);
@@ -59,7 +61,7 @@ export function MirrorReviewDrawer({
   // CV state
   const [cvLoading, setCvLoading] = useState(false);
   const [cvGenerated, setCvGenerated] = useState(false);
-  const [cvLanguage, setCvLanguage] = useState<"fr" | "en">("fr");
+  const [cvLanguage, setCvLanguage] = useState<"fr" | "en">(appLanguage);
 
   // Letter state
   const [letter, setLetter] = useState<CoverLetter | null>(null);
@@ -73,7 +75,11 @@ export function MirrorReviewDrawer({
   const [countdownSeconds, setCountdownSeconds] = useState(5);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Synchronisation avec le job courant
+  useEffect(() => {
+    setCvLanguage(appLanguage);
+  }, [appLanguage]);
+
+  // Synchronisation avec le job courant et la langue
   useEffect(() => {
     if (job && isOpen) {
       setStatus(job.status);
@@ -93,14 +99,14 @@ export function MirrorReviewDrawer({
 
       // Initialiser Lettre
       setLetterLoading(true);
-      fetchCoverLetter(job.id)
+      fetchCoverLetter(job.id, cvLanguage)
         .then((l) => {
           setLetter(l);
           setLetterContent(l.content_markdown);
         })
         .catch(() => {
           // Si pas encore générée, la générer
-          generateCoverLetter(job.id)
+          generateCoverLetter(job.id, cvLanguage)
             .then((l) => {
               setLetter(l);
               setLetterContent(l.content_markdown);
@@ -109,7 +115,7 @@ export function MirrorReviewDrawer({
         })
         .finally(() => setLetterLoading(false));
     }
-  }, [job?.id, isOpen]);
+  }, [job?.id, isOpen, cvLanguage]);
 
   // Nettoyage countdown lors du démontage ou fermeture
   useEffect(() => {
@@ -385,90 +391,103 @@ export function MirrorReviewDrawer({
                 </button>
               </div>
 
-              {activeTab === "cv" && (
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center rounded border border-border bg-muted/40 p-0.5 text-[11px] font-semibold">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCvLanguage("fr");
-                        setCvLoading(true);
-                        generateTargetedCV(job.id, "fr")
-                          .then(() => setCvGenerated(true))
-                          .finally(() => setCvLoading(false));
-                      }}
-                      className={`px-2 py-0.5 rounded transition-all ${
-                        cvLanguage === "fr"
-                          ? "bg-primary text-primary-foreground font-bold shadow-xs"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                      title="Version Française"
-                    >
-                      FR
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCvLanguage("en");
-                        setCvLoading(true);
-                        generateTargetedCV(job.id, "en")
-                          .then(() => setCvGenerated(true))
-                          .finally(() => setCvLoading(false));
-                      }}
-                      className={`px-2 py-0.5 rounded transition-all ${
-                        cvLanguage === "en"
-                          ? "bg-primary text-primary-foreground font-bold shadow-xs"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                      title="English Version"
-                    >
-                      EN
-                    </button>
-                  </div>
-
-                  <a
-                    href={pdfUrl}
-                    download={`CV_${job.company.replace(/\s+/g, "_")}_${cvLanguage.toUpperCase()}.pdf`}
-                    className="px-2.5 py-1 rounded-md border border-border bg-background hover:bg-muted text-xs font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors"
-                  >
-                    <span>PDF A4</span>
-                  </a>
+              {/* Language switcher applicable to both CV and Letter */}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center rounded border border-border bg-muted/40 p-0.5 text-[11px] font-semibold">
                   <button
                     type="button"
                     onClick={() => {
-                      setCvLoading(true);
-                      generateTargetedCV(job.id, cvLanguage)
-                        .then(() => setCvGenerated(true))
-                        .finally(() => setCvLoading(false));
+                      setCvLanguage("fr");
+                      setAppLanguage("fr");
                     }}
-                    disabled={cvLoading}
-                    className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
-                    title="Régénérer le CV"
+                    className={`px-2 py-0.5 rounded transition-all ${
+                      cvLanguage === "fr"
+                        ? "bg-primary text-primary-foreground font-bold shadow-xs"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    title="Version Française"
                   >
-                    <RefreshCw className={`w-3.5 h-3.5 ${cvLoading ? "animate-spin" : ""}`} />
+                    FR
                   </button>
-                </div>
-              )}
-
-              {activeTab === "letter" && (
-                <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={handleSaveLetter}
-                    disabled={isLetterSaving}
-                    className="px-3 py-1 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                    onClick={() => {
+                      setCvLanguage("en");
+                      setAppLanguage("en");
+                    }}
+                    className={`px-2 py-0.5 rounded transition-all ${
+                      cvLanguage === "en"
+                        ? "bg-primary text-primary-foreground font-bold shadow-xs"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    title="English Version"
                   >
-                    {isLetterSaving ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : letterSaveSuccess ? (
-                      <Check className="w-3.5 h-3.5 text-white" />
-                    ) : (
-                      <Save className="w-3.5 h-3.5" />
-                    )}
-                    <span>{letterSaveSuccess ? "Sauvegardé" : "Enregistrer"}</span>
+                    EN
                   </button>
                 </div>
-              )}
+
+                {activeTab === "cv" ? (
+                  <>
+                    <a
+                      href={pdfUrl}
+                      download={`CV_${job.company.replace(/\s+/g, "_")}_${cvLanguage.toUpperCase()}.pdf`}
+                      className="px-2.5 py-1 rounded-md border border-border bg-background hover:bg-muted text-xs font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors"
+                    >
+                      <span>PDF A4</span>
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCvLoading(true);
+                        generateTargetedCV(job.id, cvLanguage)
+                          .then(() => setCvGenerated(true))
+                          .finally(() => setCvLoading(false));
+                      }}
+                      disabled={cvLoading}
+                      className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+                      title="Régénérer le CV"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${cvLoading ? "animate-spin" : ""}`} />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLetterLoading(true);
+                        generateCoverLetter(job.id, cvLanguage)
+                          .then((l) => {
+                            setLetter(l);
+                            setLetterContent(l.content_markdown);
+                          })
+                          .catch((err) => console.error("Erreur régénération lettre:", err))
+                          .finally(() => setLetterLoading(false));
+                      }}
+                      disabled={letterLoading}
+                      className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+                      title="Régénérer la lettre"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${letterLoading ? "animate-spin" : ""}`} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveLetter}
+                      disabled={isLetterSaving}
+                      className="px-3 py-1 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                    >
+                      {isLetterSaving ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : letterSaveSuccess ? (
+                        <Check className="w-3.5 h-3.5 text-white" />
+                      ) : (
+                        <Save className="w-3.5 h-3.5" />
+                      )}
+                      <span>{letterSaveSuccess ? "Sauvegardé" : "Enregistrer"}</span>
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
 
             {/* Sub-tab content */}

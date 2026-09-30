@@ -67,21 +67,32 @@ def get_available_users(session: Session = Depends(get_session)):
 def get_current_username(
     authorization: Optional[str] = Header(None),
     x_username: Optional[str] = Header(None, alias="X-Username"),
+    token: Optional[str] = None,
+    username: Optional[str] = None,
     session: Session = Depends(get_session),
 ) -> str:
     """Détermine l'utilisateur actif (Louay ou Chaima).
+    Prend en compte les en-têtes (X-Username, Authorization) et les paramètres d'URL (username, token)
+    utiles notamment pour les iframes PDF / preview sans en-tête.
     Par défaut, retombe sur 'louay' pour préserver la rétrocompatibilité des tests existants.
     """
+    if username and username.strip():
+        return username.strip().lower()
+
     if x_username and x_username.strip():
         return x_username.strip().lower()
 
+    active_token = None
     if authorization:
-        token = authorization.replace("Bearer ", "").strip()
-        if token.startswith("arcapply-token-"):
-            user_id = token.replace("arcapply-token-", "")
-            user = session.exec(select(User).where(User.id == user_id)).first()
-            if user:
-                return user.username.lower()
+        active_token = authorization.replace("Bearer ", "").strip()
+    elif token and token.strip():
+        active_token = token.strip()
+
+    if active_token and active_token.startswith("arcapply-token-"):
+        user_id = active_token.replace("arcapply-token-", "")
+        user = session.exec(select(User).where(User.id == user_id)).first()
+        if user:
+            return user.username.lower()
 
     return "louay"
 

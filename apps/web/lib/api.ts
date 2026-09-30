@@ -33,10 +33,16 @@ export interface Education {
   id?: string;
   school: string;
   degree: string;
+  degree_fr?: string;
+  degree_en?: string;
   field_of_study: string;
+  field_of_study_fr?: string;
+  field_of_study_en?: string;
   start_date: string;
   end_date?: string | null;
   description?: string | null;
+  description_fr?: string | null;
+  description_en?: string | null;
 }
 
 export interface Language {
@@ -47,18 +53,26 @@ export interface Language {
 export interface Extracurricular {
   organization: string;
   role: string;
+  role_fr?: string;
+  role_en?: string;
   date: string;
   description: string;
+  description_fr?: string;
+  description_en?: string;
 }
 
 export interface Experience {
   id?: string;
   company: string;
   role: string;
+  role_fr?: string;
+  role_en?: string;
   location?: string | null;
   start_date: string;
   end_date?: string | null;
   description: string;
+  description_fr?: string;
+  description_en?: string;
   technologies: string[];
   experience_type?: "stage" | "job";
 }
@@ -66,8 +80,14 @@ export interface Experience {
 export interface Project {
   id?: string;
   title: string;
+  title_fr?: string;
+  title_en?: string;
   role?: string | null;
+  role_fr?: string;
+  role_en?: string;
   description: string;
+  description_fr?: string;
+  description_en?: string;
   url?: string | null;
   technologies: string[];
 }
@@ -79,6 +99,19 @@ export interface Skill {
   level?: string | null;
 }
 
+export const SKILL_CATEGORIES = [
+  "Frameworks",
+  "Langages & Scripting",
+  "Bases de données",
+  "Versioning & Méthodes",
+  "Systèmes & Réseaux",
+  "Monitoring & Observabilité",
+  "Infrastructure as Code",
+  "Cloud & Infrastructure",
+  "Conteneurisation & Orchestration",
+  "Sécurité (DevSecOps)",
+] as const;
+
 export interface MasterProfile {
   id: string;
   full_name: string;
@@ -86,7 +119,11 @@ export interface MasterProfile {
   phone?: string | null;
   location?: string | null;
   headline?: string | null;
+  headline_fr?: string | null;
+  headline_en?: string | null;
   bio?: string | null;
+  bio_fr?: string | null;
+  bio_en?: string | null;
   linkedin_url?: string | null;
   github_url?: string | null;
   website_url?: string | null;
@@ -460,11 +497,35 @@ export async function generateTargetedCV(jobId: string, lang: string = "fr"): Pr
 }
 
 export function getCVPreviewUrl(jobId: string, lang: string = "fr"): string {
-  return `${API_BASE_URL}/api/cv/preview/${jobId}?lang=${lang}`;
+  let authParams = "";
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("arcapply_token");
+    const userStr = localStorage.getItem("arcapply_user");
+    if (token) authParams += `&token=${encodeURIComponent(token)}`;
+    if (userStr) {
+      try {
+        const u = JSON.parse(userStr);
+        if (u.username) authParams += `&username=${encodeURIComponent(u.username)}`;
+      } catch {}
+    }
+  }
+  return `${API_BASE_URL}/api/cv/preview/${jobId}?lang=${lang}${authParams}`;
 }
 
 export function getCVPdfDownloadUrl(jobId: string, lang: string = "fr"): string {
-  return `${API_BASE_URL}/api/cv/pdf/${jobId}?lang=${lang}`;
+  let authParams = "";
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("arcapply_token");
+    const userStr = localStorage.getItem("arcapply_user");
+    if (token) authParams += `&token=${encodeURIComponent(token)}`;
+    if (userStr) {
+      try {
+        const u = JSON.parse(userStr);
+        if (u.username) authParams += `&username=${encodeURIComponent(u.username)}`;
+      } catch {}
+    }
+  }
+  return `${API_BASE_URL}/api/cv/pdf/${jobId}?lang=${lang}${authParams}`;
 }
 
 // ============================================================================
@@ -646,12 +707,13 @@ export interface CoverLetter {
   content_markdown: string;
   cliche_score: number;
   banned_phrases_detected: string[];
+  language?: string;
   created_at: string;
   updated_at: string;
 }
 
-export async function generateCoverLetter(jobId: string): Promise<CoverLetter> {
-  const res = await authFetch(`${API_BASE_URL}/api/letter/generate/${jobId}`, {
+export async function generateCoverLetter(jobId: string, lang: string = "fr"): Promise<CoverLetter> {
+  const res = await authFetch(`${API_BASE_URL}/api/letter/generate/${jobId}?lang=${lang}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -666,8 +728,8 @@ export async function generateCoverLetter(jobId: string): Promise<CoverLetter> {
   return res.json();
 }
 
-export async function fetchCoverLetter(jobId: string): Promise<CoverLetter> {
-  const res = await authFetch(`${API_BASE_URL}/api/letter/${jobId}`, {
+export async function fetchCoverLetter(jobId: string, lang: string = "fr"): Promise<CoverLetter> {
+  const res = await authFetch(`${API_BASE_URL}/api/letter/${jobId}?lang=${lang}`, {
     cache: "no-store",
   });
   if (!res.ok) {

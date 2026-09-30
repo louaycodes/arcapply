@@ -24,58 +24,81 @@ logger = logging.getLogger(__name__)
 
 # Catégorisation canonique des compétences techniques (zéro-hallucination : seules les compétences du candidat sont projetées)
 TAXONOMY_CATEGORIES = {
-    "cloud_devops": {
-        "title_fr": "Cloud & DevOps",
-        "title_en": "Cloud & DevOps",
+    "frameworks": {
+        "title_fr": "Frameworks",
+        "title_en": "Frameworks",
         "keywords": [
-            "openstack", "kubernetes", "k8s", "docker", "ansible", "prometheus", "grafana",
-            "zabbix", "aws", "azure", "gcp", "ci/cd", "terraform", "cloud", "devops",
-            "serverless", "helm"
+            "angular", "next.js", "nextjs", "react", "vue", "spring boot", "springboot", "spring",
+            "symfony", "flask", "fastapi", "django", "express", "microservices", "javafx", "flutterflow", "flutter"
         ],
     },
-    "networking": {
-        "title_fr": "Réseaux & Systèmes",
-        "title_en": "Networking & Systems",
-        "keywords": [
-            "tcp/ip", "vmware", "vmware networking", "cisco", "ccna", "ccna2", "cisco ccna2",
-            "networking", "réseaux", "routing", "switching", "dns", "vpn", "bgp", "ospf",
-            "networkx"
-        ],
-    },
-    "backend": {
-        "title_fr": "Backend",
-        "title_en": "Backend",
-        "keywords": [
-            "spring boot", "springboot", "spring", "symfony", "rest api", "api rest",
-            "graphql", "node.js", "nodejs", "node", "flask", "fastapi", "django",
-            ".net", "dotnet", "c#", "express", "microservices"
-        ],
-    },
-    "frontend": {
-        "title_fr": "Frontend",
-        "title_en": "Frontend",
-        "keywords": [
-            "angular", "next.js", "nextjs", "react", "vue", "javafx", "flutterflow",
-            "flutter", "typescript", "javascript", "html", "css", "tailwind", "qtdesigner",
-            "qt designer"
-        ],
-    },
-    "programming": {
-        "title_fr": "Langages & Programmation",
-        "title_en": "Programming Languages",
+    "languages_scripting": {
+        "title_fr": "Langages & Scripting",
+        "title_en": "Languages & Scripting",
         "keywords": [
             "c", "c++", "java", "python", "php", "sql", "typescript", "javascript",
-            "c#", "bash", "shell", "go", "rust"
+            "c#", ".net", "dotnet", "bash", "shell", "go", "rust", "html", "css", "tailwind", "qtdesigner"
         ],
     },
-    "tools_certs": {
-        "title_fr": "Outils & Certifications",
-        "title_en": "Tools & Certifications",
+    "databases": {
+        "title_fr": "Bases de données",
+        "title_en": "Databases",
         "keywords": [
-            "git", "linux", "linux (ubuntu)", "ubuntu", "agile", "scrum", "agile/scrum",
-            "mysql", "postgresql", "jenkins", "github actions", "github", "gitlab",
-            "sonarqube", "owasp", "chromadb", "langgraph", "powerbi", "firebase",
-            "sqldevelopper", "arduino"
+            "mysql", "postgresql", "postgres", "mongodb", "sqlite", "redis", "oracle",
+            "sqldevelopper", "sql developer", "chromadb", "firebase"
+        ],
+    },
+    "versioning_methods": {
+        "title_fr": "Versioning & Méthodes",
+        "title_en": "Versioning & Methodologies",
+        "keywords": [
+            "git", "github", "gitlab", "bitbucket", "agile", "scrum", "agile/scrum",
+            "kanban", "jira", "ci/cd", "continuous integration"
+        ],
+    },
+    "systems_networks": {
+        "title_fr": "Systèmes & Réseaux",
+        "title_en": "Systems & Networks",
+        "keywords": [
+            "linux", "linux (ubuntu)", "ubuntu", "debian", "redhat", "centos",
+            "tcp/ip", "vmware", "vmware networking", "cisco", "ccna", "ccna2", "cisco ccna2",
+            "networking", "réseaux", "routing", "switching", "dns", "vpn", "bgp", "ospf", "networkx"
+        ],
+    },
+    "monitoring_observability": {
+        "title_fr": "Monitoring & Observabilité",
+        "title_en": "Monitoring & Observability",
+        "keywords": [
+            "prometheus", "grafana", "zabbix", "elk", "elasticsearch", "logstash", "kibana",
+            "datadog", "opentelemetry", "cloudwatch"
+        ],
+    },
+    "iac": {
+        "title_fr": "Infrastructure as Code",
+        "title_en": "Infrastructure as Code",
+        "keywords": [
+            "terraform", "ansible", "cloudformation", "pulumi"
+        ],
+    },
+    "cloud_infra": {
+        "title_fr": "Cloud & Infrastructure",
+        "title_en": "Cloud & Infrastructure",
+        "keywords": [
+            "aws", "azure", "gcp", "google cloud", "openstack", "cloud", "serverless"
+        ],
+    },
+    "containerization_orchestration": {
+        "title_fr": "Conteneurisation & Orchestration",
+        "title_en": "Containerization & Orchestration",
+        "keywords": [
+            "docker", "kubernetes", "k8s", "helm", "containerd", "docker compose"
+        ],
+    },
+    "security": {
+        "title_fr": "Sécurité (DevSecOps)",
+        "title_en": "Security (DevSecOps)",
+        "keywords": [
+            "sonarqube", "owasp", "trivy", "snyk", "vault", "security", "devsecops", "iam"
         ],
     },
 }
@@ -168,9 +191,11 @@ class CVGeneratorService:
 
         # 1. Headline ciblée
         if lang == "en":
-            headline = f"Cloud Architecture & DevOps Engineering Student — {job.title}"
+            hl_base = profile.headline_en or profile.headline or "Engineering Student"
+            headline = f"{hl_base} — {job.title}" if job.title else hl_base
         else:
-            headline = profile.headline or f"Élève-Ingénieur Architectures Cloud / DevOps — {job.title}"
+            hl_base = profile.headline_fr or profile.headline or "Élève-Ingénieur"
+            headline = f"{hl_base} — {job.title}" if job.title else hl_base
 
         # 2. Accroche factuelle zéro hallucination
         missing_set = {s.lower() for s in ats_match.missing_skills}
@@ -181,16 +206,22 @@ class CVGeneratorService:
 
         if lang == "en":
             summary = (
-                f"Computer Engineering student specializing in Cloud Architecture & DevOps at ESPRIT. "
-                f"Hands-on expertise in {matched_str}, cloud-native infrastructure, and full-stack systems, "
-                f"seeking a graduation internship (PFE) / engineering role."
+                profile.bio_en
+                or (
+                    f"Computer Engineering student specializing in Cloud Architecture & DevOps at ESPRIT. "
+                    f"Hands-on expertise in {matched_str}, cloud-native infrastructure, and full-stack systems, "
+                    f"seeking a graduation internship (PFE) / engineering role."
+                )
             )
         else:
             summary = (
-                profile.bio
-                or f"Élève-ingénieur en informatique spécialisé en architectures Cloud & DevOps à l'ESPRIT. "
-                f"Solides compétences pratiques en {matched_str} et conception de systèmes distribués fiables, "
-                f"à la recherche d'un stage de fin d'études (PFE) ou d'une opportunité d'ingénierie."
+                profile.bio_fr
+                or profile.bio
+                or (
+                    f"Élève-ingénieur en informatique spécialisé en architectures Cloud & DevOps à l'ESPRIT. "
+                    f"Solides compétences pratiques en {matched_str} et conception de systèmes distribués fiables, "
+                    f"à la recherche d'un stage de fin d'études (PFE) ou d'une opportunité d'ingénierie."
+                )
             )
 
         # 3. Ordonnancement des expériences : filtrer spécifiquement les stages professionnels
@@ -218,23 +249,27 @@ class CVGeneratorService:
             if any(req in (exp.description or "").lower() for req in target_skills_lower):
                 overlap_score += 1.0
 
-            # Traduction anglaise si demandée
+            # Traduction / prise en compte bilingue
             company = exp.company
-            role = exp.role
-            description = exp.description or ""
             end_date = exp.end_date or ("Present" if lang == "en" else "Présent")
 
             if lang == "en":
-                c_trans = EXPERIENCE_TRANSLATIONS.get(c_low)
-                if c_trans:
-                    company = c_trans.get("company_en", company)
-                    for r_key, r_data in c_trans.items():
-                        if r_key != "company_en" and (r_key in r_low or r_low in r_key):
-                            role = r_data.get("role_en", role)
-                            description = r_data.get("desc_en", description)
-                            break
-                else:
-                    role = role.replace("Stagiaire", "Intern").replace("Ingénieur", "Engineer")
+                role = exp.role_en or exp.role
+                description = exp.description_en or (exp.description or "")
+                if not exp.role_en:
+                    c_trans = EXPERIENCE_TRANSLATIONS.get(c_low)
+                    if c_trans:
+                        company = c_trans.get("company_en", company)
+                        for r_key, r_data in c_trans.items():
+                            if r_key != "company_en" and (r_key in r_low or r_low in r_key):
+                                role = r_data.get("role_en", role)
+                                description = r_data.get("desc_en", description)
+                                break
+                    else:
+                        role = role.replace("Stagiaire", "Intern").replace("Ingénieur", "Engineer")
+            else:
+                role = exp.role_fr or exp.role
+                description = exp.description_fr or (exp.description or "")
 
             exp_dict = {
                 "company": company,
@@ -259,17 +294,21 @@ class CVGeneratorService:
             if any(req in (proj.description or "").lower() for req in target_skills_lower):
                 overlap_score += 1.0
 
-            title = proj.title
-            role = proj.role or ("Engineer" if lang == "en" else "Développeur")
-            description = proj.description or ""
-
             if lang == "en":
-                p_low = proj.title.lower()
-                for p_key, p_data in PROJECT_TRANSLATIONS.items():
-                    if p_key in p_low:
-                        title = p_data.get("title_en", title)
-                        description = p_data.get("desc_en", description)
-                        break
+                title = proj.title_en or proj.title
+                role = proj.role_en or (proj.role or "Engineer")
+                description = proj.description_en or (proj.description or "")
+                if not proj.title_en:
+                    p_low = proj.title.lower()
+                    for p_key, p_data in PROJECT_TRANSLATIONS.items():
+                        if p_key in p_low:
+                            title = p_data.get("title_en", title)
+                            description = p_data.get("desc_en", description)
+                            break
+            else:
+                title = proj.title_fr or proj.title
+                role = proj.role_fr or (proj.role or "Développeur")
+                description = proj.description_fr or (proj.description or "")
 
             proj_dict = {
                 "title": title,
@@ -287,17 +326,22 @@ class CVGeneratorService:
         educations_list = []
         for edu in sorted(profile.educations, key=lambda e: e.start_date, reverse=True):
             school = edu.school
-            degree = edu.degree
-            field_of_study = edu.field_of_study
             end_date = edu.end_date or ("Present" if lang == "en" else "En cours")
 
             if lang == "en":
-                if "esprit" in school.lower():
+                degree = edu.degree_en or edu.degree
+                field_of_study = edu.field_of_study_en or edu.field_of_study
+                description = edu.description_en or (edu.description or "")
+                if not edu.degree_en and "esprit" in school.lower():
                     school = "ESPRIT School of Engineering"
-                if "ingénieur" in degree.lower():
+                if not edu.degree_en and "ingénieur" in degree.lower():
                     degree = "Master of Science in Computer Engineering"
-                if "architectures cloud" in field_of_study.lower():
+                if not edu.field_of_study_en and "architectures cloud" in field_of_study.lower():
                     field_of_study = "Cloud Architecture & Distributed Systems"
+            else:
+                degree = edu.degree_fr or edu.degree
+                field_of_study = edu.field_of_study_fr or edu.field_of_study
+                description = edu.description_fr or (edu.description or "")
 
             educations_list.append({
                 "school": school,
@@ -305,7 +349,7 @@ class CVGeneratorService:
                 "field_of_study": field_of_study,
                 "start_date": edu.start_date,
                 "end_date": end_date,
-                "description": edu.description or "",
+                "description": description,
             })
 
         if not educations_list:
@@ -486,45 +530,99 @@ class CVGeneratorService:
         lang: str,
     ) -> list[dict]:
         """
-        Organise les compétences maîtrisées par le candidat selon les 6 catégories demandées :
-        Cloud & DevOps, Networking, Backend, Frontend, Programming, Tools & Certs.
+        Organise les compétences maîtrisées par le candidat selon les 10 catégories demandées :
+        Frameworks, Langages & Scripting, Bases de données, Versioning & Méthodes,
+        Systèmes & Réseaux, Monitoring & Observabilité, Infrastructure as Code,
+        Cloud & Infrastructure, Conteneurisation & Orchestration, Sécurité (DevSecOps).
         Garantit le zéro-hallucination : seules les compétences du candidat sont affichées.
         """
-        mastered_skills_dict: dict[str, str] = {}
-        for sk in profile.skills:
-            if sk.name.strip():
-                mastered_skills_dict[sk.name.strip().lower()] = sk.name.strip()
+        is_en = lang == "en"
 
+        category_name_to_key = {
+            "frameworks": "frameworks",
+            "langages & scripting": "languages_scripting",
+            "bases de données": "databases",
+            "versioning & méthodes": "versioning_methods",
+            "systèmes & réseaux": "systems_networks",
+            "monitoring & observabilité": "monitoring_observability",
+            "infrastructure as code": "iac",
+            "cloud & infrastructure": "cloud_infra",
+            "conteneurisation & orchestration": "containerization_orchestration",
+            "sécurité (devsecops)": "security",
+        }
+
+        cat_skills_dict: dict[str, list[dict]] = {k: [] for k in TAXONOMY_CATEGORIES}
+        assigned_skills: set[str] = set()
+
+        # 1. Compétences explicites du profil (avec respect de leur catégorie choisie)
+        for sk in profile.skills:
+            s_name = sk.name.strip()
+            if not s_name:
+                continue
+            s_low = s_name.lower()
+            if s_low in assigned_skills:
+                continue
+
+            target_cat_key = None
+            if sk.category:
+                clean_cat = sk.category.strip().lower()
+                target_cat_key = category_name_to_key.get(clean_cat)
+                if not target_cat_key:
+                    for norm_name, c_key in category_name_to_key.items():
+                        if norm_name in clean_cat or clean_cat in norm_name:
+                            target_cat_key = c_key
+                            break
+
+            # Fallback sur les mots-clés de la taxonomie
+            if not target_cat_key:
+                for c_key, c_data in TAXONOMY_CATEGORIES.items():
+                    if any(kw == s_low or (len(kw) > 3 and kw in s_low) for kw in c_data["keywords"]):
+                        target_cat_key = c_key
+                        break
+
+            if not target_cat_key:
+                target_cat_key = "frameworks"
+
+            assigned_skills.add(s_low)
+            cat_skills_dict[target_cat_key].append({
+                "name": s_name,
+                "matched": s_low in target_skills_lower,
+            })
+
+        # 2. Technologies annexes tirées des expériences et projets
+        extra_techs: list[str] = []
         for exp in profile.experiences:
             for t in exp.technologies:
-                if t.strip() and t.strip().lower() not in mastered_skills_dict:
-                    mastered_skills_dict[t.strip().lower()] = t.strip()
-
+                if t.strip() and t.strip().lower() not in assigned_skills:
+                    extra_techs.append(t.strip())
         for proj in profile.projects:
             for t in proj.technologies:
-                if t.strip() and t.strip().lower() not in mastered_skills_dict:
-                    mastered_skills_dict[t.strip().lower()] = t.strip()
+                if t.strip() and t.strip().lower() not in assigned_skills:
+                    extra_techs.append(t.strip())
 
-        assigned_skills = set()
+        for t_name in extra_techs:
+            t_low = t_name.lower()
+            if t_low in assigned_skills:
+                continue
+            target_cat_key = None
+            for c_key, c_data in TAXONOMY_CATEGORIES.items():
+                if any(kw == t_low or (len(kw) > 3 and kw in t_low) for kw in c_data["keywords"]):
+                    target_cat_key = c_key
+                    break
+
+            if target_cat_key:
+                assigned_skills.add(t_low)
+                cat_skills_dict[target_cat_key].append({
+                    "name": t_name,
+                    "matched": t_low in target_skills_lower,
+                })
+
+        # 3. Assemblage des catégories ordonnées
         categorized: list[dict] = []
-
         for cat_key, cat_data in TAXONOMY_CATEGORIES.items():
-            category_title = cat_data["title_en"] if lang == "en" else cat_data["title_fr"]
-            cat_keywords = cat_data["keywords"]
-
-            skills_in_cat: list[dict] = []
-            for kw in cat_keywords:
-                for skill_low, original_name in list(mastered_skills_dict.items()):
-                    if skill_low == kw or (len(kw) > 3 and kw in skill_low):
-                        if skill_low not in assigned_skills:
-                            assigned_skills.add(skill_low)
-                            is_matched = skill_low in target_skills_lower
-                            skills_in_cat.append({
-                                "name": original_name,
-                                "matched": is_matched,
-                            })
-
+            skills_in_cat = cat_skills_dict[cat_key]
             if skills_in_cat:
+                category_title = cat_data["title_en"] if is_en else cat_data["title_fr"]
                 categorized.append({
                     "title": category_title,
                     "skills": skills_in_cat,
@@ -695,8 +793,25 @@ class CVGeneratorService:
         </section>
         """ if skills_rows else ""
 
-        # 8. Activités extra-professionnelles (Enactus EMC + Lycée Pilote Bizerte Youth Club)
-        if is_en:
+        # 8. Activités extra-professionnelles (dynamiques avec fallback)
+        if profile.extracurriculars:
+            extra_rendered = []
+            for item in profile.extracurriculars:
+                role_val = (item.role_en if is_en else item.role_fr) or item.role
+                desc_val = (item.description_en if is_en else item.description_fr) or item.description
+                date_val = item.date or ""
+                extra_rendered.append(f"""
+                <div class="item">
+                    <div class="item-header">
+                        <span class="item-role">{html.escape(item.organization)}</span> — 
+                        <span class="item-company">{html.escape(role_val)}</span>
+                        <span class="item-date">{html.escape(date_val)}</span>
+                    </div>
+                    <div class="item-desc">{html.escape(desc_val)}</div>
+                </div>
+                """)
+            extracurricular_items = "".join(extra_rendered)
+        elif is_en:
             extracurricular_items = """
             <div class="item">
                 <div class="item-header">
@@ -743,7 +858,12 @@ class CVGeneratorService:
         """
 
         # 9. Langues
-        if is_en:
+        if profile.languages:
+            items_l = []
+            for lang_obj in profile.languages:
+                items_l.append(f"<strong>{html.escape(lang_obj.name)} :</strong> {html.escape(lang_obj.level)}")
+            lang_content = " &bull; ".join(items_l)
+        elif is_en:
             lang_content = "<strong>Arabic:</strong> Native &bull; <strong>French:</strong> Fluent &bull; <strong>English:</strong> Technical"
         else:
             lang_content = "<strong>Arabe :</strong> Langue maternelle &bull; <strong>Français :</strong> Courant &bull; <strong>Anglais :</strong> Technique"
@@ -887,8 +1007,8 @@ class CVGeneratorService:
             break-inside: avoid;
         }}
         .skill-cat {{
-            width: 170px;
-            min-width: 170px;
+            width: 230px;
+            min-width: 230px;
             font-weight: 700;
             color: #111827;
         }}
