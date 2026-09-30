@@ -20,10 +20,16 @@ def generate_uuid() -> str:
 class EducationBase(SQLModel):
     school: str = Field(default="")
     degree: str = Field(default="")
+    degree_fr: Optional[str] = Field(default=None)
+    degree_en: Optional[str] = Field(default=None)
     field_of_study: str = Field(default="")
+    field_of_study_fr: Optional[str] = Field(default=None)
+    field_of_study_en: Optional[str] = Field(default=None)
     start_date: str = Field(default="")
     end_date: Optional[str] = Field(default=None)
     description: Optional[str] = Field(default=None)
+    description_fr: Optional[str] = Field(default=None)
+    description_en: Optional[str] = Field(default=None)
 
 
 class Education(EducationBase, table=True):
@@ -42,17 +48,25 @@ class LanguageBase(SQLModel):
 class ExtracurricularBase(SQLModel):
     organization: str = Field(default="")
     role: str = Field(default="")
+    role_fr: Optional[str] = Field(default=None)
+    role_en: Optional[str] = Field(default=None)
     date: str = Field(default="")
     description: str = Field(default="")
+    description_fr: Optional[str] = Field(default=None)
+    description_en: Optional[str] = Field(default=None)
 
 
 class ExperienceBase(SQLModel):
     company: str = Field(default="")
     role: str = Field(default="")
+    role_fr: Optional[str] = Field(default=None)
+    role_en: Optional[str] = Field(default=None)
     location: Optional[str] = Field(default=None)
     start_date: str = Field(default="")
     end_date: Optional[str] = Field(default=None)
     description: str = Field(default="")
+    description_fr: Optional[str] = Field(default=None)
+    description_en: Optional[str] = Field(default=None)
     technologies: list[str] = Field(default_factory=list)
     experience_type: str = Field(default="stage")  # "stage" | "job"
 
@@ -63,10 +77,14 @@ class Experience(SQLModel, table=True):
     profile_id: str = Field(foreign_key="master_profiles.id", index=True)
     company: str = Field(default="")
     role: str = Field(default="")
+    role_fr: Optional[str] = Field(default=None)
+    role_en: Optional[str] = Field(default=None)
     location: Optional[str] = Field(default=None)
     start_date: str = Field(default="")
     end_date: Optional[str] = Field(default=None)
     description: str = Field(default="")
+    description_fr: Optional[str] = Field(default=None)
+    description_en: Optional[str] = Field(default=None)
     technologies_raw: str = Field(default="")  # Comma separated or JSON
     experience_type: str = Field(default="stage")
 
@@ -86,8 +104,14 @@ class Experience(SQLModel, table=True):
 
 class ProjectBase(SQLModel):
     title: str = Field(default="")
+    title_fr: Optional[str] = Field(default=None)
+    title_en: Optional[str] = Field(default=None)
     role: Optional[str] = Field(default=None)
+    role_fr: Optional[str] = Field(default=None)
+    role_en: Optional[str] = Field(default=None)
     description: str = Field(default="")
+    description_fr: Optional[str] = Field(default=None)
+    description_en: Optional[str] = Field(default=None)
     url: Optional[str] = Field(default=None)
     technologies: list[str] = Field(default_factory=list)
 
@@ -97,8 +121,14 @@ class Project(SQLModel, table=True):
     id: str = Field(default_factory=generate_uuid, primary_key=True)
     profile_id: str = Field(foreign_key="master_profiles.id", index=True)
     title: str = Field(default="")
+    title_fr: Optional[str] = Field(default=None)
+    title_en: Optional[str] = Field(default=None)
     role: Optional[str] = Field(default=None)
+    role_fr: Optional[str] = Field(default=None)
+    role_en: Optional[str] = Field(default=None)
     description: str = Field(default="")
+    description_fr: Optional[str] = Field(default=None)
+    description_en: Optional[str] = Field(default=None)
     url: Optional[str] = Field(default=None)
     technologies_raw: str = Field(default="")
 
@@ -118,7 +148,7 @@ class Project(SQLModel, table=True):
 
 class SkillBase(SQLModel):
     name: str = Field(default="")
-    category: str = Field(default="Technologies")
+    category: str = Field(default="Frameworks")
     level: Optional[str] = Field(default=None)
 
 
@@ -136,7 +166,11 @@ class MasterProfileBase(SQLModel):
     phone: Optional[str] = Field(default=None)
     location: Optional[str] = Field(default=None)
     headline: Optional[str] = Field(default=None)
+    headline_fr: Optional[str] = Field(default=None)
+    headline_en: Optional[str] = Field(default=None)
     bio: Optional[str] = Field(default=None)
+    bio_fr: Optional[str] = Field(default=None)
+    bio_en: Optional[str] = Field(default=None)
     linkedin_url: Optional[str] = Field(default=None)
     github_url: Optional[str] = Field(default=None)
     website_url: Optional[str] = Field(default=None)
@@ -245,7 +279,11 @@ class MasterProfileUpdate(SQLModel):
     phone: Optional[str] = None
     location: Optional[str] = None
     headline: Optional[str] = None
+    headline_fr: Optional[str] = None
+    headline_en: Optional[str] = None
     bio: Optional[str] = None
+    bio_fr: Optional[str] = None
+    bio_en: Optional[str] = None
     linkedin_url: Optional[str] = None
     github_url: Optional[str] = None
     website_url: Optional[str] = None
@@ -432,6 +470,7 @@ class CoverLetterBase(SQLModel):
     content_markdown: str = Field(default="")
     cliche_score: int = Field(default=0)
     banned_phrases_detected_raw: str = Field(default="[]")
+    language: str = Field(default="fr", index=True)
     user_id: str = Field(default="louay", index=True)
 
 
@@ -459,6 +498,7 @@ class CoverLetterRead(SQLModel):
     content_markdown: str
     cliche_score: int
     banned_phrases_detected: list[str]
+    language: str = "fr"
     created_at: datetime
     updated_at: datetime
 

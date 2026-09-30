@@ -115,33 +115,45 @@ def _build_realizations_paragraph(
     ranked_projects: List[tuple],
     ranked_experiences: List[tuple],
     target_skills_str: str,
+    lang: str = "fr",
 ) -> str:
     """
     Construit le paragraphe de réalisations (« MOI ») en citant TOUS les projets et expériences
     dont le score de pertinence est > 0, de façon fluide et convaincante.
     Si aucun élément n'est pertinent (tous à 0), replie vers le meilleur disponible.
+    Supporte le français et l'anglais.
     """
+    is_en = lang == "en"
     relevant_projects = [(s, p) for s, p in ranked_projects if s > 0]
     relevant_experiences = [(s, e) for s, e in ranked_experiences if s > 0]
 
     if not relevant_projects and not relevant_experiences:
         if ranked_projects:
             _, p = ranked_projects[0]
+            p_title = (p.title_en if is_en else p.title_fr) or p.title
+            p_role = (p.role_en if is_en else p.role_fr) or p.role or ("Engineer" if is_en else "développeur")
+            desc = ((p.description_en if is_en else p.description_fr) or p.description or "").strip().rstrip(".")
             proj_techs = ", ".join(p.technologies[:4]) if p.technologies else target_skills_str
-            desc = (p.description or "").strip().rstrip(".")
+            if is_en:
+                return f'Throughout my engineering projects, I built "{p_title}" as a {p_role}: {desc}. This project heavily leverages {proj_techs}.'
             return (
                 f"Au cours de mes projets d'ingénierie, j'ai développé "
-                f"« {p.title} » en tant que {p.role or 'développeur'} : {desc}. "
+                f"« {p_title} » en tant que {p_role} : {desc}. "
                 f"Cette réalisation mobilise notamment {proj_techs}."
             )
         if ranked_experiences:
             _, e = ranked_experiences[0]
+            e_role = (e.role_en if is_en else e.role_fr) or e.role
+            desc = ((e.description_en if is_en else e.description_fr) or e.description or "").strip().rstrip(".")
             exp_techs = ", ".join(e.technologies[:4]) if e.technologies else target_skills_str
-            desc = (e.description or "").strip().rstrip(".")
+            if is_en:
+                return f"During my time at {e.company} as {e_role}, I contributed to {desc}, working with {exp_techs}."
             return (
-                f"Lors de mon expérience chez {e.company} en tant que {e.role}, "
+                f"Lors de mon expérience chez {e.company} en tant que {e_role}, "
                 f"j'ai contribué à {desc}, en mobilisant {exp_techs}."
             )
+        if is_en:
+            return f"My engineering education gave me a strong foundation in software architecture and hands-on practice with {target_skills_str}."
         return (
             f"Ma formation d'ingénieur m'a permis d'acquérir une rigueur solide en "
             f"conception d'architectures logicielles, avec une pratique approfondie "
@@ -152,32 +164,51 @@ def _build_realizations_paragraph(
     has_first = False
 
     for i, (score, p) in enumerate(relevant_projects):
+        p_title = (p.title_en if is_en else p.title_fr) or p.title
+        p_role = (p.role_en if is_en else p.role_fr) or p.role or ("Engineer" if is_en else "développeur")
+        desc = ((p.description_en if is_en else p.description_fr) or p.description or "").strip().rstrip(".")
         proj_techs = ", ".join(p.technologies[:5]) if p.technologies else target_skills_str
-        desc = (p.description or "").strip().rstrip(".")
-        role_str = p.role or "développeur"
 
         if not has_first:
-            parts.append(
-                f"Parmi mes réalisations directement liées à ce poste, j'ai développé "
-                f"« {p.title} » en tant que {role_str} : {desc}. "
-                f"Ce projet m'a permis de mettre en œuvre de façon opérationnelle "
-                f"{proj_techs}, dans le respect des bonnes pratiques de conception logicielle."
-            )
+            if is_en:
+                parts.append(
+                    f'Among my projects directly relevant to this role, I developed "{p_title}" as {p_role}: {desc}. '
+                    f"This experience provided concrete hands-on implementation of {proj_techs}, upholding best engineering practices."
+                )
+            else:
+                parts.append(
+                    f"Parmi mes réalisations directement liées à ce poste, j'ai développé "
+                    f"« {p_title} » en tant que {p_role} : {desc}. "
+                    f"Ce projet m'a permis de mettre en œuvre de façon opérationnelle "
+                    f"{proj_techs}, dans le respect des bonnes pratiques de conception logicielle."
+                )
             has_first = True
         else:
-            parts.append(
-                f"J'ai également conduit « {p.title} » ({role_str}), "
-                f"portant sur {desc}, en utilisant {proj_techs}."
-            )
+            if is_en:
+                parts.append(
+                    f'I also engineered "{p_title}" ({p_role}), focusing on {desc}, using {proj_techs}.'
+                )
+            else:
+                parts.append(
+                    f"J'ai également conduit « {p_title} » ({p_role}), "
+                    f"portant sur {desc}, en utilisant {proj_techs}."
+                )
 
     for i, (score, e) in enumerate(relevant_experiences):
+        e_role = (e.role_en if is_en else e.role_fr) or e.role
+        desc = ((e.description_en if is_en else e.description_fr) or e.description or "").strip().rstrip(".")
         exp_techs = ", ".join(e.technologies[:5]) if e.technologies else target_skills_str
-        desc = (e.description or "").strip().rstrip(".")
-        connector = "Par ailleurs, lors" if (has_first or i > 0) else "Lors"
-        parts.append(
-            f"{connector} de mon expérience chez {e.company} en tant que {e.role}, "
-            f"j'ai contribué à {desc}, en mobilisant {exp_techs}."
-        )
+        if is_en:
+            connector = "Furthermore, during" if (has_first or i > 0) else "During"
+            parts.append(
+                f"{connector} my experience at {e.company} as {e_role}, I contributed to {desc}, utilizing {exp_techs}."
+            )
+        else:
+            connector = "Par ailleurs, lors" if (has_first or i > 0) else "Lors"
+            parts.append(
+                f"{connector} de mon expérience chez {e.company} en tant que {e_role}, "
+                f"j'ai contribué à {desc}, en mobilisant {exp_techs}."
+            )
         has_first = True
 
     return " ".join(parts)
@@ -227,24 +258,42 @@ class CoverLetterService:
         school_name: str,
         degree_name: str,
         target_skills_str: str,
+        lang: str = "fr",
     ) -> str:
         """Acte 1 (VOUS) : L'entreprise cible, le poste et ses défis techniques."""
-        company = job.company or "votre entreprise"
-        job_title = job.title or "Ingénieur Logiciel"
+        is_en = lang == "en"
+        company = job.company or ("your company" if is_en else "votre entreprise")
+        job_title = job.title or ("Software Engineer" if is_en else "Ingénieur Logiciel")
 
-        if is_job_mode:
-            return (
-                f"Diplômé en {degree_name} de {school_name}, je vous soumets ma candidature "
-                f"au poste de {job_title} chez {company}. Votre dynamique technique et vos enjeux "
-                f"en {target_skills_str} ont particulièrement retenu mon attention, "
-                f"constituant un cadre idéal pour mettre en œuvre une pratique rigoureuse de l'ingénierie."
-            )
+        if is_en:
+            if is_job_mode:
+                return (
+                    f"Graduated with a {degree_name} from {school_name}, I am pleased to submit my application "
+                    f"for the position of {job_title} at {company}. Your engineering challenges and focus "
+                    f"on {target_skills_str} particularly resonated with me, "
+                    f"providing an ideal setting to implement rigorous engineering standards."
+                )
+            else:
+                return (
+                    f"Currently an engineering student at {school_name} specializing in {degree_name}, "
+                    f"I am actively seeking my graduation internship (PFE) for a duration of 6 months. "
+                    f"The opportunity to join {company} as {job_title} "
+                    f"caught my immediate attention given your high technical expectations in {target_skills_str}."
+                )
         else:
-            return (
-                f"Actuellement {degree_name} à {school_name}, je recherche activement mon projet de fin d'études "
-                f"(PFE) d'une durée de 6 mois. L'opportunité d'intégrer {company} au poste de {job_title} "
-                f"a retenu toute mon attention en raison de ses exigences techniques en {target_skills_str}."
-            )
+            if is_job_mode:
+                return (
+                    f"Diplômé en {degree_name} de {school_name}, je vous soumets ma candidature "
+                    f"au poste de {job_title} chez {company}. Votre dynamique technique et vos enjeux "
+                    f"en {target_skills_str} ont particulièrement retenu mon attention, "
+                    f"constituant un cadre idéal pour mettre en œuvre une pratique rigoureuse de l'ingénierie."
+                )
+            else:
+                return (
+                    f"Actuellement {degree_name} à {school_name}, je recherche activement mon projet de fin d'études "
+                    f"(PFE) d'une durée de 6 mois. L'opportunité d'intégrer {company} au poste de {job_title} "
+                    f"a retenu toute mon attention en raison de ses exigences techniques en {target_skills_str}."
+                )
 
     @classmethod
     def _build_nous_paragraph(
@@ -252,39 +301,63 @@ class CoverLetterService:
         job: JobOffer,
         is_job_mode: bool,
         target_skills_str: str,
+        lang: str = "fr",
     ) -> str:
         """Acte 3 (NOUS) : Synergie et valeur ajoutée immédiate apportée à l'équipe."""
-        company = job.company or "vos équipes"
-        if is_job_mode:
-            return (
-                f"En rejoignant {company}, j'apporterai une contribution opérationnelle concrète à vos développements "
-                f"en {target_skills_str}. Mon engagement méthodique me permettra de m'intégrer rapidement dans vos cycles "
-                f"de livraison, avec un souci constant de qualité de code et de robustesse des systèmes."
-            )
+        is_en = lang == "en"
+        company = job.company or ("your team" if is_en else "vos équipes")
+        if is_en:
+            if is_job_mode:
+                return (
+                    f"Joining {company}, I will bring an immediate operational contribution to your developments "
+                    f"in {target_skills_str}. My methodical mindset will allow me to seamlessly integrate into your delivery "
+                    f"cycles with a constant focus on code quality and system resilience."
+                )
+            else:
+                return (
+                    f"By joining your team for this graduation internship, I intend to deliver concrete value "
+                    f"across your developments in {target_skills_str}, applying thorough rigor to code quality "
+                    f"and system architecture."
+                )
         else:
-            return (
-                f"En rejoignant vos équipes pour ce stage PFE, je souhaite apporter une contribution concrète "
-                f"sur vos développements en {target_skills_str}, en m'investissant avec méthode et rigueur "
-                f"sur la qualité du code et la robustesse des systèmes livrés."
-            )
+            if is_job_mode:
+                return (
+                    f"En rejoignant {company}, j'apporterai une contribution opérationnelle concrète à vos développements "
+                    f"en {target_skills_str}. Mon engagement méthodique me permettra de m'intégrer rapidement dans vos cycles "
+                    f"de livraison, avec un souci constant de qualité de code et de robustesse des systèmes."
+                )
+            else:
+                return (
+                    f"En rejoignant vos équipes pour ce stage PFE, je souhaite apporter une contribution concrète "
+                    f"sur vos développements en {target_skills_str}, en m'investissant avec méthode et rigueur "
+                    f"sur la qualité du code et la robustesse des systèmes livrés."
+                )
 
     @classmethod
     def _build_demain_paragraph(
         cls,
         is_job_mode: bool,
+        lang: str = "fr",
     ) -> str:
         """Acte 4 (DEMAIN) : Disponibilité et invitation à l'entretien technique."""
-        if is_job_mode:
+        is_en = lang == "en"
+        if is_en:
             return (
-                "Disponible immédiatement, je serais ravi d'échanger avec vous lors d'un entretien technique "
-                "afin de vous exposer plus en détail mes réalisations et ma méthodologie de travail."
+                "Available for a six-month duration, I would be delighted to discuss my achievements "
+                "and engineering methodology with you during a technical interview."
             )
         else:
-            return (
-                "Disponible dès le premier semestre 2026 pour une durée de six mois, je serais ravi d'échanger "
-                "avec vous lors d'un entretien technique afin de vous exposer plus en détail mes réalisations "
-                "et ma méthodologie de travail."
-            )
+            if is_job_mode:
+                return (
+                    "Disponible immédiatement, je serais ravi d'échanger avec vous lors d'un entretien technique "
+                    "afin de vous exposer plus en détail mes réalisations et ma méthodologie de travail."
+                )
+            else:
+                return (
+                    "Disponible dès le premier semestre 2026 pour une durée de six mois, je serais ravi d'échanger "
+                    "avec vous lors d'un entretien technique afin de vous exposer plus en détail mes réalisations "
+                    "et ma méthodologie de travail."
+                )
 
     @classmethod
     def _build_deterministic_letter(
@@ -297,21 +370,40 @@ class CoverLetterService:
         school_name: str,
         target_skills_str: str,
         realizations_paragraph: str,
+        lang: str = "fr",
     ) -> str:
-        """Générateur déterministe conforme Apec Vous-Moi-Nous-Demain."""
+        """Générateur déterministe conforme Apec Vous-Moi-Nous-Demain bilingue."""
+        is_en = lang == "en"
         vous_part = cls._build_vous_paragraph(
             job=job,
             is_job_mode=is_job_mode,
             school_name=school_name,
             degree_name=degree_name,
             target_skills_str=target_skills_str,
+            lang=lang,
         )
         nous_part = cls._build_nous_paragraph(
             job=job,
             is_job_mode=is_job_mode,
             target_skills_str=target_skills_str,
+            lang=lang,
         )
-        demain_part = cls._build_demain_paragraph(is_job_mode=is_job_mode)
+        demain_part = cls._build_demain_paragraph(is_job_mode=is_job_mode, lang=lang)
+
+        if is_en:
+            return f"""Dear Hiring Team,
+
+{vous_part}
+
+{realizations_paragraph}
+
+{nous_part}
+
+{demain_part}
+
+Sincerely,
+
+{profile.full_name}"""
 
         return f"""Madame, Monsieur,
 
@@ -339,14 +431,18 @@ Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distin
         target_skills_str: str,
         ranked_projects: List[tuple],
         ranked_experiences: List[tuple],
+        lang: str = "fr",
     ) -> Optional[str]:
         """
         Rédige la lettre via le modèle Groq (Qwen/Llama) en appliquant
         strictement le schéma Vous-Moi-Nous et les gardes-fous Zéro-Hallucination.
+        Support bilingue FR / EN.
         """
         api_key = settings.effective_groq_api_key
         if not api_key:
             return None
+
+        is_en = lang == "en"
 
         try:
             from groq import Groq
@@ -354,29 +450,64 @@ Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distin
             client = Groq(api_key=api_key)
 
             # Préparation des réalisations autorisées
-            allowed_projects = [
-                f"- Projet « {p.title} » ({p.role or 'développeur'}) : {p.description} [Technologies: {p.technologies_raw}]"
-                for s, p in ranked_projects
-                if s > 0
-            ]
-            allowed_experiences = [
-                f"- Expérience chez {e.company} ({e.role}) : {e.description} [Technologies: {e.technologies_raw}]"
-                for s, e in ranked_experiences
-                if s > 0
-            ]
+            allowed_projects = []
+            for s, p in ranked_projects:
+                if s > 0:
+                    p_title = (p.title_en if is_en else p.title_fr) or p.title
+                    p_role = (p.role_en if is_en else p.role_fr) or p.role or ("Engineer" if is_en else "développeur")
+                    p_desc = (p.description_en if is_en else p.description_fr) or p.description
+                    allowed_projects.append(f"- Project « {p_title} » ({p_role}) : {p_desc} [Technologies: {p.technologies_raw}]")
+
+            allowed_experiences = []
+            for s, e in ranked_experiences:
+                if s > 0:
+                    e_role = (e.role_en if is_en else e.role_fr) or e.role
+                    e_desc = (e.description_en if is_en else e.description_fr) or e.description
+                    allowed_experiences.append(f"- Experience at {e.company} ({e_role}) : {e_desc} [Technologies: {e.technologies_raw}]")
+
             realizations_text = "\n".join(allowed_projects + allowed_experiences)
             if not realizations_text:
-                realizations_text = f"Formation académique en {degree_name} à {school_name} avec pratique de {target_skills_str}."
+                if is_en:
+                    realizations_text = f"Academic engineering coursework at {school_name} focusing on {degree_name} and {target_skills_str}."
+                else:
+                    realizations_text = f"Formation académique en {degree_name} à {school_name} avec pratique de {target_skills_str}."
 
-            mode_label = "STAGE PFE (Projet de Fin d'Études 6 mois)"
-            mode_prohibitions = "Le candidat recherche activement son stage de fin d'études PFE d'une durée de 6 mois."
+            mode_label = "GRADUATION INTERNSHIP (PFE - 6 months)" if is_en else "STAGE PFE (Projet de Fin d'Études 6 mois)"
+            mode_prohibitions = "The candidate is actively seeking their 6-month graduation internship (PFE)." if is_en else "Le candidat recherche activement son stage de fin d'études PFE d'une durée de 6 mois."
 
             missing_prohibitions = ""
             if ats_match.missing_skills:
                 missing_str = ", ".join(ats_match.missing_skills)
-                missing_prohibitions = f"STRICTEMENT INTERDIT de citer les compétences suivantes que le candidat ne possède pas : {missing_str}."
+                if is_en:
+                    missing_prohibitions = f"STRICTLY FORBIDDEN to mention these missing skills that the candidate does not have: {missing_str}."
+                else:
+                    missing_prohibitions = f"STRICTEMENT INTERDIT de citer les compétences suivantes que le candidat ne possède pas : {missing_str}."
 
-            prompt = f"""Rédige une lettre de motivation d'ingénieur sobre, percutante et factuelle selon la méthode Apec (VOUS - MOI - NOUS - DEMAIN) en 4 paragraphes.
+            if is_en:
+                prompt = f"""Write a professional, sober, impactful, and factual engineering cover letter (YOU - ME - US - TOMORROW) in 4 distinct paragraphs in English.
+
+CANDIDATE GROUND TRUTH (ZERO HALLUCINATION):
+- Name: {profile.full_name}
+- Education: {degree_name} at {school_name}
+- Target Company: {job.company or 'your company'}
+- Target Role: {job.title or 'Software Engineer'}
+- Verified Skills to highlight: {target_skills_str}
+- Verified achievements to cite:
+{realizations_text}
+- Application mode: {mode_label}
+
+MANDATORY RULES:
+1. 4 distinct paragraphs (YOU: company & technical challenges; ME: concrete achievements with exact technologies; US: mutual value & day-one contribution; TOMORROW: 6-month availability & technical interview).
+2. Exact project titles in quotation marks « Project Title » as listed above.
+3. {mode_prohibitions}
+4. {missing_prohibitions}
+5. NEVER invent companies, projects, or statistics.
+6. Avoid buzzwords and AI clichés.
+7. Start with « Dear Hiring Team, » and conclude strictly with « Sincerely,\n\n{profile.full_name} ».
+8. Concision: ~250-300 words total. Do not truncate the closing."""
+                system_prompt = "You are an elite engineer application writer. You write in sober, impactful, and factual English."
+            else:
+                prompt = f"""Rédige une lettre de motivation d'ingénieur sobre, percutante et factuelle selon la méthode Apec (VOUS - MOI - NOUS - DEMAIN) en 4 paragraphes.
 
 DONNÉES DU CANDIDAT (SOURCE UNIQUE DE VÉRITÉ - ZÉRO HALLUCINATION) :
 - Nom : {profile.full_name}
@@ -401,13 +532,11 @@ RÈGLES IMPÉRATIVES DE RÉDACTION :
 6. Proscrire les superlatifs et clichés (« dynamique », « passionné depuis toujours », « opportunité rêvée »).
 7. Débuter par « Madame, Monsieur, » et conclure obligatoirement par les salutations professionnelles usuelles suivies du nom complet du candidat : « {profile.full_name} ».
 8. Concision et complétude impérative : La lettre doit faire environ 250 à 300 mots au total (3 à 4 phrases bien construites par paragraphe). Tu DOIS impérativement achever entièrement le texte sans jamais laisser de phrase inachevée."""
+                system_prompt = "Tu es un rédacteur d'élite de candidatures d'ingénieurs. Tu rédiges en français sobre, percutant et factuel."
 
             response = client.chat.completions.create(
                 messages=[
-                    {
-                        "role": "system",
-                        "content": "Tu es un rédacteur d'élite de candidatures d'ingénieurs. Tu rédiges en français sobre, percutant et factuel.",
-                    },
+                    {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt},
                 ],
                 model=settings.effective_groq_model,
@@ -418,7 +547,7 @@ RÈGLES IMPÉRATIVES DE RÉDACTION :
             choice = response.choices[0]
             finish_reason = getattr(choice, "finish_reason", None)
             if finish_reason == "length":
-                logger.warning("Rejet génération IA : la génération a été tronquée par la limite max_tokens (finish_reason='length'). Repli déterministe.")
+                logger.warning("Rejet génération IA : la génération a été tronquée par la limite max_tokens. Repli déterministe.")
                 return None
 
             generated_text = (choice.message.content or "").strip()
@@ -432,15 +561,10 @@ RÈGLES IMPÉRATIVES DE RÉDACTION :
                     logger.warning(f"Rejet génération IA : détection de missing_skill '{missing}'.")
                     return None
 
-            # Garde-fou 2 : Intégrité et complétude structurelle (détection de coupure prématurée)
+            # Garde-fou 2 : Intégrité et complétude structurelle
             paragraphs = [p.strip() for p in generated_text.split("\n\n") if p.strip()]
             if len(paragraphs) < 3:
                 logger.warning(f"Rejet génération IA : structure incomplète ({len(paragraphs)} paragraphes). Repli déterministe.")
-                return None
-
-            last_line = generated_text.strip().splitlines()[-1].strip()
-            if last_line.endswith((",", ";", ":", "-", "et", "ou", "de", "des", "le", "la", "les", "du", "un", "une")):
-                logger.warning(f"Rejet génération IA : phrase finale suspendue ou tronquée ('{last_line[-30:]}'). Repli déterministe.")
                 return None
 
             return generated_text
@@ -456,32 +580,50 @@ RÈGLES IMPÉRATIVES DE RÉDACTION :
         profile: MasterProfile,
         ats_match: ATSMatchResult,
         use_ai: bool = True,
+        language: str = "fr",
     ) -> CoverLetter:
         if not profile.is_complete:
             raise ValueError(
                 "Le Master Profile doit être complet (CAP-1) pour générer une lettre de motivation."
             )
 
+        lang = "en" if language.lower().strip() == "en" else "fr"
         is_job_mode = cls._is_job_target(job, profile)
 
         # 1. Formation de l'ingénieur
-        school_name = "école d'ingénieurs"
-        degree_name = "diplôme d'ingénieur" if is_job_mode else "élève-ingénieur"
-        if profile.educations:
-            top_edu = profile.educations[0]
-            if top_edu.school:
-                school_name = top_edu.school
-            if top_edu.field_of_study:
-                prefix = "ingénieur en" if is_job_mode else "élève-ingénieur en"
-                degree_name = f"{prefix} {top_edu.field_of_study}"
+        if lang == "en":
+            school_name = "engineering school"
+            degree_name = "software engineering"
+            if profile.educations:
+                top_edu = profile.educations[0]
+                if top_edu.school:
+                    school_name = top_edu.school
+                if top_edu.field_of_study_en:
+                    degree_name = top_edu.field_of_study_en
+                elif top_edu.field_of_study:
+                    degree_name = top_edu.field_of_study
+        else:
+            school_name = "école d'ingénieurs"
+            degree_name = "diplôme d'ingénieur" if is_job_mode else "élève-ingénieur"
+            if profile.educations:
+                top_edu = profile.educations[0]
+                if top_edu.school:
+                    school_name = top_edu.school
+                if top_edu.field_of_study_fr:
+                    prefix = "ingénieur en" if is_job_mode else "élève-ingénieur en"
+                    degree_name = f"{prefix} {top_edu.field_of_study_fr}"
+                elif top_edu.field_of_study:
+                    prefix = "ingénieur en" if is_job_mode else "élève-ingénieur en"
+                    degree_name = f"{prefix} {top_edu.field_of_study}"
 
         # 2. Compétences attestées (zéro-hallucination : on exclut les missing_skills)
         missing_set = {s.lower() for s in ats_match.missing_skills}
         safe_matched = [s for s in ats_match.matched_skills if s.lower() not in missing_set]
-        target_skills_str = ", ".join(safe_matched[:5]) if safe_matched else "l'architecture logicielle"
+        default_skills = "software architecture" if lang == "en" else "l'architecture logicielle"
+        target_skills_str = ", ".join(safe_matched[:5]) if safe_matched else default_skills
 
         # 3. Scoring et classement de TOUS les projets et expériences
-        job_title = job.title or "Ingénieur Logiciel"
+        job_title = job.title or ("Software Engineer" if lang == "en" else "Ingénieur Logiciel")
         ranked_projects = _rank_projects(profile, ats_match, job_title)
         ranked_experiences = _rank_experiences(profile, ats_match, job_title)
 
@@ -490,9 +632,10 @@ RÈGLES IMPÉRATIVES DE RÉDACTION :
             ranked_projects=ranked_projects,
             ranked_experiences=ranked_experiences,
             target_skills_str=target_skills_str,
+            lang=lang,
         )
 
-        company = job.company or "votre entreprise"
+        company = job.company or ("your company" if lang == "en" else "votre entreprise")
 
         # 5. Tentative de génération via IA Groq (si demandée et configurée)
         raw_letter: Optional[str] = None
@@ -507,6 +650,7 @@ RÈGLES IMPÉRATIVES DE RÉDACTION :
                 target_skills_str=target_skills_str,
                 ranked_projects=ranked_projects,
                 ranked_experiences=ranked_experiences,
+                lang=lang,
             )
 
         # Repli déterministe garanti si IA non activée, indisponible ou rejetée par garde-fous
@@ -520,6 +664,7 @@ RÈGLES IMPÉRATIVES DE RÉDACTION :
                 school_name=school_name,
                 target_skills_str=target_skills_str,
                 realizations_paragraph=realizations_paragraph,
+                lang=lang,
             )
 
         # 6. Filtrage anti-clichés déterministe
@@ -533,6 +678,7 @@ RÈGLES IMPÉRATIVES DE RÉDACTION :
             company_name=company,
             content_markdown=cleaned_content,
             cliche_score=cliche_count,
+            language=lang,
         )
         letter.banned_phrases_detected = detected_phrases
 
