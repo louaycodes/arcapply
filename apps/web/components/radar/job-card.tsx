@@ -217,17 +217,9 @@ export function JobCard({
               {isFrance ? "🇫🇷 France" : isTunisia ? "🇹🇳 Tunisie" : job.country}
             </span>
 
-            {job.offer_type && (
-              <span
-                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
-                  job.offer_type === "JOB"
-                    ? "bg-blue-50 text-blue-800 border-blue-200"
-                    : "bg-emerald-50 text-emerald-800 border-emerald-200"
-                }`}
-              >
-                {job.offer_type === "JOB" ? "Emploi" : "PFE"}
-              </span>
-            )}
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-800 border-emerald-200">
+              Stage PFE
+            </span>
 
             {job.contract_duration && (
               <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-secondary/30 text-secondary-foreground border border-border/40">
@@ -277,15 +269,6 @@ export function JobCard({
               <MapPin className="w-3 h-3 text-muted-foreground" />
               {job.location || job.country}
             </span>
-            {job.work_mode && (
-              <>
-                <span>•</span>
-                <span className="flex items-center gap-1 text-primary/80 font-medium">
-                  <Laptop className="w-3 h-3" />
-                  {job.work_mode}
-                </span>
-              </>
-            )}
             {job.salary_stipend && (
               <>
                 <span>•</span>

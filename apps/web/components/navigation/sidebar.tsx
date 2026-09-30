@@ -20,12 +20,12 @@ import { useAuth } from "@/components/auth/auth-context";
 
 
 const navigationItems = [
-  { name: "Tableau de bord", href: "/", icon: LayoutDashboard, shortcut: "g d" },
-  { name: "Offres d'emploi", href: "/radar", icon: Radar, shortcut: "g r" },
-  { name: "Mon Profil", href: "/profile", icon: UserCheck, shortcut: "g p" },
-  { name: "Éditeur de CV", href: "/cv", icon: FileText, shortcut: "g c" },
-  { name: "Suivi Candidatures", href: "/kanban", icon: KanbanSquare, shortcut: "g k" },
-  { name: "Paramètres", href: "/settings", icon: Settings, shortcut: "g s" },
+  { name: "Tableau de bord", href: "/", icon: LayoutDashboard },
+  { name: "Offres de Stage PFE", href: "/radar", icon: Radar },
+  { name: "Mon Profil", href: "/profile", icon: UserCheck },
+  { name: "Éditeur de CV", href: "/cv", icon: FileText },
+  { name: "Suivi Candidatures", href: "/kanban", icon: KanbanSquare },
+  { name: "Paramètres", href: "/settings", icon: Settings },
 ];
 
 export function Sidebar() {
@@ -78,7 +78,7 @@ export function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-all duration-150 ${
+                className={`flex items-center px-3 py-2.5 rounded-lg text-sm transition-all duration-150 ${
                   isActive
                     ? "bg-primary text-white shadow-sm shadow-orange-600/25 font-semibold"
                     : "text-stone-600 hover:text-stone-900 hover:bg-[#EDE5DA] font-medium"
@@ -92,15 +92,6 @@ export function Sidebar() {
                   />
                   <span>{item.name}</span>
                 </div>
-                <kbd
-                  className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
-                    isActive
-                      ? "bg-orange-700/80 text-orange-100"
-                      : "bg-[#EAE1D4] text-stone-600 border border-[#DDD3C5]"
-                  }`}
-                >
-                  {item.shortcut}
-                </kbd>
               </Link>
             );
           })}

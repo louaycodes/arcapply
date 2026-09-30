@@ -93,8 +93,8 @@ export interface MasterProfile {
   languages_raw?: string;
   extracurriculars_raw?: string;
   is_complete: boolean;
-  /** Préférence de recherche : "PFE" (stage) ou "JOB" (emploi CDI/CDD). Défaut : "PFE". */
-  search_mode: "PFE" | "JOB";
+  /** Préférence de recherche : exclusivement "PFE". */
+  search_mode: "PFE";
   created_at: string;
   updated_at: string;
   educations: Education[];
@@ -183,7 +183,7 @@ export interface JobOffer {
   description_raw: string;
   url: string;
   status: string;
-  offer_type?: "PFE" | "JOB";
+  offer_type?: "PFE";
   published_at?: string | null;
   skills_required?: string;
   contract_duration?: string;

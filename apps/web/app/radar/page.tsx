@@ -87,7 +87,6 @@ export default function RadarPage() {
   const [selectedPlatform, setSelectedPlatform] = useState<string>("all");
   const [selectedPeriod, setSelectedPeriod] = useState<"all" | "today" | "week" | "month">("all");
   const [directOnly, setDirectOnly] = useState<boolean>(false);
-  const [workModeFilter, setWorkModeFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [viewMode, setViewMode] = useState<"timeline" | "grid">("timeline");
 
@@ -95,11 +94,10 @@ export default function RadarPage() {
   const [isClearing, setIsClearing] = useState(false);
   const [scrapeMessage, setScrapeMessage] = useState<string | null>(null);
   const [showCollectModal, setShowCollectModal] = useState(false);
-  const [searchMode, setSearchMode] = useState<"PFE" | "JOB">("PFE");
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  // Formulaire de collecte multi-sources
-  const [keywordsInput, setKeywordsInput] = useState<string>("PFE, Ingénieur, Développeur, Cloud, IA");
+  // Formulaire de collecte multi-sources (exclusif PFE)
+  const [keywordsInput, setKeywordsInput] = useState<string>("PFE, Stage Ingénieur, Internship");
   const [selectedPlatformsToCrawl, setSelectedPlatformsToCrawl] = useState<string[]>([
     "top100_enterprises",
     "linkedin",
@@ -140,16 +138,6 @@ export default function RadarPage() {
   useEffect(() => {
     loadJobs();
   }, [selectedCountry, selectedPlatform, selectedPeriod, directOnly]);
-
-  useEffect(() => {
-    fetchProfile()
-      .then((p) => {
-        if (p?.search_mode) {
-          setSearchMode(p.search_mode);
-        }
-      })
-      .catch((err) => console.error("Erreur chargement mode recherche profil:", err));
-  }, []);
 
   // Écoute SSE en direct
   useEffect(() => {
@@ -302,18 +290,6 @@ export default function RadarPage() {
       if (directOnly && !job.is_direct_career_site) {
         return false;
       }
-      if (workModeFilter !== "all") {
-        const mode = (job.work_mode || "").toLowerCase();
-        if (workModeFilter === "remote" && !mode.includes("télétravail total") && !mode.includes("remote")) {
-          return false;
-        }
-        if (workModeFilter === "hybrid" && !mode.includes("hybride")) {
-          return false;
-        }
-        if (workModeFilter === "onsite" && !mode.includes("site") && !mode.includes("présentiel")) {
-          return false;
-        }
-      }
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const inTitle = job.title.toLowerCase().includes(q);
@@ -325,7 +301,7 @@ export default function RadarPage() {
       }
       return true;
     });
-  }, [jobs, selectedCountry, selectedPlatform, directOnly, workModeFilter, searchQuery]);
+  }, [jobs, selectedCountry, selectedPlatform, directOnly, searchQuery]);
 
   // Répartition temporelle pour calcul des métriques et affichage chronologique
   const { todayJobs, weekJobs, olderJobs, countToday, countWeek, countMonth, countDirect } = useMemo(() => {
@@ -383,34 +359,17 @@ export default function RadarPage() {
           <div className="flex flex-wrap items-center gap-2.5">
             <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
               <Radar className="w-6 h-6 text-primary" />
-              <span>{searchMode === "JOB" ? "Offres d'Emploi" : "Offres de Stage PFE"}</span>
+              <span>Offres de Stage PFE</span>
             </h1>
             <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-orange-100 text-orange-900 border border-orange-200 flex items-center gap-1.5 font-semibold">
               <span className="w-2 h-2 rounded-full bg-emerald-600" />
               <span>En direct</span>
             </span>
 
-            <Link
-              href="/profile"
-              className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border transition-all shadow-xs ${
-                searchMode === "JOB"
-                  ? "bg-blue-50 text-blue-900 border-blue-300 hover:bg-blue-100"
-                  : "bg-emerald-50 text-emerald-900 border-emerald-300 hover:bg-emerald-100"
-              }`}
-              title="Changer d'objectif dans votre profil"
-            >
-              {searchMode === "JOB" ? (
-                <>
-                  <Briefcase className="w-3.5 h-3.5 text-blue-700" />
-                  <span>Mode Emploi (CDI / CDD)</span>
-                </>
-              ) : (
-                <>
-                  <GraduationCap className="w-3.5 h-3.5 text-emerald-700" />
-                  <span>Mode PFE (Stage Fin d'Études)</span>
-                </>
-              )}
-            </Link>
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border bg-emerald-50 text-emerald-900 border-emerald-300 shadow-xs">
+              <GraduationCap className="w-3.5 h-3.5 text-emerald-700" />
+              <span>Mode PFE (Stage Fin d'Études)</span>
+            </span>
           </div>
           <p className="text-xs md:text-sm text-muted-foreground mt-1">
             Détection en temps réel sur les portails dédiés des 100 meilleures firmes IT mondiales (France & Tunisie) et plateformes vérifiées.
@@ -620,33 +579,6 @@ export default function RadarPage() {
               </span>
             )}
           </button>
-
-          {/* Filtre Modalité de travail */}
-          <div className="flex items-center bg-muted/60 p-0.5 rounded-lg border border-border/40">
-            <span className="text-[10px] font-medium text-muted-foreground px-2 flex items-center gap-1">
-              <Laptop className="w-3 h-3" />
-              Mode :
-            </span>
-            {[
-              { id: "all", label: "Tous" },
-              { id: "remote", label: "Remote" },
-              { id: "hybrid", label: "Hybride" },
-              { id: "onsite", label: "Site" },
-            ].map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => setWorkModeFilter(m.id)}
-                className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
-                  workModeFilter === m.id
-                    ? "bg-background text-foreground font-semibold shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {m.label}
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Champ de Recherche Live */}
