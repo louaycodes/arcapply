@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status as http_sta
 from sqlalchemy import func, or_
 from sqlmodel import Session, SQLModel, col, delete, desc, select
 from app.adapters.scheduler import ALL_CONNECTORS, CrawlerScheduler
-from app.adapters.connectors import infer_offer_type
+from app.adapters.connectors import infer_offer_type, is_pfe_offer
 from app.adapters.database import get_session
 from app.api.events import broadcast_event
 from app.domain.fsm import ApplicationFSM
@@ -77,28 +77,20 @@ def list_jobs(
     if status:
         query = query.where(JobOffer.status == status)
 
-    # --- Filtrage par type d'offre (search_mode corrélé) ---
+    # --- Filtrage par type d'offre (ArcApply 100% PFE) ---
     if offer_type:
-        # Surcharge explicite : valider puis appliquer
         resolved_type = offer_type.upper()
         if resolved_type not in VALID_OFFER_TYPES:
             raise HTTPException(
                 status_code=http_status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail={
                     "error_code": "INVALID_OFFER_TYPE",
-                    "message": f"offer_type invalide : '{offer_type}'. Valeurs acceptées : PFE, JOB.",
+                    "message": f"offer_type invalide : '{offer_type}'. ArcApply est dédié exclusivement aux stages PFE (valeur acceptée : PFE).",
                 },
             )
         query = query.where(JobOffer.offer_type == resolved_type)
     else:
-        # Lecture automatique du search_mode du profil de l'utilisateur
-        profile = session.exec(
-            select(MasterProfile).where(
-                (MasterProfile.user_id == username) | (MasterProfile.id == "default-profile")
-            )
-        ).first()
-        active_mode = profile.search_mode if profile else "PFE"
-        query = query.where(JobOffer.offer_type == active_mode)
+        query = query.where(JobOffer.offer_type == "PFE")
     # -------------------------------------------------------
 
 
@@ -135,7 +127,8 @@ def list_jobs(
 
     query = query.order_by(desc(JobOffer.collected_at))
     offers = session.exec(query).all()
-    return offers
+    # Garde-fou strict : seules les offres conformes aux critères de stage PFE s'affichent
+    return [o for o in offers if is_pfe_offer(o.title, o.description_raw)]
 
 
 @router.delete("/clear")

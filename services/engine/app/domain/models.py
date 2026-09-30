@@ -236,7 +236,7 @@ class MasterProfileRead(MasterProfileBase):
     extracurriculars: list[ExtracurricularBase] = []
 
 
-VALID_SEARCH_MODES = {"PFE", "JOB"}
+VALID_SEARCH_MODES = {"PFE"}
 
 
 class MasterProfileUpdate(SQLModel):
@@ -249,7 +249,7 @@ class MasterProfileUpdate(SQLModel):
     linkedin_url: Optional[str] = None
     github_url: Optional[str] = None
     website_url: Optional[str] = None
-    # Préférence de recherche : "PFE" ou "JOB"
+    # Préférence de recherche : exclusivement "PFE"
     search_mode: Optional[str] = None
     educations: Optional[list[EducationBase]] = None
     experiences: Optional[list[ExperienceBase]] = None
@@ -267,14 +267,14 @@ class ProfileCompletenessStatus(SQLModel):
 
 
 # ============================================================================
-# Job Offers (Radar & Application Pipeline)
+# Job Offers (Radar & Application Pipeline - 100% PFE)
 # ============================================================================
 
-VALID_OFFER_TYPES = {"PFE", "JOB"}
+VALID_OFFER_TYPES = {"PFE"}
 
 
 class JobOfferBase(SQLModel):
-    platform: str = Field(index=True)  # "linkedin" | "jobteaser"
+    platform: str = Field(index=True)  # "linkedin" | "jobteaser" | "top100" ...
     external_id: str = Field(index=True)
     title: str = Field(index=True)
     company: str = Field(index=True)
@@ -283,13 +283,12 @@ class JobOfferBase(SQLModel):
     description_raw: str = Field(default="")
     url: str = Field(default="")
     status: str = Field(default="DISCOVERED", index=True)
-    # Type d'offre inféré automatiquement à l'ingestion : "PFE" ou "JOB"
+    # Type d'offre : exclusivement "PFE"
     offer_type: str = Field(default="PFE", index=True)
     # Deep Extraction & Métadonnées d'enrichissement
     published_at: Optional[datetime] = Field(default=None, index=True)
     skills_required: str = Field(default="[]")
     contract_duration: str = Field(default="")
-    work_mode: str = Field(default="")
     salary_stipend: str = Field(default="")
     department: str = Field(default="")
     is_direct_career_site: bool = Field(default=False, index=True)

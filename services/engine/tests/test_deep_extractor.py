@@ -132,7 +132,6 @@ def test_database_migrations_and_enriched_columns():
             url="https://careers.example.com/job/123",
             skills_required=json.dumps(["Kubernetes", "Terraform", "Docker"]),
             contract_duration="6 mois (PFE)",
-            work_mode="Hybride",
             salary_stipend="1200 DT / mois",
             department="Cloud, DevOps & Infra",
             is_direct_career_site=True,

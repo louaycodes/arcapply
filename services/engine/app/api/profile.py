@@ -107,10 +107,10 @@ def update_profile(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail={
                     "error_code": "INVALID_SEARCH_MODE",
-                    "message": f"search_mode invalide : '{update_dict['search_mode']}'. Valeurs acceptées : PFE, JOB.",
+                    "message": f"search_mode invalide : '{update_dict['search_mode']}'. ArcApply est dédié exclusivement aux stages PFE (valeur acceptée : PFE).",
                 },
             )
-        profile.search_mode = new_mode
+        profile.search_mode = "PFE"
 
     # Mise à jour des formations si fournies
     if data.educations is not None:

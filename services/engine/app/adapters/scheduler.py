@@ -31,7 +31,7 @@ from app.adapters.connectors.top100_enterprises import Top100EnterprisesJobConne
 from app.adapters.connectors.wttj import WTTJJobConnector
 from app.adapters.database import get_engine
 from app.api.events import broadcast_event
-from app.adapters.connectors import infer_offer_type
+from app.adapters.connectors import infer_offer_type, is_pfe_offer
 from app.domain.job_extractor import JobDeepExtractor
 from app.domain.models import JobOffer, utc_now
 from app.ports.connectors import BaseJobConnector
@@ -149,6 +149,13 @@ class CrawlerScheduler:
 
                 platform_new = 0
                 for j in jobs:
+                    title = j.get("title", "")
+                    desc = j.get("description_raw", "")
+
+                    # Invariant : 100% PFE - Toute offre ne répondant pas aux critères de stage PFE est ignorée
+                    if not is_pfe_offer(title, desc):
+                        continue
+
                     total_collected += 1
                     ext_id = j.get("external_id")
                     plat = j.get("platform", platform)
@@ -166,12 +173,10 @@ class CrawlerScheduler:
                         total_duplicates += 1
                         continue
 
-                    # Inférence automatique du type d'offre
-                    inferred_type = j.get("offer_type") or infer_offer_type(j.get("title", ""), j.get("description_raw", ""))
                     j_with_type = dict(j)
-                    j_with_type["offer_type"] = inferred_type
+                    j_with_type["offer_type"] = "PFE"
 
-                    # Deep Extraction & Enrichissement sémantique (stack, durée, télétravail, salaire, date)
+                    # Deep Extraction & Enrichissement sémantique (stack, durée, salaire, date)
                     enriched = JobDeepExtractor.enrich_job_data(j_with_type)
 
                     new_job = JobOffer(
@@ -184,11 +189,10 @@ class CrawlerScheduler:
                         description_raw=enriched.get("description_raw", ""),
                         url=enriched.get("url", ""),
                         status="DISCOVERED",
-                        offer_type=enriched.get("offer_type", "PFE"),
+                        offer_type="PFE",
                         published_at=enriched.get("published_at"),
                         skills_required=enriched.get("skills_required", "[]"),
                         contract_duration=enriched.get("contract_duration", ""),
-                        work_mode=enriched.get("work_mode", ""),
                         salary_stipend=enriched.get("salary_stipend", ""),
                         department=enriched.get("department", ""),
                         is_direct_career_site=enriched.get("is_direct_career_site", False),
@@ -201,7 +205,6 @@ class CrawlerScheduler:
 
                     total_new += 1
                     platform_new += 1
-
 
                     # Émission instantanée SSE pour le radar
                     await broadcast_event(
@@ -217,7 +220,6 @@ class CrawlerScheduler:
                             "offer_type": new_job.offer_type,
                             "skills_required": new_job.skills_required,
                             "contract_duration": new_job.contract_duration,
-                            "work_mode": new_job.work_mode,
                             "salary_stipend": new_job.salary_stipend,
                             "department": new_job.department,
                             "is_direct_career_site": new_job.is_direct_career_site,

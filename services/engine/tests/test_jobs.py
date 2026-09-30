@@ -24,11 +24,11 @@ def test_collect_jobs_creates_offers():
         {
             "external_id": "jt-offer-1",
             "platform": "jobteaser",
-            "title": "Ingénieur DevOps Junior",
+            "title": "Stage PFE Ingénieur DevOps Junior",
             "company": "Datadog",
             "location": "Paris, France",
             "country": "France",
-            "description_raw": "Poste CDI ingénieur DevOps.",
+            "description_raw": "Sujet de stage de fin d'études ingénieur DevOps.",
             "url": "https://www.jobteaser.com/fr/job-offers/jt-offer-1",
         }
     ]
@@ -54,15 +54,12 @@ def test_collect_jobs_creates_offers():
         assert "linkedin" in data["platforms"]
         assert "jobteaser" in data["platforms"]
 
-        # Vérification que les offres sont bien récupérées par GET /api/jobs (PFE et/ou JOB)
-        pfe_res = client.get("/api/jobs?offer_type=PFE")
-        job_res = client.get("/api/jobs?offer_type=JOB")
+        # Vérification que les offres PFE sont bien récupérées par GET /api/jobs
+        pfe_res = client.get("/api/jobs")
         assert pfe_res.status_code == 200
-        assert job_res.status_code == 200
-        total_offers = len(pfe_res.json()) + len(job_res.json())
-        assert total_offers == data["new_count"]
-        all_jobs = pfe_res.json() + job_res.json()
+        all_jobs = pfe_res.json()
         assert any(j["platform"] == "linkedin" for j in all_jobs)
+        assert any(j["platform"] == "jobteaser" for j in all_jobs)
         assert any(j["platform"] == "jobteaser" for j in all_jobs)
 
 
@@ -291,18 +288,38 @@ def test_infer_offer_type_heuristics():
     assert infer_offer_type("Alternance Développeur Python", "") == "PFE"
     assert infer_offer_type("Ingénieur R&D Intern", "Summer internship") == "PFE"
 
-    # Cas JOB
-    assert infer_offer_type("CDI Développeur Fullstack", "") == "JOB"
-    assert infer_offer_type("Ingénieur DevOps Senior (CDI)", "Poste à pourvoir en CDI") == "JOB"
-    assert infer_offer_type("Poste Développeur Backend", "Emploi CDI") == "JOB"
-    assert infer_offer_type("Senior Software Engineer", "Full-time position") == "JOB"
+    # Cas non-PFE rejetés
+    assert infer_offer_type("CDI Développeur Fullstack", "") == "REJECTED"
+    assert infer_offer_type("Ingénieur DevOps Senior (CDI)", "Poste à pourvoir en CDI") == "REJECTED"
+    assert infer_offer_type("Poste Développeur Backend", "Emploi CDI") == "REJECTED"
+    assert infer_offer_type("Senior Software Engineer", "Full-time position") == "REJECTED"
 
-    # Ambiguïté ou égalité -> priorité PFE (repli étudiant)
+    # Vérification heuristique PFE
+    assert infer_offer_type("Stage Ingénieur Logiciel", "") == "PFE"
     assert infer_offer_type("Ingénieur Logiciel", "Stage PFE avec possibilité de CDI à l'issue") == "PFE"
-    assert infer_offer_type("Stage / Emploi", "") == "PFE"
+    assert infer_offer_type("Développeur Python CDI", "Poste temps plein CDI") == "REJECTED"
+    assert infer_offer_type("Consultant Freelance Cloud", "Mission freelance 6 mois") == "REJECTED"
 
 
-def test_jobs_filter_by_profile_search_mode():
+def test_is_pfe_offer_validation():
+    from app.domain.pfe_validator import is_pfe_offer
+
+    # 1. Offres PFE / Stage valides
+    assert is_pfe_offer("Stage PFE Ingénieur Cloud (H/F)") is True
+    assert is_pfe_offer("Software Engineering Internship", "End-of-studies project") is True
+    assert is_pfe_offer("Stagiaire Développeur Python") is True
+    assert is_pfe_offer("Ingénieur IA", "Sujet de projet de fin d'études de 6 mois") is True
+    assert is_pfe_offer("Stage - Opportunité de CDI à l'issue") is True
+
+    # 2. Offres non-PFE / Jobs / CDI / Freelance rejetées
+    assert is_pfe_offer("Ingénieur DevOps (CDI)") is False
+    assert is_pfe_offer("Développeur React Senior", "Poste à pourvoir en CDI") is False
+    assert is_pfe_offer("Freelance - Architecte Kubernetes") is False
+    assert is_pfe_offer("Lead Tech Fullstack", "Recrutement CDI temps plein") is False
+    assert is_pfe_offer("Chef de Projet IT", "") is False
+
+
+def test_jobs_filter_strictly_pfe_only():
     with Session(engine) as session:
         pfe_job = JobOffer(
             platform="linkedin",
@@ -326,31 +343,13 @@ def test_jobs_filter_by_profile_search_mode():
         session.refresh(pfe_job)
         session.refresh(job_job)
 
-    # 1. Par défaut (search_mode="PFE") -> seules les offres PFE sont retournées
-    res_default = client.get("/api/jobs")
-    assert res_default.status_code == 200
-    offers = res_default.json()
+    # 1. Seules les offres PFE conformes sont retournées
+    res = client.get("/api/jobs")
+    assert res.status_code == 200
+    offers = res.json()
     assert any(o["id"] == pfe_job.id for o in offers)
     assert not any(o["id"] == job_job.id for o in offers)
     assert all(o["offer_type"] == "PFE" for o in offers)
-
-    # 2. Bascule du profil vers "JOB" -> seules les offres JOB sont retournées
-    put_res = client.put("/api/profile", json={"search_mode": "JOB"})
-    assert put_res.status_code == 200
-    assert put_res.json()["search_mode"] == "JOB"
-
-    res_job_mode = client.get("/api/jobs")
-    assert res_job_mode.status_code == 200
-    job_offers = res_job_mode.json()
-    assert any(o["id"] == job_job.id for o in job_offers)
-    assert not any(o["id"] == pfe_job.id for o in job_offers)
-    assert all(o["offer_type"] == "JOB" for o in job_offers)
-
-    # 3. Bascule retour vers "PFE"
-    client.put("/api/profile", json={"search_mode": "PFE"})
-    res_pfe_mode = client.get("/api/jobs")
-    assert res_pfe_mode.status_code == 200
-    assert any(o["id"] == pfe_job.id for o in res_pfe_mode.json())
 
 
 def test_jobs_filter_explicit_override_param():
@@ -363,30 +362,16 @@ def test_jobs_filter_explicit_override_param():
             offer_type="PFE",
             status="DISCOVERED",
         )
-        job_job = JobOffer(
-            platform="jobteaser",
-            external_id="override-job-param-1",
-            title="Lead Tech CDI",
-            company="TechCorp",
-            offer_type="JOB",
-            status="DISCOVERED",
-        )
         session.add(pfe_job)
-        session.add(job_job)
         session.commit()
         session.refresh(pfe_job)
-        session.refresh(job_job)
 
-    # Profil en PFE, mais requête surcharge avec offer_type=JOB
-    client.put("/api/profile", json={"search_mode": "PFE"})
+    # Requête avec offer_type=JOB -> rejeté en 422 car ArcApply est 100% PFE
     res_override = client.get("/api/jobs?offer_type=JOB")
-    assert res_override.status_code == 200
-    offers = res_override.json()
-    assert any(o["id"] == job_job.id for o in offers)
-    assert not any(o["id"] == pfe_job.id for o in offers)
-    assert all(o["offer_type"] == "JOB" for o in offers)
+    assert res_override.status_code == 422
+    assert res_override.json()["detail"]["error_code"] == "INVALID_OFFER_TYPE"
 
-    # Surcharge avec offer_type=PFE
+    # Requête avec offer_type=PFE -> 200 OK
     res_pfe = client.get("/api/jobs?offer_type=PFE")
     assert res_pfe.status_code == 200
     assert any(o["id"] == pfe_job.id for o in res_pfe.json())
@@ -405,21 +390,20 @@ def test_profile_update_search_mode_validation():
     assert res1.status_code == 200
     assert res1.json()["search_mode"] == "PFE"
 
-    # Mode valide JOB
-    res2 = client.put("/api/profile", json={"search_mode": "JOB"})
-    assert res2.status_code == 200
-    assert res2.json()["search_mode"] == "JOB"
-
     # Mode valide en minuscule -> normalisé en majuscule
-    res3 = client.put("/api/profile", json={"search_mode": "pfe"})
-    assert res3.status_code == 200
-    assert res3.json()["search_mode"] == "PFE"
+    res2 = client.put("/api/profile", json={"search_mode": "pfe"})
+    assert res2.status_code == 200
+    assert res2.json()["search_mode"] == "PFE"
 
-    # Mode invalide -> HTTP 422
+    # Tentative d'utiliser JOB -> HTTP 422 (ArcApply 100% PFE)
+    res_job = client.put("/api/profile", json={"search_mode": "JOB"})
+    assert res_job.status_code == 422
+    assert res_job.json()["detail"]["error_code"] == "INVALID_SEARCH_MODE"
+
+    # Mode invalide STAGE -> HTTP 422
     res_err = client.put("/api/profile", json={"search_mode": "STAGE"})
     assert res_err.status_code == 422
-    data = res_err.json()
-    assert data["detail"]["error_code"] == "INVALID_SEARCH_MODE"
+    assert res_err.json()["detail"]["error_code"] == "INVALID_SEARCH_MODE"
 
 
 def test_jobs_filter_period_and_direct_career():
