@@ -637,21 +637,25 @@ RÈGLES IMPÉRATIVES DE RÉDACTION :
 
         company = job.company or ("your company" if lang == "en" else "votre entreprise")
 
-        # 5. Tentative de génération via IA Groq (si demandée et configurée)
+        # 5. Exécution de l'Agent Rédacteur LangGraph (Thinking ➔ Drafting)
+        thinking_plan_result: Optional[str] = None
         raw_letter: Optional[str] = None
         if use_ai:
-            raw_letter = cls._generate_with_ai(
-                job=job,
-                profile=profile,
-                ats_match=ats_match,
-                is_job_mode=is_job_mode,
-                degree_name=degree_name,
-                school_name=school_name,
-                target_skills_str=target_skills_str,
-                ranked_projects=ranked_projects,
-                ranked_experiences=ranked_experiences,
-                lang=lang,
-            )
+            try:
+                from app.domain.letter_agent import execute_writer_agent
+                agent_res = execute_writer_agent(
+                    job_id=job.id,
+                    user_id=profile.user_id,
+                    language=lang,
+                    ats_match=ats_match,
+                    job_offer=job,
+                    master_profile=profile,
+                )
+                if agent_res and agent_res.content_markdown and len(agent_res.content_markdown) > 150:
+                    raw_letter = agent_res.content_markdown
+                    thinking_plan_result = agent_res.thinking_plan
+            except Exception as e:
+                logger.warning(f"Exécution Agent Rédacteur LangGraph échouée ({e}), repli déterministe.")
 
         # Repli déterministe garanti si IA non activée, indisponible ou rejetée par garde-fous
         if not raw_letter:
@@ -678,7 +682,9 @@ RÈGLES IMPÉRATIVES DE RÉDACTION :
             company_name=company,
             content_markdown=cleaned_content,
             cliche_score=cliche_count,
+            thinking_plan=thinking_plan_result,
             language=lang,
+            user_id=profile.user_id,
         )
         letter.banned_phrases_detected = detected_phrases
 

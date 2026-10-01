@@ -2,13 +2,15 @@
 
 import React, { useState } from "react";
 import { useAuth } from "@/components/auth/auth-context";
-import { ShieldCheck, LogIn, UserCheck, KeyRound, AlertCircle, Loader2 } from "lucide-react";
+import { ShieldCheck, LogIn, UserCheck, KeyRound, AlertCircle, Loader2, UserPlus, Mail, User as UserIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
-  const { login, user, logout } = useAuth();
+  const { login, register, user, logout } = useAuth();
   const router = useRouter();
-  const [usernameInput, setUsernameInput] = useState("");
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [emailInput, setEmailInput] = useState("");
+  const [fullNameInput, setFullNameInput] = useState("");
   const [passwordInput, setPasswordInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,14 +45,19 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
     );
   }
 
-  const handleLogin = async (uname: string, pwd: string) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setIsSubmitting(true);
     setError(null);
     try {
-      await login(uname, pwd);
+      if (isRegisterMode) {
+        await register(emailInput, passwordInput, fullNameInput);
+      } else {
+        await login(emailInput, passwordInput);
+      }
       router.push(redirectTo);
     } catch (err: any) {
-      setError(err.message || "Échec de connexion");
+      setError(err.message || (isRegisterMode ? "Échec de l'inscription" : "Échec de connexion"));
     } finally {
       setIsSubmitting(false);
     }
@@ -66,14 +73,43 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
         <h1 className="text-2xl font-bold tracking-tight text-foreground font-display flex items-center gap-2">
           ArcApply
           <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-gradient-to-r from-orange-100 to-amber-100 text-orange-900 border border-orange-200/80">
-            Accès Sécurisé
+            {isRegisterMode ? "Création Compte" : "Accès Sécurisé"}
           </span>
         </h1>
         <p className="text-xs text-muted-foreground">
-          Connectez-vous pour accéder à vos candidatures et à votre profil ingénieur.
+          {isRegisterMode
+            ? "Créez votre compte en 10 secondes pour gérer vos candidatures."
+            : "Connectez-vous pour accéder à vos candidatures et à votre profil ingénieur."}
         </p>
       </div>
 
+      {/* Mode toggle tabs */}
+      <div className="flex p-1 bg-stone-100 rounded-xl border border-stone-200 text-xs font-semibold">
+        <button
+          type="button"
+          onClick={() => { setIsRegisterMode(false); setError(null); }}
+          className={`flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+            !isRegisterMode
+              ? "bg-white text-stone-900 shadow-sm"
+              : "text-stone-500 hover:text-stone-800"
+          }`}
+        >
+          <LogIn className="w-3.5 h-3.5" />
+          Se connecter
+        </button>
+        <button
+          type="button"
+          onClick={() => { setIsRegisterMode(true); setError(null); }}
+          className={`flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+            isRegisterMode
+              ? "bg-white text-stone-900 shadow-sm"
+              : "text-stone-500 hover:text-stone-800"
+          }`}
+        >
+          <UserPlus className="w-3.5 h-3.5" />
+          Créer un compte
+        </button>
+      </div>
 
       {/* Error alert */}
       {error && (
@@ -84,27 +120,41 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
       )}
 
       {/* Form */}
-      <form
-        onSubmit={async (e) => {
-          e.preventDefault();
-          await handleLogin(usernameInput, passwordInput);
-        }}
-        className="space-y-4"
-      >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {isRegisterMode && (
+          <div>
+            <label className="block text-xs font-semibold text-stone-700 mb-1.5">
+              Nom complet (optionnel)
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-stone-400">
+                <UserIcon className="w-4 h-4" />
+              </div>
+              <input
+                type="text"
+                value={fullNameInput}
+                onChange={(e) => setFullNameInput(e.target.value)}
+                placeholder="Ex. Louay Zorai"
+                className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-stone-900"
+              />
+            </div>
+          </div>
+        )}
+
         <div>
           <label className="block text-xs font-semibold text-stone-700 mb-1.5">
-            Nom d'utilisateur
+            {isRegisterMode ? "Adresse Email" : "Email ou Nom d'utilisateur"}
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-stone-400">
-              <UserCheck className="w-4 h-4" />
+              {isRegisterMode ? <Mail className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
             </div>
             <input
-              type="text"
+              type={isRegisterMode ? "email" : "text"}
               required
-              value={usernameInput}
-              onChange={(e) => setUsernameInput(e.target.value)}
-              placeholder="Votre nom d'utilisateur"
+              value={emailInput}
+              onChange={(e) => setEmailInput(e.target.value)}
+              placeholder={isRegisterMode ? "votre.email@domaine.com" : "Votre nom d'utilisateur ou email"}
               className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-stone-900"
             />
           </div>
@@ -137,7 +187,12 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
           {isSubmitting ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              Connexion...
+              {isRegisterMode ? "Création du compte..." : "Connexion..."}
+            </>
+          ) : isRegisterMode ? (
+            <>
+              <UserPlus className="w-4 h-4" />
+              Créer mon compte
             </>
           ) : (
             <>

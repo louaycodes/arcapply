@@ -707,6 +707,7 @@ export interface CoverLetter {
   content_markdown: string;
   cliche_score: number;
   banned_phrases_detected: string[];
+  thinking_plan?: string;
   language?: string;
   created_at: string;
   updated_at: string;
@@ -892,6 +893,22 @@ export async function loginUser(username: string, password: string): Promise<Log
   return res.json();
 }
 
+export async function registerUser(email: string, password: string, fullName?: string): Promise<LoginResponse> {
+  const res = await authFetch(`${API_BASE_URL}/api/auth/register`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, password, full_name: fullName }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const message = errorData.detail?.message || errorData.detail || "Échec de l'inscription";
+    throw new Error(message);
+  }
+  return res.json();
+}
+
 export async function fetchCurrentUser(token: string): Promise<User> {
   const res = await authFetch(`${API_BASE_URL}/api/auth/me`, {
     headers: {
@@ -901,6 +918,102 @@ export async function fetchCurrentUser(token: string): Promise<User> {
   if (!res.ok) {
     throw new Error("Session invalide ou expirée");
   }
+  return res.json();
+}
+
+
+// ============================================================================
+// Agent Playbook & Strategic Guidelines API
+// ============================================================================
+
+export interface AgentPlaybookRule {
+  id: string;
+  user_id: string;
+  title: string;
+  condition_trigger: string;
+  action_instruction: string;
+  is_active: boolean;
+  category: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function fetchPlaybookRules(): Promise<AgentPlaybookRule[]> {
+  const res = await authFetch(`${API_BASE_URL}/api/agent/playbook`);
+  if (!res.ok) throw new Error("Impossible de charger les directives de l'agent");
+  return res.json();
+}
+
+export async function createPlaybookRule(data: {
+  title: string;
+  condition_trigger: string;
+  action_instruction: string;
+  category?: string;
+  is_active?: boolean;
+}): Promise<AgentPlaybookRule> {
+  const res = await authFetch(`${API_BASE_URL}/api/agent/playbook`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Impossible de créer la directive");
+  return res.json();
+}
+
+export async function updatePlaybookRule(
+  ruleId: string,
+  data: Partial<AgentPlaybookRule>
+): Promise<AgentPlaybookRule> {
+  const res = await authFetch(`${API_BASE_URL}/api/agent/playbook/${ruleId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Impossible de mettre à jour la directive");
+  return res.json();
+}
+
+export async function deletePlaybookRule(ruleId: string): Promise<void> {
+  const res = await authFetch(`${API_BASE_URL}/api/agent/playbook/${ruleId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Impossible de supprimer la directive");
+}
+
+
+// ============================================================================
+// Agent Deep Recon API
+// ============================================================================
+
+export interface ReconDossier {
+  id: string;
+  job_id: string;
+  user_id: string;
+  external_url?: string | null;
+  full_description: string;
+  company_name: string;
+  company_website?: string | null;
+  company_mission?: string | null;
+  company_culture?: string | null;
+  tech_stack_detected: string[];
+  investigation_notes?: string | null;
+  status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "FAILED";
+  created_at: string;
+  updated_at: string;
+}
+
+export async function fetchReconDossier(jobId: string): Promise<ReconDossier | null> {
+  const res = await authFetch(`${API_BASE_URL}/api/recon/dossier/${jobId}`);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error("Impossible de charger le dossier d'enquête");
+  return res.json();
+}
+
+export async function triggerReconInvestigation(jobId: string): Promise<{ status: string; message: string }> {
+  const res = await authFetch(`${API_BASE_URL}/api/recon/trigger/${jobId}`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error("Impossible de déclencher l'enquête Deep Recon");
   return res.json();
 }
 

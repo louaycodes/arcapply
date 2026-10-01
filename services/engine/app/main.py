@@ -3,7 +3,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.adapters.database import init_db
-from app.api import ats, auth, cv, emails, events, jobs, letter, profile
+from app.api import ats, auth, cv, emails, events, jobs, letter, playbook, profile, recon
 from app.config import settings
 
 
@@ -39,6 +39,8 @@ app.include_router(ats.router)
 app.include_router(cv.router)
 app.include_router(letter.router)
 app.include_router(emails.router)
+app.include_router(playbook.router)
+app.include_router(recon.router)
 
 
 

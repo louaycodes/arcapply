@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { User, loginUser, fetchCurrentUser } from "@/lib/api";
+import { User, loginUser, registerUser, fetchCurrentUser } from "@/lib/api";
 import { Loader2 } from "lucide-react";
 import { LoginForm } from "@/components/auth/login-form";
 
@@ -10,6 +10,7 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
+  register: (email: string, password: string, fullName?: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -63,6 +64,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("arcapply_user", JSON.stringify(response.user));
   };
 
+  const register = async (email: string, pwd: string, fullName?: string) => {
+    const response = await registerUser(email, pwd, fullName);
+    setToken(response.token);
+    setUser(response.user);
+    localStorage.setItem("arcapply_token", response.token);
+    localStorage.setItem("arcapply_user", JSON.stringify(response.user));
+  };
+
 
   const logout = () => {
     setUser(null);
@@ -84,7 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   if (!user) {
     return (
-      <AuthContext.Provider value={{ user, token, isLoading, login, logout }}>
+      <AuthContext.Provider value={{ user, token, isLoading, login, logout, register }}>
         <div className="min-h-screen w-full flex items-center justify-center bg-[#F7F3EC] p-4 font-sans selection:bg-orange-100">
           <LoginForm />
         </div>
@@ -93,7 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, logout, register }}>
       {children}
     </AuthContext.Provider>
   );

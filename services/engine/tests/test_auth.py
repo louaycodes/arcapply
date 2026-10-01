@@ -101,3 +101,39 @@ def test_account_isolation_profile_and_jobs():
     assert isinstance(louay_jobs, list)
     assert isinstance(chaima_jobs, list)
 
+
+def test_auth_register_new_user_success():
+    client = TestClient(app)
+    import uuid
+    random_email = f"test_{uuid.uuid4().hex[:8]}@example.com"
+    res = client.post(
+        "/api/auth/register",
+        json={"email": random_email, "password": "supersecretpassword", "full_name": "Test User"},
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert "token" in data
+    assert data["user"]["username"] == random_email
+    assert data["user"]["full_name"] == "Test User"
+
+    # Profile should exist and be isolated
+    token = data["token"]
+    prof_res = client.get("/api/profile", headers={"Authorization": f"Bearer {token}"})
+    assert prof_res.status_code == 200
+    assert prof_res.json()["user_id"] == random_email
+
+
+def test_auth_register_validation_and_duplicate():
+    client = TestClient(app)
+    # Invalid email
+    res1 = client.post("/api/auth/register", json={"email": "invalidemail", "password": "pass"})
+    assert res1.status_code == 400
+
+    # Short password
+    res2 = client.post("/api/auth/register", json={"email": "valid@email.com", "password": "12"})
+    assert res2.status_code == 400
+
+    # Existing user
+    res3 = client.post("/api/auth/register", json={"email": "louay", "password": "pass"})
+    assert res3.status_code == 400
+

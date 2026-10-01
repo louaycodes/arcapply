@@ -12,6 +12,9 @@ import {
   transitionJobStatus,
   getCVPreviewUrl,
   getCVPdfDownloadUrl,
+  ReconDossier,
+  fetchReconDossier,
+  triggerReconInvestigation,
 } from "@/lib/api";
 import { useAppLanguage } from "@/lib/language-context";
 import { AtsScoreBadge } from "./ats-score-badge";
@@ -35,6 +38,8 @@ import {
   MapPin,
   ChevronRight,
   ShieldAlert,
+  Compass,
+  ChevronDown,
 } from "lucide-react";
 
 interface MirrorReviewDrawerProps {
@@ -53,7 +58,7 @@ export function MirrorReviewDrawer({
   onJobUpdated,
 }: MirrorReviewDrawerProps) {
   const { language: appLanguage, setLanguage: setAppLanguage } = useAppLanguage();
-  const [activeTab, setActiveTab] = useState<"cv" | "letter">("cv");
+  const [activeTab, setActiveTab] = useState<"cv" | "letter" | "recon">("cv");
   const [status, setStatus] = useState<string>("DISCOVERED");
   const [loadingAction, setLoadingAction] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -69,6 +74,11 @@ export function MirrorReviewDrawer({
   const [letterContent, setLetterContent] = useState("");
   const [isLetterSaving, setIsLetterSaving] = useState(false);
   const [letterSaveSuccess, setLetterSaveSuccess] = useState(false);
+
+  // Deep Recon state
+  const [reconDossier, setReconDossier] = useState<ReconDossier | null>(null);
+  const [reconScanning, setReconScanning] = useState(false);
+  const [showThinkingPlan, setShowThinkingPlan] = useState(true);
 
   // 5-second countdown state
   const [isCountingDown, setIsCountingDown] = useState(false);
@@ -89,6 +99,11 @@ export function MirrorReviewDrawer({
         clearInterval(countdownIntervalRef.current);
         countdownIntervalRef.current = null;
       }
+
+      // Initialiser Deep Recon Dossier
+      fetchReconDossier(job.id)
+        .then((d) => setReconDossier(d))
+        .catch(() => setReconDossier(null));
 
       // Initialiser CV
       setCvLoading(true);
@@ -189,6 +204,21 @@ export function MirrorReviewDrawer({
       setErrorMsg(err.message || "Erreur lors de la sauvegarde de la lettre.");
     } finally {
       setIsLetterSaving(false);
+    }
+  };
+
+  const handleTriggerRecon = async () => {
+    if (!job) return;
+    try {
+      setReconScanning(true);
+      await triggerReconInvestigation(job.id);
+      const updated = await fetchReconDossier(job.id);
+      setReconDossier(updated);
+    } catch (err: any) {
+      console.error("Erreur Deep Recon:", err);
+      setErrorMsg(err.message || "Erreur lors de l'investigation Deep Recon.");
+    } finally {
+      setReconScanning(false);
     }
   };
 
@@ -345,6 +375,45 @@ export function MirrorReviewDrawer({
               )}
             </div>
 
+            {/* Deep Recon Brief Card if available */}
+            {reconDossier && (
+              <div className="p-3 mx-4 mt-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800">
+                    <Compass className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Deep Recon Détecté</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("recon")}
+                    className="text-[11px] font-semibold text-emerald-800 hover:underline flex items-center gap-0.5"
+                  >
+                    <span>Voir dossier</span>
+                    <ChevronRight className="w-3 h-3" />
+                  </button>
+                </div>
+                {reconDossier.company_mission && (
+                  <p className="text-[11px] text-stone-600 line-clamp-2 leading-relaxed">
+                    {reconDossier.company_mission}
+                  </p>
+                )}
+                {reconDossier.tech_stack_detected && reconDossier.tech_stack_detected.length > 0 && (
+                  <div className="flex flex-wrap gap-1 pt-0.5">
+                    {reconDossier.tech_stack_detected.slice(0, 4).map((tech) => (
+                      <span key={tech} className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-white border border-emerald-200 text-stone-700">
+                        {tech}
+                      </span>
+                    ))}
+                    {reconDossier.tech_stack_detected.length > 4 && (
+                      <span className="text-[10px] text-muted-foreground self-center">
+                        +{reconDossier.tech_stack_detected.length - 4}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Scrollable Job Description */}
             <div className="flex-1 p-4 sm:p-5 overflow-y-auto space-y-3">
               <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground font-display">
@@ -356,7 +425,7 @@ export function MirrorReviewDrawer({
             </div>
           </div>
 
-          {/* RIGHT PANEL: CV & Cover Letter Tabs (7 cols) */}
+          {/* RIGHT PANEL: CV, Cover Letter & Deep Recon Tabs (7 cols) */}
           <div className="lg:col-span-7 flex flex-col h-full overflow-hidden bg-card/60">
             {/* Sub-tabs header */}
             <div className="px-5 py-3 border-b border-border/80 flex items-center justify-between bg-muted/10">
@@ -389,44 +458,62 @@ export function MirrorReviewDrawer({
                     <span className="w-2 h-2 rounded-full bg-amber-600" />
                   )}
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("recon")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors ${
+                    activeTab === "recon"
+                      ? "bg-primary text-white shadow-xs"
+                      : "bg-stone-100 text-stone-700 hover:text-stone-900"
+                  }`}
+                >
+                  <Compass className="w-3.5 h-3.5" />
+                  <span>Deep Recon</span>
+                  {reconDossier && (
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  )}
+                </button>
               </div>
 
-              {/* Language switcher applicable to both CV and Letter */}
+              {/* Language switcher & actions */}
               <div className="flex items-center gap-2">
-                <div className="flex items-center rounded border border-border bg-muted/40 p-0.5 text-[11px] font-semibold">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCvLanguage("fr");
-                      setAppLanguage("fr");
-                    }}
-                    className={`px-2 py-0.5 rounded transition-all ${
-                      cvLanguage === "fr"
-                        ? "bg-primary text-primary-foreground font-bold shadow-xs"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                    title="Version Française"
-                  >
-                    FR
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCvLanguage("en");
-                      setAppLanguage("en");
-                    }}
-                    className={`px-2 py-0.5 rounded transition-all ${
-                      cvLanguage === "en"
-                        ? "bg-primary text-primary-foreground font-bold shadow-xs"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                    title="English Version"
-                  >
-                    EN
-                  </button>
-                </div>
+                {activeTab !== "recon" && (
+                  <div className="flex items-center rounded border border-border bg-muted/40 p-0.5 text-[11px] font-semibold">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCvLanguage("fr");
+                        setAppLanguage("fr");
+                      }}
+                      className={`px-2 py-0.5 rounded transition-all ${
+                        cvLanguage === "fr"
+                          ? "bg-primary text-primary-foreground font-bold shadow-xs"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                      title="Version Française"
+                    >
+                      FR
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCvLanguage("en");
+                        setAppLanguage("en");
+                      }}
+                      className={`px-2 py-0.5 rounded transition-all ${
+                        cvLanguage === "en"
+                          ? "bg-primary text-primary-foreground font-bold shadow-xs"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                      title="English Version"
+                    >
+                      EN
+                    </button>
+                  </div>
+                )}
 
-                {activeTab === "cv" ? (
+                {activeTab === "cv" && (
                   <>
                     <a
                       href={pdfUrl}
@@ -450,7 +537,9 @@ export function MirrorReviewDrawer({
                       <RefreshCw className={`w-3.5 h-3.5 ${cvLoading ? "animate-spin" : ""}`} />
                     </button>
                   </>
-                ) : (
+                )}
+
+                {activeTab === "letter" && (
                   <>
                     <button
                       type="button"
@@ -487,12 +576,28 @@ export function MirrorReviewDrawer({
                     </button>
                   </>
                 )}
+
+                {activeTab === "recon" && (
+                  <button
+                    type="button"
+                    onClick={handleTriggerRecon}
+                    disabled={reconScanning}
+                    className="px-3 py-1 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                  >
+                    {reconScanning ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-3.5 h-3.5" />
+                    )}
+                    <span>{reconScanning ? "Scan en cours..." : "Scanner Deep Recon"}</span>
+                  </button>
+                )}
               </div>
             </div>
 
             {/* Sub-tab content */}
             <div className="flex-1 overflow-hidden relative">
-              {activeTab === "cv" ? (
+              {activeTab === "cv" && (
                 <div className="w-full h-full p-2 bg-muted/30 flex items-center justify-center overflow-hidden">
                   {cvLoading ? (
                     <div className="flex flex-col items-center gap-3 text-muted-foreground">
@@ -507,15 +612,39 @@ export function MirrorReviewDrawer({
                     />
                   )}
                 </div>
-              ) : (
+              )}
+
+              {activeTab === "letter" && (
                 <div className="w-full h-full p-4 flex flex-col gap-3 overflow-hidden bg-background/40">
                   {letterLoading ? (
                     <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
                       <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                      <p className="text-xs font-medium">Synthèse de la lettre sobre...</p>
+                      <p className="text-xs font-medium">Synthèse autonome de l'agent rédacteur...</p>
                     </div>
                   ) : (
                     <>
+                      {/* Thinking Plan Collapsible Accordion */}
+                      {letter?.thinking_plan && (
+                        <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 overflow-hidden transition-all shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setShowThinkingPlan(!showThinkingPlan)}
+                            className="w-full flex items-center justify-between text-left text-xs font-semibold text-primary hover:opacity-80 transition-opacity"
+                          >
+                            <div className="flex items-center gap-2">
+                              <Sparkles className="w-3.5 h-3.5" />
+                              <span>🧠 Plan d'attaque stratégique de l'Agent (Thinking Process)</span>
+                            </div>
+                            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showThinkingPlan ? "rotate-180" : ""}`} />
+                          </button>
+                          {showThinkingPlan && (
+                            <div className="mt-2.5 pt-2 border-t border-primary/15 text-xs text-foreground/90 whitespace-pre-wrap leading-relaxed font-sans max-h-36 overflow-y-auto">
+                              {letter.thinking_plan}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <div className="flex items-center gap-2">
                           <span className="font-semibold text-foreground">Édition en direct :</span>
@@ -543,6 +672,125 @@ export function MirrorReviewDrawer({
                         placeholder="Rédigez ou éditez votre lettre de motivation sobre ici..."
                       />
                     </>
+                  )}
+                </div>
+              )}
+
+              {activeTab === "recon" && (
+                <div className="w-full h-full p-5 overflow-y-auto space-y-4 bg-background/50">
+                  {/* Recon Header Card */}
+                  <div className="p-4 rounded-xl border border-border bg-card shadow-xs space-y-3">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <Compass className="w-4 h-4 text-primary" />
+                          <h4 className="text-sm font-bold text-foreground">
+                            Dossier Deep Recon (Agent Éclaireur Autonome)
+                          </h4>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          L'agent inspecte le portail carrière externe pour cartographier la culture d'entreprise, la mission et extraire l'annonce intégrale sans troncature.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleTriggerRecon}
+                        disabled={reconScanning}
+                        className="px-3.5 py-1.5 rounded-lg bg-primary hover:bg-primary/90 text-white text-xs font-semibold flex items-center gap-2 shrink-0 transition-colors disabled:opacity-50"
+                      >
+                        {reconScanning ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>Exploration Playwright...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-3.5 h-3.5" />
+                            <span>Lancer l'enquête</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {reconDossier?.external_url && (
+                      <div className="pt-2 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
+                        <span className="font-mono truncate max-w-md">Portail cible : {reconDossier.external_url}</span>
+                        <a
+                          href={reconDossier.external_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline flex items-center gap-1 font-semibold"
+                        >
+                          <span>Visiter le portail</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+
+                  {reconDossier ? (
+                    <div className="space-y-4">
+                      {/* Mission & Culture */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="p-4 rounded-xl border border-border bg-card space-y-2">
+                          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                            <span>🎯 Mission & Enjeux</span>
+                          </span>
+                          <p className="text-xs text-foreground/90 leading-relaxed">
+                            {reconDossier.company_mission || "Mission en cours d'analyse..."}
+                          </p>
+                        </div>
+
+                        <div className="p-4 rounded-xl border border-border bg-card space-y-2">
+                          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                            <span>🌱 Culture & Valeurs Techniques</span>
+                          </span>
+                          <p className="text-xs text-foreground/90 leading-relaxed">
+                            {reconDossier.company_culture || "Culture ingénierie en cours d'analyse..."}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Stack détectée */}
+                      {reconDossier.tech_stack_detected && reconDossier.tech_stack_detected.length > 0 && (
+                        <div className="p-4 rounded-xl border border-border bg-card space-y-2">
+                          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                            💻 Stack & Technologies Détectées
+                          </span>
+                          <div className="flex flex-wrap gap-1.5 pt-1">
+                            {reconDossier.tech_stack_detected.map((tech) => (
+                              <span
+                                key={tech}
+                                className="px-2.5 py-1 rounded-md bg-stone-100 text-stone-800 border border-stone-200 text-xs font-medium font-mono"
+                              >
+                                {tech}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Annonce complète un-truncated */}
+                      <div className="p-4 rounded-xl border border-border bg-card space-y-2">
+                        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                          📄 Texte Intégral sans troncature ({reconDossier.full_description?.length || 0} caractères)
+                        </span>
+                        <div className="p-3.5 rounded-lg bg-muted/40 font-mono text-xs text-muted-foreground max-h-64 overflow-y-auto whitespace-pre-wrap leading-relaxed border border-border/50">
+                          {reconDossier.full_description || job.description_raw}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-8 rounded-xl border border-dashed border-border bg-card/40 flex flex-col items-center justify-center text-center space-y-3">
+                      <Compass className="w-10 h-10 text-muted-foreground/50 animate-pulse" />
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold text-foreground">Aucun dossier Deep Recon pour cette offre</p>
+                        <p className="text-xs text-muted-foreground max-w-sm">
+                          Cliquez sur « Lancer l'enquête » pour envoyer l'agent éclaireur Playwright explorer la page carrière de l'entreprise.
+                        </p>
+                      </div>
+                    </div>
                   )}
                 </div>
               )}

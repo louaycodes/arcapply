@@ -12,6 +12,7 @@ import {
   FileText,
   LogOut,
   LogIn,
+  Sparkles,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { checkEngineHealth } from "@/lib/api";
@@ -22,6 +23,7 @@ const navigationItems = [
   { name: "Tableau de bord", href: "/", icon: LayoutDashboard },
   { name: "Offres de Stage PFE", href: "/radar", icon: Radar },
   { name: "Mon Profil", href: "/profile", icon: UserCheck },
+  { name: "Directives Agent", href: "/playbook", icon: Sparkles },
   { name: "Éditeur de CV", href: "/cv", icon: FileText },
   { name: "Suivi Candidatures", href: "/kanban", icon: KanbanSquare },
   { name: "Paramètres", href: "/settings", icon: Settings },
