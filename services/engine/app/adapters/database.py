@@ -155,6 +155,73 @@ def _migrate_db(engine) -> None:
         except Exception:
             pass
 
+        # Tables pour l'architecture agentique (Playbook & Recon Dossier)
+        try:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS agent_playbook_rules (
+                    id VARCHAR PRIMARY KEY,
+                    user_id VARCHAR DEFAULT 'louay',
+                    title VARCHAR NOT NULL,
+                    condition_trigger TEXT NOT NULL,
+                    action_instruction TEXT NOT NULL,
+                    is_active BOOLEAN DEFAULT 1,
+                    category VARCHAR DEFAULT 'custom',
+                    created_at TIMESTAMP,
+                    updated_at TIMESTAMP
+                )
+            """))
+            conn.commit()
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_agent_playbook_rules_user_id ON agent_playbook_rules (user_id)"))
+            conn.commit()
+        except Exception:
+            pass
+
+        try:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS recon_dossiers (
+                    id VARCHAR PRIMARY KEY,
+                    job_id VARCHAR NOT NULL,
+                    user_id VARCHAR DEFAULT 'louay',
+                    external_url VARCHAR,
+                    full_description TEXT DEFAULT '',
+                    company_name VARCHAR DEFAULT '',
+                    company_website VARCHAR,
+                    company_mission TEXT,
+                    company_culture TEXT,
+                    tech_stack_detected_raw TEXT DEFAULT '[]',
+                    investigation_notes TEXT,
+                    status VARCHAR DEFAULT 'PENDING',
+                    created_at TIMESTAMP,
+                    updated_at TIMESTAMP
+                )
+            """))
+            conn.commit()
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_recon_dossiers_job_id ON recon_dossiers (job_id)"))
+            conn.commit()
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_recon_dossiers_user_id ON recon_dossiers (user_id)"))
+            conn.commit()
+        except Exception:
+            pass
+
+        # Purge sélective et idempotente des offres existantes pour l'architecture Deep Recon (profils et users 100% préservés)
+        try:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS _schema_migrations (
+                    version VARCHAR PRIMARY KEY,
+                    applied_at TIMESTAMP
+                )
+            """))
+            conn.commit()
+            res = conn.execute(text("SELECT version FROM _schema_migrations WHERE version = 'purge_legacy_jobs_for_deep_recon'")).fetchone()
+            if not res:
+                conn.execute(text("DELETE FROM targeted_cvs"))
+                conn.execute(text("DELETE FROM cover_letters"))
+                conn.execute(text("DELETE FROM job_offers"))
+                conn.execute(text("INSERT INTO _schema_migrations (version, applied_at) VALUES ('purge_legacy_jobs_for_deep_recon', CURRENT_TIMESTAMP)"))
+                conn.commit()
+        except Exception:
+            pass
+
 
 def seed_initial_users(engine) -> None:
     from app.domain.models import User
