@@ -337,9 +337,18 @@ def get_cv_from_profile(
         )
     custom_cv = CVParserService.convert_profile_to_custom_cv(profile, language=lang)
     html_content = render_custom_cv_html(custom_cv)
+
+    is_profile_empty = (
+        not profile.experiences
+        and not profile.educations
+        and not profile.projects
+        and not profile.skills
+    )
+
     return {
         "data": custom_cv,
         "html_content": html_content,
+        "is_profile_empty": is_profile_empty,
     }
 
 
@@ -428,19 +437,32 @@ def get_cv_draft(
     if not draft:
         draft = session.exec(select(CustomCVDraft).where(CustomCVDraft.user_id == username)).first()
 
+    profile = _get_user_profile(session, username)
+    is_profile_empty = False
+    if profile:
+        is_profile_empty = (
+            not profile.experiences
+            and not profile.educations
+            and not profile.projects
+            and not profile.skills
+        )
+
     if not draft:
-        profile = _get_user_profile(session, username)
         if profile:
             custom_cv = CVParserService.convert_profile_to_custom_cv(profile, language="fr")
             html_content = render_custom_cv_html(custom_cv)
-            return {"data": custom_cv, "html_content": html_content, "has_draft": False}
-        return {"data": None, "html_content": "", "has_draft": False}
+            return {
+                "data": custom_cv,
+                "html_content": html_content,
+                "has_draft": False,
+                "is_profile_empty": is_profile_empty,
+            }
+        return {"data": None, "html_content": "", "has_draft": False, "is_profile_empty": True}
 
     try:
         data_dict = json.loads(draft.data_json)
         custom_cv = CustomCVData(**data_dict)
     except Exception:
-        profile = _get_user_profile(session, username)
         custom_cv = CVParserService.convert_profile_to_custom_cv(profile, language="fr") if profile else None
 
     html_content = draft.html_content if draft.html_content else (render_custom_cv_html(custom_cv) if custom_cv else "")
@@ -449,5 +471,6 @@ def get_cv_draft(
         "data": custom_cv,
         "html_content": html_content,
         "has_draft": True,
+        "is_profile_empty": is_profile_empty,
         "updated_at": draft.updated_at,
     }

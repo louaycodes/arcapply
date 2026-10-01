@@ -659,7 +659,7 @@ export async function downloadProfileCVPdf(lang: string = "fr"): Promise<Blob> {
 
 export async function fetchCVFromProfile(
   lang: "fr" | "en" = "fr"
-): Promise<{ data: CustomCVData; html_content: string }> {
+): Promise<{ data: CustomCVData; html_content: string; is_profile_empty?: boolean }> {
   const res = await authFetch(`${API_BASE_URL}/api/cv/from-profile?lang=${lang}`, {
     cache: "no-store",
   });
@@ -687,6 +687,7 @@ export async function fetchCVDraft(): Promise<{
   data: CustomCVData | null;
   html_content: string;
   has_draft: boolean;
+  is_profile_empty?: boolean;
   updated_at?: string;
 }> {
   const res = await authFetch(`${API_BASE_URL}/api/cv/draft`, {

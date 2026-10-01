@@ -44,7 +44,9 @@ import {
   Layers,
   HelpCircle,
   FileCheck,
+  ArrowRight,
 } from "lucide-react";
+import Link from "next/link";
 
 export default function StudioCVPage() {
   const [cvData, setCvData] = useState<CustomCVData | null>(null);
@@ -53,6 +55,7 @@ export default function StudioCVPage() {
   const [isCompiling, setIsCompiling] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [isProfileEmpty, setIsProfileEmpty] = useState<boolean>(false);
   const [zoomScale, setZoomScale] = useState<number>(1.0);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [iframeHeightPx, setIframeHeightPx] = useState<number>(1123);
@@ -133,6 +136,7 @@ export default function StudioCVPage() {
           setLineHeight(draftRes.data.line_height || 1.35);
           setMarginMm(draftRes.data.margin_top_mm || 8.0);
         }
+        setIsProfileEmpty(Boolean(draftRes.is_profile_empty));
         showNotification("info", "Brouillon sauvegardé chargé avec succès.");
       } else {
         const profRes = await fetchCVFromProfile("fr");
@@ -142,6 +146,7 @@ export default function StudioCVPage() {
         setFontSizePt(profRes.data.font_size_pt || 9.0);
         setLineHeight(profRes.data.line_height || 1.35);
         setMarginMm(profRes.data.margin_top_mm || 8.0);
+        setIsProfileEmpty(Boolean(profRes.is_profile_empty));
       }
     } catch (err: any) {
       showNotification("error", err.message || "Erreur de chargement du CV.");
@@ -675,7 +680,12 @@ export default function StudioCVPage() {
       setHtmlContent(res.html_content);
       currentHtmlRef.current = res.html_content;
       setHasUnsavedEdits(false);
-      showNotification("success", "Données de votre profil rechargées.");
+      setIsProfileEmpty(Boolean(res.is_profile_empty));
+      if (res.is_profile_empty) {
+        showNotification("info", "Votre profil est actuellement vide.");
+      } else {
+        showNotification("success", "Données de votre profil rechargées.");
+      }
     } catch (err: any) {
       showNotification("error", err.message || "Échec du rechargement.");
     } finally {
@@ -1024,15 +1034,45 @@ export default function StudioCVPage() {
       {/* Main Full-Focus Visual Canvas (Desk / Page Environment) */}
       <div
         ref={canvasContainerRef}
-        className="flex-1 overflow-auto p-2 sm:p-6 md:p-8 flex justify-center items-start bg-[#EFE8DD] relative select-none"
+        className="flex-1 overflow-auto p-2 sm:p-6 md:p-8 flex flex-col items-center justify-start bg-[#EFE8DD] relative select-none gap-5"
       >
-        {/* Floating Instruction Pill */}
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
-          <div className="px-3.5 py-1 rounded-full bg-white/95 border border-orange-200 text-stone-900 text-[11px] font-medium backdrop-blur-md shadow-md flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-600" />
-            <span>Cliquez sur un élément pour le modifier &bull; Le texte s'adapte automatiquement</span>
+        {/* Empty Profile Banner / Guidance Card */}
+        {isProfileEmpty && (
+          <div className="w-full max-w-[210mm] p-4 sm:p-5 rounded-xl border border-amber-300 bg-amber-50/95 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-stone-900 shrink-0 select-text z-20">
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-lg bg-amber-200/90 border border-amber-300 flex items-center justify-center text-amber-900 shrink-0 mt-0.5">
+                <AlertTriangle className="w-5 h-5 text-amber-800" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-stone-900 font-display">
+                  Votre Master Profile est actuellement vide
+                </h3>
+                <p className="text-xs text-stone-700 mt-1 leading-relaxed">
+                  Pour garantir un CV factuel et zéro hallucination, ArcApply construit votre CV directement à partir des formations, expériences et compétences de votre profil. Renseignez d'abord votre profil pour générer votre CV complet.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+              <Link
+                href="/profile"
+                className="px-4 py-2 rounded-lg bg-stone-900 hover:bg-black text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all"
+              >
+                <span>Remplir mon profil</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Floating Instruction Pill */}
+        {!isProfileEmpty && (
+          <div className="sticky top-0 z-10 pointer-events-none mb-1">
+            <div className="px-3.5 py-1 rounded-full bg-white/95 border border-orange-200 text-stone-900 text-[11px] font-medium backdrop-blur-md shadow-md flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-600" />
+              <span>Cliquez sur un élément pour le modifier &bull; Le texte s'adapte automatiquement</span>
+            </div>
+          </div>
+        )}
 
         {/* Real A4 Paper Sheet (210mm x dynamic height for 1 or 2 pages) */}
         <div

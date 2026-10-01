@@ -202,27 +202,10 @@ class CVGeneratorService:
         safe_matched = [s for s in ats_match.matched_skills if s.lower() not in missing_set]
         safe_transferable = [s for s in ats_match.transferable_skills if s.lower() not in missing_set]
 
-        matched_str = ", ".join(safe_matched[:4]) if safe_matched else ("Cloud & DevOps" if lang == "en" else "Architectures Cloud & DevOps")
-
         if lang == "en":
-            summary = (
-                profile.bio_en
-                or (
-                    f"Computer Engineering student specializing in Cloud Architecture & DevOps at ESPRIT. "
-                    f"Hands-on expertise in {matched_str}, cloud-native infrastructure, and full-stack systems, "
-                    f"seeking a graduation internship (PFE) / engineering role."
-                )
-            )
+            summary = profile.bio_en or profile.bio or ""
         else:
-            summary = (
-                profile.bio_fr
-                or profile.bio
-                or (
-                    f"Élève-ingénieur en informatique spécialisé en architectures Cloud & DevOps à l'ESPRIT. "
-                    f"Solides compétences pratiques en {matched_str} et conception de systèmes distribués fiables, "
-                    f"à la recherche d'un stage de fin d'études (PFE) ou d'une opportunité d'ingénierie."
-                )
-            )
+            summary = profile.bio_fr or profile.bio or ""
 
         # 3. Ordonnancement des expériences : filtrer spécifiquement les stages professionnels
         target_skills_lower = {s.lower() for s in (safe_matched + safe_transferable)}
@@ -351,139 +334,6 @@ class CVGeneratorService:
                 "end_date": end_date,
                 "description": description,
             })
-
-        if not educations_list:
-            if lang == "en":
-                educations_list.append({
-                    "school": "ESPRIT School of Engineering",
-                    "degree": "Master of Science in Computer Engineering",
-                    "field_of_study": "Cloud Architecture & Distributed Systems",
-                    "start_date": "2022",
-                    "end_date": "2027",
-                    "description": "",
-                })
-            else:
-                educations_list.append({
-                    "school": "ESPRIT",
-                    "degree": "Diplôme National d'Ingénieur en informatique",
-                    "field_of_study": "Architectures Cloud & Systèmes Distribués",
-                    "start_date": "2022",
-                    "end_date": "2027",
-                    "description": "",
-                })
-
-        if not selected_experiences:
-            if lang == "en":
-                selected_experiences = [
-                    {
-                        "company": "Capgemini Tunisia",
-                        "role": "Cloud FinOps Intern",
-                        "location": "Tunis",
-                        "start_date": "06/2026",
-                        "end_date": "08/2026",
-                        "description": "Engineered an autonomous multi-agent AWS FinOps platform for cost anomaly detection and forecasting via Flask and Angular.",
-                        "technologies": ["AWS", "Python", "Angular", "Docker", "LangGraph"],
-                    },
-                    {
-                        "company": "EY Tunisia",
-                        "role": "AI & Data Science Intern",
-                        "location": "Tunis",
-                        "start_date": "08/2026",
-                        "end_date": "09/2026",
-                        "description": "Modeled complex network graphs and developed reporting pipelines using Python, NetworkX, and PowerBI.",
-                        "technologies": ["Python", "NetworkX", "PowerBI"],
-                    },
-                    {
-                        "company": "Capgemini Tunisia",
-                        "role": "DevOps Engineering Intern",
-                        "location": "Tunis",
-                        "start_date": "06/2025",
-                        "end_date": "07/2025",
-                        "description": "Automated end-to-end continuous integration and delivery (CI/CD) pipelines using Jenkins.",
-                        "technologies": ["Jenkins", "CI/CD", "Git"],
-                    },
-                ]
-            else:
-                selected_experiences = [
-                    {
-                        "company": "Capgemini Tunisie",
-                        "role": "Stagiaire FinOps",
-                        "location": "Tunis",
-                        "start_date": "06/2026",
-                        "end_date": "08/2026",
-                        "description": "Plateforme FinOps autonome multi-agents pour la détection d'anomalies de coûts AWS, prévisions et recommandations via Flask et Angular.",
-                        "technologies": ["AWS", "Python", "Angular", "Docker", "LangGraph"],
-                    },
-                    {
-                        "company": "EY Tunisie",
-                        "role": "Stagiaire AI & DATA",
-                        "location": "Tunis",
-                        "start_date": "08/2026",
-                        "end_date": "09/2026",
-                        "description": "Modélisation de graphes de réseaux et création de tableaux de bord analytiques avec Python, NetworkX et PowerBI.",
-                        "technologies": ["Python", "NetworkX", "PowerBI"],
-                    },
-                    {
-                        "company": "Capgemini Tunisie",
-                        "role": "Stagiaire DevOps",
-                        "location": "Tunis",
-                        "start_date": "06/2025",
-                        "end_date": "07/2025",
-                        "description": "Mise en œuvre et automatisation de pipelines d'intégration et déploiement continus (CI/CD) avec Jenkins.",
-                        "technologies": ["Jenkins", "CI/CD", "Git"],
-                    },
-                ]
-
-        if not selected_projects:
-            if lang == "en":
-                selected_projects = [
-                    {
-                        "title": "FinOps Agent — Autonomous Multi-Agent AWS Cost Intelligence",
-                        "role": "Lead Engineer",
-                        "url": "https://www.louaycodes.tn",
-                        "description": "Autonomous multi-agent platform for AWS cost monitoring, anomaly detection with Groq LLM, and forecasting.",
-                        "technologies": ["AWS", "Python", "LangGraph", "ChromaDB", "Angular"],
-                    },
-                    {
-                        "title": "Self-Hosted CI/CD Pipeline & Observability Stack",
-                        "role": "DevOps Engineer",
-                        "url": "https://www.louaycodes.tn",
-                        "description": "Automated Jenkins CI/CD pipeline with SonarQube, Docker, Kubernetes, and Prometheus/Grafana.",
-                        "technologies": ["Jenkins", "Kubernetes", "Docker", "Prometheus", "Grafana"],
-                    },
-                    {
-                        "title": "Skill Sphere — AI Technical Interview Simulator",
-                        "role": "Fullstack Developer",
-                        "url": "https://www.louaycodes.tn",
-                        "description": "Technical interview simulator with Groq AI API, real-time analytics, and personalized guidance.",
-                        "technologies": ["NextJS", "PostgreSQL", "Grok"],
-                    },
-                ]
-            else:
-                selected_projects = [
-                    {
-                        "title": "FinOps Agent — Système multi-agents autonome pour coûts AWS",
-                        "role": "Lead Développeur",
-                        "url": "https://www.louaycodes.tn",
-                        "description": "Plateforme multi-agents orchestrée par LangGraph pour la découverte, prévision et réduction des coûts AWS.",
-                        "technologies": ["AWS", "Python", "LangGraph", "ChromaDB", "Angular"],
-                    },
-                    {
-                        "title": "Pipeline CI/CD auto-hébergé & Observabilité",
-                        "role": "Ingénieur DevOps",
-                        "url": "https://www.louaycodes.tn",
-                        "description": "Pipeline Jenkins complet avec SonarQube, conteneurisation Docker, déploiement Kubernetes et monitoring Grafana.",
-                        "technologies": ["Jenkins", "Kubernetes", "Docker", "Prometheus", "Grafana"],
-                    },
-                    {
-                        "title": "Skill Sphere — Simulateur d'entretien technique IA",
-                        "role": "Développeur Fullstack",
-                        "url": "https://www.louaycodes.tn",
-                        "description": "Simulateur d'entretien technique avec l'API Grok AI, analytics en temps réel et conseils personnalisés.",
-                        "technologies": ["NextJS", "PostgreSQL", "Grok"],
-                    },
-                ]
-
         # 6. Compétences Techniques organisées par catégories
         categorized_skills = cls._build_categorized_skills(
             profile=profile,
@@ -660,28 +510,30 @@ class CVGeneratorService:
         is_en = language == "en"
 
         # 1. Barre de contact sobre avec portfolio
-        portfolio_url = profile.website_url or "https://www.louaycodes.tn"
-        if not portfolio_url.startswith("http"):
-            portfolio_url = f"https://{portfolio_url}"
-
-        portfolio_label = "Portfolio: www.louaycodes.tn" if is_en else "Portfolio : www.louaycodes.tn"
-
-        contact_items = [
-            f'<a href="mailto:{html.escape(profile.email)}">{html.escape(profile.email)}</a>'
-        ]
+        contact_items = []
+        if profile.email:
+            contact_items.append(f'<a href="mailto:{html.escape(profile.email)}">{html.escape(profile.email)}</a>')
         if profile.phone:
             contact_items.append(html.escape(profile.phone))
         if profile.location:
             contact_items.append(html.escape(profile.location))
 
-        contact_items.append(
-            f'<a href="{html.escape(portfolio_url)}" target="_blank" class="portfolio-link">{html.escape(portfolio_label)}</a>'
-        )
+        if profile.website_url:
+            portfolio_url = profile.website_url
+            if not portfolio_url.startswith("http"):
+                portfolio_url = f"https://{portfolio_url}"
+            clean_domain = re.sub(r"^https?://(www\.)?", "", portfolio_url).rstrip("/")
+            portfolio_label = f"Portfolio: {clean_domain}" if is_en else f"Portfolio : {clean_domain}"
+            contact_items.append(
+                f'<a href="{html.escape(portfolio_url)}" target="_blank" class="portfolio-link">{html.escape(portfolio_label)}</a>'
+            )
 
         if profile.linkedin_url:
-            contact_items.append(f'<a href="{html.escape(profile.linkedin_url)}" target="_blank">LinkedIn</a>')
+            clean_linkedin = profile.linkedin_url if profile.linkedin_url.startswith("http") else f"https://{profile.linkedin_url}"
+            contact_items.append(f'<a href="{html.escape(clean_linkedin)}" target="_blank">LinkedIn</a>')
         if profile.github_url:
-            contact_items.append(f'<a href="{html.escape(profile.github_url)}" target="_blank">GitHub</a>')
+            clean_github = profile.github_url if profile.github_url.startswith("http") else f"https://{profile.github_url}"
+            contact_items.append(f'<a href="{html.escape(clean_github)}" target="_blank">GitHub</a>')
 
         contact_bar = " &bull; ".join(contact_items)
 
@@ -811,69 +663,47 @@ class CVGeneratorService:
                 </div>
                 """)
             extracurricular_items = "".join(extra_rendered)
-        elif is_en:
-            extracurricular_items = """
-            <div class="item">
-                <div class="item-header">
-                    <span class="item-role">Enactus EMC</span> — 
-                    <span class="item-company">Project Department</span>
-                    <span class="item-date">2022 – 2023</span>
-                </div>
-                <div class="item-desc">Contribution to social entrepreneurship and community-impact projects; project planning and team coordination.</div>
-            </div>
-            <div class="item">
-                <div class="item-header">
-                    <span class="item-role">Lycée Pilote Bizerte Youth Club</span> — 
-                    <span class="item-company">Communication Director</span>
-                    <span class="item-date">2018 – 2019</span>
-                </div>
-                <div class="item-desc">Managed the club's media strategy and communication plans; oversaw the media coverage and promotion of club events; animated and grew the club's online community.</div>
-            </div>
+            extracurricular_html = f"""
+            <section class="section">
+                <h2 class="section-title">{title_extracurricular}</h2>
+                {extracurricular_items}
+            </section>
             """
         else:
-            extracurricular_items = """
-            <div class="item">
-                <div class="item-header">
-                    <span class="item-role">Enactus EMC</span> — 
-                    <span class="item-company">Département Projets</span>
-                    <span class="item-date">2022 – 2023</span>
-                </div>
-                <div class="item-desc">Contribution à des projets d'entrepreneuriat social et d'impact communautaire ; planification de projets et coordination d'équipe.</div>
-            </div>
-            <div class="item">
-                <div class="item-header">
-                    <span class="item-role">Lycée Pilote Bizerte Youth Club</span> — 
-                    <span class="item-company">Directeur de la Communication</span>
-                    <span class="item-date">2018 – 2019</span>
-                </div>
-                <div class="item-desc">Gestion de la stratégie média et des plans de communication ; supervision de la couverture médiatique et de la promotion des événements du club ; animation et développement de la communauté en ligne.</div>
-            </div>
-            """
-
-        extracurricular_html = f"""
-        <section class="section">
-            <h2 class="section-title">{title_extracurricular}</h2>
-            {extracurricular_items}
-        </section>
-        """
+            extracurricular_html = ""
 
         # 9. Langues
         if profile.languages:
             items_l = []
             for lang_obj in profile.languages:
-                items_l.append(f"<strong>{html.escape(lang_obj.name)} :</strong> {html.escape(lang_obj.level)}")
+                name_val = lang_obj.name
+                level_val = lang_obj.level
+                if is_en:
+                    name_map = {"arabe": "Arabic", "français": "French", "francais": "French", "anglais": "English"}
+                    level_map = {
+                        "langue maternelle": "Native",
+                        "bilingue": "Bilingual",
+                        "courant": "Fluent",
+                        "technique": "Technical",
+                        "professionnel": "Professional",
+                        "intermédiaire": "Intermediate",
+                        "notions": "Basic",
+                    }
+                    name_val = name_map.get(name_val.lower().strip(), name_val)
+                    level_val = level_map.get(level_val.lower().strip(), level_val)
+                    sep = ": "
+                else:
+                    sep = " : "
+                items_l.append(f"<strong>{html.escape(name_val)}{sep}</strong>{html.escape(level_val)}")
             lang_content = " &bull; ".join(items_l)
-        elif is_en:
-            lang_content = "<strong>Arabic:</strong> Native &bull; <strong>French:</strong> Fluent &bull; <strong>English:</strong> Technical"
+            languages_html = f"""
+            <section class="section">
+                <h2 class="section-title">{title_languages}</h2>
+                <div class="languages-content">{lang_content}</div>
+            </section>
+            """
         else:
-            lang_content = "<strong>Arabe :</strong> Langue maternelle &bull; <strong>Français :</strong> Courant &bull; <strong>Anglais :</strong> Technique"
-
-        languages_html = f"""
-        <section class="section">
-            <h2 class="section-title">{title_languages}</h2>
-            <div class="languages-content">{lang_content}</div>
-        </section>
-        """
+            languages_html = ""
 
         return f"""<!DOCTYPE html>
 <html lang="{language}">
@@ -1053,13 +883,6 @@ def render_custom_cv_html(data: CustomCVData) -> str:
     is_en = data.language.lower().strip() == "en"
 
     # Contact & Portfolio
-    portfolio_url = data.portfolio_url or "https://www.louaycodes.tn"
-    if portfolio_url and not portfolio_url.startswith("http"):
-        portfolio_url = f"https://{portfolio_url}"
-    
-    clean_domain = re.sub(r"^https?://(www\.)?", "", portfolio_url).rstrip("/")
-    portfolio_label = f"Portfolio: {clean_domain}" if is_en else f"Portfolio : {clean_domain}"
-
     contact_items = []
     if data.email:
         contact_items.append(f'<a href="mailto:{html.escape(data.email)}">{html.escape(data.email)}</a>')
@@ -1068,6 +891,11 @@ def render_custom_cv_html(data: CustomCVData) -> str:
     if data.location:
         contact_items.append(html.escape(data.location))
     if data.portfolio_url:
+        portfolio_url = data.portfolio_url
+        if not portfolio_url.startswith("http"):
+            portfolio_url = f"https://{portfolio_url}"
+        clean_domain = re.sub(r"^https?://(www\.)?", "", portfolio_url).rstrip("/")
+        portfolio_label = f"Portfolio: {clean_domain}" if is_en else f"Portfolio : {clean_domain}"
         contact_items.append(
             f'<a href="{html.escape(portfolio_url)}" target="_blank" class="portfolio-link">{html.escape(portfolio_label)}</a>'
         )
@@ -1559,37 +1387,6 @@ class CVParserService:
             if current_exp:
                 experiences.append(cls._build_experience_from_lines(current_exp["lines"]))
 
-        if not experiences:
-            experiences = [
-                ParsedExperience(
-                    company="Capgemini Tunisie",
-                    role="Stagiaire FinOps",
-                    location="Tunis",
-                    start_date="06/2026",
-                    end_date="08/2026",
-                    description="Plateforme FinOps autonome multi-agents pour la détection d'anomalies de coûts AWS, prévisions et recommandations.",
-                    technologies=["AWS", "Python", "Angular", "Docker", "LangGraph"],
-                ),
-                ParsedExperience(
-                    company="EY Tunisie",
-                    role="Stagiaire AI & DATA",
-                    location="Tunis",
-                    start_date="08/2026",
-                    end_date="09/2026",
-                    description="Modélisation de graphes de réseaux et création de tableaux de bord analytiques.",
-                    technologies=["Python", "NetworkX", "PowerBI"],
-                ),
-                ParsedExperience(
-                    company="Capgemini Tunisie",
-                    role="Stagiaire DevOps",
-                    location="Tunis",
-                    start_date="06/2025",
-                    end_date="07/2025",
-                    description="Mise en œuvre et automatisation de pipelines d'intégration et déploiement continus (CI/CD) avec Jenkins.",
-                    technologies=["Jenkins", "CI/CD", "Git"],
-                ),
-            ]
-
         # 9. Projets sélectionnés
         projects: list[ParsedProject] = []
         proj_lines = sections["projects"]
@@ -1607,31 +1404,6 @@ class CVParserService:
             if current_proj:
                 projects.append(cls._build_project_from_lines(current_proj["lines"]))
 
-        if not projects:
-            projects = [
-                ParsedProject(
-                    title="FinOps Agent — Système multi-agents autonome",
-                    role="Lead Développeur",
-                    url="https://www.louaycodes.tn",
-                    description="Plateforme multi-agents orchestrée par LangGraph pour la découverte, prévision et réduction des coûts AWS.",
-                    technologies=["AWS", "Python", "LangGraph", "ChromaDB", "Angular"],
-                ),
-                ParsedProject(
-                    title="Pipeline CI/CD auto-hébergé & Observabilité",
-                    role="Ingénieur DevOps",
-                    url="https://www.louaycodes.tn",
-                    description="Pipeline Jenkins complet avec SonarQube, conteneurisation Docker, déploiement Kubernetes et monitoring Grafana.",
-                    technologies=["Jenkins", "Kubernetes", "Docker", "Prometheus", "Grafana"],
-                ),
-                ParsedProject(
-                    title="Skill Sphere — Simulateur d'entretien technique IA",
-                    role="Développeur Fullstack",
-                    url="https://www.louaycodes.tn",
-                    description="Simulateur d'entretien technique avec l'API Grok AI, analytics en temps réel et conseils personnalisés.",
-                    technologies=["NextJS", "PostgreSQL", "Grok"],
-                ),
-            ]
-
         # 10. Compétences Techniques (Organisées selon TAXONOMY_CATEGORIES)
         skills_text = " ".join(sections["skills"]) + " " + clean_text
         skills_text_lower = skills_text.lower()
@@ -1644,12 +1416,10 @@ class CVParserService:
             kw_list = cat_data["keywords"]
             cat_matches = []
             for kw in kw_list:
-                # Recherche du mot clé délimité
                 pattern = r"(?:\b|_)" + re.escape(kw) + r"(?:\b|_)"
                 if re.search(pattern, skills_text_lower):
                     if kw not in assigned_skills:
                         assigned_skills.add(kw)
-                        # Trouver la casse originale ou normalisée
                         display_name = kw.title() if len(kw) > 3 else kw.upper()
                         if kw == "aws": display_name = "AWS"
                         elif kw == "gcp": display_name = "GCP"
@@ -1662,16 +1432,6 @@ class CVParserService:
             if cat_matches:
                 categorized_skills.append(ParsedSkillCategory(title=cat_title, skills=cat_matches))
 
-        if not categorized_skills:
-            categorized_skills = [
-                ParsedSkillCategory(title="Cloud & DevOps", skills=["Docker", "Kubernetes", "AWS", "Ansible", "CI/CD", "Prometheus", "Grafana"]),
-                ParsedSkillCategory(title="Réseaux & Systèmes", skills=["TCP/IP", "Linux", "Cisco", "Routing", "DNS", "VPN"]),
-                ParsedSkillCategory(title="Backend", skills=["Python", "FastAPI", "Spring Boot", "REST API", "PostgreSQL"]),
-                ParsedSkillCategory(title="Frontend", skills=["Next.js", "Angular", "TypeScript", "Tailwind CSS"]),
-                ParsedSkillCategory(title="Langages & Programmation", skills=["Python", "Java", "C++", "SQL", "Bash"]),
-                ParsedSkillCategory(title="Outils & Certifications", skills=["Git", "Jenkins", "SonarQube", "Docker Hub", "Agile/Scrum"]),
-            ]
-
         # 11. Activités extra-professionnelles
         extracurricular: list[ParsedExtracurricular] = []
         extra_lines = sections["extracurricular"]
@@ -1682,28 +1442,9 @@ class CVParserService:
                 date="2022 – 2024",
                 description=" ".join(extra_lines[:4]),
             ))
-        else:
-            extracurricular = [
-                ParsedExtracurricular(
-                    organization="Enactus EMC",
-                    role="Département Projets",
-                    date="2022 – 2023",
-                    description="Contribution à des projets d'entrepreneuriat social et d'impact communautaire ; planification de projets et coordination d'équipe.",
-                ),
-                ParsedExtracurricular(
-                    organization="Lycée Pilote Bizerte Youth Club",
-                    role="Directeur de la Communication",
-                    date="2018 – 2019",
-                    description="Gestion de la stratégie média et des plans de communication ; supervision de la couverture médiatique et animation de la communauté en ligne.",
-                ),
-            ]
 
         # 12. Langues
-        languages = [
-            "Arabe : Langue maternelle",
-            "Français : Courant",
-            "Anglais : Technique",
-        ]
+        languages = []
         lang_lines = sections["languages"]
         if lang_lines:
             extracted_langs = []
@@ -1715,15 +1456,15 @@ class CVParserService:
                 languages = extracted_langs
 
         return CustomCVData(
-            full_name=full_name,
-            headline=headline,
-            email=email or "contact@louaycodes.tn",
-            phone=phone or "+216 28 898 908",
-            location="Tunis, Tunisie",
-            portfolio_url=portfolio_url or "https://www.louaycodes.tn",
-            linkedin_url=linkedin_url,
-            github_url=github_url,
-            summary=summary,
+            full_name=full_name or "",
+            headline=headline or "",
+            email=email or "",
+            phone=phone or "",
+            location="",
+            portfolio_url=portfolio_url or "",
+            linkedin_url=linkedin_url or "",
+            github_url=github_url or "",
+            summary=summary or "",
             educations=educations,
             experiences=experiences,
             projects=projects,
@@ -1813,23 +1554,18 @@ class CVParserService:
         return ParsedProject(
             title=title,
             role=role,
-            url="https://www.louaycodes.tn",
+            url="",
             description=body,
             technologies=technologies,
         )
 
     @classmethod
     def convert_profile_to_custom_cv(cls, profile: MasterProfile, language: str = "fr") -> CustomCVData:
-        """Convertit un MasterProfile souverain en structure CustomCVData éditable."""
+        """Convertit un MasterProfile souverain en structure CustomCVData éditable sans aucune donnée mockée."""
         is_en = language.lower().strip() == "en"
 
-        headline = profile.headline or (
-            "Cloud Architecture & DevOps Engineering Student" if is_en else "Élève-Ingénieur Architectures Cloud / DevOps"
-        )
-        summary = profile.bio or (
-            "Computer Engineering student specializing in Cloud & DevOps..." if is_en else
-            "Élève-ingénieur en informatique spécialisé en architectures Cloud & DevOps à l'ESPRIT. Solides compétences pratiques en virtualisation, conteneurisation et CI/CD."
-        )
+        headline = profile.headline or ""
+        summary = profile.bio or ""
 
         educations = []
         for edu in profile.educations:
@@ -1890,7 +1626,7 @@ class CVParserService:
             if cat_skills:
                 skills_categories.append(ParsedSkillCategory(title=title, skills=cat_skills))
 
-        # Activités extra-professionnelles
+        # Activités extra-professionnelles (strictement issues du profil)
         extracurricular = []
         if profile.extracurriculars:
             for extra in profile.extracurriculars:
@@ -1900,38 +1636,8 @@ class CVParserService:
                     date=extra.date,
                     description=extra.description,
                 ))
-        elif is_en:
-            extracurricular = [
-                ParsedExtracurricular(
-                    organization="Enactus EMC",
-                    role="Project Department",
-                    date="2022 – 2023",
-                    description="Contribution to social entrepreneurship and community-impact projects; project planning and team coordination.",
-                ),
-                ParsedExtracurricular(
-                    organization="Lycée Pilote Bizerte Youth Club",
-                    role="Communication Director",
-                    date="2018 – 2019",
-                    description="Managed the club's media strategy and communication plans; oversaw media coverage and community growth.",
-                ),
-            ]
-        else:
-            extracurricular = [
-                ParsedExtracurricular(
-                    organization="Enactus EMC",
-                    role="Département Projets",
-                    date="2022 – 2023",
-                    description="Contribution à des projets d'entrepreneuriat social et d'impact communautaire ; planification de projets et coordination d'équipe.",
-                ),
-                ParsedExtracurricular(
-                    organization="Lycée Pilote Bizerte Youth Club",
-                    role="Directeur de la Communication",
-                    date="2018 – 2019",
-                    description="Gestion de la stratégie média et des plans de communication ; supervision de la couverture médiatique et animation de la communauté.",
-                ),
-            ]
 
-        # Langues
+        # Langues (strictement issues du profil)
         languages = []
         if profile.languages:
             for lang in profile.languages:
@@ -1939,28 +1645,16 @@ class CVParserService:
                     sep = ": " if is_en else " : "
                     level_str = f"{sep}{lang.level}" if lang.level else ""
                     languages.append(f"{lang.name}{level_str}")
-        elif is_en:
-            languages = [
-                "Arabic: Native",
-                "French: Fluent",
-                "English: Technical",
-            ]
-        else:
-            languages = [
-                "Arabe : Langue maternelle",
-                "Français : Courant",
-                "Anglais : Technique",
-            ]
 
         return CustomCVData(
-            full_name=profile.full_name or "Louay Zorai",
+            full_name=profile.full_name or "",
             headline=headline,
-            email=profile.email or "contact@louaycodes.tn",
-            phone=profile.phone or "+216 28 898 908",
-            location=profile.location or "Tunis, Tunisie",
-            portfolio_url=profile.website_url or "https://www.louaycodes.tn",
-            linkedin_url=profile.linkedin_url or "https://linkedin.com/in/louay-zorai",
-            github_url=profile.github_url or "https://github.com/louayzorai",
+            email=profile.email or "",
+            phone=profile.phone or "",
+            location=profile.location or "",
+            portfolio_url=profile.website_url or "",
+            linkedin_url=profile.linkedin_url or "",
+            github_url=profile.github_url or "",
             summary=summary,
             educations=educations,
             experiences=experiences,
