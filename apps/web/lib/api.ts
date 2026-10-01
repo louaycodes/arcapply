@@ -707,6 +707,7 @@ export interface CoverLetter {
   content_markdown: string;
   cliche_score: number;
   banned_phrases_detected: string[];
+  thinking_plan?: string;
   language?: string;
   created_at: string;
   updated_at: string;

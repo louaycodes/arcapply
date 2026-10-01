@@ -93,7 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   if (!user) {
     return (
-      <AuthContext.Provider value={{ user, token, isLoading, login, logout }}>
+      <AuthContext.Provider value={{ user, token, isLoading, login, logout, register }}>
         <div className="min-h-screen w-full flex items-center justify-center bg-[#F7F3EC] p-4 font-sans selection:bg-orange-100">
           <LoginForm />
         </div>
@@ -102,7 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, logout, register }}>
       {children}
     </AuthContext.Provider>
   );
