@@ -382,12 +382,12 @@ export default function StudioCVPage() {
     newExp.className = "item";
     newExp.innerHTML = `
       <div class="item-header">
-        <span class="item-role">Stagiaire Ingénieur</span> — 
-        <span class="item-company">Nouvelle Entreprise</span>
-        <span class="item-date">06/2026 – 08/2026</span>
+        <span class="item-role">Poste / Rôle</span> — 
+        <span class="item-company">Entreprise</span>
+        <span class="item-date">MM/AAAA – MM/AAAA</span>
       </div>
-      <div class="item-desc">Description concrète de votre mission, réalisations et valeur délivrée.</div>
-      <div class="item-tech"><em>Technologies :</em> Python, Docker, Kubernetes</div>
+      <div class="item-desc">Description de la mission, réalisations et valeur délivrée.</div>
+      <div class="item-tech"><em>Technologies :</em> Outils, Frameworks</div>
     `;
 
     if (expSection) {
@@ -407,7 +407,7 @@ export default function StudioCVPage() {
     }
     setHasUnsavedEdits(true);
     currentHtmlRef.current = doc.documentElement.outerHTML;
-    showNotification("info", "Nouveau stage inséré directement sur la page. Cliquez pour modifier.");
+    showNotification("info", "Nouvelle expérience insérée. Cliquez pour modifier.");
   };
 
   const insertEducationBlock = () => {
@@ -424,11 +424,11 @@ export default function StudioCVPage() {
     newEdu.className = "item";
     newEdu.innerHTML = `
       <div class="item-header">
-        <span class="item-role">Diplôme National d'Ingénieur</span> — 
-        <span class="item-company">ESPRIT</span>
-        <span class="item-date">2022 – 2027</span>
+        <span class="item-role">Diplôme</span> — 
+        <span class="item-company">Établissement / École</span>
+        <span class="item-date">Année – Année</span>
       </div>
-      <div class="item-desc">Spécialisation Systèmes Distribués, Cloud et DevOps.</div>
+      <div class="item-desc">Domaine d'études ou spécialité.</div>
     `;
 
     if (eduSection) {
@@ -440,7 +440,7 @@ export default function StudioCVPage() {
     newEdu.scrollIntoView({ behavior: "smooth", block: "center" });
     setHasUnsavedEdits(true);
     currentHtmlRef.current = doc.documentElement.outerHTML;
-    showNotification("info", "Nouvelle formation insérée directement sur la page.");
+    showNotification("info", "Nouvelle formation insérée. Cliquez pour modifier.");
   };
 
   const insertProjectBlock = () => {
@@ -457,10 +457,10 @@ export default function StudioCVPage() {
     newProj.className = "item";
     newProj.innerHTML = `
       <div class="item-header">
-        <span class="item-role">Nouveau Projet d'Ingénierie</span> (Lead Développeur)
+        <span class="item-role">Titre du Projet</span> (Rôle)
       </div>
-      <div class="item-desc">Plateforme ou système développé avec architecture cloud et pipeline CI/CD automatisé.</div>
-      <div class="item-tech"><em>Technologies :</em> Next.js, FastAPI, Docker</div>
+      <div class="item-desc">Description de la réalisation et valeur apportée.</div>
+      <div class="item-tech"><em>Technologies :</em> Technologies utilisées</div>
     `;
 
     if (projSection) {
@@ -472,7 +472,7 @@ export default function StudioCVPage() {
     newProj.scrollIntoView({ behavior: "smooth", block: "center" });
     setHasUnsavedEdits(true);
     currentHtmlRef.current = doc.documentElement.outerHTML;
-    showNotification("info", "Nouveau projet inséré directement sur la page.");
+    showNotification("info", "Nouveau projet inséré. Cliquez pour modifier.");
   };
 
   const insertSkillCategory = () => {
@@ -483,8 +483,8 @@ export default function StudioCVPage() {
     const newSkillRow = doc.createElement("div");
     newSkillRow.className = "skill-row";
     newSkillRow.innerHTML = `
-      <span class="skill-cat">Nouvelle Catégorie :</span>
-      <span class="skill-list">Outil 1, Outil 2, Outil 3</span>
+      <span class="skill-cat">Catégorie :</span>
+      <span class="skill-list">Compétence 1, Compétence 2</span>
     `;
 
     if (skillsGrid) {
@@ -517,10 +517,10 @@ export default function StudioCVPage() {
     newExtra.className = "item";
     newExtra.innerHTML = `
       <div class="item-header">
-        <span class="item-role">Club ou Association</span> — Responsable Projets
-        <span class="item-date">2025 – 2026</span>
+        <span class="item-role">Club ou Association</span> — Rôle
+        <span class="item-date">Année</span>
       </div>
-      <div class="item-desc">Organisation d'événements, hackathons ou engagement associatif.</div>
+      <div class="item-desc">Activités, engagements et réalisations.</div>
     `;
 
     extraSection.appendChild(newExtra);

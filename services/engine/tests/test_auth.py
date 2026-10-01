@@ -79,7 +79,8 @@ def test_account_isolation_profile_and_jobs():
     # 2. Verify profiles are distinct
     louay_prof = client.get("/api/profile", headers={"Authorization": f"Bearer {louay_token}"}).json()
     chaima_prof = client.get("/api/profile", headers={"Authorization": f"Bearer {chaima_token}"}).json()
-    assert chaima_prof["full_name"] == "Chaima"
+    assert chaima_prof["user_id"] == "chaima"
+    assert louay_prof["user_id"] == "louay"
 
     # 3. Update Chaima's headline
     client.put(

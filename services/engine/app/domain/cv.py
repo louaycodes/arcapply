@@ -1053,11 +1053,20 @@ def render_custom_cv_html(data: CustomCVData) -> str:
     else:
         languages_html = ""
 
+    has_header = bool(data.full_name or data.headline or contact_bar)
+    header_html = f"""
+        <header>
+            <h1>{html.escape(data.full_name)}</h1>
+            {f'<div class="headline">{html.escape(data.headline)}</div>' if data.headline else ''}
+            {f'<div class="contact-bar">{contact_bar}</div>' if contact_bar else ''}
+        </header>
+    """ if has_header else ""
+
     return f"""<!DOCTYPE html>
 <html lang="{data.language}">
 <head>
     <meta charset="UTF-8">
-    <title>CV {html.escape(data.full_name)}</title>
+    <title>CV {html.escape(data.full_name or 'Candidat')}</title>
     <style>
         @page {{
             size: A4 portrait;
@@ -1203,11 +1212,7 @@ def render_custom_cv_html(data: CustomCVData) -> str:
 </head>
 <body>
     <div class="cv-container">
-        <header>
-            <h1>{html.escape(data.full_name)}</h1>
-            <div class="headline">{html.escape(data.headline)}</div>
-            <div class="contact-bar">{contact_bar}</div>
-        </header>
+        {header_html}
 
         {summary_html}
         {edu_html}
@@ -1317,10 +1322,11 @@ class CVParserService:
 
         for line in lines:
             matched_sec = None
-            for sec_name, pattern in section_patterns:
-                if re.match(pattern, line, re.IGNORECASE):
-                    matched_sec = sec_name
-                    break
+            if len(line) <= 55 and not re.search(r"[-–—]\s*(?:20\d{2}|présent|present)", line, re.IGNORECASE):
+                for sec_name, pattern in section_patterns:
+                    if re.match(pattern, line, re.IGNORECASE):
+                        matched_sec = sec_name
+                        break
             if matched_sec:
                 current_section = matched_sec
             else:
@@ -1354,18 +1360,6 @@ class CVParserService:
                     current_edu = {"lines": [el]}
             if current_edu:
                 educations.append(cls._build_education_from_lines(current_edu["lines"]))
-
-        if not educations:
-            educations = [
-                ParsedEducation(
-                    school="ESPRIT",
-                    degree="Diplôme National d'Ingénieur en informatique",
-                    field_of_study="Architectures Cloud & Systèmes Distribués",
-                    start_date="2022",
-                    end_date="2027",
-                    description="Formation d'ingénieur d'État d'excellence en génie informatique et cloud-native.",
-                )
-            ]
 
         # 8. Expériences professionnelles (Stages)
         experiences: list[ParsedExperience] = []
@@ -1491,14 +1485,15 @@ class CVParserService:
         desc = " ".join(lines[1:]) if len(lines) > 1 else ""
         
         # School / Degree extraction
-        parts = [p.strip() for p in re.split(r"[—–\-|]", header) if p.strip()]
-        degree = parts[0] if parts else "Diplôme d'Ingénieur"
-        school = parts[1] if len(parts) > 1 else "ESPRIT"
+        clean_header = re.sub(r"\(20\d{2}.*?\)", "", header).strip()
+        parts = [p.strip() for p in re.split(r"[—–\-|]", clean_header) if p.strip()]
+        degree = parts[0] if parts else ""
+        school = parts[1] if len(parts) > 1 else ""
 
         return ParsedEducation(
             school=school,
             degree=degree,
-            field_of_study=desc or "Informatique",
+            field_of_study=desc or "",
             start_date=start_date,
             end_date=end_date,
             description=desc,
@@ -1516,8 +1511,8 @@ class CVParserService:
         end_date = dates[1].strip() if len(dates) > 1 else ""
 
         parts = [p.strip() for p in re.split(r"[—–\-|]| chez ", clean_header) if p.strip()]
-        role = parts[0] if parts else "Stagiaire"
-        company = parts[1] if len(parts) > 1 else "Entreprise"
+        role = parts[0] if parts else ""
+        company = parts[1] if len(parts) > 1 else ""
 
         body = " ".join(lines[1:]) if len(lines) > 1 else ""
         
@@ -1530,7 +1525,7 @@ class CVParserService:
         return ParsedExperience(
             company=company,
             role=role,
-            location="Tunis",
+            location="",
             start_date=start_date,
             end_date=end_date,
             description=body,
@@ -1542,8 +1537,8 @@ class CVParserService:
         header = lines[0] if lines else ""
         clean_title = re.sub(r"^[•\*\-\s]+", "", header).strip()
         parts = [p.strip() for p in re.split(r"[—–\-|:]", clean_title) if p.strip()]
-        title = parts[0] if parts else "Projet"
-        role = parts[1] if len(parts) > 1 and len(parts[1]) < 30 else "Développeur"
+        title = parts[0] if parts else ""
+        role = parts[1] if len(parts) > 1 and len(parts[1]) < 30 else ""
 
         body = " ".join(lines[1:]) if len(lines) > 1 else (parts[1] if len(parts) > 1 and len(parts[1]) >= 30 else "")
         technologies = []

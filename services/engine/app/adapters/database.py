@@ -480,7 +480,6 @@ def init_db(engine=None) -> None:
         engine = get_engine()
     SQLModel.metadata.create_all(engine)
     _migrate_db(engine)
-    seed_initial_users(engine)
 
 
 def get_session() -> Generator[Session, None, None]:

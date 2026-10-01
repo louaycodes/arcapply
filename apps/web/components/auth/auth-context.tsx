@@ -46,11 +46,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             localStorage.setItem("arcapply_user", JSON.stringify(updatedUser));
           })
           .catch(() => {
-            // Keep local user if network glitch or clear if expired
+            localStorage.removeItem("arcapply_token");
+            localStorage.removeItem("arcapply_user");
+            setToken(null);
+            setUser(null);
           });
       } catch (e) {
         localStorage.removeItem("arcapply_token");
         localStorage.removeItem("arcapply_user");
+        setToken(null);
+        setUser(null);
       }
     }
     setIsLoading(false);

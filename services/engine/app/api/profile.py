@@ -31,7 +31,7 @@ def _get_or_create_profile(session: Session, username: str = "louay") -> MasterP
             profile = MasterProfile(
                 id="default-profile",
                 user_id="louay",
-                full_name="Louay",
+                full_name="",
                 email="",
                 is_complete=False,
             )
@@ -52,7 +52,7 @@ def _get_or_create_profile(session: Session, username: str = "louay") -> MasterP
         profile = MasterProfile(
             id=f"profile-{uname}",
             user_id=uname,
-            full_name=uname.capitalize(),
+            full_name="",
             email="",
             is_complete=False,
         )
