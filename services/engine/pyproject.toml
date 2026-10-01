@@ -16,6 +16,8 @@ dependencies = [
     "groq>=1.7.0",
     "python-multipart>=0.0.32",
     "pypdf>=6.19.0",
+    "langgraph>=1.2.12",
+    "trafilatura>=2.2.0",
 ]
 
 [dependency-groups]

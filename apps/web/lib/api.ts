@@ -892,6 +892,22 @@ export async function loginUser(username: string, password: string): Promise<Log
   return res.json();
 }
 
+export async function registerUser(email: string, password: string, fullName?: string): Promise<LoginResponse> {
+  const res = await authFetch(`${API_BASE_URL}/api/auth/register`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, password, full_name: fullName }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const message = errorData.detail?.message || errorData.detail || "Échec de l'inscription";
+    throw new Error(message);
+  }
+  return res.json();
+}
+
 export async function fetchCurrentUser(token: string): Promise<User> {
   const res = await authFetch(`${API_BASE_URL}/api/auth/me`, {
     headers: {

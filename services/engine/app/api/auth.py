@@ -3,10 +3,68 @@ from sqlmodel import Session, select
 from typing import Optional
 
 from app.adapters.database import get_session
-from app.domain.auth import verify_password
-from app.domain.models import User, UserLoginRequest, UserLoginResponse, UserRead
+from app.domain.auth import hash_password, verify_password
+from app.domain.models import (
+    MasterProfile,
+    User,
+    UserLoginRequest,
+    UserLoginResponse,
+    UserRead,
+    UserRegisterRequest,
+)
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+
+
+@router.post("/register", response_model=UserLoginResponse)
+def register(payload: UserRegisterRequest, session: Session = Depends(get_session)):
+    email = payload.email.strip().lower()
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="Adresse email invalide")
+    if not payload.password or len(payload.password) < 4:
+        raise HTTPException(status_code=400, detail="Le mot de passe doit comporter au moins 4 caractères")
+
+    existing_user = session.exec(select(User).where(User.username == email)).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Un compte existe déjà avec cette adresse email")
+
+    full_name = payload.full_name.strip() if payload.full_name else email.split("@")[0].capitalize()
+    new_user = User(
+        username=email,
+        full_name=full_name,
+        role="user",
+        password_hash=hash_password(payload.password),
+    )
+    session.add(new_user)
+    session.commit()
+    session.refresh(new_user)
+
+    # Initialize isolated MasterProfile for new user
+    profile = session.exec(select(MasterProfile).where(MasterProfile.user_id == email)).first()
+    if not profile:
+        profile = MasterProfile(
+            id=f"profile-{new_user.id}",
+            user_id=email,
+            full_name=full_name,
+            email=email,
+            headline="",
+            bio="",
+            search_mode="PFE",
+            is_complete=False,
+        )
+        session.add(profile)
+        session.commit()
+
+    token = f"arcapply-token-{new_user.id}"
+    return UserLoginResponse(
+        token=token,
+        user=UserRead(
+            id=new_user.id,
+            username=new_user.username,
+            full_name=new_user.full_name,
+            role=new_user.role,
+        ),
+    )
 
 
 @router.post("/login", response_model=UserLoginResponse)

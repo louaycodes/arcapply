@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { User, loginUser, fetchCurrentUser } from "@/lib/api";
+import { User, loginUser, registerUser, fetchCurrentUser } from "@/lib/api";
 import { Loader2 } from "lucide-react";
 import { LoginForm } from "@/components/auth/login-form";
 
@@ -10,6 +10,7 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
+  register: (email: string, password: string, fullName?: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -57,6 +58,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (uname: string, pwd: string) => {
     const response = await loginUser(uname, pwd);
+    setToken(response.token);
+    setUser(response.user);
+    localStorage.setItem("arcapply_token", response.token);
+    localStorage.setItem("arcapply_user", JSON.stringify(response.user));
+  };
+
+  const register = async (email: string, pwd: string, fullName?: string) => {
+    const response = await registerUser(email, pwd, fullName);
     setToken(response.token);
     setUser(response.user);
     localStorage.setItem("arcapply_token", response.token);

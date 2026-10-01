@@ -662,3 +662,94 @@ class UserLoginResponse(SQLModel):
     token: str
     user: UserRead
 
+
+class UserRegisterRequest(SQLModel):
+    email: str
+    password: str
+    full_name: Optional[str] = None
+
+
+# ============================================================================
+# Agent Playbook Rules & Deep Recon Models
+# ============================================================================
+
+class AgentPlaybookRuleBase(SQLModel):
+    title: str = Field(default="")
+    condition_trigger: str = Field(default="")
+    action_instruction: str = Field(default="")
+    is_active: bool = Field(default=True)
+    category: str = Field(default="custom")
+
+
+class AgentPlaybookRule(AgentPlaybookRuleBase, table=True):
+    __tablename__ = "agent_playbook_rules"
+    id: str = Field(default_factory=generate_uuid, primary_key=True)
+    user_id: str = Field(default="louay", index=True)
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+
+
+class AgentPlaybookRuleCreate(SQLModel):
+    title: str
+    condition_trigger: str
+    action_instruction: str
+    category: Optional[str] = "custom"
+    is_active: Optional[bool] = True
+
+
+class AgentPlaybookRuleUpdate(SQLModel):
+    title: Optional[str] = None
+    condition_trigger: Optional[str] = None
+    action_instruction: Optional[str] = None
+    category: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class ReconDossierBase(SQLModel):
+    job_id: str = Field(index=True)
+    user_id: str = Field(default="louay", index=True)
+    external_url: Optional[str] = Field(default=None)
+    full_description: str = Field(default="")
+    company_name: str = Field(default="")
+    company_website: Optional[str] = Field(default=None)
+    company_mission: Optional[str] = Field(default=None)
+    company_culture: Optional[str] = Field(default=None)
+    tech_stack_detected_raw: str = Field(default="[]")
+    investigation_notes: Optional[str] = Field(default=None)
+    status: str = Field(default="PENDING", index=True)
+
+
+class ReconDossier(ReconDossierBase, table=True):
+    __tablename__ = "recon_dossiers"
+    id: str = Field(default_factory=generate_uuid, primary_key=True)
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+
+    @property
+    def tech_stack_detected(self) -> list[str]:
+        try:
+            return json.loads(self.tech_stack_detected_raw or "[]")
+        except Exception:
+            return []
+
+    @tech_stack_detected.setter
+    def tech_stack_detected(self, values: list[str]) -> None:
+        self.tech_stack_detected_raw = json.dumps(values or [], ensure_ascii=False)
+
+
+class ReconDossierRead(SQLModel):
+    id: str
+    job_id: str
+    user_id: str
+    external_url: Optional[str] = None
+    full_description: str = ""
+    company_name: str = ""
+    company_website: Optional[str] = None
+    company_mission: Optional[str] = None
+    company_culture: Optional[str] = None
+    tech_stack_detected: list[str] = []
+    investigation_notes: Optional[str] = None
+    status: str = "PENDING"
+    created_at: datetime
+    updated_at: datetime
+
