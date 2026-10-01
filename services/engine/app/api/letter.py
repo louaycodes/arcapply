@@ -83,6 +83,7 @@ def generate_cover_letter(
         existing_letter.content_markdown = new_letter.content_markdown
         existing_letter.cliche_score = new_letter.cliche_score
         existing_letter.banned_phrases_detected_raw = new_letter.banned_phrases_detected_raw
+        existing_letter.thinking_plan = new_letter.thinking_plan
         existing_letter.target_role = new_letter.target_role
         existing_letter.company_name = new_letter.company_name
         existing_letter.language = normalized_lang
@@ -106,6 +107,7 @@ def generate_cover_letter(
         content_markdown=letter.content_markdown,
         cliche_score=letter.cliche_score,
         banned_phrases_detected=letter.banned_phrases_detected,
+        thinking_plan=letter.thinking_plan,
         language=letter.language,
         created_at=letter.created_at,
         updated_at=letter.updated_at,
@@ -148,6 +150,7 @@ def get_cover_letter(
         content_markdown=letter.content_markdown,
         cliche_score=letter.cliche_score,
         banned_phrases_detected=letter.banned_phrases_detected,
+        thinking_plan=letter.thinking_plan,
         language=letter.language,
         created_at=letter.created_at,
         updated_at=letter.updated_at,
@@ -201,6 +204,7 @@ def update_cover_letter(
         content_markdown=letter.content_markdown,
         cliche_score=letter.cliche_score,
         banned_phrases_detected=letter.banned_phrases_detected,
+        thinking_plan=letter.thinking_plan,
         created_at=letter.created_at,
         updated_at=letter.updated_at,
     )

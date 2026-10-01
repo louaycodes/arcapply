@@ -470,6 +470,7 @@ class CoverLetterBase(SQLModel):
     content_markdown: str = Field(default="")
     cliche_score: int = Field(default=0)
     banned_phrases_detected_raw: str = Field(default="[]")
+    thinking_plan: Optional[str] = Field(default=None)
     language: str = Field(default="fr", index=True)
     user_id: str = Field(default="louay", index=True)
 
@@ -498,6 +499,7 @@ class CoverLetterRead(SQLModel):
     content_markdown: str
     cliche_score: int
     banned_phrases_detected: list[str]
+    thinking_plan: Optional[str] = None
     language: str = "fr"
     created_at: datetime
     updated_at: datetime

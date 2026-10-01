@@ -203,6 +203,12 @@ def _migrate_db(engine) -> None:
         except Exception:
             pass
 
+        try:
+            conn.execute(text("ALTER TABLE cover_letters ADD COLUMN thinking_plan TEXT"))
+            conn.commit()
+        except Exception:
+            pass
+
         # Purge sélective et idempotente des offres existantes pour l'architecture Deep Recon (profils et users 100% préservés)
         try:
             conn.execute(text("""
