@@ -396,3 +396,122 @@ def test_letter_ai_truncation_triggers_deterministic_fallback(monkeypatch):
         assert letter.content_markdown.strip().endswith(profile.full_name)
         assert "tronqué au milieu de la phrase et les" not in letter.content_markdown
 
+
+def test_render_cover_letter_html_and_txt():
+    """Vérifie la génération HTML et TXT de la lettre de motivation."""
+    profile = MasterProfile(
+        id="prof-render-1",
+        full_name="Louay Zorai",
+        email="louay@arcapply.dev",
+        phone="+33 6 12 34 56 78",
+        location="Paris, France",
+        headline="Élève-Ingénieur Cloud & IA",
+        is_complete=True,
+    )
+    job = JobOffer(
+        id="job-render-1",
+        title="Ingénieur Logiciel Backend",
+        company="Datadog",
+        user_id="louay",
+    )
+    sample_content = (
+        "Madame, Monsieur,\n\n"
+        "Votre expertise en observabilité résonne avec mes ambitions.\n\n"
+        "J'ai développé le projet « Cloud Monitor » en Python et Docker.\n\n"
+        "Je souhaite contribuer activement à vos défis.\n\n"
+        "Je vous prie d'agréer, Madame, Monsieur, mes salutations distinguées.\n\n"
+        "Louay Zorai"
+    )
+
+    html_out = CoverLetterService.render_cover_letter_html(sample_content, profile=profile, job=job, lang="fr")
+    assert "<!DOCTYPE html>" in html_out
+    assert "Louay Zorai" in html_out
+    assert "Datadog" in html_out
+    assert "Candidature au poste de Ingénieur Logiciel Backend" in html_out
+    assert "Cloud Monitor" in html_out
+    assert "@page" in html_out
+
+    txt_out = CoverLetterService.render_cover_letter_txt(sample_content, profile=profile, job=job, lang="fr")
+    assert "Louay Zorai" in txt_out
+    assert "Datadog" in txt_out
+    assert "Candidature au poste de Ingénieur Logiciel Backend" in txt_out
+    assert "Cloud Monitor" in txt_out
+
+
+def test_cover_letter_download_endpoints_all_formats():
+    """Vérifie le téléchargement de la lettre de motivation dans les 4 formats : .txt, .html, .jpeg, .pdf."""
+    with Session(engine) as session:
+        job = JobOffer(
+            id="job-dl-all",
+            platform="linkedin",
+            external_id="ext-dl-all",
+            title="Stage Ingénieur DevOps",
+            company="Dassault Aviation",
+            description_raw="Stage PFE DevOps Kubernetes.",
+            status="DISCOVERED",
+            user_id="louay",
+        )
+        session.add(job)
+
+        profile = session.get(MasterProfile, "default-profile")
+        if profile:
+            profile.full_name = "Louay Zorai"
+            profile.is_complete = True
+            session.add(profile)
+        session.commit()
+
+    # 1. Format TXT
+    res_txt = client.get("/api/letter/download/job-dl-all?format=txt")
+    assert res_txt.status_code == 200
+    assert "text/plain" in res_txt.headers["content-type"]
+    assert "attachment; filename=" in res_txt.headers["content-disposition"]
+    assert res_txt.headers["content-disposition"].endswith('.txt"')
+    assert "Dassault Aviation" in res_txt.text
+
+    # 2. Format HTML
+    res_html = client.get("/api/letter/download/job-dl-all?format=html")
+    assert res_html.status_code == 200
+    assert "text/html" in res_html.headers["content-type"]
+    assert res_html.headers["content-disposition"].endswith('.html"')
+    assert "<!DOCTYPE html>" in res_html.text
+    assert "Dassault Aviation" in res_html.text
+
+    # 3. Format PDF
+    res_pdf = client.get("/api/letter/download/job-dl-all?format=pdf")
+    assert res_pdf.status_code == 200
+    assert "application/pdf" in res_pdf.headers["content-type"]
+    assert res_pdf.headers["content-disposition"].endswith('.pdf"')
+    assert len(res_pdf.content) > 1000
+    assert res_pdf.content.startswith(b"%PDF")
+
+    # 4. Format JPEG
+    res_jpeg = client.get("/api/letter/download/job-dl-all?format=jpeg")
+    assert res_jpeg.status_code == 200
+    assert "image/jpeg" in res_jpeg.headers["content-type"]
+    assert res_jpeg.headers["content-disposition"].endswith('.jpeg"')
+    assert len(res_jpeg.content) > 1000
+
+
+def test_custom_cover_letter_download():
+    """Vérifie le téléchargement personnalisé à la volée du texte édité."""
+    payload_txt = {
+        "content_markdown": "Madame, Monsieur,\n\nTexte customisé en direct.\n\nCordialement,\n\nTesteur",
+        "job_title": "Lead Dev",
+        "company_name": "StartupTech",
+        "format": "txt",
+    }
+    res_txt = client.post("/api/letter/download/custom", json=payload_txt)
+    assert res_txt.status_code == 200
+    assert "StartupTech" in res_txt.text
+    assert "Texte customisé en direct." in res_txt.text
+
+    payload_pdf = {
+        "content_markdown": "Madame, Monsieur,\n\nTexte customisé en direct pour PDF.\n\nCordialement,\n\nTesteur",
+        "job_title": "Lead Dev",
+        "company_name": "StartupTech",
+        "format": "pdf",
+    }
+    res_pdf = client.post("/api/letter/download/custom", json=payload_pdf)
+    assert res_pdf.status_code == 200
+    assert res_pdf.content.startswith(b"%PDF")
+

@@ -760,6 +760,92 @@ export async function updateCoverLetter(
   return res.json();
 }
 
+export type CoverLetterFormat = "pdf" | "html" | "jpeg" | "txt";
+
+export function getCoverLetterDownloadUrl(
+  jobId: string,
+  format: CoverLetterFormat = "pdf",
+  lang: string = "fr"
+): string {
+  let authParams = "";
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("arcapply_token");
+    const userStr = localStorage.getItem("arcapply_user");
+    if (token) authParams += `&token=${encodeURIComponent(token)}`;
+    if (userStr) {
+      try {
+        const u = JSON.parse(userStr);
+        if (u.username) authParams += `&username=${encodeURIComponent(u.username)}`;
+      } catch {}
+    }
+  }
+  return `${API_BASE_URL}/api/letter/download/${jobId}?format=${format}&lang=${lang}${authParams}`;
+}
+
+export async function downloadCoverLetterFile({
+  jobId,
+  format = "pdf",
+  content,
+  jobTitle,
+  companyName,
+  lang = "fr",
+}: {
+  jobId?: string;
+  format: CoverLetterFormat;
+  content?: string;
+  jobTitle?: string;
+  companyName?: string;
+  lang?: string;
+}): Promise<void> {
+  let response: Response;
+  if (content) {
+    response = await authFetch(`${API_BASE_URL}/api/letter/download/custom`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        content_markdown: content,
+        job_id: jobId,
+        job_title: jobTitle,
+        company_name: companyName,
+        format,
+        lang,
+      }),
+    });
+  } else if (jobId) {
+    response = await authFetch(
+      `${API_BASE_URL}/api/letter/download/${jobId}?format=${format}&lang=${lang}`
+    );
+  } else {
+    throw new Error("Impossible de télécharger la lettre sans offre ou contenu.");
+  }
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      errorData?.detail?.message || "Erreur lors du téléchargement de la lettre."
+    );
+  }
+
+  const blob = await response.blob();
+  let filename = `Lettre_Motivation.${format}`;
+  const disposition = response.headers.get("Content-Disposition");
+  if (disposition && disposition.includes("filename=")) {
+    const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
+    if (matches?.[1]) {
+      filename = matches[1].replace(/['"]/g, "");
+    }
+  }
+
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+}
+
 export async function transitionJobStatus(
   jobId: string,
   newStatus: string

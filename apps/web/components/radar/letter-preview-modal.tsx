@@ -15,6 +15,7 @@ import {
   Save,
   ShieldCheck,
 } from "lucide-react";
+import { LetterDownloadMenu } from "./letter-download-menu";
 
 interface LetterPreviewModalProps {
   job: JobOffer | null;
@@ -240,13 +241,21 @@ export function LetterPreviewModal({
               </button>
             )}
 
+            <LetterDownloadMenu
+              jobId={job.id}
+              jobTitle={job.title}
+              companyName={job.company}
+              content={isEditing ? editText : letter?.content_markdown}
+              variant="outline"
+            />
+
             <button
               type="button"
               onClick={handleCopy}
               className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-semibold flex items-center gap-1.5 tactile-button shadow-artisan-button transition-all cursor-pointer"
             >
               {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copied ? "Copié !" : "Copier le texte"}</span>
+              <span>{copied ? "Copié !" : "Copier"}</span>
             </button>
           </div>
         </div>

@@ -1,7 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+import re
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from pydantic import BaseModel
 from sqlmodel import Session, select
 
 from app.adapters.database import get_session
+from app.adapters.pdf import PDFCompilerService
 from app.api.auth import get_current_username
 from app.domain.ats import ATSMatchingEngine
 from app.domain.letter import CoverLetterService
@@ -15,6 +19,20 @@ from app.domain.models import (
 )
 
 router = APIRouter(prefix="/api/letter", tags=["Cover Letter"])
+
+
+def sanitize_filename(name: str) -> str:
+    """Nettoie une chaîne pour un nom de fichier HTTP sûr."""
+    return re.sub(r"[^\w\-_\.]", "_", name)
+
+
+class CustomCoverLetterDownloadRequest(BaseModel):
+    content_markdown: str
+    job_id: Optional[str] = None
+    job_title: Optional[str] = None
+    company_name: Optional[str] = None
+    format: str = "pdf"
+    lang: str = "fr"
 
 
 def _get_user_profile(session: Session, username: str) -> MasterProfile | None:
@@ -208,3 +226,202 @@ def update_cover_letter(
         created_at=letter.created_at,
         updated_at=letter.updated_at,
     )
+
+
+@router.get("/download/{job_id}", response_class=Response)
+async def download_cover_letter(
+    job_id: str,
+    format: str = Query("pdf", description="Format de téléchargement : 'pdf', 'html', 'jpeg' ou 'txt'"),
+    lang: str = Query("fr", description="Langue de la lettre : 'fr' ou 'en'"),
+    username: str = Depends(get_current_username),
+    session: Session = Depends(get_session),
+) -> Response:
+    """
+    Télécharge la lettre de motivation dans l'un des 4 formats supportés :
+    .pdf (PDF vectoriel), .html (Document web autonome), .jpeg (Image haute résolution) ou .txt (Texte brut).
+    """
+    normalized_lang = "en" if lang.lower().strip() == "en" else "fr"
+    fmt = format.lower().lstrip(".").strip()
+    if fmt not in ("pdf", "html", "jpeg", "txt"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"error_code": "INVALID_FORMAT", "message": f"Format '{format}' non supporté. Choisissez parmi: pdf, html, jpeg, txt."},
+        )
+
+    job = session.get(JobOffer, job_id)
+    if not job or job.user_id != username:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error_code": "JOB_NOT_FOUND", "message": f"Offre {job_id} introuvable."},
+        )
+
+    profile = _get_user_profile(session, username)
+    if not profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error_code": "PROFILE_NOT_FOUND", "message": "Master Profile introuvable."},
+        )
+
+    statement = select(CoverLetter).where(
+        CoverLetter.job_id == job_id,
+        CoverLetter.user_id == username,
+        CoverLetter.language == normalized_lang,
+    )
+    letter = session.exec(statement).first()
+
+    if not letter:
+        if not profile.is_complete:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={"error_code": "PROFILE_INCOMPLETE", "message": "Complétez votre profil pour générer la lettre."},
+            )
+        ats_match = ATSMatchingEngine.evaluate_alignment(job, profile)
+        letter = CoverLetterService.generate_cover_letter(job, profile, ats_match, language=normalized_lang)
+        letter.user_id = username
+        letter.language = normalized_lang
+        session.add(letter)
+        session.commit()
+        session.refresh(letter)
+
+    clean_name = sanitize_filename(profile.full_name) or "Candidat"
+    clean_company = sanitize_filename(job.company) or "Entreprise"
+    base_filename = f"Lettre_{clean_name}_{clean_company}"
+
+    if fmt == "txt":
+        txt_content = CoverLetterService.render_cover_letter_txt(
+            content_markdown=letter.content_markdown,
+            profile=profile,
+            job=job,
+            lang=normalized_lang,
+        )
+        return Response(
+            content=txt_content.encode("utf-8"),
+            media_type="text/plain; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="{base_filename}.txt"'},
+        )
+    elif fmt == "html":
+        html_content = CoverLetterService.render_cover_letter_html(
+            content_markdown=letter.content_markdown,
+            profile=profile,
+            job=job,
+            lang=normalized_lang,
+        )
+        return Response(
+            content=html_content.encode("utf-8"),
+            media_type="text/html; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="{base_filename}.html"'},
+        )
+    elif fmt == "pdf":
+        html_content = CoverLetterService.render_cover_letter_html(
+            content_markdown=letter.content_markdown,
+            profile=profile,
+            job=job,
+            lang=normalized_lang,
+        )
+        pdf_bytes = await PDFCompilerService.compile_html_to_pdf(html_content)
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="{base_filename}.pdf"'},
+        )
+    elif fmt == "jpeg":
+        html_content = CoverLetterService.render_cover_letter_html(
+            content_markdown=letter.content_markdown,
+            profile=profile,
+            job=job,
+            lang=normalized_lang,
+        )
+        img_bytes = await PDFCompilerService.compile_html_to_image(html_content, image_format="jpeg")
+        return Response(
+            content=img_bytes,
+            media_type="image/jpeg",
+            headers={"Content-Disposition": f'attachment; filename="{base_filename}.jpeg"'},
+        )
+
+
+@router.post("/download/custom", response_class=Response)
+async def download_custom_cover_letter(
+    payload: CustomCoverLetterDownloadRequest,
+    username: str = Depends(get_current_username),
+    session: Session = Depends(get_session),
+) -> Response:
+    """
+    Télécharge directement le contenu édité de la lettre de motivation dans l'un des 4 formats :
+    .pdf, .html, .jpeg ou .txt.
+    """
+    normalized_lang = "en" if payload.lang.lower().strip() == "en" else "fr"
+    fmt = payload.format.lower().lstrip(".").strip()
+    if fmt not in ("pdf", "html", "jpeg", "txt"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"error_code": "INVALID_FORMAT", "message": f"Format '{payload.format}' non supporté. Choisissez parmi: pdf, html, jpeg, txt."},
+        )
+
+    profile = _get_user_profile(session, username)
+    job = session.get(JobOffer, payload.job_id) if payload.job_id else None
+
+    company = payload.company_name or (job.company if job else "Entreprise")
+    title = payload.job_title or (job.title if job else "Ingénieur")
+
+    clean_name = sanitize_filename(profile.full_name if profile else "Candidat") or "Candidat"
+    clean_company = sanitize_filename(company) or "Entreprise"
+    base_filename = f"Lettre_{clean_name}_{clean_company}"
+
+    if fmt == "txt":
+        txt_content = CoverLetterService.render_cover_letter_txt(
+            content_markdown=payload.content_markdown,
+            profile=profile,
+            job=job,
+            job_title=title,
+            company_name=company,
+            lang=normalized_lang,
+        )
+        return Response(
+            content=txt_content.encode("utf-8"),
+            media_type="text/plain; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="{base_filename}.txt"'},
+        )
+    elif fmt == "html":
+        html_content = CoverLetterService.render_cover_letter_html(
+            content_markdown=payload.content_markdown,
+            profile=profile,
+            job=job,
+            job_title=title,
+            company_name=company,
+            lang=normalized_lang,
+        )
+        return Response(
+            content=html_content.encode("utf-8"),
+            media_type="text/html; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="{base_filename}.html"'},
+        )
+    elif fmt == "pdf":
+        html_content = CoverLetterService.render_cover_letter_html(
+            content_markdown=payload.content_markdown,
+            profile=profile,
+            job=job,
+            job_title=title,
+            company_name=company,
+            lang=normalized_lang,
+        )
+        pdf_bytes = await PDFCompilerService.compile_html_to_pdf(html_content)
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="{base_filename}.pdf"'},
+        )
+    elif fmt == "jpeg":
+        html_content = CoverLetterService.render_cover_letter_html(
+            content_markdown=payload.content_markdown,
+            profile=profile,
+            job=job,
+            job_title=title,
+            company_name=company,
+            lang=normalized_lang,
+        )
+        img_bytes = await PDFCompilerService.compile_html_to_image(html_content, image_format="jpeg")
+        return Response(
+            content=img_bytes,
+            media_type="image/jpeg",
+            headers={"Content-Disposition": f'attachment; filename="{base_filename}.jpeg"'},
+        )

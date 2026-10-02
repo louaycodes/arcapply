@@ -36,3 +36,30 @@ class PDFCompilerService:
                 raise RuntimeError(f"Échec de la compilation PDF vectorielle : {e}") from e
             finally:
                 await browser.close()
+
+    @classmethod
+    async def compile_html_to_image(
+        cls, html_content: str, image_format: str = "jpeg", quality: int = 95
+    ) -> bytes:
+        """
+        Rend le HTML en mémoire et compile une image (JPEG/PNG) haute résolution 2x via Playwright.
+        """
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            try:
+                page = await browser.new_page(
+                    viewport={"width": 794, "height": 1123},
+                    device_scale_factor=2,
+                )
+                await page.set_content(html_content, wait_until="load")
+                img_bytes = await page.screenshot(
+                    type=image_format,
+                    quality=quality if image_format == "jpeg" else None,
+                    full_page=True,
+                )
+                return img_bytes
+            except Exception as e:
+                logger.error(f"Erreur lors de la capture image Playwright : {e}")
+                raise RuntimeError(f"Échec de la capture image Playwright : {e}") from e
+            finally:
+                await browser.close()

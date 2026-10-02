@@ -1,5 +1,7 @@
+import html
 import logging
 import re
+from datetime import datetime
 from typing import List, Optional, Tuple
 
 from app.config import settings
@@ -689,3 +691,356 @@ RÈGLES IMPÉRATIVES DE RÉDACTION :
         letter.banned_phrases_detected = detected_phrases
 
         return letter
+
+    @classmethod
+    def render_cover_letter_html(
+        cls,
+        content_markdown: str,
+        profile: Optional[MasterProfile] = None,
+        job: Optional[JobOffer] = None,
+        job_title: Optional[str] = None,
+        company_name: Optional[str] = None,
+        lang: str = "fr",
+    ) -> str:
+        return render_cover_letter_html(
+            content_markdown=content_markdown,
+            profile=profile,
+            job=job,
+            job_title=job_title,
+            company_name=company_name,
+            lang=lang,
+        )
+
+    @classmethod
+    def render_cover_letter_txt(
+        cls,
+        content_markdown: str,
+        profile: Optional[MasterProfile] = None,
+        job: Optional[JobOffer] = None,
+        job_title: Optional[str] = None,
+        company_name: Optional[str] = None,
+        lang: str = "fr",
+    ) -> str:
+        return render_cover_letter_txt(
+            content_markdown=content_markdown,
+            profile=profile,
+            job=job,
+            job_title=job_title,
+            company_name=company_name,
+            lang=lang,
+        )
+
+
+def format_letter_date(lang: str = "fr") -> str:
+    """Formate la date actuelle pour la lettre de motivation selon la langue."""
+    now = datetime.now()
+    if lang.lower().strip() == "fr":
+        months_fr = [
+            "janvier", "février", "mars", "avril", "mai", "juin",
+            "juillet", "août", "septembre", "octobre", "novembre", "décembre"
+        ]
+        return f"{now.day} {months_fr[now.month - 1]} {now.year}"
+    months_en = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ]
+    return f"{months_en[now.month - 1]} {now.day}, {now.year}"
+
+
+def render_cover_letter_html(
+    content_markdown: str,
+    profile: Optional[MasterProfile] = None,
+    job: Optional[JobOffer] = None,
+    job_title: Optional[str] = None,
+    company_name: Optional[str] = None,
+    lang: str = "fr",
+) -> str:
+    """
+    Génère un document HTML complet, élégant et optimisé pour l'exportation vectorielle PDF,
+    image haute résolution JPEG ou affichage navigateur de la lettre de motivation.
+    """
+    is_fr = lang.lower().strip() != "en"
+
+    # Coordonnées du candidat
+    full_name = (profile.full_name if profile and profile.full_name else "").strip() or "Candidat"
+    email = (profile.email if profile and profile.email else "").strip()
+    phone = (profile.phone if profile and profile.phone else "").strip()
+    location = (profile.location if profile and profile.location else "").strip()
+
+    # Titre ou formation
+    headline = ""
+    if profile:
+        headline = (profile.headline_fr if is_fr else profile.headline_en) or profile.headline or ""
+        if not headline and profile.educations:
+            top_edu = profile.educations[0]
+            field = (top_edu.field_of_study_fr if is_fr else top_edu.field_of_study_en) or top_edu.field_of_study
+            if field and top_edu.school:
+                headline = f"Élève-Ingénieur en {field} — {top_edu.school}" if is_fr else f"Engineering Student in {field} — {top_edu.school}"
+
+    # Entreprise & Intitulé
+    company = (company_name or (job.company if job else "")).strip() or ("Entreprise" if is_fr else "Company")
+    title = (job_title or (job.title if job else "")).strip() or ("Ingénieur Logiciel" if is_fr else "Software Engineer")
+
+    # Date
+    date_formatted = format_letter_date("fr" if is_fr else "en")
+    date_display = f"{location + ', le ' if location else 'Le '}{date_formatted}" if is_fr else f"{location + ', ' if location else ''}{date_formatted}"
+
+    # Objet & Destinataire
+    subject_label = "Objet :" if is_fr else "Subject:"
+    subject_text = f"{subject_label} Candidature au poste de {title}" if is_fr else f"{subject_label} Application for {title}"
+    recipient_attn = "À l'attention du service recrutement" if is_fr else "Attn: Talent Acquisition / Hiring Team"
+
+    # Formatage des paragraphes
+    raw_paragraphs = [p.strip() for p in (content_markdown or "").split("\n\n") if p.strip()]
+    formatted_paragraphs = []
+
+    for idx, p in enumerate(raw_paragraphs):
+        escaped = html.escape(p)
+        escaped = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", escaped)
+        escaped = re.sub(r"\*(.+?)\*", r"<em>\1</em>", escaped)
+        escaped = escaped.replace("\n", "<br />")
+
+        is_first = idx == 0 and any(kw in p.lower() for kw in ["madame", "monsieur", "dear"])
+        is_last = idx == len(raw_paragraphs) - 1 and (full_name.lower() in p.lower() or len(p.split()) <= 4)
+        is_penultimate = idx == len(raw_paragraphs) - 2 and any(kw in p.lower() for kw in ["salutations", "sincerely", "cordialement", "agréer"])
+
+        if is_first:
+            formatted_paragraphs.append(f'<p class="letter-salutation">{escaped}</p>')
+        elif is_last:
+            formatted_paragraphs.append(f'<div class="signature-block"><div class="signature-name">{escaped}</div></div>')
+        elif is_penultimate:
+            formatted_paragraphs.append(f'<p class="letter-closing">{escaped}</p>')
+        else:
+            formatted_paragraphs.append(f'<p class="letter-para">{escaped}</p>')
+
+    body_html = "\n".join(formatted_paragraphs)
+
+    contact_items = []
+    if email:
+        contact_items.append(f'<span class="contact-pill"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> {html.escape(email)}</span>')
+    if phone:
+        contact_items.append(f'<span class="contact-pill"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg> {html.escape(phone)}</span>')
+    if location:
+        contact_items.append(f'<span class="contact-pill"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> {html.escape(location)}</span>')
+
+    contact_bar = "".join(contact_items)
+
+    return f"""<!DOCTYPE html>
+<html lang="{ 'fr' if is_fr else 'en' }">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lettre de Motivation — {html.escape(full_name)} — {html.escape(company)}</title>
+  <style>
+    @page {{
+      size: A4;
+      margin: 16mm 18mm;
+    }}
+    *, *::before, *::after {{
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }}
+    body {{
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #1e293b;
+      background-color: #f8fafc;
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.6;
+    }}
+    .letter-page {{
+      max-width: 800px;
+      margin: 24px auto;
+      background: #ffffff;
+      padding: 44px 52px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      border-radius: 8px;
+    }}
+    @media print {{
+      body {{
+        background: transparent !important;
+      }}
+      .letter-page {{
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+      }}
+    }}
+    .header-table {{
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
+      padding-bottom: 18px;
+      border-bottom: 1.5px solid #e2e8f0;
+      gap: 24px;
+    }}
+    .sender-box {{
+      flex: 1;
+      max-width: 58%;
+    }}
+    .sender-name {{
+      font-size: 20px;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+      margin-bottom: 3px;
+    }}
+    .sender-headline {{
+      font-size: 12.5px;
+      font-weight: 500;
+      color: #64748b;
+      margin-bottom: 8px;
+    }}
+    .contact-container {{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      margin-top: 6px;
+    }}
+    .contact-pill {{
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11.5px;
+      color: #475569;
+    }}
+    .recipient-box {{
+      text-align: right;
+      max-width: 40%;
+      flex-shrink: 0;
+    }}
+    .date-text {{
+      font-size: 12px;
+      color: #64748b;
+      margin-bottom: 12px;
+    }}
+    .recipient-attn {{
+      font-size: 11.5px;
+      color: #64748b;
+      margin-bottom: 2px;
+    }}
+    .recipient-company {{
+      font-size: 16px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 2px;
+    }}
+    .subject-banner {{
+      margin: 20px 0 20px 0;
+      padding: 10px 14px;
+      background-color: #f8fafc;
+      border-left: 3.5px solid #ea580c;
+      border-radius: 0 4px 4px 0;
+    }}
+    .subject-text {{
+      font-size: 13px;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: -0.01em;
+    }}
+    .letter-body {{
+      font-size: 13px;
+      line-height: 1.65;
+      color: #1e293b;
+    }}
+    .letter-salutation {{
+      font-weight: 600;
+      margin-bottom: 14px;
+    }}
+    .letter-para {{
+      margin-bottom: 14px;
+      text-align: justify;
+      text-justify: inter-word;
+      hyphens: auto;
+    }}
+    .letter-closing {{
+      margin-top: 14px;
+      margin-bottom: 20px;
+    }}
+    .signature-block {{
+      margin-top: 24px;
+      text-align: right;
+    }}
+    .signature-name {{
+      font-size: 14px;
+      font-weight: 700;
+      color: #0f172a;
+    }}
+  </style>
+</head>
+<body>
+  <div class="letter-page">
+    <div class="header-table">
+      <div class="sender-box">
+        <div class="sender-name">{html.escape(full_name)}</div>
+        {f'<div class="sender-headline">{html.escape(headline)}</div>' if headline else ''}
+        <div class="contact-container">
+          {contact_bar}
+        </div>
+      </div>
+      <div class="recipient-box">
+        <div class="date-text">{html.escape(date_display)}</div>
+        <div class="recipient-attn">{html.escape(recipient_attn)}</div>
+        <div class="recipient-company">{html.escape(company)}</div>
+      </div>
+    </div>
+
+    <div class="subject-banner">
+      <div class="subject-text">{html.escape(subject_text)}</div>
+    </div>
+
+    <div class="letter-body">
+      {body_html}
+    </div>
+  </div>
+</body>
+</html>"""
+
+
+def render_cover_letter_txt(
+    content_markdown: str,
+    profile: Optional[MasterProfile] = None,
+    job: Optional[JobOffer] = None,
+    job_title: Optional[str] = None,
+    company_name: Optional[str] = None,
+    lang: str = "fr",
+) -> str:
+    """
+    Génère une version texte brut (.txt) propre et professionnelle de la lettre de motivation.
+    """
+    is_fr = lang.lower().strip() != "en"
+
+    full_name = (profile.full_name if profile and profile.full_name else "").strip() or "Candidat"
+    email = (profile.email if profile and profile.email else "").strip()
+    phone = (profile.phone if profile and profile.phone else "").strip()
+    location = (profile.location if profile and profile.location else "").strip()
+
+    company = (company_name or (job.company if job else "")).strip() or ("Entreprise" if is_fr else "Company")
+    title = (job_title or (job.title if job else "")).strip() or ("Ingénieur Logiciel" if is_fr else "Software Engineer")
+
+    date_formatted = format_letter_date("fr" if is_fr else "en")
+    date_display = f"{location + ', le ' if location else 'Le '}{date_formatted}" if is_fr else f"{location + ', ' if location else ''}{date_formatted}"
+
+    subject_line = f"Objet : Candidature au poste de {title}" if is_fr else f"Subject: Application for {title}"
+    recipient_attn = "À l'attention du service recrutement" if is_fr else "Attn: Talent Acquisition / Hiring Team"
+
+    contact_parts = [p for p in [email, phone, location] if p]
+    contact_str = " | ".join(contact_parts)
+
+    clean_body = content_markdown or ""
+    clean_body = re.sub(r"\*\*(.+?)\*\*", r"\1", clean_body)
+    clean_body = re.sub(r"\*(.+?)\*", r"\1", clean_body)
+    clean_body = re.sub(r"^#+\s*", "", clean_body, flags=re.MULTILINE)
+
+    header = f"{full_name}\n"
+    if contact_str:
+        header += f"{contact_str}\n"
+
+    header += f"\n{date_display}\n\n{recipient_attn}\n{company}\n\n{subject_line}\n"
+    header += "-" * 72 + "\n\n"
+
+    return header + clean_body.strip() + "\n"

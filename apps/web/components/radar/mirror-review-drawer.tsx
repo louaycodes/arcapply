@@ -41,6 +41,7 @@ import {
   Compass,
   ChevronDown,
 } from "lucide-react";
+import { LetterDownloadMenu } from "./letter-download-menu";
 
 interface MirrorReviewDrawerProps {
   job: JobOffer | null;
@@ -559,6 +560,14 @@ export function MirrorReviewDrawer({
                     >
                       <RefreshCw className={`w-3.5 h-3.5 ${letterLoading ? "animate-spin" : ""}`} />
                     </button>
+                    <LetterDownloadMenu
+                      jobId={job.id}
+                      jobTitle={job.title}
+                      companyName={job.company}
+                      content={letterContent}
+                      lang={cvLanguage}
+                      variant="outline"
+                    />
                     <button
                       type="button"
                       onClick={handleSaveLetter}
