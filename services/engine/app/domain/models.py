@@ -323,6 +323,9 @@ class JobOfferBase(SQLModel):
     status: str = Field(default="DISCOVERED", index=True)
     # Type d'offre : exclusivement "PFE"
     offer_type: str = Field(default="PFE", index=True)
+    # Statut de candidature déjà soumise (bouclier anti-rescrape)
+    is_applied: bool = Field(default=False, index=True)
+    applied_at: Optional[datetime] = Field(default=None, index=True)
     # Deep Extraction & Métadonnées d'enrichissement
     published_at: Optional[datetime] = Field(default=None, index=True)
     skills_required: str = Field(default="[]")
@@ -339,6 +342,24 @@ class JobOffer(JobOfferBase, table=True):
     id: str = Field(default_factory=generate_uuid, primary_key=True)
     collected_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
+
+
+class AppliedJobSignature(SQLModel, table=True):
+    """
+    Signature persistante d'une offre déjà postulée par le candidat.
+    Garantit que même en cas de variation d'URL ou de plateforme concurrente,
+    l'offre ne sera JAMAIS re-scrappée ou re-découverte dans le flux radar.
+    """
+    __tablename__ = "applied_job_signatures"
+    id: str = Field(default_factory=generate_uuid, primary_key=True)
+    user_id: str = Field(default="louay", index=True)
+    job_id: Optional[str] = Field(default=None, index=True)
+    platform: Optional[str] = Field(default=None, index=True)
+    external_id: Optional[str] = Field(default=None, index=True)
+    company_clean: str = Field(default="", index=True)
+    title_clean: str = Field(default="", index=True)
+    url_normalized: Optional[str] = Field(default=None, index=True)
+    applied_at: datetime = Field(default_factory=utc_now)
 
 
 class JobOfferRead(JobOfferBase):

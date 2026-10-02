@@ -20,6 +20,11 @@ from app.domain.models import (
     VALID_OFFER_TYPES,
     utc_now,
 )
+from app.domain.anti_rescrape import (
+    is_job_already_applied,
+    record_applied_signature,
+    remove_applied_signature,
+)
 from app.ports.connectors import BaseJobConnector
 from app.api.auth import get_current_username
 
@@ -347,7 +352,18 @@ async def transition_job_status(
             },
         )
 
-    job.status = payload.new_status.upper()
+    target_st = payload.new_status.upper()
+    job.status = target_st
+    if target_st in ("SUBMITTED", "INTERVIEW", "OFFER"):
+        job.is_applied = True
+        if not job.applied_at:
+            job.applied_at = utc_now()
+        record_applied_signature(session, job)
+    elif target_st in ("DISCOVERED", "REVIEWING"):
+        job.is_applied = False
+        job.applied_at = None
+        remove_applied_signature(session, username, job.id)
+
     job.updated_at = utc_now()
     session.add(job)
     session.commit()
@@ -356,7 +372,99 @@ async def transition_job_status(
     # Diffusion SSE du changement de statut
     await broadcast_event(
         "JOB_STATUS_CHANGED",
-        {"id": job.id, "title": job.title, "company": job.company, "status": job.status},
+        {
+            "id": job.id,
+            "title": job.title,
+            "company": job.company,
+            "status": job.status,
+            "is_applied": job.is_applied,
+        },
+        target_user=username,
+    )
+
+    return job
+
+
+@router.post("/{job_id}/mark-applied", response_model=JobOfferRead)
+async def mark_job_as_applied(
+    job_id: str,
+    username: str = Depends(get_current_username),
+    session: Session = Depends(get_session),
+) -> JobOffer:
+    """
+    Marque explicitement une offre comme déjà postulée par le candidat.
+    Enregistre son empreinte dans le bouclier anti-rescrape pour garantir
+    qu'elle ne sera plus JAMAIS ré-importée ou ré-affichée comme nouvelle découverte.
+    """
+    job = session.get(JobOffer, job_id)
+    if not job or job.user_id != username:
+        raise HTTPException(
+            status_code=http_status.HTTP_404_NOT_FOUND,
+            detail={"error_code": "JOB_NOT_FOUND", "message": f"Offre {job_id} introuvable."},
+        )
+
+    job.is_applied = True
+    job.status = "SUBMITTED"
+    job.applied_at = utc_now()
+    job.updated_at = utc_now()
+    session.add(job)
+    session.commit()
+    session.refresh(job)
+
+    # Persistance de l'empreinte anti-rescrape
+    record_applied_signature(session, job)
+
+    await broadcast_event(
+        "JOB_STATUS_CHANGED",
+        {
+            "id": job.id,
+            "title": job.title,
+            "company": job.company,
+            "status": job.status,
+            "is_applied": True,
+        },
+        target_user=username,
+    )
+
+    return job
+
+
+@router.post("/{job_id}/unmark-applied", response_model=JobOfferRead)
+async def unmark_job_as_applied(
+    job_id: str,
+    username: str = Depends(get_current_username),
+    session: Session = Depends(get_session),
+) -> JobOffer:
+    """
+    Annule le statut déjà postulé d'une offre et la replace dans les découvertes actives.
+    """
+    job = session.get(JobOffer, job_id)
+    if not job or job.user_id != username:
+        raise HTTPException(
+            status_code=http_status.HTTP_404_NOT_FOUND,
+            detail={"error_code": "JOB_NOT_FOUND", "message": f"Offre {job_id} introuvable."},
+        )
+
+    job.is_applied = False
+    job.status = "DISCOVERED"
+    job.applied_at = None
+    job.updated_at = utc_now()
+    session.add(job)
+    session.commit()
+    session.refresh(job)
+
+    # Suppression de l'empreinte anti-rescrape
+    remove_applied_signature(session, username, job.id)
+
+    await broadcast_event(
+        "JOB_STATUS_CHANGED",
+        {
+            "id": job.id,
+            "title": job.title,
+            "company": job.company,
+            "status": job.status,
+            "is_applied": False,
+        },
         target_user=username,
     )
 
@@ -405,6 +513,12 @@ async def trigger_collection(
 
         for raw in raw_jobs:
             total_collected += 1
+
+            # Bouclier Anti-Rescrape : Toute offre déjà postulée ne sera JAMAIS re-scrappée
+            if is_job_already_applied(session, username, raw):
+                duplicate_count += 1
+                continue
+
             # Vérification de déduplication stricte sur (platform, external_id, user_id)
             existing = session.exec(
                 select(JobOffer).where(

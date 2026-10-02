@@ -17,6 +17,7 @@ import {
   Laptop,
   Coins,
   Send,
+  RotateCcw,
 } from "lucide-react";
 
 interface JobCardProps {
@@ -27,6 +28,8 @@ interface JobCardProps {
   onOpenCV?: (job: JobOffer) => void;
   onOpenLetter?: (job: JobOffer) => void;
   onOpenMirror?: (job: JobOffer) => void;
+  onToggleMarkApplied?: (jobId: string, isApplied: boolean) => void;
+  isAppliedSection?: boolean;
   isNew?: boolean;
 }
 
@@ -149,6 +152,8 @@ export function JobCard({
   onOpenCV,
   onOpenLetter,
   onOpenMirror,
+  onToggleMarkApplied,
+  isAppliedSection = false,
   isNew = false,
 }: JobCardProps) {
   const platKey = job.platform.toLowerCase();
@@ -158,6 +163,13 @@ export function JobCard({
   };
   const isFrance = job.country.toLowerCase() === "france";
   const isTunisia = job.country.toLowerCase() === "tunisie";
+
+  const isApplied = Boolean(
+    job.is_applied ||
+      job.status === "SUBMITTED" ||
+      job.status === "INTERVIEW" ||
+      job.status === "OFFER"
+  );
 
   // Calcul du temps relatif ergonomique (sans format rigide)
   const relativeTime = useMemo(() => {
@@ -190,10 +202,12 @@ export function JobCard({
 
   return (
     <div
-      className={`group relative p-5 rounded-2xl border bg-white shadow-artisan transition-all duration-200 hover:shadow-artisan-card flex flex-col justify-between ${
-        isNew
-          ? "border-primary shadow-artisan-button ring-1 ring-primary/40"
-          : "border-stone-200 hover:border-stone-300"
+      className={`group relative p-5 rounded-2xl border transition-all duration-200 hover:shadow-artisan-card flex flex-col justify-between ${
+        isApplied
+          ? "bg-emerald-50/20 border-emerald-300/80 shadow-xs"
+          : isNew
+          ? "bg-white border-primary shadow-artisan-button ring-1 ring-primary/40"
+          : "bg-white border-stone-200 hover:border-stone-300 shadow-artisan"
       }`}
     >
       <div className="space-y-3.5">
@@ -227,21 +241,24 @@ export function JobCard({
               </span>
             )}
 
-            {job.status === "REVIEWING" && (
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-300">
-                En révision
-              </span>
-            )}
-            {job.status === "READY" && (
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-900 border border-emerald-300">
-                Prêt
-              </span>
-            )}
-            {job.status === "SUBMITTED" && (
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-stone-100 text-stone-900 border border-stone-300 flex items-center gap-1">
+            {isApplied ? (
+              <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 flex items-center gap-1 shadow-xs">
                 <CheckCircle2 className="w-3 h-3 text-emerald-700" />
-                Soumis
+                <span>Déjà postulé</span>
               </span>
+            ) : (
+              <>
+                {job.status === "REVIEWING" && (
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-300">
+                    En révision
+                  </span>
+                )}
+                {job.status === "READY" && (
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-900 border border-emerald-300">
+                    Prêt
+                  </span>
+                )}
+              </>
             )}
           </div>
 
@@ -329,6 +346,35 @@ export function JobCard({
               <ExternalLink className="w-4 h-4" />
             </a>
           )}
+
+          {onToggleMarkApplied && (
+            <button
+              type="button"
+              onClick={() => onToggleMarkApplied(job.id, !isApplied)}
+              className={`px-2 py-1 rounded-lg text-xs font-medium border flex items-center gap-1 transition-all cursor-pointer ${
+                isApplied
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-amber-50 hover:text-amber-800 hover:border-amber-300"
+                  : "bg-stone-50 text-stone-600 border-stone-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300"
+              }`}
+              title={
+                isApplied
+                  ? "Cliquer pour démarquer (remettre en prospection)"
+                  : "Marquer comme déjà postulé (ne sera plus jamais re-scrappé)"
+              }
+            >
+              {isApplied ? (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="hidden sm:inline">Déjà postulé</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-3.5 h-3.5 text-stone-500" />
+                  <span className="hidden sm:inline">J'ai postulé</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
 
         <div className="flex items-center gap-1.5">
@@ -354,11 +400,15 @@ export function JobCard({
           <button
             type="button"
             onClick={() => onOpenMirror?.(job)}
-            className="px-3.5 py-1.5 rounded-lg bg-primary hover:bg-primary-hover text-white text-xs font-semibold flex items-center gap-1.5 transition-all tactile-button shadow-artisan-button cursor-pointer"
-            title="Préparer et vérifier ma candidature"
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all tactile-button shadow-artisan-button cursor-pointer ${
+              isApplied
+                ? "bg-stone-800 hover:bg-stone-900 text-white"
+                : "bg-primary hover:bg-primary-hover text-white"
+            }`}
+            title={isApplied ? "Consulter le dossier de candidature" : "Préparer et vérifier ma candidature"}
           >
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Postuler</span>
+            <span>{isApplied ? "Dossier" : "Postuler"}</span>
           </button>
         </div>
       </div>

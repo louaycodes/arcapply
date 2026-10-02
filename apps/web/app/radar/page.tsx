@@ -11,6 +11,8 @@ import {
   createRadarEventSource,
   fetchBatchATSScores,
   fetchJobATSScore,
+  markJobAsApplied,
+  unmarkJobAsApplied,
   JobOffer,
   ATSMatchResult,
 } from "@/lib/api";
@@ -40,6 +42,9 @@ import {
   LayoutGrid,
   ListFilter,
   Laptop,
+  ShieldCheck,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 const AVAILABLE_PLATFORMS = [
@@ -92,6 +97,7 @@ export default function RadarPage() {
 
   const [isCollecting, setIsCollecting] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [showAppliedSection, setShowAppliedSection] = useState(true);
   const [scrapeMessage, setScrapeMessage] = useState<string | null>(null);
   const [showCollectModal, setShowCollectModal] = useState(false);
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -278,6 +284,50 @@ export default function RadarPage() {
     }
   };
 
+  const handleToggleMarkApplied = async (jobId: string, markApplied: boolean) => {
+    try {
+      // Optimistic update
+      setJobs((prev) =>
+        prev.map((j) => {
+          if (j.id !== jobId) return j;
+          return {
+            ...j,
+            is_applied: markApplied,
+            applied_at: markApplied ? new Date().toISOString() : null,
+            status:
+              markApplied && j.status === "DISCOVERED"
+                ? "SUBMITTED"
+                : !markApplied && j.status === "SUBMITTED"
+                ? "DISCOVERED"
+                : j.status,
+          };
+        })
+      );
+
+      if (markApplied) {
+        await markJobAsApplied(jobId);
+        setNotification({
+          type: "success",
+          message: "Offre marquée comme déjà postulée. Elle est protégée contre tout re-scraping !",
+        });
+      } else {
+        await unmarkJobAsApplied(jobId);
+        setNotification({
+          type: "success",
+          message: "Offre démarquée et réintégrée dans le radar de prospection.",
+        });
+      }
+      setTimeout(() => setNotification(null), 3500);
+    } catch (err: any) {
+      loadJobs();
+      setNotification({
+        type: "error",
+        message: err.message || "Erreur lors de la mise à jour du statut postulé.",
+      });
+      setTimeout(() => setNotification(null), 4000);
+    }
+  };
+
   // Filtrage local en mémoire (pour recherche instantanée et mode de travail)
   const filteredJobs = useMemo(() => {
     return jobs.filter((job) => {
@@ -303,7 +353,27 @@ export default function RadarPage() {
     });
   }, [jobs, selectedCountry, selectedPlatform, directOnly, searchQuery]);
 
-  // Répartition temporelle pour calcul des métriques et affichage chronologique
+  // Séparation stricte : Offres à postuler vs Offres déjà postulées
+  const { unappliedJobs, appliedJobs } = useMemo(() => {
+    const unapplied: JobOffer[] = [];
+    const applied: JobOffer[] = [];
+    for (const j of filteredJobs) {
+      const isApplied = Boolean(
+        j.is_applied ||
+          j.status === "SUBMITTED" ||
+          j.status === "INTERVIEW" ||
+          j.status === "OFFER"
+      );
+      if (isApplied) {
+        applied.push(j);
+      } else {
+        unapplied.push(j);
+      }
+    }
+    return { unappliedJobs: unapplied, appliedJobs: applied };
+  }, [filteredJobs]);
+
+  // Répartition temporelle pour calcul des métriques et affichage chronologique (sur les offres non postulées)
   const { todayJobs, weekJobs, olderJobs, countToday, countWeek, countMonth, countDirect } = useMemo(() => {
     const now = new Date().getTime();
     const isWithinHours = (dateStr: string | null | undefined, hours: number) => {
@@ -322,6 +392,14 @@ export default function RadarPage() {
     let cDirect = 0;
 
     for (const j of jobs) {
+      const isApplied = Boolean(
+        j.is_applied ||
+          j.status === "SUBMITTED" ||
+          j.status === "INTERVIEW" ||
+          j.status === "OFFER"
+      );
+      if (isApplied) continue;
+
       const d = j.published_at || j.collected_at;
       if (isWithinHours(d, 24)) cToday++;
       if (isWithinHours(d, 24 * 7)) cWeek++;
@@ -329,7 +407,7 @@ export default function RadarPage() {
       if (j.is_direct_career_site) cDirect++;
     }
 
-    for (const j of filteredJobs) {
+    for (const j of unappliedJobs) {
       const d = j.published_at || j.collected_at;
       if (isWithinHours(d, 24)) {
         today.push(j);
@@ -349,7 +427,7 @@ export default function RadarPage() {
       countMonth: cMonth,
       countDirect: cDirect,
     };
-  }, [jobs, filteredJobs]);
+  }, [jobs, unappliedJobs]);
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
@@ -621,6 +699,16 @@ export default function RadarPage() {
             </div>
           </div>
         </div>
+      ) : unappliedJobs.length === 0 ? (
+        <div className="p-8 rounded-2xl border border-emerald-200 bg-emerald-50/60 text-center space-y-2.5">
+          <div className="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-800 mx-auto shadow-xs">
+            <CheckCircle2 className="w-5 h-5" />
+          </div>
+          <h3 className="text-sm font-bold text-emerald-950">Toutes les opportunités filtrées ont été postulées !</h3>
+          <p className="text-xs text-emerald-800 max-w-md mx-auto leading-relaxed">
+            Vous avez déjà postulé à toutes les offres correspondant à vos filtres actuels. Retrouvez le détail de vos candidatures dans la section dédiée en bas de page.
+          </p>
+        </div>
       ) : viewMode === "timeline" && selectedPeriod === "all" ? (
         /* Affichage Structuré par Sections Temporelles */
         <div className="space-y-8">
@@ -648,6 +736,7 @@ export default function RadarPage() {
                     onOpenCV={(j) => setSelectedJobForCV(j)}
                     onOpenLetter={(j) => setSelectedJobForLetter(j)}
                     onOpenMirror={(j) => setSelectedJobForMirror(j)}
+                    onToggleMarkApplied={handleToggleMarkApplied}
                     isNew={newJobIds.has(job.id)}
                   />
                 ))}
@@ -679,6 +768,7 @@ export default function RadarPage() {
                     onOpenCV={(j) => setSelectedJobForCV(j)}
                     onOpenLetter={(j) => setSelectedJobForLetter(j)}
                     onOpenMirror={(j) => setSelectedJobForMirror(j)}
+                    onToggleMarkApplied={handleToggleMarkApplied}
                     isNew={newJobIds.has(job.id)}
                   />
                 ))}
@@ -710,6 +800,7 @@ export default function RadarPage() {
                     onOpenCV={(j) => setSelectedJobForCV(j)}
                     onOpenLetter={(j) => setSelectedJobForLetter(j)}
                     onOpenMirror={(j) => setSelectedJobForMirror(j)}
+                    onToggleMarkApplied={handleToggleMarkApplied}
                     isNew={newJobIds.has(job.id)}
                   />
                 ))}
@@ -720,7 +811,7 @@ export default function RadarPage() {
       ) : (
         /* Affichage Grille Standard (ou période ciblée) */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredJobs.map((job) => (
+          {unappliedJobs.map((job) => (
             <JobCard
               key={job.id}
               job={job}
@@ -730,9 +821,69 @@ export default function RadarPage() {
               onOpenCV={(j) => setSelectedJobForCV(j)}
               onOpenLetter={(j) => setSelectedJobForLetter(j)}
               onOpenMirror={(j) => setSelectedJobForMirror(j)}
+              onToggleMarkApplied={handleToggleMarkApplied}
               isNew={newJobIds.has(job.id)}
             />
           ))}
+        </div>
+      )}
+
+      {/* 4. Section Séparée : Offres Déjà Postulées (Protégées contre le re-scraping) */}
+      {appliedJobs.length > 0 && (
+        <div className="pt-8 border-t-2 border-stone-200/80 space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-2xl bg-gradient-to-r from-emerald-50/80 via-white to-stone-50 border border-emerald-200/80 shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-800 shadow-xs">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-bold text-stone-900 font-display">
+                    Offres Déjà Postulées
+                  </h2>
+                  <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 font-bold border border-emerald-300">
+                    {appliedJobs.length}
+                  </span>
+                </div>
+                <p className="text-xs text-stone-600 flex items-center gap-1.5 mt-0.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>Ces postes sont verrouillés : ils ne seront <strong>jamais re-scrappés</strong> ni réinsérés.</span>
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowAppliedSection((prev) => !prev)}
+              className="px-3.5 py-1.5 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-xs font-semibold text-stone-700 hover:text-stone-900 transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer self-end sm:self-center"
+            >
+              <span>{showAppliedSection ? "Masquer la section" : "Afficher les offres"}</span>
+              {showAppliedSection ? (
+                <ChevronUp className="w-4 h-4 text-stone-500" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-stone-500" />
+              )}
+            </button>
+          </div>
+
+          {showAppliedSection && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in duration-200">
+              {appliedJobs.map((job) => (
+                <JobCard
+                  key={job.id}
+                  job={job}
+                  atsMatch={atsScores[job.id]}
+                  atsLoading={isAtsLoading && !atsScores[job.id]}
+                  onArchive={handleArchive}
+                  onOpenCV={(j) => setSelectedJobForCV(j)}
+                  onOpenLetter={(j) => setSelectedJobForLetter(j)}
+                  onOpenMirror={(j) => setSelectedJobForMirror(j)}
+                  onToggleMarkApplied={handleToggleMarkApplied}
+                  isAppliedSection={true}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 

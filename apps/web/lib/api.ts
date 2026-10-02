@@ -221,6 +221,8 @@ export interface JobOffer {
   url: string;
   status: string;
   offer_type?: "PFE";
+  is_applied?: boolean;
+  applied_at?: string | null;
   published_at?: string | null;
   skills_required?: string;
   contract_duration?: string;
@@ -861,6 +863,38 @@ export async function transitionJobStatus(
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
       errorData?.detail?.message || "Échec de la transition de statut."
+    );
+  }
+  return res.json();
+}
+
+export async function markJobAsApplied(jobId: string): Promise<JobOffer> {
+  const res = await authFetch(`${API_BASE_URL}/api/jobs/${jobId}/mark-applied`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(
+      errorData?.detail?.message || "Échec du marquage de l'offre comme déjà postulée."
+    );
+  }
+  return res.json();
+}
+
+export async function unmarkJobAsApplied(jobId: string): Promise<JobOffer> {
+  const res = await authFetch(`${API_BASE_URL}/api/jobs/${jobId}/unmark-applied`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(
+      errorData?.detail?.message || "Échec de l'annulation du statut postulé."
     );
   }
   return res.json();

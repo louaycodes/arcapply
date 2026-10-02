@@ -10,6 +10,8 @@ import {
   fetchCoverLetter,
   updateCoverLetter,
   transitionJobStatus,
+  markJobAsApplied,
+  unmarkJobAsApplied,
   getCVPreviewUrl,
   getCVPdfDownloadUrl,
   ReconDossier,
@@ -223,6 +225,32 @@ export function MirrorReviewDrawer({
     }
   };
 
+  const isApplied = Boolean(
+    job?.is_applied ||
+      status === "SUBMITTED" ||
+      status === "INTERVIEW" ||
+      status === "OFFER"
+  );
+
+  const handleToggleApplied = async () => {
+    if (!job) return;
+    try {
+      setLoadingAction(true);
+      let updated: JobOffer;
+      if (isApplied) {
+        updated = await unmarkJobAsApplied(job.id);
+      } else {
+        updated = await markJobAsApplied(job.id);
+      }
+      setStatus(updated.status);
+      onJobUpdated?.(updated);
+    } catch (err: any) {
+      setErrorMsg(err.message || "Erreur lors de la modification du statut postulé.");
+    } finally {
+      setLoadingAction(false);
+    }
+  };
+
   const getStatusBadge = (st: string) => {
     switch (st) {
       case "DISCOVERED":
@@ -274,7 +302,35 @@ export function MirrorReviewDrawer({
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleToggleApplied}
+              disabled={loadingAction}
+              className={`px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 ${
+                isApplied
+                  ? "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-amber-50 hover:text-amber-900 hover:border-amber-300"
+                  : "bg-stone-50 text-stone-700 border-stone-200 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300"
+              }`}
+              title={
+                isApplied
+                  ? "Cliquer pour réintégrer l'offre en prospection"
+                  : "Marquer comme déjà postulé (protège contre tout re-scraping)"
+              }
+            >
+              {isApplied ? (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Déjà postulé</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-3.5 h-3.5 text-stone-500" />
+                  <span>J'ai déjà postulé</span>
+                </>
+              )}
+            </button>
+
             {job.url && (
               <a
                 href={job.url}
@@ -288,7 +344,7 @@ export function MirrorReviewDrawer({
             )}
             <button
               onClick={onClose}
-              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
               title="Fermer"
             >
               <X className="w-5 h-5" />

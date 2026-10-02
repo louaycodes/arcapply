@@ -155,6 +155,45 @@ def _migrate_db(engine) -> None:
         except Exception:
             pass
 
+        # Migrations anti-rescrape & offres déjà postulées
+        applied_columns = [
+            ("job_offers", "is_applied", "BOOLEAN DEFAULT 0"),
+            ("job_offers", "applied_at", "TIMESTAMP"),
+        ]
+        for tbl_name, col_name, col_type in applied_columns:
+            try:
+                conn.execute(text(f"ALTER TABLE {tbl_name} ADD COLUMN {col_name} {col_type}"))
+                conn.commit()
+            except Exception:
+                pass
+
+        try:
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_job_offers_is_applied ON job_offers (is_applied)"))
+            conn.commit()
+        except Exception:
+            pass
+
+        try:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS applied_job_signatures (
+                    id VARCHAR PRIMARY KEY,
+                    user_id VARCHAR NOT NULL DEFAULT 'louay',
+                    job_id VARCHAR,
+                    platform VARCHAR,
+                    external_id VARCHAR,
+                    company_clean VARCHAR NOT NULL,
+                    title_clean VARCHAR NOT NULL,
+                    url_normalized VARCHAR,
+                    applied_at TIMESTAMP
+                )
+            """))
+            conn.commit()
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_applied_signatures_user ON applied_job_signatures (user_id)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_applied_signatures_company ON applied_job_signatures (user_id, company_clean)"))
+            conn.commit()
+        except Exception:
+            pass
+
         # Tables pour l'architecture agentique (Playbook & Recon Dossier)
         try:
             conn.execute(text("""
