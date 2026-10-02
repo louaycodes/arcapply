@@ -324,93 +324,96 @@ export function JobCard({
       </div>
 
       {/* Footer Actions */}
-      <div className="pt-3.5 mt-3 border-t border-stone-100 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => onArchive(job.id)}
-            className="p-1.5 rounded-lg text-stone-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-            title="Archiver cette offre"
-          >
-            <Archive className="w-4 h-4" />
-          </button>
-
-          {(job.apply_url || job.url) && (
-            <a
-              href={job.apply_url || job.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-1.5 rounded-lg text-stone-500 hover:text-stone-900 hover:bg-stone-100 transition-colors inline-flex items-center gap-1 text-xs"
-              title="Ouvrir l'annonce officielle"
-            >
-              <ExternalLink className="w-4 h-4" />
-            </a>
-          )}
-
-          {onToggleMarkApplied && (
+      <div className="pt-3.5 mt-3 border-t border-stone-100 flex flex-col gap-2.5">
+        <div className="flex items-center justify-between gap-1.5">
+          <div className="flex items-center gap-1.5">
             <button
               type="button"
-              onClick={() => onToggleMarkApplied(job.id, !isApplied)}
-              className={`px-2 py-1 rounded-lg text-xs font-medium border flex items-center gap-1 transition-all cursor-pointer ${
-                isApplied
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-amber-50 hover:text-amber-800 hover:border-amber-300"
-                  : "bg-stone-50 text-stone-600 border-stone-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300"
-              }`}
-              title={
-                isApplied
-                  ? "Cliquer pour démarquer (remettre en prospection)"
-                  : "Marquer comme déjà postulé (ne sera plus jamais re-scrappé)"
-              }
+              onClick={() => onArchive(job.id)}
+              className="p-1.5 rounded-lg text-stone-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+              title="Archiver cette offre"
             >
-              {isApplied ? (
-                <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="hidden sm:inline">Déjà postulé</span>
-                </>
-              ) : (
-                <>
-                  <Send className="w-3.5 h-3.5 text-stone-500" />
-                  <span className="hidden sm:inline">J'ai postulé</span>
-                </>
-              )}
+              <Archive className="w-4 h-4" />
             </button>
-          )}
+
+            {(job.apply_url || job.url) && (
+              <a
+                href={job.apply_url || job.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-1.5 rounded-lg text-stone-500 hover:text-stone-900 hover:bg-stone-100 transition-colors inline-flex items-center gap-1 text-xs"
+                title="Ouvrir l'annonce officielle"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            )}
+
+            {onToggleMarkApplied && (
+              <button
+                type="button"
+                onClick={() => onToggleMarkApplied(job.id, !isApplied)}
+                className={`px-2 py-1 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                  isApplied
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-amber-50 hover:text-amber-800 hover:border-amber-300"
+                    : "bg-stone-50 text-stone-600 border-stone-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300"
+                }`}
+                title={
+                  isApplied
+                    ? "Cliquer pour démarquer (remettre en prospection)"
+                    : "Marquer comme déjà postulé (ne sera plus jamais re-scrappé)"
+                }
+              >
+                {isApplied ? (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>Déjà postulé</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-3.5 h-3.5 text-stone-500 shrink-0" />
+                    <span>J'ai postulé</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => onOpenLetter?.(job)}
+              className="px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 hover:text-stone-900 text-xs font-semibold flex items-center gap-1 shadow-xs transition-colors cursor-pointer whitespace-nowrap"
+              title="Générer une lettre de motivation adaptée"
+            >
+              <Mail className="w-3.5 h-3.5 text-primary shrink-0" />
+              <span>Lettre</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onOpenCV?.(job)}
+              className="px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 hover:text-stone-900 text-xs font-semibold flex items-center gap-1 shadow-xs transition-colors cursor-pointer whitespace-nowrap"
+              title="Aperçu du CV personnalisé pour cette offre"
+            >
+              <span>CV</span>
+            </button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => onOpenLetter?.(job)}
-            className="px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 hover:text-stone-900 text-xs font-semibold flex items-center gap-1 shadow-xs transition-colors cursor-pointer"
-            title="Générer une lettre de motivation adaptée"
-          >
-            <Mail className="w-3.5 h-3.5 text-primary" />
-            <span>Lettre</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onOpenCV?.(job)}
-            className="px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 hover:text-stone-900 text-xs font-semibold flex items-center gap-1 shadow-xs transition-colors cursor-pointer"
-            title="Aperçu du CV personnalisé pour cette offre"
-          >
-            <span>CV</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onOpenMirror?.(job)}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all tactile-button shadow-artisan-button cursor-pointer ${
-              isApplied
-                ? "bg-stone-800 hover:bg-stone-900 text-white"
-                : "bg-primary hover:bg-primary-hover text-white"
-            }`}
-            title={isApplied ? "Consulter le dossier de candidature" : "Préparer et vérifier ma candidature"}
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>{isApplied ? "Dossier" : "Postuler"}</span>
-          </button>
-        </div>
+        {/* Bouton Consulter Principal */}
+        <button
+          type="button"
+          onClick={() => onOpenMirror?.(job)}
+          className={`w-full py-2 px-3.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all tactile-button shadow-artisan-button cursor-pointer ${
+            isApplied
+              ? "bg-stone-800 hover:bg-stone-900 text-white"
+              : "bg-primary hover:bg-primary-hover text-white"
+          }`}
+          title={isApplied ? "Consulter le dossier de candidature" : "Consulter l'offre et préparer ma candidature"}
+        >
+          <Sparkles className="w-3.5 h-3.5 shrink-0" />
+          <span>{isApplied ? "Consulter le dossier" : "Consulter l'offre"}</span>
+        </button>
       </div>
     </div>
   );
