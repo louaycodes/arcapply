@@ -13,6 +13,7 @@ import {
   LogOut,
   LogIn,
   Sparkles,
+  Compass,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { checkEngineHealth } from "@/lib/api";
@@ -99,6 +100,20 @@ export function Sidebar() {
       </div>
 
       <div className="space-y-3">
+        {/* Onboarding Guide Reminder */}
+        {user && user.onboarding_completed === false && (
+          <Link
+            href="/onboarding/step-1"
+            className="flex items-center gap-2 p-2.5 rounded-xl bg-orange-50 border border-orange-200/90 text-primary hover:bg-orange-100 transition-all text-xs font-semibold shadow-xs"
+          >
+            <Compass className="w-4 h-4 shrink-0 text-primary animate-pulse" />
+            <div className="min-w-0">
+              <span className="block leading-tight font-bold">Guide de démarrage</span>
+              <span className="text-[10px] text-orange-800/80 font-normal">Compléter mon profil →</span>
+            </div>
+          </Link>
+        )}
+
         {/* User Card & Connexion */}
         {user ? (
           <div className="space-y-1.5">

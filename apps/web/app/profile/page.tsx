@@ -42,6 +42,7 @@ import {
   ExternalLink,
   Check,
   X,
+  Compass,
 } from "lucide-react";
 
 function StackInput({
@@ -707,6 +708,15 @@ export default function ProfilePage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Link
+            href="/onboarding/step-1"
+            className="px-3.5 py-2 rounded-md border border-orange-200 bg-orange-50 hover:bg-orange-100 text-xs font-semibold text-primary flex items-center gap-1.5 transition-colors shadow-xs"
+            title="Lancer le walkthrough guidé étape par étape"
+          >
+            <Compass className="w-3.5 h-3.5 text-primary" />
+            <span>Guide pas-à-pas</span>
+          </Link>
+
           <button
             type="button"
             onClick={populateDemoProfile}

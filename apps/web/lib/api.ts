@@ -130,6 +130,7 @@ export interface MasterProfile {
   languages_raw?: string;
   extracurriculars_raw?: string;
   is_complete: boolean;
+  onboarding_completed?: boolean;
   /** Préférence de recherche : exclusivement "PFE". */
   search_mode: "PFE";
   created_at: string;
@@ -991,6 +992,7 @@ export interface User {
   username: string;
   full_name: string;
   role: string;
+  onboarding_completed?: boolean;
 }
 
 export interface LoginResponse {
@@ -1038,6 +1040,16 @@ export async function fetchCurrentUser(token: string): Promise<User> {
   });
   if (!res.ok) {
     throw new Error("Session invalide ou expirée");
+  }
+  return res.json();
+}
+
+export async function completeOnboarding(): Promise<User> {
+  const res = await authFetch(`${API_BASE_URL}/api/auth/complete-onboarding`, {
+    method: "POST",
+  });
+  if (!res.ok) {
+    throw new Error("Impossible de finaliser le guide d'onboarding");
   }
   return res.json();
 }

@@ -52,10 +52,14 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
     try {
       if (isRegisterMode) {
         await register(emailInput, passwordInput, fullNameInput);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("arcapply_just_registered", "true");
+        }
+        router.push("/onboarding/step-1");
       } else {
         await login(emailInput, passwordInput);
+        router.push(redirectTo);
       }
-      router.push(redirectTo);
     } catch (err: any) {
       setError(err.message || (isRegisterMode ? "Échec de l'inscription" : "Échec de connexion"));
     } finally {
