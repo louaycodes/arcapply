@@ -88,7 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-screen bg-[#FBF9F5]">
-        <div className="flex flex-col items-center gap-3 text-stone-600">
+        <div className="flex flex-col items-center gap-3 text-stone-600 dark:text-stone-400">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
           <span className="text-sm font-medium">Chargement d'ArcApply...</span>
         </div>

@@ -23,7 +23,7 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
         }`}
         title="Mode Clair"
       >
-        <Sun className="w-3.5 h-3.5 text-amber-600" />
+        <Sun className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
         <span className="hidden sm:inline">Clair</span>
       </button>
 

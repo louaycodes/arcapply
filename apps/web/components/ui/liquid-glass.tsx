@@ -161,7 +161,7 @@ export function GlassCard({
 }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={`rounded-2xl border border-white/70 bg-white/80 backdrop-blur-xl shadow-artisan ${className}`}
+      className={`rounded-2xl border border-white/70 dark:border-stone-800 bg-white/80 dark:bg-stone-900/80 backdrop-blur-xl shadow-artisan ${className}`}
       {...props}
     >
       {children}
@@ -179,7 +179,7 @@ export function GlassPill({
 }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md bg-white/70 border border-white/80 shadow-xs ${className}`}
+      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md bg-white/70 dark:bg-stone-900/70 border border-white/80 dark:border-stone-700 shadow-xs ${className}`}
       {...props}
     >
       {children}

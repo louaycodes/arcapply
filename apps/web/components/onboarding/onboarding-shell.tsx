@@ -327,9 +327,9 @@ export function OnboardingShell({
         currentStepIndex: stepNumber,
       }}
     >
-      <div className="min-h-screen bg-[#FBF9F5] flex flex-col font-sans selection:bg-orange-100 selection:text-orange-900 pb-16">
+      <div className="min-h-screen bg-[#FBF9F5] dark:bg-[#12100E] flex flex-col font-sans selection:bg-orange-100 selection:text-orange-900 pb-16">
         {/* Top Header */}
-        <header className="border-b border-stone-200 bg-white/90 backdrop-blur-md sticky top-0 z-30 shadow-xs">
+        <header className="border-b border-stone-200 dark:border-stone-800 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md sticky top-0 z-30 shadow-xs">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-orange-700 flex items-center justify-center text-white shadow-md shadow-orange-600/20">
@@ -337,14 +337,14 @@ export function OnboardingShell({
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-sm font-bold text-stone-900 font-display">
+                  <h1 className="text-sm font-bold text-stone-900 dark:text-stone-100 font-display">
                     Walkthrough de Configuration Initiale
                   </h1>
-                  <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-orange-100 text-orange-900 border border-orange-200">
+                  <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-950/40 text-orange-900 dark:text-orange-300 border border-orange-200 dark:border-orange-800/60">
                     Étape {stepNumber} sur {ONBOARDING_STEPS.length}
                   </span>
                 </div>
-                <p className="text-xs text-stone-500">
+                <p className="text-xs text-stone-500 dark:text-stone-400">
                   Complétez votre profil étape par étape pour maximiser votre impact auprès des recruteurs
                 </p>
               </div>
@@ -354,15 +354,15 @@ export function OnboardingShell({
               <button
                 type="button"
                 onClick={() => fillDemoData(stepNumber)}
-                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-orange-200 bg-orange-50/80 hover:bg-orange-100 text-orange-800 text-xs font-semibold transition-all shadow-xs"
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-orange-200 dark:border-orange-800/60 bg-orange-50/80 dark:bg-orange-950/40 hover:bg-orange-100 dark:hover:bg-orange-900/40 text-orange-800 dark:text-orange-300 text-xs font-semibold transition-all shadow-xs"
                 title="Injecter un exemple d'étudiant ingénieur pour cette étape"
               >
-                <Sparkles className="w-3.5 h-3.5 text-orange-600" />
+                <Sparkles className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" />
                 <span>Exemple Ingénieur PFE</span>
               </button>
               <Link
                 href="/profile"
-                className="text-xs text-stone-500 hover:text-stone-800 px-2 py-1 transition-colors"
+                className="text-xs text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 px-2 py-1 transition-colors"
                 title="Quitter le guide et aller directement sur le profil complet"
               >
                 Passer au profil libre
@@ -371,7 +371,7 @@ export function OnboardingShell({
           </div>
 
           {/* Progress Bar */}
-          <div className="w-full bg-stone-100 h-1.5 relative overflow-hidden">
+          <div className="w-full bg-stone-100 dark:bg-stone-800 h-1.5 relative overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-primary to-orange-500 transition-all duration-500 ease-out"
               style={{ width: `${progressPct}%` }}
@@ -380,7 +380,7 @@ export function OnboardingShell({
         </header>
 
         {/* Stepper Pipeline Navigation Bar */}
-        <div className="bg-white border-b border-stone-200/80 shadow-xs">
+        <div className="bg-white dark:bg-stone-900 border-b border-stone-200/80 dark:border-stone-800 shadow-xs">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 py-2.5 overflow-x-auto scrollbar-none">
             <nav className="flex items-center gap-2 min-w-max">
               {ONBOARDING_STEPS.map((s, idx) => {
@@ -391,7 +391,7 @@ export function OnboardingShell({
                 return (
                   <React.Fragment key={s.id}>
                     {idx > 0 && (
-                      <span className="text-stone-300 text-xs font-mono">→</span>
+                      <span className="text-stone-300 dark:text-stone-500 text-xs font-mono">→</span>
                     )}
                     <Link
                       href={s.path}
@@ -399,12 +399,12 @@ export function OnboardingShell({
                         isCurrent
                           ? "bg-primary text-white shadow-xs font-semibold"
                           : isPassed
-                          ? "text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/60"
-                          : "text-stone-500 hover:text-stone-800 hover:bg-stone-50"
+                          ? "text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 border border-emerald-200/60 dark:border-emerald-800/60"
+                          : "text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-800"
                       }`}
                     >
                       {isPassed ? (
-                        <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                       ) : (
                         <Icon className="w-3.5 h-3.5 shrink-0" />
                       )}
@@ -420,17 +420,17 @@ export function OnboardingShell({
         {/* Main Content Area */}
         <main className="max-w-4xl mx-auto w-full px-4 sm:px-6 pt-6 flex-1">
           {/* Step Header Banner */}
-          <div className="mb-6 p-5 rounded-2xl bg-white border border-stone-200/80 shadow-artisan flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="mb-6 p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 shadow-artisan flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 text-primary text-xs font-bold uppercase tracking-wider mb-1">
                 <span>Étape {stepNumber} / {ONBOARDING_STEPS.length}</span>
                 <span>•</span>
                 <span>{progressPct}% Complété</span>
               </div>
-              <h2 className="text-xl font-bold text-stone-900 font-display">
+              <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100 font-display">
                 {currentStep.title}
               </h2>
-              <p className="text-xs text-stone-600 mt-1 max-w-2xl leading-relaxed">
+              <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 max-w-2xl leading-relaxed">
                 {currentStep.subtitle}
               </p>
             </div>
@@ -438,9 +438,9 @@ export function OnboardingShell({
             <button
               type="button"
               onClick={() => fillDemoData(stepNumber)}
-              className="sm:hidden self-start inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-orange-200 bg-orange-50 text-orange-800 text-xs font-semibold"
+              className="sm:hidden self-start inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-orange-200 dark:border-orange-800/60 bg-orange-50 dark:bg-orange-950/40 text-orange-800 dark:text-orange-300 text-xs font-semibold"
             >
-              <Sparkles className="w-3.5 h-3.5 text-orange-600" />
+              <Sparkles className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" />
               <span>Remplir exemple</span>
             </button>
           </div>

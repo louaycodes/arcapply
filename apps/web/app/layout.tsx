@@ -50,11 +50,11 @@ export default function RootLayout({
         <AuthProvider>
           <LanguageProvider>
             <ThemeProvider>
-              <div className="flex w-full min-h-screen">
+              <div className="flex w-full min-h-screen bg-background text-foreground">
                 <Sidebar />
-                <div className="flex-1 flex flex-col min-w-0">
+                <div className="flex-1 flex flex-col min-w-0 bg-background text-foreground">
                   <TopNavbar />
-                  <main className="flex-1 overflow-y-auto">
+                  <main className="flex-1 overflow-y-auto bg-background text-foreground">
                     {children}
                   </main>
                 </div>

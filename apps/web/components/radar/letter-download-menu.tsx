@@ -151,7 +151,7 @@ export function LetterDownloadMenu({
               Format d'exportation
             </span>
             {error && (
-              <span className="text-[10px] text-red-600 font-semibold truncate max-w-[140px]">
+              <span className="text-[10px] text-red-600 dark:text-red-400 font-semibold truncate max-w-[140px]">
                 {error}
               </span>
             )}
@@ -194,7 +194,7 @@ export function LetterDownloadMenu({
                     {isItemLoading ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
                     ) : isItemSuccess ? (
-                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                     ) : (
                       <Download className="w-3.5 h-3.5 text-stone-400 group-hover:text-stone-700 dark:group-hover:text-stone-200 transition-colors" />
                     )}

@@ -34,6 +34,18 @@
   --ring: #EA580C;
   --primary: #EA580C;
   --primary-foreground: #FFFFFF;
+  color-scheme: dark;
+}
+
+html.dark,
+.dark body {
+  background-color: #12100E !important;
+  color: #F5F5F4 !important;
+}
+
+.dark main {
+  background-color: #12100E;
+  color: #F5F5F4;
 }
 
 body {
@@ -116,7 +128,8 @@ h1, h2, h3, .font-display {
 }
 
 .dark .border-stone-200,
-.dark .border-stone-100 {
+.dark .border-stone-100,
+.dark .border-stone-300 {
   border-color: #2E2A26 !important;
 }
 
@@ -146,4 +159,23 @@ h1, h2, h3, .font-display {
 
 .dark .bg-\[\#F5EFE6\]\/70 {
   background-color: rgba(28, 25, 23, 0.7) !important;
+}
+
+.dark .bg-\[\#FAF7F2\],
+.dark .bg-\[\#FBF9F5\],
+.dark .bg-\[\#F7F2EB\],
+.dark .bg-\[\#F7F3EC\],
+.dark .bg-\[\#F0EBE1\],
+.dark .bg-\[\#FAF8F5\] {
+  background-color: #12100E !important;
+}
+
+.dark .bg-\[\#EFE8DD\] {
+  background-color: #181513 !important;
+}
+
+.dark input,
+.dark textarea,
+.dark select {
+  color-scheme: dark;
 }
