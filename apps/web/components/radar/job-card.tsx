@@ -29,111 +29,111 @@ interface JobCardProps {
 const PLATFORM_CONFIG: Record<string, { label: string; className: string }> = {
   top100_enterprises: {
     label: "Portail Officiel",
-    className: "bg-amber-50 text-amber-900 border-amber-300 font-semibold",
+    className: "bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border-amber-300 dark:border-amber-800/60 font-semibold",
   },
   linkedin: {
     label: "LinkedIn",
-    className: "bg-blue-50 text-blue-800 border-blue-200 font-semibold",
+    className: "bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800/60 font-semibold",
   },
   keejob: {
     label: "Keejob",
-    className: "bg-indigo-50 text-indigo-800 border-indigo-200 font-semibold",
+    className: "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800/60 font-semibold",
   },
   tunisietravail: {
     label: "TunisieTravail",
-    className: "bg-emerald-50 text-emerald-800 border-emerald-200 font-semibold",
+    className: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60 font-semibold",
   },
   tanitjobs: {
     label: "Tanitjobs",
-    className: "bg-amber-50 text-amber-800 border-amber-200 font-semibold",
+    className: "bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/60 font-semibold",
   },
   wttj: {
     label: "Welcome Jungle",
-    className: "bg-yellow-50 text-yellow-900 border-yellow-300 font-semibold",
+    className: "bg-yellow-50 dark:bg-yellow-950/40 text-yellow-900 dark:text-yellow-300 border-yellow-300 dark:border-yellow-800/60 font-semibold",
   },
   "1jeune1solution": {
     label: "1j1s",
-    className: "bg-cyan-50 text-cyan-800 border-cyan-200 font-semibold",
+    className: "bg-cyan-50 dark:bg-cyan-950/40 text-cyan-800 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800/60 font-semibold",
   },
   jobteaser: {
     label: "Jobteaser",
-    className: "bg-teal-50 text-teal-800 border-teal-200 font-semibold",
+    className: "bg-teal-50 dark:bg-teal-950/40 text-teal-800 dark:text-teal-300 border-teal-200 dark:border-teal-800/60 font-semibold",
   },
   emploitunisie: {
     label: "EmploiTunisie",
-    className: "bg-blue-50 text-blue-800 border-blue-200 font-semibold",
+    className: "bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800/60 font-semibold",
   },
   stagetunisie: {
     label: "StageTunisie",
-    className: "bg-rose-50 text-rose-800 border-rose-200 font-semibold",
+    className: "bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border-rose-200 dark:border-rose-800/60 font-semibold",
   },
   optioncarriere: {
     label: "OptionCarriere",
-    className: "bg-orange-50 text-orange-800 border-orange-200 font-semibold",
+    className: "bg-orange-50 dark:bg-orange-950/40 text-orange-800 dark:text-orange-300 border-orange-200 dark:border-orange-800/60 font-semibold",
   },
   aneti: {
     label: "ANETI",
-    className: "bg-red-50 text-red-800 border-red-200 font-semibold",
+    className: "bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-300 border-red-200 dark:border-red-800/60 font-semibold",
   },
   hellowork: {
     label: "HelloWork",
-    className: "bg-violet-50 text-violet-800 border-violet-200 font-semibold",
+    className: "bg-violet-50 dark:bg-violet-950/40 text-violet-800 dark:text-violet-300 border-violet-200 dark:border-violet-800/60 font-semibold",
   },
   indeed: {
     label: "Indeed",
-    className: "bg-sky-50 text-sky-800 border-sky-200 font-semibold",
+    className: "bg-sky-50 dark:bg-sky-950/40 text-sky-800 dark:text-sky-300 border-sky-200 dark:border-sky-800/60 font-semibold",
   },
   apec: {
     label: "Apec",
-    className: "bg-indigo-50 text-indigo-900 border-indigo-200 font-semibold",
+    className: "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-900 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800/60 font-semibold",
   },
   moovijob: {
     label: "Moovijob",
-    className: "bg-fuchsia-50 text-fuchsia-900 border-fuchsia-200 font-semibold",
+    className: "bg-fuchsia-50 dark:bg-fuchsia-950/40 text-fuchsia-900 dark:text-fuchsia-300 border-fuchsia-200 dark:border-fuchsia-800/60 font-semibold",
   },
   esn_direct: {
     label: "Portails ESN",
-    className: "bg-amber-50 text-amber-900 border-amber-300 font-semibold",
+    className: "bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border-amber-300 dark:border-amber-800/60 font-semibold",
   },
   monster: {
     label: "Monster",
-    className: "bg-purple-50 text-purple-900 border-purple-200 font-semibold",
+    className: "bg-purple-50 dark:bg-purple-950/40 text-purple-900 dark:text-purple-300 border-purple-200 dark:border-purple-800/60 font-semibold",
   },
   stagiaires_fr: {
     label: "Stagiaires.fr",
-    className: "bg-pink-50 text-pink-900 border-pink-200 font-semibold",
+    className: "bg-pink-50 dark:bg-pink-950/40 text-pink-900 dark:text-pink-300 border-pink-200 dark:border-pink-800/60 font-semibold",
   },
   cadremploi: {
     label: "Cadremploi",
-    className: "bg-emerald-50 text-emerald-900 border-emerald-300 font-semibold",
+    className: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800/60 font-semibold",
   },
   meteojob: {
     label: "Meteojob",
-    className: "bg-sky-50 text-sky-900 border-sky-200 font-semibold",
+    className: "bg-sky-50 dark:bg-sky-950/40 text-sky-900 dark:text-sky-300 border-sky-200 dark:border-sky-800/60 font-semibold",
   },
   letudiant: {
     label: "L'Etudiant",
-    className: "bg-rose-50 text-rose-900 border-rose-200 font-semibold",
+    className: "bg-rose-50 dark:bg-rose-950/40 text-rose-900 dark:text-rose-300 border-rose-200 dark:border-rose-800/60 font-semibold",
   },
   chooseyourboss: {
     label: "ChooseYourBoss",
-    className: "bg-lime-50 text-lime-900 border-lime-300 font-semibold",
+    className: "bg-lime-50 dark:bg-lime-950/40 text-lime-900 dark:text-lime-300 border-lime-300 dark:border-lime-800/60 font-semibold",
   },
   stackoverflow_jobs: {
     label: "StackOverflow",
-    className: "bg-orange-50 text-orange-900 border-orange-300 font-semibold",
+    className: "bg-orange-50 dark:bg-orange-950/40 text-orange-900 dark:text-orange-300 border-orange-300 dark:border-orange-800/60 font-semibold",
   },
   numeum: {
     label: "Numeum",
-    className: "bg-indigo-50 text-indigo-900 border-indigo-200 font-semibold",
+    className: "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-900 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800/60 font-semibold",
   },
   capdigital: {
     label: "Cap Digital",
-    className: "bg-teal-50 text-teal-900 border-teal-200 font-semibold",
+    className: "bg-teal-50 dark:bg-teal-950/40 text-teal-900 dark:text-teal-300 border-teal-200 dark:border-teal-800/60 font-semibold",
   },
   offre_emploi_tn: {
     label: "Offre-Emploi.tn",
-    className: "bg-amber-50 text-amber-900 border-amber-300 font-semibold",
+    className: "bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border-amber-300 dark:border-amber-800/60 font-semibold",
   },
 };
 
@@ -214,10 +214,10 @@ export function JobCard({
     <div
       className={`group relative p-5 rounded-2xl border transition-all duration-200 hover:shadow-artisan-card flex flex-col justify-between ${
         isApplied
-          ? "bg-emerald-50/20 border-emerald-300/80 shadow-xs"
+          ? "bg-emerald-50/20 dark:bg-emerald-950/20 border-emerald-300/80 dark:border-emerald-800/80 shadow-xs"
           : isNew
-          ? "bg-white border-primary shadow-artisan-button ring-1 ring-primary/40"
-          : "bg-white border-stone-200 hover:border-stone-300 shadow-artisan"
+          ? "bg-white dark:bg-stone-900 border-primary shadow-artisan-button ring-1 ring-primary/40"
+          : "bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700 shadow-artisan"
       }`}
     >
       <div className="space-y-3.5">
@@ -226,7 +226,7 @@ export function JobCard({
           <div className="flex items-center gap-1.5 flex-wrap">
             {/* 1. Source d'où on l'a scrappé */}
             {job.is_direct_career_site ? (
-              <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full border bg-amber-100 text-amber-900 border-amber-300 flex items-center gap-1 shadow-xs">
+              <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full border bg-amber-100 dark:bg-amber-950/50 text-amber-900 dark:text-amber-200 border-amber-300 dark:border-amber-800/60 flex items-center gap-1 shadow-xs">
                 <Building2 className="w-3 h-3" />
                 <span>Site Officiel</span>
               </span>
@@ -239,7 +239,7 @@ export function JobCard({
             )}
 
             {/* 2. Pays : France / Tunisie une seule fois */}
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-stone-100 text-stone-700 border border-stone-200">
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700">
               {countryLabel}
             </span>
 
@@ -247,8 +247,8 @@ export function JobCard({
             <span
               className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
                 contractLabel === "Job"
-                  ? "bg-blue-50 text-blue-800 border-blue-200"
-                  : "bg-emerald-50 text-emerald-800 border-emerald-200"
+                  ? "bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800/60"
+                  : "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60"
               }`}
             >
               {contractLabel}
@@ -261,8 +261,8 @@ export function JobCard({
             )}
 
             {isApplied && (
-              <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 flex items-center gap-1 shadow-xs">
-                <CheckCircle2 className="w-3 h-3 text-emerald-700" />
+              <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/50 text-emerald-900 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-800/60 flex items-center gap-1 shadow-xs">
+                <CheckCircle2 className="w-3 h-3 text-emerald-700 dark:text-emerald-400" />
                 <span>Postulé</span>
               </span>
             )}
@@ -272,14 +272,14 @@ export function JobCard({
           <div className="flex items-center gap-2">
             <AtsScoreBadge match={atsMatch} loading={atsLoading} />
             <div
-              className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground bg-muted/40 px-2 py-0.5 rounded-full border border-border/30"
+              className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground dark:text-stone-400 bg-muted/40 dark:bg-stone-800/50 px-2 py-0.5 rounded-full border border-border/30 dark:border-stone-700/50"
               title={
                 job.published_at
                   ? `Publié le ${new Date(job.published_at).toLocaleDateString("fr-FR")}`
                   : "Date de collecte"
               }
             >
-              <Clock className="w-3 h-3 text-muted-foreground/70" />
+              <Clock className="w-3 h-3 text-muted-foreground/70 dark:text-stone-500" />
               <span>{relativeTime}</span>
             </div>
           </div>
@@ -287,21 +287,21 @@ export function JobCard({
 
         {/* Titre de l'offre */}
         <div>
-          <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2 leading-snug">
+          <h3 className="text-sm font-semibold text-foreground dark:text-stone-100 group-hover:text-primary transition-colors line-clamp-2 leading-snug">
             {job.title}
           </h3>
 
           {/* Entreprise & Localisation une seule fois */}
-          <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs text-muted-foreground">
-            <span className="font-semibold text-foreground flex items-center gap-1">
-              <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
+          <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs text-muted-foreground dark:text-stone-400">
+            <span className="font-semibold text-foreground dark:text-stone-200 flex items-center gap-1">
+              <Building2 className="w-3.5 h-3.5 text-muted-foreground dark:text-stone-400" />
               {job.company}
             </span>
             {cleanLocation && (
               <>
                 <span>•</span>
                 <span className="flex items-center gap-1">
-                  <MapPin className="w-3 h-3 text-muted-foreground" />
+                  <MapPin className="w-3 h-3 text-muted-foreground dark:text-stone-400" />
                   {cleanLocation}
                 </span>
               </>
@@ -309,8 +309,8 @@ export function JobCard({
             {job.salary_stipend && (
               <>
                 <span>•</span>
-                <span className="flex items-center gap-1 text-emerald-700 font-semibold">
-                  <Coins className="w-3 h-3 text-emerald-600" />
+                <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-semibold">
+                  <Coins className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                   {job.salary_stipend}
                 </span>
               </>
@@ -324,13 +324,13 @@ export function JobCard({
             {skillsList.slice(0, 5).map((skill) => (
               <span
                 key={skill}
-                className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-stone-100 text-stone-700 border border-stone-200 hover:border-orange-300 transition-colors"
+                className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700 hover:border-orange-300 dark:hover:border-orange-500 transition-colors"
               >
                 {skill}
               </span>
             ))}
             {skillsList.length > 5 && (
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-stone-100/60 text-stone-500">
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-stone-100/60 dark:bg-stone-800/60 text-stone-500 dark:text-stone-400">
                 +{skillsList.length - 5}
               </span>
             )}
@@ -338,19 +338,19 @@ export function JobCard({
         )}
 
         {/* Description snippet */}
-        <p className="text-xs text-stone-600 line-clamp-2 leading-relaxed">
+        <p className="text-xs text-stone-600 dark:text-stone-400 line-clamp-2 leading-relaxed">
           {job.description_raw}
         </p>
       </div>
 
       {/* Footer Actions */}
-      <div className="pt-3.5 mt-3 border-t border-stone-100 flex flex-col gap-2.5">
+      <div className="pt-3.5 mt-3 border-t border-stone-100 dark:border-stone-800 flex flex-col gap-2.5">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
             <button
               type="button"
               onClick={() => onArchive(job.id)}
-              className="p-1.5 rounded-lg text-stone-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+              className="p-1.5 rounded-lg text-stone-400 dark:text-stone-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
               title="Archiver cette offre"
             >
               <Archive className="w-4 h-4" />
@@ -361,7 +361,7 @@ export function JobCard({
                 href={job.apply_url || job.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-1.5 rounded-lg text-stone-500 hover:text-stone-900 hover:bg-stone-100 transition-colors inline-flex items-center gap-1 text-xs"
+                className="p-1.5 rounded-lg text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors inline-flex items-center gap-1 text-xs"
                 title="Ouvrir l'annonce officielle"
               >
                 <ExternalLink className="w-4 h-4" />
@@ -375,8 +375,8 @@ export function JobCard({
               onClick={() => onToggleMarkApplied(job.id, !isApplied)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold border flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 isApplied
-                  ? "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-amber-50 hover:text-amber-800 hover:border-amber-300"
-                  : "bg-stone-50 text-stone-700 border-stone-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300"
+                  ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 hover:bg-amber-50 dark:hover:bg-amber-950/40 hover:text-amber-800 dark:hover:text-amber-300 hover:border-amber-300 dark:hover:border-amber-800"
+                  : "bg-stone-50 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-700 dark:hover:text-emerald-300 hover:border-emerald-300 dark:hover:border-emerald-800"
               }`}
               title={
                 isApplied
@@ -386,12 +386,12 @@ export function JobCard({
             >
               {isApplied ? (
                 <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <span>Déjà postulé</span>
                 </>
               ) : (
                 <>
-                  <Send className="w-3.5 h-3.5 text-stone-500 shrink-0" />
+                  <Send className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400 shrink-0" />
                   <span>J'ai postulé</span>
                 </>
               )}
@@ -399,19 +399,19 @@ export function JobCard({
           )}
         </div>
 
-        {/* Bouton Préparer les documents de l'offre (Principal) */}
+        {/* Bouton Consulter l'offre (Principal) */}
         <button
           type="button"
           onClick={() => onOpenMirror?.(job)}
           className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all tactile-button shadow-artisan-button cursor-pointer ${
             isApplied
-              ? "bg-stone-800 hover:bg-stone-900 text-white"
-              : "bg-primary hover:bg-primary-hover text-white"
+              ? "bg-stone-800 dark:bg-stone-700 hover:bg-stone-900 dark:hover:bg-stone-600 text-white"
+              : "bg-primary hover:bg-primary-hover text-white shadow-xs"
           }`}
-          title="Ouvrir l'analyse profonde et préparer les documents de l'offre"
+          title={isApplied ? "Consulter le dossier de candidature" : "Consulter l'offre et préparer ma candidature"}
         >
           <Sparkles className="w-3.5 h-3.5 shrink-0" />
-          <span>Préparer les documents de l'offre</span>
+          <span>{isApplied ? "Consulter le dossier" : "Consulter l'offre"}</span>
         </button>
       </div>
     </div>

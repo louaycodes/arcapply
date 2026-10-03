@@ -706,7 +706,7 @@ export default function ProfilePage() {
             <h1 className="text-2xl font-bold tracking-tight text-foreground font-display">
               Mon Profil Professionnel
             </h1>
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-orange-100 text-orange-900 border border-orange-200">
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-orange-100 dark:bg-orange-900/40 text-orange-900 dark:text-orange-300 border border-orange-200 dark:border-orange-800/60">
               Certifié
             </span>
           </div>
@@ -718,7 +718,7 @@ export default function ProfilePage() {
         <div className="flex items-center gap-3">
           <Link
             href="/onboarding/step-1"
-            className="px-3.5 py-2 rounded-md border border-orange-200 bg-orange-50 hover:bg-orange-100 text-xs font-semibold text-primary flex items-center gap-1.5 transition-colors shadow-xs"
+            className="px-3.5 py-2 rounded-md border border-orange-200 dark:border-orange-800/60 bg-orange-50 dark:bg-orange-950/40 hover:bg-orange-100 text-xs font-semibold text-primary flex items-center gap-1.5 transition-colors shadow-xs"
             title="Lancer le walkthrough guidé étape par étape"
           >
             <Compass className="w-3.5 h-3.5 text-primary" />
@@ -814,16 +814,16 @@ export default function ProfilePage() {
           {/* Missing fields list */}
           {!isComplete && status && status.missing_fields.length > 0 && (
             <div className="pt-2">
-              <p className="text-xs font-semibold text-stone-700 mb-2">
+              <p className="text-xs font-semibold text-stone-700 dark:text-stone-300 mb-2">
                 Éléments recommandés pour optimiser votre profil :
               </p>
               <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                 {status.missing_fields.map((field, idx) => (
                   <li
                     key={idx}
-                    className="flex items-center gap-2 text-amber-950 bg-amber-50 px-2.5 py-1.5 rounded-lg border border-amber-200 font-medium shadow-xs"
+                    className="flex items-center gap-2 text-amber-950 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800/60 font-medium shadow-xs"
                   >
-                    <ArrowRight className="w-3.5 h-3.5 text-amber-700 flex-shrink-0" />
+                    <ArrowRight className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400 flex-shrink-0" />
                     <span>{field}</span>
                   </li>
                 ))}
@@ -833,13 +833,13 @@ export default function ProfilePage() {
         </div>
 
         {/* Quality Check Card */}
-        <div className="p-6 rounded-2xl border border-stone-200 bg-white shadow-artisan flex flex-col justify-between space-y-4">
+        <div className="p-6 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-artisan flex flex-col justify-between space-y-4">
           <div>
-            <h4 className="text-sm font-bold text-stone-900 font-display flex items-center gap-2">
+            <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 font-display flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-primary" />
               <span>Garantie de qualité</span>
             </h4>
-            <p className="text-xs text-stone-600 mt-1.5 leading-relaxed">
+            <p className="text-xs text-stone-600 dark:text-stone-400 mt-1.5 leading-relaxed">
               Pour assurer l'impact de vos candidatures auprès des recruteurs, ArcApply vérifie que vos coordonnées, formations, expériences et compétences sont bien prêtes.
             </p>
           </div>
@@ -848,7 +848,7 @@ export default function ProfilePage() {
             <button
               type="button"
               onClick={handleTestGeneration}
-              className="w-full py-2 px-3 rounded-xl border border-stone-300 bg-stone-50 hover:bg-stone-100 text-xs font-semibold text-stone-800 transition-colors shadow-xs cursor-pointer"
+              className="w-full py-2 px-3 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 hover:bg-stone-100 dark:hover:bg-stone-700 text-xs font-semibold text-stone-800 dark:text-stone-200 transition-colors shadow-xs cursor-pointer"
             >
               Vérifier l'éligibilité de mon profil
             </button>
@@ -857,10 +857,10 @@ export default function ProfilePage() {
               <div
                 className={`p-2.5 rounded-lg text-xs font-medium border ${
                   testGenResult.startsWith("Succès")
-                    ? "bg-emerald-50 border-emerald-300 text-emerald-950"
+                    ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-950 dark:text-emerald-300"
                     : testGenResult.startsWith("Bloqué")
-                    ? "bg-rose-50 border-rose-300 text-rose-950"
-                    : "bg-stone-50 border-stone-200 text-stone-800"
+                    ? "bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800 text-rose-950 dark:text-rose-300"
+                    : "bg-stone-50 dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-800 dark:text-stone-200"
                 }`}
               >
                 {testGenResult}
@@ -1940,7 +1940,7 @@ export default function ProfilePage() {
               <div>
                 <h3 className="text-lg font-bold text-foreground font-display flex items-center gap-2">
                   <span>Télécharger mon CV Complet (PDF A4 Vectoriel)</span>
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60">
                     100% Souverain
                   </span>
                 </h3>
@@ -2012,19 +2012,19 @@ export default function ProfilePage() {
           {/* Quick checklist of included elements */}
           <div className="pt-4 border-t border-border/40 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs text-muted-foreground">
             <div className="flex items-center gap-1.5">
-              <Check className="w-3.5 h-3.5 text-emerald-600" />
+              <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>{stages.length} Stage{stages.length > 1 ? "s" : ""}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Check className="w-3.5 h-3.5 text-emerald-600" />
+              <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>{profile.projects.length} Projet{profile.projects.length > 1 ? "s" : ""}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Check className="w-3.5 h-3.5 text-emerald-600" />
+              <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>{(profile.extracurriculars || []).length} Activité{(profile.extracurriculars || []).length > 1 ? "s" : ""} extra</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Check className="w-3.5 h-3.5 text-emerald-600" />
+              <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>{(profile.languages || []).length} Langue{(profile.languages || []).length > 1 ? "s" : ""}</span>
             </div>
           </div>

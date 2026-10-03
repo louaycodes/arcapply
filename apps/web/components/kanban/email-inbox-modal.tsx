@@ -131,28 +131,28 @@ export function EmailInboxModal({
     switch (cat) {
       case "INTERVIEW":
         return (
-          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-900 border border-emerald-300 flex items-center gap-1 shadow-xs">
-            <CalendarCheck className="w-3.5 h-3.5 text-emerald-700" />
+          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 flex items-center gap-1 shadow-xs">
+            <CalendarCheck className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
             Entretien décroché
           </span>
         );
       case "REJECTION":
         return (
-          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-900 border border-rose-300 flex items-center gap-1 shadow-xs">
-            <XCircle className="w-3.5 h-3.5 text-rose-700" />
+          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 dark:bg-rose-950/40 text-rose-900 dark:text-rose-300 border border-rose-300 dark:border-rose-800 flex items-center gap-1 shadow-xs">
+            <XCircle className="w-3.5 h-3.5 text-rose-700 dark:text-rose-400" />
             Non retenu
           </span>
         );
       case "ACKNOWLEDGEMENT":
         return (
-          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-900 border border-blue-300 flex items-center gap-1 shadow-xs">
-            <CheckCircle2 className="w-3.5 h-3.5 text-blue-700" />
+          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-300 border border-blue-300 dark:border-blue-800 flex items-center gap-1 shadow-xs">
+            <CheckCircle2 className="w-3.5 h-3.5 text-blue-700 dark:text-blue-400" />
             Accusé réception
           </span>
         );
       default:
         return (
-          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-stone-100 text-stone-700 border border-stone-200">
+          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700">
             Autre
           </span>
         );
@@ -163,29 +163,29 @@ export function EmailInboxModal({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-stone-900/40 backdrop-blur-xs animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-stone-900/60 backdrop-blur-xs animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-4xl h-[90vh] rounded-2xl border border-stone-200 bg-white shadow-xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+        className="w-full max-w-4xl h-[90vh] rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-4 sm:px-6 py-4 border-b border-stone-200 flex items-center justify-between gap-4 bg-stone-50/70">
+        <div className="p-4 sm:px-6 py-4 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between gap-4 bg-stone-50/70 dark:bg-stone-900/90">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-orange-100 border border-orange-200 flex items-center justify-center text-primary">
+            <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800/60 flex items-center justify-center text-primary">
               <Mail className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base sm:text-lg font-bold text-stone-900 font-display">
+                <h3 className="text-base sm:text-lg font-bold text-stone-900 dark:text-stone-100 font-display">
                   Boîte de réception des recruteurs
                 </h3>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-100 text-orange-900 border border-orange-200">
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-950/60 text-orange-900 dark:text-orange-200 border border-orange-200 dark:border-orange-800">
                   Synchronisation active
                 </span>
               </div>
-              <p className="text-xs text-stone-500 font-serif italic">
+              <p className="text-xs text-stone-500 dark:text-stone-400 font-serif italic">
                 Détection automatique des réponses et mise à jour de vos candidatures.
               </p>
             </div>
@@ -196,15 +196,15 @@ export function EmailInboxModal({
               type="button"
               onClick={handleSync}
               disabled={syncing}
-              className="px-3 py-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-xs font-semibold text-stone-700 hover:text-stone-900 flex items-center gap-1.5 transition-colors disabled:opacity-50 shadow-xs"
+              className="px-3 py-1.5 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 hover:bg-stone-50 dark:hover:bg-stone-700 text-xs font-semibold text-stone-700 dark:text-stone-300 hover:text-stone-900 dark:hover:text-stone-100 flex items-center gap-1.5 transition-colors disabled:opacity-50 shadow-xs cursor-pointer"
             >
-              <RefreshCw className={`w-3.5 h-3.5 text-stone-500 ${syncing ? "animate-spin" : ""}`} />
+              <RefreshCw className={`w-3.5 h-3.5 text-stone-500 dark:text-stone-400 ${syncing ? "animate-spin" : ""}`} />
               <span className="hidden sm:inline">Synchroniser</span>
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors"
+              className="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -213,11 +213,11 @@ export function EmailInboxModal({
 
         {/* Notification banner */}
         {notification && (
-          <div className="px-6 py-2.5 bg-orange-50 border-b border-orange-200 flex items-center justify-between text-xs text-orange-950 font-medium">
+          <div className="px-6 py-2.5 bg-orange-50 dark:bg-orange-950/40 border-b border-orange-200 dark:border-orange-800 flex items-center justify-between text-xs text-orange-950 dark:text-orange-200 font-medium">
             <span>{notification}</span>
             <button
               onClick={() => setNotification(null)}
-              className="p-1 hover:bg-orange-100 rounded text-orange-800"
+              className="p-1 hover:bg-orange-100 dark:hover:bg-orange-900/40 rounded text-orange-800 dark:text-orange-300"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -225,18 +225,18 @@ export function EmailInboxModal({
         )}
 
         {/* Quick Simulator Sandbox */}
-        <div className="p-4 sm:px-6 border-b border-stone-200 bg-stone-50/50 space-y-3">
+        <div className="p-4 sm:px-6 border-b border-stone-200 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-900/50 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Zap className="w-4 h-4 text-amber-600" />
-              <span className="text-xs font-bold uppercase tracking-wider text-stone-800 font-mono">
+              <Zap className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              <span className="text-xs font-bold uppercase tracking-wider text-stone-800 dark:text-stone-200 font-mono">
                 Ajouter ou tester un email reçu
               </span>
             </div>
             <button
               type="button"
               onClick={() => setShowCustomSim(!showCustomSim)}
-              className="text-xs text-primary hover:text-orange-700 font-semibold flex items-center gap-1 transition-colors"
+              className="text-xs text-primary hover:text-orange-700 dark:hover:text-orange-400 font-semibold flex items-center gap-1 transition-colors cursor-pointer"
             >
               <span>{showCustomSim ? "Masquer le formulaire" : "Saisir un email manuellement"}</span>
               {showCustomSim ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -256,9 +256,9 @@ export function EmailInboxModal({
                   company_hint: activeCompany,
                 })
               }
-              className="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-50 shadow-xs"
+              className="px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-emerald-900 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-50 shadow-xs cursor-pointer"
             >
-              <CalendarCheck className="w-3.5 h-3.5 text-emerald-700" />
+              <CalendarCheck className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
               <span>Exemple Entretien ({activeCompany})</span>
             </button>
 
@@ -273,9 +273,9 @@ export function EmailInboxModal({
                   company_hint: activeCompany,
                 })
               }
-              className="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-900 border border-rose-300 text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-50 shadow-xs"
+              className="px-3 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-900 dark:text-rose-300 border border-rose-300 dark:border-rose-800 text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-50 shadow-xs cursor-pointer"
             >
-              <XCircle className="w-3.5 h-3.5 text-rose-700" />
+              <XCircle className="w-3.5 h-3.5 text-rose-700 dark:text-rose-400" />
               <span>Exemple Réponse Négative ({activeCompany})</span>
             </button>
 
@@ -289,9 +289,9 @@ export function EmailInboxModal({
                   body: "Votre dossier de candidature a bien été reçu et transmis à l'équipe des ressources humaines.",
                 })
               }
-              className="px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-300 text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-50 shadow-xs"
+              className="px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-900 dark:text-blue-300 border border-blue-300 dark:border-blue-800 text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-50 shadow-xs cursor-pointer"
             >
-              <CheckCircle2 className="w-3.5 h-3.5 text-blue-700" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-blue-700 dark:text-blue-400" />
               <span>Exemple Accusé Réception</span>
             </button>
           </div>

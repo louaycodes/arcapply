@@ -83,51 +83,51 @@ function Step7Content() {
 
       {/* 3 Pillars of ArcApply */}
       <div className="space-y-3">
-        <h4 className="text-xs font-bold text-stone-700 uppercase tracking-wider">
+        <h4 className="text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider">
           Découvrez vos 3 super-pouvoirs de candidature :
         </h4>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Card 1: Radar */}
-          <div className="bg-white rounded-2xl border border-stone-200/90 p-5 shadow-artisan space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-orange-100 text-primary flex items-center justify-center">
+          <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200/90 dark:border-stone-800 p-5 shadow-artisan space-y-3">
+            <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/40 text-primary flex items-center justify-center">
               <Radar className="w-5 h-5" />
             </div>
             <div>
-              <h5 className="text-sm font-bold text-stone-900">
+              <h5 className="text-sm font-bold text-stone-900 dark:text-stone-100">
                 1. Radar des Offres PFE
               </h5>
-              <p className="text-xs text-stone-600 mt-1 leading-relaxed">
+              <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed">
                 Collecte automatisée multi-plateformes (LinkedIn, JobTeaser, Apec, etc.). Grâce au bouclier anti-rescrape, les offres déjà postulées et archivées ne réapparaissent jamais.
               </p>
             </div>
           </div>
 
           {/* Card 2: CV */}
-          <div className="bg-white rounded-2xl border border-stone-200/90 p-5 shadow-artisan space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+          <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200/90 dark:border-stone-800 p-5 shadow-artisan space-y-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center">
               <FileText className="w-5 h-5" />
             </div>
             <div>
-              <h5 className="text-sm font-bold text-stone-900">
+              <h5 className="text-sm font-bold text-stone-900 dark:text-stone-100">
                 2. CV & Lettre 100% Déterministes
               </h5>
-              <p className="text-xs text-stone-600 mt-1 leading-relaxed">
+              <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed">
                 Chaque candidature est ajustée aux mots-clés exacts de l'offre en exploitant uniquement vos vraies expériences, sans aucune compétence inventée.
               </p>
             </div>
           </div>
 
           {/* Card 3: Kanban */}
-          <div className="bg-white rounded-2xl border border-stone-200/90 p-5 shadow-artisan space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center">
+          <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200/90 dark:border-stone-800 p-5 shadow-artisan space-y-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 flex items-center justify-center">
               <KanbanSquare className="w-5 h-5" />
             </div>
             <div>
-              <h5 className="text-sm font-bold text-stone-900">
+              <h5 className="text-sm font-bold text-stone-900 dark:text-stone-100">
                 3. Suivi Kanban Transparent
               </h5>
-              <p className="text-xs text-stone-600 mt-1 leading-relaxed">
+              <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed">
                 Suivez en temps réel le statut de chacune de vos candidatures, des entretiens jusqu'à l'offre finale de stage PFE.
               </p>
             </div>
@@ -136,13 +136,13 @@ function Step7Content() {
       </div>
 
       {/* Launch CTA */}
-      <div className="p-6 rounded-2xl bg-white border border-stone-200 shadow-artisan flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="p-6 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-artisan flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-center">
             <CheckCircle2 className="w-6 h-6" />
           </div>
           <div>
-            <h5 className="text-sm font-bold text-stone-900">
+            <h5 className="text-sm font-bold text-stone-900 dark:text-stone-100">
               Prêt à trouver votre stage de rêve ?
             </h5>
             <p className="text-xs text-stone-500">

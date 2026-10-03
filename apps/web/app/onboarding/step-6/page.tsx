@@ -110,13 +110,13 @@ function Step6Content() {
 
   return (
     <form onSubmit={handleNext} className="space-y-6">
-      <div className="bg-white rounded-2xl border border-stone-200/80 shadow-artisan p-6 sm:p-8 space-y-6">
-        <div className="flex items-center gap-3 pb-4 border-b border-stone-200/60">
-          <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-200/60 flex items-center justify-center text-primary">
+      <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200/80 dark:border-stone-800 shadow-artisan p-6 sm:p-8 space-y-6">
+        <div className="flex items-center gap-3 pb-4 border-b border-stone-200/60 dark:border-stone-800">
+          <div className="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-950/40 border border-orange-200/60 dark:border-orange-800/60 flex items-center justify-center text-primary">
             <Code2 className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-stone-900 font-display">
+            <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 font-display">
               Compétences Techniques & Langues Étrangères
             </h3>
             <p className="text-xs text-stone-500">
@@ -126,15 +126,15 @@ function Step6Content() {
         </div>
 
         {error && (
-          <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
+          <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 text-red-700 dark:text-red-400 text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 text-red-600 dark:text-red-400" />
             <span>{error}</span>
           </div>
         )}
 
         {/* Quick add suggestions */}
         <div className="space-y-2">
-          <label className="block text-xs font-semibold text-stone-700">
+          <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300">
             Compétences populaires recommandées pour élèves-ingénieurs :
           </label>
           <div className="flex flex-wrap gap-1.5">
@@ -150,11 +150,11 @@ function Step6Content() {
                   onClick={() => addSkill(sug.name, sug.category)}
                   className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
                     alreadyHas
-                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200 opacity-60 cursor-default"
-                      : "bg-stone-100 hover:bg-orange-50 hover:text-primary text-stone-700 border border-stone-200 cursor-pointer"
+                      ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60 opacity-60 cursor-default"
+                      : "bg-stone-100 dark:bg-stone-800 hover:bg-orange-50 hover:text-primary text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-800 cursor-pointer"
                   }`}
                 >
-                  {alreadyHas && <Check className="w-3 h-3 text-emerald-600" />}
+                  {alreadyHas && <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />}
                   <span>{sug.name}</span>
                 </button>
               );
@@ -163,8 +163,8 @@ function Step6Content() {
         </div>
 
         {/* Add custom skill input */}
-        <div className="p-4 rounded-xl bg-stone-50 border border-stone-200 space-y-3">
-          <label className="block text-xs font-semibold text-stone-800">
+        <div className="p-4 rounded-xl bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-800 space-y-3">
+          <label className="block text-xs font-semibold text-stone-800 dark:text-stone-200">
             Ajouter une compétence personnalisée :
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
@@ -180,14 +180,14 @@ function Step6Content() {
                   }
                 }}
                 placeholder="Ex. PyTorch, Ansible, Go, Terraform..."
-                className="w-full px-3 py-2 text-xs bg-white border border-stone-300 rounded-lg focus:outline-none focus:border-primary text-stone-900"
+                className="w-full px-3 py-2 text-xs bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 rounded-lg focus:outline-none focus:border-primary text-stone-900 dark:text-stone-100"
               />
             </div>
             <div>
               <select
                 value={newSkillCategory}
                 onChange={(e) => setNewSkillCategory(e.target.value)}
-                className="w-full px-3 py-2 text-xs bg-white border border-stone-300 rounded-lg focus:outline-none focus:border-primary text-stone-800"
+                className="w-full px-3 py-2 text-xs bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 rounded-lg focus:outline-none focus:border-primary text-stone-800 dark:text-stone-200"
               >
                 {SKILL_CATEGORIES.map((c) => (
                   <option key={c} value={c}>
@@ -212,7 +212,7 @@ function Step6Content() {
         {/* Active skills list */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h4 className="text-xs font-bold text-stone-800 uppercase tracking-wider">
+            <h4 className="text-xs font-bold text-stone-800 dark:text-stone-200 uppercase tracking-wider">
               Compétences enregistrées ({skills.length})
             </h4>
           </div>
@@ -226,10 +226,10 @@ function Step6Content() {
               {skills.map((s, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center justify-between px-3 py-2 rounded-xl bg-white border border-stone-200/90 shadow-2xs group"
+                  className="flex items-center justify-between px-3 py-2 rounded-xl bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 shadow-2xs group"
                 >
                   <div className="min-w-0">
-                    <p className="text-xs font-bold text-stone-900 truncate">{s.name}</p>
+                    <p className="text-xs font-bold text-stone-900 dark:text-stone-100 truncate">{s.name}</p>
                     <p className="text-[10px] text-stone-500 truncate">{s.category}</p>
                   </div>
                   <button
@@ -247,11 +247,11 @@ function Step6Content() {
         </div>
 
         {/* Languages Section */}
-        <div className="pt-6 border-t border-stone-200/60 space-y-4">
+        <div className="pt-6 border-t border-stone-200/60 dark:border-stone-800 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Globe2 className="w-4 h-4 text-primary" />
-              <h4 className="text-xs font-bold text-stone-800 uppercase tracking-wider">
+              <h4 className="text-xs font-bold text-stone-800 dark:text-stone-200 uppercase tracking-wider">
                 Langues maîtrisées
               </h4>
             </div>
@@ -269,7 +269,7 @@ function Step6Content() {
             {languages.map((lang, idx) => (
               <div
                 key={idx}
-                className="p-3 rounded-xl border border-stone-200 bg-stone-50/60 flex items-center gap-2 justify-between"
+                className="p-3 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50/60 dark:bg-stone-800/60 flex items-center gap-2 justify-between"
               >
                 <div className="flex-1 space-y-1">
                   <input
@@ -277,14 +277,14 @@ function Step6Content() {
                     value={lang.name}
                     onChange={(e) => updateLanguage(idx, "name", e.target.value)}
                     placeholder="Ex. Français, Anglais..."
-                    className="w-full px-2 py-1 text-xs bg-white border border-stone-300 rounded font-semibold text-stone-900"
+                    className="w-full px-2 py-1 text-xs bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 rounded font-semibold text-stone-900 dark:text-stone-100"
                   />
                   <input
                     type="text"
                     value={lang.level}
                     onChange={(e) => updateLanguage(idx, "level", e.target.value)}
                     placeholder="Ex. Bilingue (C2), Professionnel (C1)..."
-                    className="w-full px-2 py-1 text-[11px] bg-white border border-stone-300 rounded text-stone-600"
+                    className="w-full px-2 py-1 text-[11px] bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 rounded text-stone-600 dark:text-stone-400"
                   />
                 </div>
                 <button
@@ -305,7 +305,7 @@ function Step6Content() {
         <button
           type="button"
           onClick={() => router.push("/onboarding/step-5")}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-stone-300 bg-white hover:bg-stone-50 text-stone-700 text-xs font-semibold transition-all shadow-xs"
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 hover:bg-stone-50 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300 text-xs font-semibold transition-all shadow-xs"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Étape précédente</span>

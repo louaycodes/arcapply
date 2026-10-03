@@ -132,29 +132,29 @@ export default function KanbanPage() {
       id: "DISCOVERED",
       title: "Offres",
       icon: Radio,
-      colorClass: "text-blue-800",
-      badgeBg: "bg-blue-50 border border-blue-200",
+      colorClass: "text-blue-800 dark:text-blue-300",
+      badgeBg: "bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60",
     },
     {
       id: "SUBMITTED",
       title: "Candidatures envoyées",
       icon: Send,
-      colorClass: "text-orange-950",
-      badgeBg: "bg-orange-50 border border-orange-200",
+      colorClass: "text-orange-950 dark:text-orange-300",
+      badgeBg: "bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800/60",
     },
     {
       id: "OFFER",
       title: "Retenue",
       icon: Trophy,
-      colorClass: "text-emerald-800",
-      badgeBg: "bg-emerald-50 border border-emerald-200",
+      colorClass: "text-emerald-800 dark:text-emerald-300",
+      badgeBg: "bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60",
     },
     {
       id: "REJECTED",
       title: "Non retenue",
       icon: XCircle,
-      colorClass: "text-stone-700",
-      badgeBg: "bg-stone-100 border border-stone-200",
+      colorClass: "text-stone-700 dark:text-stone-300",
+      badgeBg: "bg-stone-100 dark:bg-stone-800/60 border border-stone-200 dark:border-stone-700",
     },
   ];
 
@@ -228,7 +228,7 @@ export default function KanbanPage() {
                 <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground font-display">
                   Suivi des Candidatures
                 </h1>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-100 text-orange-900 border border-orange-200">
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/40 text-orange-900 dark:text-orange-300 border border-orange-200 dark:border-orange-800/60">
                   Temps réel
                 </span>
               </div>
@@ -276,15 +276,15 @@ export default function KanbanPage() {
 
       {/* Recruiter Email Toast Live Alert */}
       {emailToast && (
-        <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-300 flex items-center justify-between text-xs text-emerald-950 font-semibold shadow-xs animate-in slide-in-from-top-2">
+        <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800/60 flex items-center justify-between text-xs text-emerald-950 dark:text-emerald-300 font-semibold shadow-xs animate-in slide-in-from-top-2">
           <div className="flex items-center gap-2">
-            <Mail className="w-4 h-4 shrink-0 text-emerald-700" />
+            <Mail className="w-4 h-4 shrink-0 text-emerald-700 dark:text-emerald-400" />
             <span>{emailToast}</span>
           </div>
           <button
             type="button"
             onClick={() => setEmailToast(null)}
-            className="p-1 hover:bg-emerald-100 rounded text-emerald-800 cursor-pointer"
+            className="p-1 hover:bg-emerald-100 rounded text-emerald-800 dark:text-emerald-300 cursor-pointer"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -311,73 +311,73 @@ export default function KanbanPage() {
       {/* Analytics KPI Widgets Grid : 4 cartes reflétant les 4 colonnes */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* KPI 1: Offres */}
-        <div className="p-4 rounded-2xl border border-stone-200 bg-white shadow-artisan flex items-center justify-between">
+        <div className="p-4 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-artisan flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider font-mono">
+            <span className="text-[11px] font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider font-mono">
               Offres identifiées
             </span>
-            <div className="text-2xl font-bold font-mono text-stone-900 mt-1">
+            <div className="text-2xl font-bold font-mono text-stone-900 dark:text-stone-100 mt-1">
               {kpiData.totalOffres}
             </div>
-            <span className="text-[10px] text-stone-500">
+            <span className="text-[10px] text-stone-500 dark:text-stone-400">
               En prospection active
             </span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700 shadow-xs">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 flex items-center justify-center text-blue-700 dark:text-blue-300 shadow-xs">
             <Briefcase className="w-5 h-5" />
           </div>
         </div>
 
         {/* KPI 2: Candidatures envoyées */}
-        <div className="p-4 rounded-2xl border border-stone-200 bg-white shadow-artisan flex items-center justify-between">
+        <div className="p-4 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-artisan flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider font-mono">
+            <span className="text-[11px] font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider font-mono">
               Candidatures envoyées
             </span>
             <div className="text-2xl font-bold font-mono text-primary mt-1">
               {kpiData.totalSubmitted}
             </div>
-            <span className="text-[10px] text-stone-500">
+            <span className="text-[10px] text-stone-500 dark:text-stone-400">
               Dossiers transmis
             </span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center text-primary shadow-xs">
+          <div className="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800/60 flex items-center justify-center text-primary shadow-xs">
             <Send className="w-5 h-5" />
           </div>
         </div>
 
         {/* KPI 3: Retenue */}
-        <div className="p-4 rounded-2xl border border-stone-200 bg-white shadow-artisan flex items-center justify-between">
+        <div className="p-4 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-artisan flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider font-mono">
+            <span className="text-[11px] font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider font-mono">
               Retenue
             </span>
-            <div className="text-2xl font-bold font-mono text-emerald-700 mt-1">
+            <div className="text-2xl font-bold font-mono text-emerald-700 dark:text-emerald-400 mt-1">
               {kpiData.totalOffer}
             </div>
-            <span className="text-[10px] text-stone-500">
+            <span className="text-[10px] text-stone-500 dark:text-stone-400">
               Offres confirmées
             </span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 shadow-xs">
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-center text-emerald-700 dark:text-emerald-300 shadow-xs">
             <Trophy className="w-5 h-5" />
           </div>
         </div>
 
         {/* KPI 4: Non retenue */}
-        <div className="p-4 rounded-2xl border border-stone-200 bg-white shadow-artisan flex items-center justify-between">
+        <div className="p-4 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-artisan flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider font-mono">
+            <span className="text-[11px] font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider font-mono">
               Non retenue
             </span>
-            <div className="text-2xl font-bold font-mono text-stone-700 mt-1">
+            <div className="text-2xl font-bold font-mono text-stone-700 dark:text-stone-300 mt-1">
               {kpiData.totalRejected}
             </div>
-            <span className="text-[10px] text-stone-500">
+            <span className="text-[10px] text-stone-500 dark:text-stone-400">
               Candidatures classées
             </span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-stone-100 border border-stone-200 flex items-center justify-center text-stone-500 shadow-xs">
+          <div className="w-10 h-10 rounded-xl bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 flex items-center justify-center text-stone-500 dark:text-stone-400 shadow-xs">
             <XCircle className="w-5 h-5" />
           </div>
         </div>

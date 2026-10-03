@@ -30,20 +30,20 @@ export function Sidebar() {
   const { user, logout } = useAuth();
 
   return (
-    <aside className="w-64 border-r border-border bg-[#F7F3EC] flex flex-col justify-between p-4 min-h-screen shrink-0">
+    <aside className="w-64 border-r border-border dark:border-stone-800 bg-[#F7F3EC] dark:bg-[#171513] flex flex-col justify-between p-4 min-h-screen shrink-0">
       <div>
         {/* Brand / Logo */}
-        <div className="flex items-center gap-3 px-2 py-3 mb-6 border-b border-border/80">
+        <div className="flex items-center gap-3 px-2 py-3 mb-6 border-b border-border/80 dark:border-stone-800">
           <img
             src="/logo.png"
             alt="ArcApply Logo"
             className="w-14 h-14 shrink-0 object-contain drop-shadow-sm"
           />
           <div>
-            <h1 className="text-lg font-bold tracking-tight text-foreground font-display">
+            <h1 className="text-lg font-bold tracking-tight text-stone-900 dark:text-stone-100 font-display">
               ArcApply
             </h1>
-            <p className="text-xs text-muted-foreground font-medium">Assistant Candidatures</p>
+            <p className="text-xs text-stone-500 dark:text-stone-400 font-medium">Assistant Candidatures</p>
           </div>
         </div>
 
@@ -91,7 +91,7 @@ export function Sidebar() {
                 <p className="text-xs font-bold text-stone-800 dark:text-stone-100 truncate leading-tight">
                   {user.full_name || user.username}
                 </p>
-                <p className="text-[11px] text-muted-foreground truncate font-mono">
+                <p className="text-[11px] text-stone-500 dark:text-stone-400 truncate font-mono">
                   @{user.username}
                 </p>
               </div>

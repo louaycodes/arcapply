@@ -138,40 +138,40 @@ export default function PlaybookPage() {
 
       {/* Metrics Row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white border border-stone-200 rounded-xl p-4 shadow-sm flex items-center justify-between">
+        <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl p-4 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs font-medium text-stone-500">Directives Actives</p>
-            <p className="text-2xl font-bold text-stone-900 font-display mt-1">
-              {activeCount} <span className="text-xs font-normal text-stone-500">/ {rules.length}</span>
+            <p className="text-xs font-medium text-stone-500 dark:text-stone-400">Directives Actives</p>
+            <p className="text-2xl font-bold text-stone-900 dark:text-stone-100 font-display mt-1">
+              {activeCount} <span className="text-xs font-normal text-stone-500 dark:text-stone-400">/ {rules.length}</span>
             </p>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
             <CheckCircle2 className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="bg-white border border-stone-200 rounded-xl p-4 shadow-sm flex items-center justify-between">
+        <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl p-4 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs font-medium text-stone-500">Moteur de Décision</p>
-            <p className="text-sm font-bold text-stone-900 font-display mt-1">
+            <p className="text-xs font-medium text-stone-500 dark:text-stone-400">Moteur de Décision</p>
+            <p className="text-sm font-bold text-stone-900 dark:text-stone-100 font-display mt-1">
               LangGraph + Groq 70B
             </p>
             <p className="text-[11px] text-stone-400">Thinking &gt; Drafting</p>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-lg bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 flex items-center justify-center">
             <Sliders className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="bg-white border border-stone-200 rounded-xl p-4 shadow-sm flex items-center justify-between">
+        <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl p-4 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs font-medium text-stone-500">Invariant Garanti</p>
-            <p className="text-sm font-bold text-stone-900 font-display mt-1">
+            <p className="text-xs font-medium text-stone-500 dark:text-stone-400">Invariant Garanti</p>
+            <p className="text-sm font-bold text-stone-900 dark:text-stone-100 font-display mt-1">
               Zéro Hallucination
             </p>
             <p className="text-[11px] text-stone-400">100% Master Profile réel</p>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
             <Compass className="w-5 h-5" />
           </div>
         </div>
@@ -180,9 +180,9 @@ export default function PlaybookPage() {
       {/* Rules List */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-stone-900 font-display flex items-center gap-2">
+          <h2 className="text-lg font-bold text-stone-900 dark:text-stone-100 font-display flex items-center gap-2">
             Directives de l'Agent
-            <span className="text-xs font-normal text-stone-500">({rules.length})</span>
+            <span className="text-xs font-normal text-stone-500 dark:text-stone-400">({rules.length})</span>
           </h2>
         </div>
 
@@ -192,14 +192,14 @@ export default function PlaybookPage() {
             <span className="text-sm">Chargement des directives stratégiques...</span>
           </div>
         ) : error ? (
-          <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-center gap-3">
+          <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 text-red-700 dark:text-red-400 text-sm flex items-center gap-3">
             <AlertCircle className="w-5 h-5 shrink-0" />
             <span>{error}</span>
           </div>
         ) : rules.length === 0 ? (
-          <div className="p-8 text-center bg-white border border-dashed border-stone-300 rounded-2xl space-y-3">
+          <div className="p-8 text-center bg-white dark:bg-stone-900 border border-dashed border-stone-300 dark:border-stone-700 rounded-2xl space-y-3">
             <Lightbulb className="w-8 h-8 text-amber-500 mx-auto" />
-            <h3 className="text-base font-semibold text-stone-800">Aucune directive enregistree</h3>
+            <h3 className="text-base font-semibold text-stone-800 dark:text-stone-200">Aucune directive enregistree</h3>
             <p className="text-xs text-stone-500 max-w-md mx-auto">
               Toutes les directives ont ete supprimees. Vous pouvez en creer une personnalisee.
             </p>
@@ -218,25 +218,25 @@ export default function PlaybookPage() {
             {rules.map((rule) => (
               <div
                 key={rule.id}
-                className={`bg-white border rounded-2xl p-5 space-y-4 transition-all shadow-sm ${
+                className={`border rounded-2xl p-5 space-y-4 transition-all shadow-sm ${
                   rule.is_active
-                    ? "border-stone-200 hover:border-orange-300"
-                    : "border-stone-200/60 opacity-60 bg-stone-50/50"
+                    ? "bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 hover:border-orange-300 dark:hover:border-orange-500"
+                    : "border-stone-200/60 dark:border-stone-800/60 opacity-60 bg-stone-50/50 dark:bg-stone-900/40"
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md bg-stone-100 text-stone-700 border border-stone-200">
+                      <span className="text-xs font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700">
                         {rule.category}
                       </span>
                       {rule.is_active && (
-                        <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        <span className="text-[10px] font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
                           Active
                         </span>
                       )}
                     </div>
-                    <h3 className="font-bold text-stone-900 text-base leading-snug">
+                    <h3 className="font-bold text-stone-900 dark:text-stone-100 text-base leading-snug font-display">
                       {rule.title}
                     </h3>
                   </div>
@@ -245,10 +245,10 @@ export default function PlaybookPage() {
                     <button
                       onClick={() => handleToggle(rule)}
                       title={rule.is_active ? "Désactiver" : "Activer"}
-                      className="p-1 rounded-lg hover:bg-stone-100 text-stone-600 transition-colors"
+                      className="p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300 transition-colors cursor-pointer"
                     >
                       {rule.is_active ? (
-                        <ToggleRight className="w-6 h-6 text-emerald-600" />
+                        <ToggleRight className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                       ) : (
                         <ToggleLeft className="w-6 h-6 text-stone-400" />
                       )}
@@ -256,7 +256,7 @@ export default function PlaybookPage() {
                     <button
                       onClick={() => handleDelete(rule.id)}
                       title="Supprimer"
-                      className="p-1.5 rounded-lg hover:bg-red-50 text-stone-400 hover:text-red-600 transition-colors"
+                      className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 text-stone-400 hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -264,21 +264,21 @@ export default function PlaybookPage() {
                 </div>
 
                 {/* Condition Box */}
-                <div className="p-3 rounded-xl bg-[#FAF8F5] border border-stone-200/80 space-y-1">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-orange-800">
+                <div className="p-3 rounded-xl bg-[#FAF8F5] dark:bg-stone-800/50 border border-stone-200/80 dark:border-stone-700 space-y-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-orange-800 dark:text-orange-300">
                     Condition de declenchement :
                   </p>
-                  <p className="text-xs text-stone-700 leading-relaxed font-mono">
+                  <p className="text-xs text-stone-700 dark:text-stone-300 leading-relaxed font-mono">
                     {rule.condition_trigger}
                   </p>
                 </div>
 
                 {/* Action Box */}
-                <div className="p-3 rounded-xl bg-stone-50 border border-stone-200/80 space-y-1">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-600">
+                <div className="p-3 rounded-xl bg-stone-50 dark:bg-stone-800/50 border border-stone-200/80 dark:border-stone-700 space-y-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-600 dark:text-stone-400">
                     Action de l'Agent Redacteur :
                   </p>
-                  <p className="text-xs text-stone-800 leading-relaxed">
+                  <p className="text-xs text-stone-800 dark:text-stone-200 leading-relaxed">
                     {rule.action_instruction}
                   </p>
                 </div>
@@ -290,20 +290,20 @@ export default function PlaybookPage() {
 
       {/* Creation Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/50 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white w-full max-w-lg rounded-2xl border border-stone-200 shadow-2xl p-6 sm:p-7 space-y-5">
-            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white dark:bg-stone-900 w-full max-w-lg rounded-2xl border border-stone-200 dark:border-stone-800 shadow-2xl p-6 sm:p-7 space-y-5">
+            <div className="flex items-center justify-between border-b border-stone-100 dark:border-stone-800 pb-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-orange-100 text-orange-700 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 flex items-center justify-center">
                   <Sparkles className="w-4 h-4" />
                 </div>
-                <h3 className="font-bold text-lg text-stone-900 font-display">
+                <h3 className="font-bold text-lg text-stone-900 dark:text-stone-100 font-display">
                   Nouvelle Directive Stratégique
                 </h3>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-stone-400 hover:text-stone-600 text-lg font-bold"
+                className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 text-lg font-bold cursor-pointer"
               >
                 x
               </button>
@@ -311,7 +311,7 @@ export default function PlaybookPage() {
 
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1">
+                <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
                   Titre de la directive
                 </label>
                 <input
@@ -320,18 +320,18 @@ export default function PlaybookPage() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Ex. Focus Cloud & Kubernetes"
-                  className="w-full px-3 py-2 text-sm bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-stone-900"
+                  className="w-full px-3 py-2 text-sm bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-stone-900 dark:text-stone-100"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1">
+                <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
                   Catégorie
                 </label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-stone-900"
+                  className="w-full px-3 py-2 text-sm bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-stone-900 dark:text-stone-100"
                 >
                   <option value="devops">DevOps & Cloud</option>
                   <option value="backend">Backend & Architecture</option>
@@ -342,7 +342,7 @@ export default function PlaybookPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1">
+                <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
                   Condition de déclenchement (Quand appliquer)
                 </label>
                 <textarea
@@ -351,12 +351,12 @@ export default function PlaybookPage() {
                   value={conditionTrigger}
                   onChange={(e) => setConditionTrigger(e.target.value)}
                   placeholder="Ex. Si l'offre mentionne Docker, Kubernetes, CI/CD ou Terraform..."
-                  className="w-full px-3 py-2 text-sm bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-stone-900 resize-none"
+                  className="w-full px-3 py-2 text-sm bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-stone-900 dark:text-stone-100 resize-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1">
+                <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
                   Instruction d'action pour l'agent (Ce qu'il doit faire)
                 </label>
                 <textarea
@@ -365,15 +365,15 @@ export default function PlaybookPage() {
                   value={actionInstruction}
                   onChange={(e) => setActionInstruction(e.target.value)}
                   placeholder="Ex. Mettre impérativement en avant mon projet ArcApply et mon expérience microservices. Insister sur la rigueur de déploiement..."
-                  className="w-full px-3 py-2 text-sm bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-stone-900 resize-none"
+                  className="w-full px-3 py-2 text-sm bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-stone-900 dark:text-stone-100 resize-none"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-stone-100">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-stone-100 dark:border-stone-800">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-stone-200 text-stone-700 text-xs font-semibold hover:bg-stone-50 transition-colors"
+                  className="px-4 py-2 rounded-lg border border-stone-200 dark:border-stone-800 text-stone-700 dark:text-stone-300 text-xs font-semibold hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors"
                 >
                   Annuler
                 </button>

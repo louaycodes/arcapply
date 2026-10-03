@@ -711,8 +711,8 @@ export default function StudioCVPage() {
     <div
       className={`flex flex-col min-w-0 transition-all ${
         isFullscreen
-          ? "fixed inset-0 z-50 w-screen h-screen bg-[#F0EBE1]"
-          : "h-full min-h-screen bg-[#F7F2EB]"
+          ? "fixed inset-0 z-50 w-screen h-screen bg-[#F0EBE1] dark:bg-[#12100E]"
+          : "h-full min-h-screen bg-[#F7F2EB] dark:bg-[#12100E]"
       }`}
     >
       {/* Hidden file upload input */}
@@ -725,26 +725,26 @@ export default function StudioCVPage() {
       />
 
       {/* Top Cockpit Header: Identity & Global Actions */}
-      <header className="px-5 py-2.5 border-b border-stone-200/80 bg-white/85 backdrop-blur-xl flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-xs z-20">
+      <header className="px-5 py-2.5 border-b border-stone-200/80 dark:border-stone-800 bg-white/85 dark:bg-stone-900/90 backdrop-blur-xl flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-xs z-20">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-orange-100 border border-orange-200 flex items-center justify-center text-primary shadow-sm">
+          <div className="w-9 h-9 rounded-xl bg-orange-100 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-900/60 flex items-center justify-center text-primary dark:text-orange-400 shadow-sm">
             <FileText className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-sm sm:text-base font-bold text-stone-900 tracking-tight font-display flex items-center gap-2">
+              <h1 className="text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100 tracking-tight font-display flex items-center gap-2">
                 Éditeur Visuel de CV
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
                   Édition Directe
                 </span>
               </h1>
               {hasUnsavedEdits && (
-                <span className="text-[10px] text-amber-900 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-300 font-semibold">
+                <span className="text-[10px] text-amber-900 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded border border-amber-300 dark:border-amber-800/60 font-semibold">
                   Modifications non enregistrées
                 </span>
               )}
             </div>
-            <p className="text-[11px] text-stone-600 line-clamp-1">
+            <p className="text-[11px] text-stone-600 dark:text-stone-400 line-clamp-1">
               Cliquez directement sur n'importe quel texte du CV pour le modifier en temps réel.
             </p>
           </div>
@@ -828,19 +828,19 @@ export default function StudioCVPage() {
         <div
           className={`mx-5 mt-2 p-2.5 rounded-lg border text-xs flex items-center justify-between shrink-0 animate-in slide-in-from-top-2 duration-150 z-30 font-medium ${
             notification.type === "success"
-              ? "bg-emerald-50 border-emerald-300 text-emerald-950 shadow-xs"
+              ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800/60 text-emerald-950 dark:text-emerald-300 shadow-xs"
               : notification.type === "error"
-              ? "bg-rose-50 border-rose-300 text-rose-950 shadow-xs"
-              : "bg-blue-50 border-blue-300 text-blue-950 shadow-xs"
+              ? "bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800/60 text-rose-950 dark:text-rose-300 shadow-xs"
+              : "bg-blue-50 dark:bg-blue-950/40 border-blue-300 dark:border-blue-800/60 text-blue-950 dark:text-blue-300 shadow-xs"
           }`}
         >
           <div className="flex items-center gap-2">
             {notification.type === "success" ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
             ) : notification.type === "error" ? (
-              <AlertTriangle className="w-4 h-4 text-rose-700 shrink-0" />
+              <AlertTriangle className="w-4 h-4 text-rose-700 dark:text-rose-400 shrink-0" />
             ) : (
-              <Sparkles className="w-4 h-4 text-blue-700 shrink-0" />
+              <Sparkles className="w-4 h-4 text-blue-700 dark:text-blue-400 shrink-0" />
             )}
             <span>{notification.message}</span>
           </div>
@@ -855,7 +855,7 @@ export default function StudioCVPage() {
       )}
 
       {/* Floating Canvas Formatting Toolbar (Like Google Docs / Acrobat / Sejda) */}
-      <div className="sticky top-0 z-10 px-5 py-2 border-b border-stone-200/80 bg-white/80 backdrop-blur-xl flex flex-wrap items-center justify-between gap-3 shrink-0 text-xs shadow-xs">
+      <div className="sticky top-0 z-10 px-5 py-2 border-b border-stone-200/80 dark:border-stone-800 bg-white/80 dark:bg-stone-900/90 backdrop-blur-xl flex flex-wrap items-center justify-between gap-3 shrink-0 text-xs shadow-xs">
         {/* Left: Text Formatting Controls */}
         <div className="flex items-center flex-wrap gap-1">
           <span className="text-[11px] font-semibold text-muted-foreground mr-1 hidden sm:inline">Mise en forme :</span>
@@ -944,7 +944,7 @@ export default function StudioCVPage() {
           <button
             type="button"
             onClick={deleteCurrentItem}
-            className="p-1 rounded text-stone-500 hover:text-rose-700 hover:bg-rose-50 transition-colors ml-1"
+            className="p-1 rounded text-stone-500 hover:text-rose-700 hover:bg-rose-50 dark:text-stone-400 dark:hover:text-rose-400 dark:hover:bg-rose-950/40 transition-colors ml-1"
             title="Supprimer le bloc sous le curseur"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -1035,20 +1035,20 @@ export default function StudioCVPage() {
       {/* Main Full-Focus Visual Canvas (Desk / Page Environment) */}
       <div
         ref={canvasContainerRef}
-        className="flex-1 overflow-auto p-2 sm:p-6 md:p-8 flex flex-col items-center justify-start bg-[#EFE8DD] relative select-none gap-5"
+        className="flex-1 overflow-auto p-2 sm:p-6 md:p-8 flex flex-col items-center justify-start bg-[#EFE8DD] dark:bg-[#181513] relative select-none gap-5"
       >
         {/* Empty Profile Banner / Guidance Card */}
         {isProfileEmpty && (
-          <div className="w-full max-w-[210mm] p-4 sm:p-5 rounded-xl border border-amber-300 bg-amber-50/95 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-stone-900 shrink-0 select-text z-20">
+          <div className="w-full max-w-[210mm] p-4 sm:p-5 rounded-xl border border-amber-300 dark:border-amber-800/60 bg-amber-50/95 dark:bg-amber-950/40 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-stone-900 dark:text-stone-100 shrink-0 select-text z-20">
             <div className="flex items-start gap-3.5">
-              <div className="w-10 h-10 rounded-lg bg-amber-200/90 border border-amber-300 flex items-center justify-center text-amber-900 shrink-0 mt-0.5">
-                <AlertTriangle className="w-5 h-5 text-amber-800" />
+              <div className="w-10 h-10 rounded-lg bg-amber-200/90 dark:bg-amber-900/50 border border-amber-300 dark:border-amber-700/60 flex items-center justify-center text-amber-900 dark:text-amber-300 shrink-0 mt-0.5">
+                <AlertTriangle className="w-5 h-5 text-amber-800 dark:text-amber-400" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-stone-900 font-display">
+                <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100 font-display">
                   Votre Master Profile est actuellement vide
                 </h3>
-                <p className="text-xs text-stone-700 mt-1 leading-relaxed">
+                <p className="text-xs text-stone-700 dark:text-stone-300 mt-1 leading-relaxed">
                   Pour garantir un CV factuel et zéro hallucination, ArcApply construit votre CV directement à partir des formations, expériences et compétences de votre profil. Renseignez d'abord votre profil pour générer votre CV complet.
                 </p>
               </div>
@@ -1056,7 +1056,7 @@ export default function StudioCVPage() {
             <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
               <Link
                 href="/profile"
-                className="px-4 py-2 rounded-lg bg-stone-900 hover:bg-black text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all"
+                className="px-4 py-2 rounded-lg bg-stone-900 hover:bg-black dark:bg-stone-100 dark:hover:bg-white text-white dark:text-stone-900 text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all"
               >
                 <span>Remplir mon profil</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -1068,7 +1068,7 @@ export default function StudioCVPage() {
         {/* Floating Instruction Pill */}
         {!isProfileEmpty && (
           <div className="sticky top-0 z-10 pointer-events-none mb-1">
-            <div className="px-3.5 py-1 rounded-full bg-white/95 border border-orange-200 text-stone-900 text-[11px] font-medium backdrop-blur-md shadow-md flex items-center gap-2">
+            <div className="px-3.5 py-1 rounded-full bg-white/95 dark:bg-stone-900/95 border border-orange-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 text-[11px] font-medium backdrop-blur-md shadow-md flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-600" />
               <span>Cliquez sur un élément pour le modifier &bull; Le texte s'adapte automatiquement</span>
             </div>

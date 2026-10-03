@@ -74,14 +74,14 @@ function Step5Content() {
 
   return (
     <form onSubmit={handleNext} className="space-y-6">
-      <div className="bg-white rounded-2xl border border-stone-200/80 shadow-artisan p-6 sm:p-8 space-y-6">
-        <div className="flex items-center justify-between pb-4 border-b border-stone-200/60">
+      <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200/80 dark:border-stone-800 shadow-artisan p-6 sm:p-8 space-y-6">
+        <div className="flex items-center justify-between pb-4 border-b border-stone-200/60 dark:border-stone-800">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-200/60 flex items-center justify-center text-primary">
+            <div className="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-950/40 border border-orange-200/60 dark:border-orange-800/60 flex items-center justify-center text-primary">
               <FolderGit2 className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-stone-900 font-display">
+              <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 font-display">
                 Projets Académiques & Personnels Marquants
               </h3>
               <p className="text-xs text-stone-500">
@@ -101,17 +101,17 @@ function Step5Content() {
         </div>
 
         {error && (
-          <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
+          <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 text-red-700 dark:text-red-400 text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 text-red-600 dark:text-red-400" />
             <span>{error}</span>
           </div>
         )}
 
         {projects.length === 0 ? (
-          <div className="py-12 border-2 border-dashed border-stone-200 rounded-2xl text-center space-y-3">
+          <div className="py-12 border-2 border-dashed border-stone-200 dark:border-stone-800 rounded-2xl text-center space-y-3">
             <Code className="w-10 h-10 text-stone-400 mx-auto" />
             <div>
-              <p className="text-sm font-semibold text-stone-800">Aucun projet ajouté</p>
+              <p className="text-sm font-semibold text-stone-800 dark:text-stone-200">Aucun projet ajouté</p>
               <p className="text-xs text-stone-500 mt-0.5">
                 Ajoutez vos projets d'école, hackathons ou dépôts GitHub pour enrichir votre profil.
               </p>
@@ -128,7 +128,7 @@ function Step5Content() {
               <button
                 type="button"
                 onClick={() => router.push("/onboarding/step-6")}
-                className="px-4 py-2 rounded-xl border border-stone-300 text-stone-700 text-xs font-semibold hover:bg-stone-50 transition-all"
+                className="px-4 py-2 rounded-xl border border-stone-300 dark:border-stone-700 text-stone-700 dark:text-stone-300 text-xs font-semibold hover:bg-stone-50 dark:hover:bg-stone-800 transition-all"
               >
                 Passer cette étape
               </button>
@@ -139,10 +139,10 @@ function Step5Content() {
             {projects.map((proj, idx) => (
               <div
                 key={idx}
-                className="p-5 rounded-xl border border-stone-200 bg-stone-50/60 space-y-4 relative group"
+                className="p-5 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50/60 dark:bg-stone-800/60 space-y-4 relative group"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-stone-700 font-mono">
+                  <span className="text-xs font-bold text-stone-700 dark:text-stone-300 font-mono">
                     #Projet {idx + 1}
                   </span>
                   <button
@@ -157,7 +157,7 @@ function Step5Content() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-stone-700 mb-1">
+                    <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
                       Titre du projet *
                     </label>
                     <input
@@ -169,12 +169,12 @@ function Step5Content() {
                         updateProject(idx, "title_fr", e.target.value);
                       }}
                       placeholder="Ex. ArcApply Copilot, Agent FinOps, Dashboard IoT..."
-                      className="w-full px-3 py-2 text-xs bg-white border border-stone-300 rounded-lg focus:outline-none focus:border-primary text-stone-900"
+                      className="w-full px-3 py-2 text-xs bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 rounded-lg focus:outline-none focus:border-primary text-stone-900 dark:text-stone-100"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-stone-700 mb-1">
+                    <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
                       Votre rôle dans le projet
                     </label>
                     <input
@@ -185,12 +185,12 @@ function Step5Content() {
                         updateProject(idx, "role_fr", e.target.value);
                       }}
                       placeholder="Ex. Développeur Lead, Architecte Backend, Concepteur..."
-                      className="w-full px-3 py-2 text-xs bg-white border border-stone-300 rounded-lg focus:outline-none focus:border-primary text-stone-900"
+                      className="w-full px-3 py-2 text-xs bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 rounded-lg focus:outline-none focus:border-primary text-stone-900 dark:text-stone-100"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-stone-700 mb-1">
+                    <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
                       Lien du dépôt GitHub / Démo en ligne
                     </label>
                     <input
@@ -198,12 +198,12 @@ function Step5Content() {
                       value={proj.url || ""}
                       onChange={(e) => updateProject(idx, "url", e.target.value)}
                       placeholder="https://github.com/mon-compte/mon-projet"
-                      className="w-full px-3 py-2 text-xs bg-white border border-stone-300 rounded-lg focus:outline-none focus:border-primary text-stone-900"
+                      className="w-full px-3 py-2 text-xs bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 rounded-lg focus:outline-none focus:border-primary text-stone-900 dark:text-stone-100"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-stone-700 mb-1">
+                    <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
                       Technologies & Outils utilisés (séparés par des virgules)
                     </label>
                     <input
@@ -220,12 +220,12 @@ function Step5Content() {
                         )
                       }
                       placeholder="Ex. Python, Docker, Next.js, FastAPI..."
-                      className="w-full px-3 py-2 text-xs bg-white border border-stone-300 rounded-lg focus:outline-none focus:border-primary text-stone-900"
+                      className="w-full px-3 py-2 text-xs bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 rounded-lg focus:outline-none focus:border-primary text-stone-900 dark:text-stone-100"
                     />
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-xs font-semibold text-stone-700 mb-1">
+                    <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
                       Description technique & résultats obtenus
                     </label>
                     <textarea
@@ -236,7 +236,7 @@ function Step5Content() {
                         updateProject(idx, "description_fr", e.target.value);
                       }}
                       placeholder="Ex. Conception d'une architecture modulaire, intégration de modèles LLM avec Instructor et déploiement d'un conteneur sécurisé..."
-                      className="w-full p-2.5 text-xs bg-white border border-stone-300 rounded-lg focus:outline-none focus:border-primary text-stone-900 leading-relaxed"
+                      className="w-full p-2.5 text-xs bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 rounded-lg focus:outline-none focus:border-primary text-stone-900 dark:text-stone-100 leading-relaxed"
                     />
                   </div>
                 </div>
@@ -251,7 +251,7 @@ function Step5Content() {
         <button
           type="button"
           onClick={() => router.push("/onboarding/step-4")}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-stone-300 bg-white hover:bg-stone-50 text-stone-700 text-xs font-semibold transition-all shadow-xs"
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 hover:bg-stone-50 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300 text-xs font-semibold transition-all shadow-xs"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Étape précédente</span>

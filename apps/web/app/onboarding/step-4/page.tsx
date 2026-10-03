@@ -77,14 +77,14 @@ function Step4Content() {
 
   return (
     <form onSubmit={handleNext} className="space-y-6">
-      <div className="bg-white rounded-2xl border border-stone-200/80 shadow-artisan p-6 sm:p-8 space-y-6">
-        <div className="flex items-center justify-between pb-4 border-b border-stone-200/60">
+      <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200/80 dark:border-stone-800 shadow-artisan p-6 sm:p-8 space-y-6">
+        <div className="flex items-center justify-between pb-4 border-b border-stone-200/60 dark:border-stone-800">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-200/60 flex items-center justify-center text-primary">
+            <div className="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-950/40 border border-orange-200/60 dark:border-orange-800/60 flex items-center justify-center text-primary">
               <Briefcase className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-stone-900 font-display">
+              <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 font-display">
                 Stages & Expériences Professionnelles
               </h3>
               <p className="text-xs text-stone-500">
@@ -104,17 +104,17 @@ function Step4Content() {
         </div>
 
         {error && (
-          <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
+          <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 text-red-700 dark:text-red-400 text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 text-red-600 dark:text-red-400" />
             <span>{error}</span>
           </div>
         )}
 
         {experiences.length === 0 ? (
-          <div className="py-12 border-2 border-dashed border-stone-200 rounded-2xl text-center space-y-3">
+          <div className="py-12 border-2 border-dashed border-stone-200 dark:border-stone-800 rounded-2xl text-center space-y-3">
             <Building2 className="w-10 h-10 text-stone-400 mx-auto" />
             <div>
-              <p className="text-sm font-semibold text-stone-800">Aucune expérience enregistrée</p>
+              <p className="text-sm font-semibold text-stone-800 dark:text-stone-200">Aucune expérience enregistrée</p>
               <p className="text-xs text-stone-500 mt-0.5">
                 Si vous n'avez pas encore effectué de stage, vous pouvez passer directement à l'étape des projets.
               </p>
@@ -131,7 +131,7 @@ function Step4Content() {
               <button
                 type="button"
                 onClick={() => router.push("/onboarding/step-5")}
-                className="px-4 py-2 rounded-xl border border-stone-300 text-stone-700 text-xs font-semibold hover:bg-stone-50 transition-all"
+                className="px-4 py-2 rounded-xl border border-stone-300 dark:border-stone-700 text-stone-700 dark:text-stone-300 text-xs font-semibold hover:bg-stone-50 dark:hover:bg-stone-800 transition-all"
               >
                 Passer cette étape
               </button>
@@ -142,14 +142,14 @@ function Step4Content() {
             {experiences.map((exp, idx) => (
               <div
                 key={idx}
-                className="p-5 rounded-xl border border-stone-200 bg-stone-50/60 space-y-4 relative group"
+                className="p-5 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50/60 dark:bg-stone-800/60 space-y-4 relative group"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-stone-700 font-mono">
+                    <span className="text-xs font-bold text-stone-700 dark:text-stone-300 font-mono">
                       #Expérience {idx + 1}
                     </span>
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-100 text-orange-900 border border-orange-200">
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/40 text-orange-900 dark:text-orange-300 border border-orange-200 dark:border-orange-800/60">
                       {(exp.experience_type || "stage") === "stage" ? "Stage" : "Emploi"}
                     </span>
                   </div>
@@ -165,7 +165,7 @@ function Step4Content() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-stone-700 mb-1">
+                    <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
                       Entreprise / Organisation *
                     </label>
                     <input
@@ -174,12 +174,12 @@ function Step4Content() {
                       value={exp.company}
                       onChange={(e) => updateExperience(idx, "company", e.target.value)}
                       placeholder="Ex. Thales, Airbus, Sofrecom, Start-up..."
-                      className="w-full px-3 py-2 text-xs bg-white border border-stone-300 rounded-lg focus:outline-none focus:border-primary text-stone-900"
+                      className="w-full px-3 py-2 text-xs bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 rounded-lg focus:outline-none focus:border-primary text-stone-900 dark:text-stone-100"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-stone-700 mb-1">
+                    <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
                       Rôle / Intitulé du poste *
                     </label>
                     <input
@@ -191,12 +191,12 @@ function Step4Content() {
                         updateExperience(idx, "role_fr", e.target.value);
                       }}
                       placeholder="Ex. Stagiaire Ingénieur DevOps / Backend"
-                      className="w-full px-3 py-2 text-xs bg-white border border-stone-300 rounded-lg focus:outline-none focus:border-primary text-stone-900"
+                      className="w-full px-3 py-2 text-xs bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 rounded-lg focus:outline-none focus:border-primary text-stone-900 dark:text-stone-100"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-stone-700 mb-1">
+                    <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
                       Localisation (Ville, Pays)
                     </label>
                     <input
@@ -204,13 +204,13 @@ function Step4Content() {
                       value={exp.location || ""}
                       onChange={(e) => updateExperience(idx, "location", e.target.value)}
                       placeholder="Ex. Paris, France / Tunis, Tunisie"
-                      className="w-full px-3 py-2 text-xs bg-white border border-stone-300 rounded-lg focus:outline-none focus:border-primary text-stone-900"
+                      className="w-full px-3 py-2 text-xs bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 rounded-lg focus:outline-none focus:border-primary text-stone-900 dark:text-stone-100"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-xs font-semibold text-stone-700 mb-1">
+                      <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
                         Début
                       </label>
                       <input
@@ -218,11 +218,11 @@ function Step4Content() {
                         value={exp.start_date || ""}
                         onChange={(e) => updateExperience(idx, "start_date", e.target.value)}
                         placeholder="Ex. Juin 2024"
-                        className="w-full px-3 py-2 text-xs bg-white border border-stone-300 rounded-lg focus:outline-none focus:border-primary text-stone-900"
+                        className="w-full px-3 py-2 text-xs bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 rounded-lg focus:outline-none focus:border-primary text-stone-900 dark:text-stone-100"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-stone-700 mb-1">
+                      <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
                         Fin
                       </label>
                       <input
@@ -230,13 +230,13 @@ function Step4Content() {
                         value={exp.end_date || ""}
                         onChange={(e) => updateExperience(idx, "end_date", e.target.value)}
                         placeholder="Ex. Août 2024"
-                        className="w-full px-3 py-2 text-xs bg-white border border-stone-300 rounded-lg focus:outline-none focus:border-primary text-stone-900"
+                        className="w-full px-3 py-2 text-xs bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 rounded-lg focus:outline-none focus:border-primary text-stone-900 dark:text-stone-100"
                       />
                     </div>
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-xs font-semibold text-stone-700 mb-1">
+                    <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
                       Technologies & Stack (séparées par des virgules)
                     </label>
                     <input
@@ -253,12 +253,12 @@ function Step4Content() {
                         )
                       }
                       placeholder="Ex. FastAPI, Docker, PostgreSQL, AWS..."
-                      className="w-full px-3 py-2 text-xs bg-white border border-stone-300 rounded-lg focus:outline-none focus:border-primary text-stone-900"
+                      className="w-full px-3 py-2 text-xs bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 rounded-lg focus:outline-none focus:border-primary text-stone-900 dark:text-stone-100"
                     />
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-xs font-semibold text-stone-700 mb-1">
+                    <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
                       Missions & Réalisations concrètes
                     </label>
                     <textarea
@@ -269,7 +269,7 @@ function Step4Content() {
                         updateExperience(idx, "description_fr", e.target.value);
                       }}
                       placeholder="Ex. Conception d'une API REST haute performance avec FastAPI, automatisation de tests unitaires et intégration dans GitLab CI..."
-                      className="w-full p-2.5 text-xs bg-white border border-stone-300 rounded-lg focus:outline-none focus:border-primary text-stone-900 leading-relaxed"
+                      className="w-full p-2.5 text-xs bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 rounded-lg focus:outline-none focus:border-primary text-stone-900 dark:text-stone-100 leading-relaxed"
                     />
                   </div>
                 </div>
@@ -284,7 +284,7 @@ function Step4Content() {
         <button
           type="button"
           onClick={() => router.push("/onboarding/step-3")}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-stone-300 bg-white hover:bg-stone-50 text-stone-700 text-xs font-semibold transition-all shadow-xs"
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 hover:bg-stone-50 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300 text-xs font-semibold transition-all shadow-xs"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Étape précédente</span>
