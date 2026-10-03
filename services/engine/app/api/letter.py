@@ -1,8 +1,11 @@
+import logging
 import re
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel
 from sqlmodel import Session, select
+
+logger = logging.getLogger(__name__)
 
 from app.adapters.database import get_session
 from app.adapters.pdf import PDFCompilerService
@@ -86,7 +89,14 @@ def generate_cover_letter(
         )
 
     ats_match = ATSMatchingEngine.evaluate_alignment(job, profile)
-    new_letter = CoverLetterService.generate_cover_letter(job, profile, ats_match, language=normalized_lang)
+    try:
+        new_letter = CoverLetterService.generate_cover_letter(job, profile, ats_match, language=normalized_lang)
+    except Exception as e:
+        logger.error(f"Erreur lors de la génération de la lettre: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={"error_code": "MODEL_ERROR", "message": "Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement."},
+        )
     new_letter.user_id = username
     new_letter.language = normalized_lang
 

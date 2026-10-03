@@ -13,20 +13,14 @@ def test_audit_and_sanitize_cliches():
         "Intégrer votre prestigieuse entreprise est une opportunité rêvée."
     )
 
+    # La liste noire et le calcul de cliché ont été supprimés au profit de règles impératives
     count, detected = CoverLetterService.audit_cliches(cliche_text)
-    assert count >= 3
-    assert any("dynamique et motiv" in d.lower() for d in detected)
-    assert any("candidat id" in d.lower() for d in detected)
+    assert count == 0
+    assert len(detected) == 0
 
     sanitized = CoverLetterService.sanitize_cliches(cliche_text)
-    assert "dynamique et motivé" not in sanitized.lower()
-    assert "candidat idéal" not in sanitized.lower()
-    assert "prestigieuse entreprise" not in sanitized.lower()
+    assert sanitized == cliche_text
 
-    # Re-audit : zéro cliché
-    clean_count, clean_detected = CoverLetterService.audit_cliches(sanitized)
-    assert clean_count == 0
-    assert len(clean_detected) == 0
 
 
 def test_letter_generation_zero_hallucination_and_facts():
@@ -234,16 +228,16 @@ def test_letter_api_endpoints():
     assert res_get.status_code == 200
     assert res_get.json()["content_markdown"] == data["content_markdown"]
 
-    # 3. PUT /api/letter/{job_id} (Édition manuelle avec ajout volontaire d'un cliché pour tester l'audit)
-    updated_text = data["content_markdown"] + "\n\nJe suis très dynamique et motivé !"
+    # 3. PUT /api/letter/{job_id} (Édition manuelle - vérifie la mise à jour)
+    updated_text = data["content_markdown"] + "\n\nAjout d'un paragraphe personnalisé."
     res_put = client.put(
         "/api/letter/job-api-let",
         json={"content_markdown": updated_text},
     )
     assert res_put.status_code == 200
     put_data = res_put.json()
-    assert put_data["cliche_score"] >= 1
-    assert any("dynamique et motiv" in p.lower() for p in put_data["banned_phrases_detected"])
+    assert put_data["cliche_score"] == 0
+    assert "Ajout d'un paragraphe personnalisé." in put_data["content_markdown"]
 
 
 def test_letter_vous_moi_nous_structure_pfe():
@@ -336,25 +330,21 @@ def test_letter_always_generates_pfe_structure():
 
 
 def test_enriched_cliche_sanitization():
-    """Valide l'éradication des nouveaux clichés d'ingénieur."""
+    """Valide que le calcul de cliché est désactivé et que le texte brut est conservé sans altération."""
     raw = (
         "Madame, Monsieur, je suis une force de proposition avec une soif d'apprendre. "
         "Véritable couteau suisse, je suis prêt à relever ce challenge."
     )
     count, detected = CoverLetterService.audit_cliches(raw)
-    assert count >= 4
+    assert count == 0
+    assert len(detected) == 0
 
     sanitized = CoverLetterService.sanitize_cliches(raw)
-    clean_count, clean_detected = CoverLetterService.audit_cliches(sanitized)
-    assert clean_count == 0
-    assert "force de proposition" not in sanitized.lower()
-    assert "soif d'apprendre" not in sanitized.lower()
-    assert "couteau suisse" not in sanitized.lower()
-    assert "relever ce challenge" not in sanitized.lower()
+    assert sanitized == raw
 
 
-def test_letter_ai_truncation_triggers_deterministic_fallback(monkeypatch):
-    """Vérifie qu'une génération IA tronquée (finish_reason='length' ou phrase suspendue) est rejetée au profit du repli déterministe."""
+def test_letter_ai_failure_raises_error_without_fallback(monkeypatch):
+    """Vérifie qu'en cas d'échec du modèle IA (coupure, timeout ou exception), aucune lettre de repli synthétique n'est générée et une RuntimeError claire est levée pour le client."""
     from unittest.mock import MagicMock
     from app.config import settings
 
@@ -376,25 +366,15 @@ def test_letter_ai_truncation_triggers_deterministic_fallback(monkeypatch):
     )
     ats_match = ATSMatchingEngine.evaluate_alignment(job, profile)
 
-    monkeypatch.setattr(settings, "groq_api_key", "mock-key")
+    # Simuler une défaillance de l'agent
+    def failing_agent(*args, **kwargs):
+        raise RuntimeError("Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement.")
 
-    # Mock de Groq simulant une coupure par finish_reason="length"
-    mock_choice = MagicMock()
-    mock_choice.finish_reason = "length"
-    mock_choice.message.content = "Madame, Monsieur, ce texte est tronqué au milieu de la phrase et les"
+    monkeypatch.setattr("app.domain.letter_agent.execute_writer_agent", failing_agent)
 
-    mock_client = MagicMock()
-    mock_client.chat.completions.create.return_value.choices = [mock_choice]
+    with pytest.raises(RuntimeError, match="Le modèle IA rencontre un problème"):
+        CoverLetterService.generate_cover_letter(job, profile, ats_match, use_ai=True)
 
-    with monkeypatch.context() as m:
-        m.setattr("groq.Groq", lambda api_key: mock_client)
-        letter = CoverLetterService.generate_cover_letter(job, profile, ats_match, use_ai=True)
-
-        # La lettre tronquée doit être rejetée et le repli déterministe complet doit être utilisé
-        assert letter.content_markdown is not None
-        assert "Madame, Monsieur" in letter.content_markdown
-        assert letter.content_markdown.strip().endswith(profile.full_name)
-        assert "tronqué au milieu de la phrase et les" not in letter.content_markdown
 
 
 def test_render_cover_letter_html_and_txt():

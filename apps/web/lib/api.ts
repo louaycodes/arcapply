@@ -492,9 +492,11 @@ export async function generateTargetedCV(jobId: string, lang: string = "fr"): Pr
   });
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(
-      errorData?.detail?.message || "Échec de la génération du CV ciblé."
-    );
+    const message =
+      typeof errorData?.detail === "string"
+        ? errorData.detail
+        : errorData?.detail?.message || "Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement.";
+    throw new Error(message);
   }
   return res.json();
 }
@@ -726,9 +728,11 @@ export async function generateCoverLetter(jobId: string, lang: string = "fr"): P
   });
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(
-      errorData?.detail?.message || "Échec de la génération de la lettre de motivation."
-    );
+    const message =
+      typeof errorData?.detail === "string"
+        ? errorData.detail
+        : errorData?.detail?.message || "Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement.";
+    throw new Error(message);
   }
   return res.json();
 }

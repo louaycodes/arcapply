@@ -40,6 +40,7 @@ import {
   ChevronDown,
   Lock,
   Layers,
+  Briefcase,
 } from "lucide-react";
 import { LetterDownloadMenu } from "./letter-download-menu";
 
@@ -59,7 +60,7 @@ export function MirrorReviewDrawer({
   onJobUpdated,
 }: MirrorReviewDrawerProps) {
   const { language: appLanguage, setLanguage: setAppLanguage } = useAppLanguage();
-  const [activeTab, setActiveTab] = useState<"analysis" | "letter" | "cv">("analysis");
+  const [activeTab, setActiveTab] = useState<"letter" | "cv">("letter");
   const [status, setStatus] = useState<string>("DISCOVERED");
   const [loadingAction, setLoadingAction] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -99,11 +100,31 @@ export function MirrorReviewDrawer({
     if (job && isOpen) {
       setStatus(job.status);
       setErrorMsg(null);
-      setActiveTab("analysis"); // Analyse Profonde par défaut
+      setActiveTab("letter");
 
       // Charger le dossier d'analyse
       fetchReconDossier(job.id)
-        .then((d) => setReconDossier(d))
+        .then((d) => {
+          setReconDossier(d);
+          const ready = Boolean(
+            d &&
+              (d.status === "COMPLETED" ||
+                d.company_mission ||
+                (d.tech_stack_detected && d.tech_stack_detected.length > 0) ||
+                (d.full_description && d.full_description.length > 50))
+          );
+          if (ready) {
+            // Charger la lettre si déjà existante
+            fetchCoverLetter(job.id, cvLanguage)
+              .then((existing) => {
+                setLetter(existing);
+                setLetterContent(existing.content_markdown);
+              })
+              .catch(() => {
+                // Pas de lettre préalablement générée
+              });
+          }
+        })
         .catch(() => setReconDossier(null));
     }
 
@@ -115,24 +136,31 @@ export function MirrorReviewDrawer({
     };
   }, [job?.id, isOpen]);
 
-  // Déclencheur automatique de génération documents quand l'analyse est prête et que l'utilisateur ouvre les onglets
+  // Génération CV
   const handleLoadCV = async () => {
-    if (!job || !isAnalysisReady || cvGenerated || cvLoading) return;
+    if (!job || !isAnalysisReady || cvLoading) return;
     try {
       setCvLoading(true);
+      setErrorMsg(null);
       await generateTargetedCV(job.id, cvLanguage);
       setCvGenerated(true);
     } catch (err: any) {
       console.error("Erreur génération CV:", err);
+      setErrorMsg(
+        err?.message ||
+          "Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement."
+      );
     } finally {
       setCvLoading(false);
     }
   };
 
+  // Génération Lettre
   const handleLoadLetter = async () => {
-    if (!job || !isAnalysisReady || letter || letterLoading) return;
+    if (!job || !isAnalysisReady || letterLoading) return;
     try {
       setLetterLoading(true);
+      setErrorMsg(null);
       try {
         const existing = await fetchCoverLetter(job.id, cvLanguage);
         setLetter(existing);
@@ -144,17 +172,20 @@ export function MirrorReviewDrawer({
       }
     } catch (err: any) {
       console.error("Erreur génération lettre:", err);
+      setErrorMsg(
+        err?.message ||
+          "Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement."
+      );
     } finally {
       setLetterLoading(false);
     }
   };
 
-  // Switch d'onglets avec chargement lazy conditionné par l'analyse
-  const handleSelectTab = (tab: "analysis" | "letter" | "cv") => {
+  const handleSelectTab = (tab: "letter" | "cv") => {
     setActiveTab(tab);
     if (isAnalysisReady) {
-      if (tab === "cv") handleLoadCV();
-      if (tab === "letter") handleLoadLetter();
+      if (tab === "cv" && !cvGenerated) handleLoadCV();
+      if (tab === "letter" && !letter) handleLoadLetter();
     }
   };
 
@@ -260,13 +291,13 @@ export function MirrorReviewDrawer({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-7xl h-[95vh] rounded-3xl border border-white/80 bg-white/95 backdrop-blur-2xl shadow-2xl ring-1 ring-stone-900/10 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+        className="w-full max-w-7xl h-[95vh] rounded-3xl border border-white/80 dark:border-stone-800 bg-white/95 dark:bg-stone-950/95 backdrop-blur-2xl shadow-2xl ring-1 ring-stone-900/10 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-4 sm:px-6 py-4 border-b border-stone-200/80 flex items-center justify-between gap-4 bg-white/85 backdrop-blur-xl">
+        <div className="p-4 sm:px-6 py-4 border-b border-stone-200/80 dark:border-stone-800 flex items-center justify-between gap-4 bg-white/85 dark:bg-stone-900/85 backdrop-blur-xl">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-orange-100/80 border border-orange-200/80 flex items-center justify-center text-primary font-bold shadow-xs">
+            <div className="w-10 h-10 rounded-xl bg-orange-100/80 dark:bg-orange-950/50 border border-orange-200/80 dark:border-orange-800/60 flex items-center justify-center text-primary font-bold shadow-xs">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
@@ -275,11 +306,11 @@ export function MirrorReviewDrawer({
                   Analyse Profonde & Préparation
                 </span>
                 {isApplied ? (
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-900 border border-emerald-300">
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
                     Candidature envoyée
                   </span>
                 ) : (
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-800 border border-stone-300">
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-800 dark:bg-stone-800 dark:text-stone-300 border border-stone-300 dark:border-stone-700">
                     À postuler
                   </span>
                 )}
@@ -312,7 +343,7 @@ export function MirrorReviewDrawer({
           </div>
         </div>
 
-        {/* Error Banner */}
+        {/* Global Error Banner */}
         {errorMsg && (
           <div className="px-6 py-2.5 bg-destructive/15 border-b border-destructive/30 flex items-center justify-between text-xs text-destructive">
             <div className="flex items-center gap-2">
@@ -330,127 +361,264 @@ export function MirrorReviewDrawer({
 
         {/* Main Split Body */}
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
-          {/* LEFT PANEL: Job Summary & ATS Match (4 cols) */}
-          <div className="lg:col-span-4 border-r border-border/80 flex flex-col h-full overflow-hidden bg-background/50">
-            <div className="p-4 sm:p-5 border-b border-border/60 bg-muted/10 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Fiche de l'opportunité
-                </span>
-                <AtsScoreBadge match={atsMatch} />
-              </div>
-
-              <div className="space-y-1">
-                <h3 className="text-sm font-bold text-foreground">{job.title}</h3>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className="font-semibold text-foreground flex items-center gap-1">
-                    <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
-                    {job.company}
+          {/* LEFT PANEL: 100% ANALYSE PROFONDE, STACK & SCRAPED DETAILS (5 cols) */}
+          <div className="lg:col-span-5 border-r border-border/80 flex flex-col h-full overflow-hidden bg-background/50">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+              {/* Opportunity Card */}
+              <div className="p-4 rounded-xl border border-border bg-card shadow-xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Fiche de l'opportunité
                   </span>
-                  <span>•</span>
-                  <span className="flex items-center gap-1">
-                    <MapPin className="w-3 h-3 text-muted-foreground" />
-                    {job.location || job.country}
-                  </span>
+                  <AtsScoreBadge match={atsMatch} />
                 </div>
+
+                <div className="space-y-1">
+                  <h3 className="text-sm font-bold text-foreground">{job.title}</h3>
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <span className="font-semibold text-foreground flex items-center gap-1">
+                      <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
+                      {job.company}
+                    </span>
+                    <span>•</span>
+                    <span className="flex items-center gap-1">
+                      <MapPin className="w-3 h-3 text-muted-foreground" />
+                      {job.location || job.country}
+                    </span>
+                    {job.offer_type && (
+                      <>
+                        <span>•</span>
+                        <span className="flex items-center gap-1">
+                          <Briefcase className="w-3 h-3 text-muted-foreground" />
+                          {job.offer_type}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Audit des compétences ATS */}
+                {atsMatch && (
+                  <div className="pt-2 border-t border-border/40 space-y-2">
+                    <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      Audit des compétences (ATS)
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
+                      {atsMatch.matched_skills.map((s) => (
+                        <span
+                          key={s}
+                          className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 flex items-center gap-1"
+                        >
+                          <Check className="w-3 h-3 text-emerald-700 dark:text-emerald-400" />
+                          {s}
+                        </span>
+                      ))}
+                      {atsMatch.transferable_skills.map((s) => (
+                        <span
+                          key={s}
+                          className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800"
+                        >
+                          ~ {s}
+                        </span>
+                      ))}
+                      {atsMatch.missing_skills.map((s) => (
+                        <span
+                          key={s}
+                          className="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-50 dark:bg-rose-950/60 text-rose-900 dark:text-rose-300 border border-rose-300 dark:border-rose-800"
+                        >
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Status de l'Analyse Profonde */}
-              <div className="pt-2 border-t border-border/40">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground font-medium">Analyse Profonde :</span>
-                  {reconScanning ? (
-                    <span className="text-primary font-semibold flex items-center gap-1">
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Scan en cours...
-                    </span>
-                  ) : isAnalysisReady ? (
-                    <span className="text-emerald-800 font-semibold flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Prête & exploitée
-                    </span>
-                  ) : (
-                    <span className="text-amber-800 font-semibold flex items-center gap-1">
-                      <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /> Non effectuée
-                    </span>
+              {/* Analyse Profonde Header Card */}
+              <div className="p-4 rounded-xl border border-border bg-card shadow-xs space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-primary" />
+                      <h4 className="text-sm font-bold text-foreground">
+                        Analyse Profonde de l'Offre & de l'Entreprise
+                      </h4>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      L'Agent IA inspecte le portail carrière pour cartographier la culture d'entreprise, la mission stratégique, extraire la stack technique requise et l'annonce intégrale sans troncature.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleTriggerRecon}
+                    disabled={reconScanning}
+                    className="px-3 py-1.5 rounded-lg bg-primary hover:bg-primary-hover text-white text-xs font-semibold flex items-center gap-1.5 shrink-0 transition-colors disabled:opacity-50 cursor-pointer"
+                  >
+                    {reconScanning ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Analyse...</span>
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        <span>{isAnalysisReady ? "Actualiser l'analyse" : "Lancer l'analyse"}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {reconDossier?.external_url && (
+                  <div className="pt-2 border-t border-border flex items-center justify-between text-xs text-muted-foreground gap-2">
+                    <span className="font-mono truncate">Portail source : {reconDossier.external_url}</span>
+                    <a
+                      href={reconDossier.external_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline flex items-center gap-1 font-semibold shrink-0"
+                    >
+                      <span>Visiter le portail</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              {/* État de chargement du scan */}
+              {reconScanning && (
+                <div className="p-8 rounded-xl border border-dashed border-primary/30 bg-primary/5 flex flex-col items-center justify-center text-center space-y-2">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  <p className="text-xs font-semibold text-foreground">
+                    Analyse approfondie en cours par l'Agent IA...
+                  </p>
+                  <p className="text-[11px] text-muted-foreground max-w-sm">
+                    Extraction de la stack technique, analyse des critères d'ingénierie et de la mission de l'entreprise.
+                  </p>
+                </div>
+              )}
+
+              {/* Contenu de l'Analyse Profonde si prête */}
+              {isAnalysisReady && reconDossier ? (
+                <>
+                  {/* Mission & Culture */}
+                  <div className="space-y-3">
+                    <div className="p-3.5 rounded-xl border border-border bg-card space-y-1.5">
+                      <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                        <Building2 className="w-3.5 h-3.5 text-primary" />
+                        <span>Mission & Enjeux Clés</span>
+                      </span>
+                      <p className="text-xs text-foreground/90 leading-relaxed font-sans">
+                        {reconDossier.company_mission || "Mission en cours d'analyse..."}
+                      </p>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl border border-border bg-card space-y-1.5">
+                      <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                        <Layers className="w-3.5 h-3.5 text-primary" />
+                        <span>Culture & Valeurs Techniques</span>
+                      </span>
+                      <p className="text-xs text-foreground/90 leading-relaxed font-sans">
+                        {reconDossier.company_culture || "Culture ingénierie en cours d'analyse..."}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Stack Technique Détectée */}
+                  {reconDossier.tech_stack_detected && reconDossier.tech_stack_detected.length > 0 && (
+                    <div className="p-3.5 rounded-xl border border-border bg-card space-y-2">
+                      <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                        Stack & Technologies Requises par l'Offre
+                      </span>
+                      <div className="flex flex-wrap gap-1.5 pt-0.5">
+                        {reconDossier.tech_stack_detected.map((tech) => (
+                          <span
+                            key={tech}
+                            className="px-2.5 py-1 rounded-md bg-stone-100 dark:bg-stone-800 text-stone-800 dark:text-stone-200 border border-stone-200 dark:border-stone-700 text-xs font-semibold font-mono"
+                          >
+                            {tech}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
                   )}
-                </div>
-              </div>
 
-              {/* ATS Skills inventory */}
-              {atsMatch && (
-                <div className="pt-2 border-t border-border/40 space-y-2">
-                  <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    Audit des compétences
+                  {/* Descriptif Intégral Scrappé */}
+                  <div className="p-3.5 rounded-xl border border-border bg-card space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                        Descriptif Intégral Scrappé ({reconDossier.full_description?.length || job.description_raw?.length || 0} caractères)
+                      </span>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted/40 font-mono text-xs text-stone-800 dark:text-stone-300 max-h-64 overflow-y-auto whitespace-pre-wrap leading-relaxed border border-border/50">
+                      {reconDossier.full_description || job.description_raw}
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
-                    {atsMatch.matched_skills.map((s) => (
-                      <span
-                        key={s}
-                        className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-900 border border-emerald-300 flex items-center gap-1"
+
+                  {/* Action directe vers la préparation des documents */}
+                  <div className="p-3.5 rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="space-y-0.5">
+                      <h5 className="text-xs font-bold text-emerald-950 dark:text-emerald-300 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+                        <span>Analyse Profonde Complète : Documents débloqués</span>
+                      </h5>
+                      <p className="text-[11px] text-emerald-800 dark:text-emerald-400">
+                        La lettre de motivation et le CV ciblé exploitent 100% de cette analyse et de votre profil.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleSelectTab("letter")}
+                        className="px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold transition-colors cursor-pointer"
                       >
-                        <Check className="w-3 h-3 text-emerald-700" />
-                        {s}
-                      </span>
-                    ))}
-                    {atsMatch.transferable_skills.map((s) => (
-                      <span
-                        key={s}
-                        className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-900 border border-amber-300"
+                        Générer la Lettre
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectTab("cv")}
+                        className="px-3 py-1.5 rounded-lg bg-stone-900 dark:bg-stone-100 hover:bg-black dark:hover:bg-white text-white dark:text-stone-900 text-xs font-semibold transition-colors cursor-pointer"
                       >
-                        ~ {s}
-                      </span>
-                    ))}
-                    {atsMatch.missing_skills.map((s) => (
-                      <span
-                        key={s}
-                        className="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-50 text-rose-900 border border-rose-300"
-                      >
-                        {s}
-                      </span>
-                    ))}
+                        Générer le CV
+                      </button>
+                    </div>
                   </div>
+                </>
+              ) : !reconScanning && (
+                <div className="p-6 rounded-xl border border-dashed border-border bg-card/40 flex flex-col items-center justify-center text-center space-y-3">
+                  <Sparkles className="w-8 h-8 text-muted-foreground/50 animate-pulse" />
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-foreground">
+                      Aucune Analyse Profonde effectuée pour cette offre
+                    </p>
+                    <p className="text-[11px] text-muted-foreground max-w-xs">
+                      Cliquez ci-dessous pour inspecter l'offre, extraire la stack technique et débloquer les documents personnalisés.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleTriggerRecon}
+                    className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-all shadow-artisan-button cursor-pointer"
+                  >
+                    Lancer l'Analyse Profonde
+                  </button>
                 </div>
               )}
             </div>
-
-            {/* Scrollable Raw Job Snippet */}
-            <div className="flex-1 p-4 sm:p-5 overflow-y-auto space-y-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground font-display">
-                Extrait brut d'annonce
-              </span>
-              <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap font-sans">
-                {job.description_raw}
-              </p>
-            </div>
           </div>
 
-          {/* RIGHT PANEL: Analyse Profonde, CV & Lettre (8 cols) */}
-          <div className="lg:col-span-8 flex flex-col h-full overflow-hidden bg-card/60">
+          {/* RIGHT PANEL: EXCLUSIVELY DEDICATED TO LA LETTRE & LE CV (7 cols) */}
+          <div className="lg:col-span-7 flex flex-col h-full overflow-hidden bg-card/60">
             {/* Tabs Header */}
             <div className="px-5 py-3 border-b border-border/80 flex items-center justify-between bg-muted/10">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => handleSelectTab("analysis")}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer ${
-                    activeTab === "analysis"
-                      ? "bg-primary text-white shadow-xs"
-                      : "bg-stone-100 text-stone-700 hover:text-stone-900"
-                  }`}
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Analyse Profonde</span>
-                  {isAnalysisReady && (
-                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                  )}
-                </button>
-
-                <button
-                  type="button"
                   onClick={() => handleSelectTab("letter")}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer ${
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer ${
                     activeTab === "letter"
                       ? "bg-primary text-white shadow-xs"
-                      : "bg-stone-100 text-stone-700 hover:text-stone-900"
+                      : "bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white"
                   }`}
                 >
                   <Mail className="w-3.5 h-3.5" />
@@ -463,10 +631,10 @@ export function MirrorReviewDrawer({
                 <button
                   type="button"
                   onClick={() => handleSelectTab("cv")}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer ${
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer ${
                     activeTab === "cv"
                       ? "bg-primary text-white shadow-xs"
-                      : "bg-stone-100 text-stone-700 hover:text-stone-900"
+                      : "bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white"
                   }`}
                 >
                   <FileText className="w-3.5 h-3.5" />
@@ -479,7 +647,7 @@ export function MirrorReviewDrawer({
 
               {/* Language switcher & Tab Actions */}
               <div className="flex items-center gap-2">
-                {activeTab !== "analysis" && isAnalysisReady && (
+                {isAnalysisReady && (
                   <div className="flex items-center rounded border border-border bg-muted/40 p-0.5 text-[11px] font-semibold">
                     <button
                       type="button"
@@ -490,6 +658,12 @@ export function MirrorReviewDrawer({
                           setCvLoading(true);
                           generateTargetedCV(job.id, "fr")
                             .then(() => setCvGenerated(true))
+                            .catch((err) =>
+                              setErrorMsg(
+                                err?.message ||
+                                  "Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement."
+                              )
+                            )
                             .finally(() => setCvLoading(false));
                         }
                         if (activeTab === "letter") {
@@ -499,6 +673,12 @@ export function MirrorReviewDrawer({
                               setLetter(l);
                               setLetterContent(l.content_markdown);
                             })
+                            .catch((err) =>
+                              setErrorMsg(
+                                err?.message ||
+                                  "Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement."
+                              )
+                            )
                             .finally(() => setLetterLoading(false));
                         }
                       }}
@@ -520,6 +700,12 @@ export function MirrorReviewDrawer({
                           setCvLoading(true);
                           generateTargetedCV(job.id, "en")
                             .then(() => setCvGenerated(true))
+                            .catch((err) =>
+                              setErrorMsg(
+                                err?.message ||
+                                  "Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement."
+                              )
+                            )
                             .finally(() => setCvLoading(false));
                         }
                         if (activeTab === "letter") {
@@ -529,6 +715,12 @@ export function MirrorReviewDrawer({
                               setLetter(l);
                               setLetterContent(l.content_markdown);
                             })
+                            .catch((err) =>
+                              setErrorMsg(
+                                err?.message ||
+                                  "Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement."
+                              )
+                            )
                             .finally(() => setLetterLoading(false));
                         }
                       }}
@@ -557,12 +749,19 @@ export function MirrorReviewDrawer({
                       type="button"
                       onClick={() => {
                         setCvLoading(true);
+                        setErrorMsg(null);
                         generateTargetedCV(job.id, cvLanguage)
                           .then(() => setCvGenerated(true))
+                          .catch((err) =>
+                            setErrorMsg(
+                              err?.message ||
+                                "Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement."
+                            )
+                          )
                           .finally(() => setCvLoading(false));
                       }}
                       disabled={cvLoading}
-                      className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50 cursor-pointer"
+                      className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50 cursor-pointer"
                       title="Régénérer le CV"
                     >
                       <RefreshCw className={`w-3.5 h-3.5 ${cvLoading ? "animate-spin" : ""}`} />
@@ -576,16 +775,22 @@ export function MirrorReviewDrawer({
                       type="button"
                       onClick={() => {
                         setLetterLoading(true);
+                        setErrorMsg(null);
                         generateCoverLetter(job.id, cvLanguage)
                           .then((l) => {
                             setLetter(l);
                             setLetterContent(l.content_markdown);
                           })
-                          .catch((err) => console.error("Erreur régénération lettre:", err))
+                          .catch((err) =>
+                            setErrorMsg(
+                              err?.message ||
+                                "Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement."
+                            )
+                          )
                           .finally(() => setLetterLoading(false));
                       }}
                       disabled={letterLoading}
-                      className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50 cursor-pointer"
+                      className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50 cursor-pointer"
                       title="Régénérer la lettre"
                     >
                       <RefreshCw className={`w-3.5 h-3.5 ${letterLoading ? "animate-spin" : ""}`} />
@@ -597,12 +802,13 @@ export function MirrorReviewDrawer({
                       content={letterContent}
                       lang={cvLanguage}
                       variant="outline"
+                      placement="bottom"
                     />
                     <button
                       type="button"
                       onClick={handleSaveLetter}
                       disabled={isLetterSaving}
-                      className="px-3 py-1 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer"
+                      className="px-3 py-1 rounded-md bg-primary hover:bg-primary-hover text-white text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer"
                     >
                       {isLetterSaving ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -615,232 +821,72 @@ export function MirrorReviewDrawer({
                     </button>
                   </>
                 )}
-
-                {activeTab === "analysis" && (
-                  <button
-                    type="button"
-                    onClick={handleTriggerRecon}
-                    disabled={reconScanning}
-                    className="px-3 py-1 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer"
-                  >
-                    {reconScanning ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Sparkles className="w-3.5 h-3.5" />
-                    )}
-                    <span>{reconScanning ? "Analyse en cours..." : "Lancer l'Analyse Profonde"}</span>
-                  </button>
-                )}
               </div>
             </div>
 
-            {/* Tab Contents */}
+            {/* Document Content Area */}
             <div className="flex-1 overflow-hidden relative">
-              {/* TAB 1: ANALYSE PROFONDE */}
-              {activeTab === "analysis" && (
-                <div className="w-full h-full p-5 overflow-y-auto space-y-4 bg-background/50">
-                  {/* Header Card Analyse Profonde */}
-                  <div className="p-4 rounded-xl border border-border bg-card shadow-xs space-y-3">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <Sparkles className="w-4 h-4 text-primary" />
-                          <h4 className="text-sm font-bold text-foreground">
-                            Analyse Profonde de l'Offre & de l'Entreprise
-                          </h4>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          L'Agent IA inspecte le portail carrière pour cartographier la culture d'entreprise, la mission stratégique, extraire la stack technique requise et l'annonce intégrale sans troncature.
-                        </p>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={handleTriggerRecon}
-                        disabled={reconScanning}
-                        className="px-3.5 py-1.5 rounded-lg bg-primary hover:bg-primary/90 text-white text-xs font-semibold flex items-center gap-2 shrink-0 transition-colors disabled:opacity-50 cursor-pointer"
-                      >
-                        {reconScanning ? (
-                          <>
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            <span>Exploration de l'offre...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="w-3.5 h-3.5" />
-                            <span>{isAnalysisReady ? "Actualiser l'analyse" : "Lancer l'analyse"}</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-
-                    {reconDossier?.external_url && (
-                      <div className="pt-2 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
-                        <span className="font-mono truncate max-w-md">Portail source : {reconDossier.external_url}</span>
-                        <a
-                          href={reconDossier.external_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline flex items-center gap-1 font-semibold"
-                        >
-                          <span>Visiter le portail</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      </div>
-                    )}
+              {/* Message d'erreur spécifique du modèle si applicable */}
+              {errorMsg && (
+                <div className="p-4 m-4 rounded-xl border border-destructive/30 bg-destructive/10 text-destructive flex items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2">
+                    <ShieldAlert className="w-4 h-4 shrink-0" />
+                    <span className="font-medium">{errorMsg}</span>
                   </div>
-
-                  {reconScanning ? (
-                    <div className="p-12 rounded-xl border border-dashed border-primary/30 bg-primary/5 flex flex-col items-center justify-center text-center space-y-3">
-                      <Loader2 className="w-10 h-10 animate-spin text-primary" />
-                      <div className="space-y-1">
-                        <p className="text-sm font-semibold text-foreground">
-                          Analyse approfondie en cours par l'Agent IA...
-                        </p>
-                        <p className="text-xs text-muted-foreground max-w-md">
-                          Extraction de la stack technique, analyse des critères d'ingénierie et de la mission de l'entreprise.
-                        </p>
-                      </div>
-                    </div>
-                  ) : isAnalysisReady && reconDossier ? (
-                    <div className="space-y-4">
-                      {/* Mission & Culture */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="p-4 rounded-xl border border-border bg-card space-y-2">
-                          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                            <Building2 className="w-3.5 h-3.5 text-primary" />
-                            <span>Mission & Enjeux Clés</span>
-                          </span>
-                          <p className="text-xs text-foreground/90 leading-relaxed font-sans">
-                            {reconDossier.company_mission || "Mission en cours d'analyse..."}
-                          </p>
-                        </div>
-
-                        <div className="p-4 rounded-xl border border-border bg-card space-y-2">
-                          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                            <Layers className="w-3.5 h-3.5 text-primary" />
-                            <span>Culture & Valeurs Techniques</span>
-                          </span>
-                          <p className="text-xs text-foreground/90 leading-relaxed font-sans">
-                            {reconDossier.company_culture || "Culture ingénierie en cours d'analyse..."}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Stack Technique Détectée */}
-                      {reconDossier.tech_stack_detected && reconDossier.tech_stack_detected.length > 0 && (
-                        <div className="p-4 rounded-xl border border-border bg-card space-y-2">
-                          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                            Stack & Technologies Requises par l'Offre
-                          </span>
-                          <div className="flex flex-wrap gap-1.5 pt-1">
-                            {reconDossier.tech_stack_detected.map((tech) => (
-                              <span
-                                key={tech}
-                                className="px-2.5 py-1 rounded-md bg-stone-100 text-stone-800 border border-stone-200 text-xs font-semibold font-mono"
-                              >
-                                {tech}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Descriptif Intégral Scrappé */}
-                      <div className="p-4 rounded-xl border border-border bg-card space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                            Descriptif Intégral Scrappé ({reconDossier.full_description?.length || job.description_raw?.length || 0} caractères)
-                          </span>
-                        </div>
-                        <div className="p-4 rounded-lg bg-muted/40 font-mono text-xs text-stone-800 max-h-72 overflow-y-auto whitespace-pre-wrap leading-relaxed border border-border/50">
-                          {reconDossier.full_description || job.description_raw}
-                        </div>
-                      </div>
-
-                      {/* Action directe vers la préparation des documents */}
-                      <div className="p-4 rounded-xl border border-emerald-300 bg-emerald-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                        <div className="space-y-0.5">
-                          <h5 className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-700" />
-                            <span>Analyse Profonde Complète : Documents débloqués</span>
-                          </h5>
-                          <p className="text-[11px] text-emerald-800">
-                            La lettre de motivation et le CV ciblé exploitent 100% de cette analyse et de votre profil.
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleSelectTab("letter")}
-                            className="px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold transition-colors cursor-pointer"
-                          >
-                            Générer la Lettre
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleSelectTab("cv")}
-                            className="px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-black text-white text-xs font-semibold transition-colors cursor-pointer"
-                          >
-                            Générer le CV
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="p-8 rounded-xl border border-dashed border-border bg-card/40 flex flex-col items-center justify-center text-center space-y-3">
-                      <Sparkles className="w-10 h-10 text-muted-foreground/50 animate-pulse" />
-                      <div className="space-y-1">
-                        <p className="text-sm font-semibold text-foreground">
-                          Aucune Analyse Profonde effectuée pour cette offre
-                        </p>
-                        <p className="text-xs text-muted-foreground max-w-sm">
-                          Cliquez sur « Lancer l'Analyse Profonde » ci-dessus pour inspecter l'offre, extraire la stack technique et débloquer la génération de la lettre et du CV sur-mesure.
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleTriggerRecon}
-                        className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-all shadow-artisan-button cursor-pointer"
-                      >
-                        Lancer l'Analyse Profonde
-                      </button>
-                    </div>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (activeTab === "letter") handleLoadLetter();
+                      if (activeTab === "cv") handleLoadCV();
+                    }}
+                    className="px-3 py-1 rounded-md bg-destructive text-white hover:bg-destructive/90 text-xs font-semibold cursor-pointer shrink-0"
+                  >
+                    Réessayer
+                  </button>
                 </div>
               )}
 
-              {/* TAB 2: LETTRE DE MOTIVATION */}
-              {activeTab === "letter" && (
+              {/* Si Analyse non effectuée */}
+              {!isAnalysisReady ? (
+                <div className="flex-1 flex flex-col items-center justify-center text-center p-6 space-y-4 h-full">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950 border border-amber-300 dark:border-amber-800 flex items-center justify-center text-amber-800 dark:text-amber-300">
+                    <Lock className="w-6 h-6" />
+                  </div>
+                  <div className="space-y-1 max-w-md">
+                    <h4 className="text-sm font-bold text-foreground">
+                      Analyse Profonde Requise
+                    </h4>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Pour générer des documents rigoureusement alignés sur l'entreprise (zéro hallucination), l'analyse approfondie de l'offre sur le panneau de gauche doit d'abord être lancée.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleTriggerRecon}
+                    className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-all shadow-artisan-button cursor-pointer"
+                  >
+                    Lancer l'Analyse Profonde
+                  </button>
+                </div>
+              ) : activeTab === "letter" ? (
+                /* SECTION LETTRE DE MOTIVATION */
                 <div className="w-full h-full p-4 flex flex-col gap-3 overflow-hidden bg-background/40">
-                  {!isAnalysisReady ? (
-                    <div className="flex-1 flex flex-col items-center justify-center text-center p-6 space-y-4">
-                      <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800">
-                        <Lock className="w-6 h-6" />
-                      </div>
-                      <div className="space-y-1 max-w-md">
-                        <h4 className="text-sm font-bold text-foreground">
-                          Analyse Profonde Requise
-                        </h4>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          Pour générer une lettre de motivation sur-mesure rigoureusement alignée sur l'entreprise (zéro hallucination), l'analyse approfondie de l'offre doit d'abord être terminée.
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveTab("analysis");
-                          handleTriggerRecon();
-                        }}
-                        className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-all shadow-artisan-button cursor-pointer"
-                      >
-                        Lancer l'Analyse Profonde
-                      </button>
-                    </div>
-                  ) : letterLoading ? (
+                  {letterLoading ? (
                     <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
                       <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                      <p className="text-xs font-medium">Synthèse de la lettre en s'appuyant sur le profil et l'analyse...</p>
+                      <p className="text-xs font-medium">Rédaction de la lettre sur-mesure par l'Agent IA...</p>
+                    </div>
+                  ) : !letter && !errorMsg ? (
+                    <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
+                      <Mail className="w-10 h-10 text-muted-foreground/50" />
+                      <p className="text-xs">Aucune lettre générée pour cette offre.</p>
+                      <button
+                        type="button"
+                        onClick={handleLoadLetter}
+                        className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold cursor-pointer"
+                      >
+                        Générer la lettre
+                      </button>
                     </div>
                   ) : (
                     <>
@@ -869,16 +915,8 @@ export function MirrorReviewDrawer({
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <div className="flex items-center gap-2">
                           <span className="font-semibold text-foreground">Édition en direct :</span>
-                          <span className="text-[11px]">
-                            {letter?.cliche_score === 0 ? (
-                              <span className="text-emerald-800 font-semibold flex items-center gap-1">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> 0 cliché détecté
-                              </span>
-                            ) : (
-                              <span className="text-amber-900 font-semibold flex items-center gap-1">
-                                <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /> {letter?.cliche_score} cliché(s)
-                              </span>
-                            )}
+                          <span className="text-[11px] text-muted-foreground">
+                            {letterContent.trim().split(/\s+/).filter(Boolean).length} mots
                           </span>
                         </div>
                         <span className="text-[11px] font-mono">
@@ -895,39 +933,25 @@ export function MirrorReviewDrawer({
                     </>
                   )}
                 </div>
-              )}
-
-              {/* TAB 3: CV CIBLÉ */}
-              {activeTab === "cv" && (
+              ) : (
+                /* SECTION CV CIBLÉ */
                 <div className="w-full h-full p-2 bg-muted/30 flex items-center justify-center overflow-hidden">
-                  {!isAnalysisReady ? (
-                    <div className="flex flex-col items-center justify-center text-center p-6 space-y-4">
-                      <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800">
-                        <Lock className="w-6 h-6" />
-                      </div>
-                      <div className="space-y-1 max-w-md">
-                        <h4 className="text-sm font-bold text-foreground">
-                          Analyse Profonde Requise
-                        </h4>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          Pour aligner le CV sur la stack technique et les besoins exacts de l'offre sans aucune hallucination, l'analyse approfondie doit d'abord être effectuée.
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveTab("analysis");
-                          handleTriggerRecon();
-                        }}
-                        className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-all shadow-artisan-button cursor-pointer"
-                      >
-                        Lancer l'Analyse Profonde
-                      </button>
-                    </div>
-                  ) : cvLoading ? (
+                  {cvLoading ? (
                     <div className="flex flex-col items-center gap-3 text-muted-foreground">
                       <Loader2 className="w-8 h-8 animate-spin text-primary" />
                       <p className="text-xs font-medium">Compilation vectorielle du CV A4 ciblé...</p>
+                    </div>
+                  ) : !cvGenerated && !errorMsg ? (
+                    <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
+                      <FileText className="w-10 h-10 text-muted-foreground/50" />
+                      <p className="text-xs">Le CV ciblé n'a pas encore été généré.</p>
+                      <button
+                        type="button"
+                        onClick={handleLoadCV}
+                        className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold cursor-pointer"
+                      >
+                        Générer le CV ciblé
+                      </button>
                     </div>
                   ) : (
                     <iframe
@@ -943,18 +967,18 @@ export function MirrorReviewDrawer({
         </div>
 
         {/* BOTTOM ACTION BAR */}
-        <div className="p-4 sm:px-6 py-3.5 border-t border-stone-200/80 bg-white/85 backdrop-blur-xl flex items-center justify-between gap-4">
+        <div className="p-4 sm:px-6 py-3.5 border-t border-stone-200/80 dark:border-stone-800 bg-white/85 dark:bg-stone-900/85 backdrop-blur-xl flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-stone-600 font-mono">
+            <span className="text-xs font-semibold text-stone-600 dark:text-stone-400 font-mono">
               Statut :
             </span>
             {isApplied ? (
-              <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-900 border border-emerald-300 flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
+              <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
                 <span>Candidature envoyée</span>
               </span>
             ) : (
-              <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-stone-100 text-stone-700 border border-stone-200">
+              <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300 border border-stone-200 dark:border-stone-700">
                 À postuler
               </span>
             )}
@@ -966,7 +990,7 @@ export function MirrorReviewDrawer({
                 href={job.apply_url || job.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-xs font-semibold text-stone-700 hover:text-stone-900 transition-colors"
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:bg-stone-50 dark:hover:bg-stone-800 text-xs font-semibold text-stone-700 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white transition-colors"
               >
                 <span>Postuler sur le site source</span>
                 <ExternalLink className="w-3.5 h-3.5" />
@@ -978,7 +1002,7 @@ export function MirrorReviewDrawer({
                 type="button"
                 onClick={handleUnmarkSubmitted}
                 disabled={loadingAction}
-                className="px-4 py-2 rounded-xl border border-stone-300 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+                className="px-4 py-2 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
                 title="Cliquer pour annuler et marquer comme non envoyée"
               >
                 {loadingAction ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4 text-emerald-600" />}

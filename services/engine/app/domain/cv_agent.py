@@ -258,28 +258,30 @@ def node_rewrite_cv_sections(state: CVWriterState) -> dict:
     role = job.get("title", "")
 
     if not api_key:
-        return {"rewritten_summary": None, "rewritten_experiences": None, "rewritten_projects": None}
+        return {
+            "rewritten_summary": None,
+            "rewritten_experiences": None,
+            "rewritten_projects": None,
+            "errors": ["Le modèle IA rencontre un problème. Clé d'API non configurée. Veuillez réessayer ultérieurement."],
+        }
 
     try:
         from groq import Groq
-        client = Groq(api_key=api_key, timeout=15.0)
-
-        missing_prohibition = ""
-        if missing_skills:
-            missing_prohibition = f"\nINTERDICTION ABSOLUE d'inventer ou de mentionner ces competences manquantes : {', '.join(missing_skills)}."
+        client = Groq(api_key=api_key, timeout=30.0)
 
         if is_en:
             rewrite_prompt = f"""You are an expert CV writer for software engineers. Your job is to REWRITE CV content to perfectly target a specific position.
 
 {context_text}
-{missing_prohibition}
+
+=== MANDATORY RULES ===
+- Use ONLY facts from the candidate's real profile (zero hallucination, no invented skills or credentials).
+- Emphasize the aspects of each project/experience that are MOST RELEVANT to this specific role.
+- Be concise and impactful (CV style, not prose).
+- Never copy-paste the original descriptions verbatim.
 
 === YOUR TASK ===
-Rewrite the following CV sections oriented towards the position of {role} at {comp}. Each rewrite must:
-- Use ONLY facts from the candidate's real profile (zero hallucination)
-- Emphasize the aspects of each project/experience that are MOST RELEVANT to this specific role
-- Be concise and impactful (CV style, not prose)
-- Never copy-paste the original descriptions verbatim
+Rewrite the following CV sections oriented towards the position of {role} at {comp}.
 
 Output in this EXACT format (use --- as separator):
 
@@ -306,14 +308,15 @@ PROJ_2:
             rewrite_prompt = f"""Tu es un expert en redaction de CV d'ingenieurs logiciels. Ton role est de REECRIRE le contenu du CV pour cibler parfaitement un poste specifique.
 
 {context_text}
-{missing_prohibition}
+
+=== DIRECTIVES IMPERATIVES ===
+- Verite absolue : Utilise UNIQUEMENT les faits reels du profil du candidat (aucun ajout d'experience ou de technologie fictive).
+- Pertinence ciblee : Mets en avant les aspects de chaque projet/experience les PLUS PERTINENTS pour ce poste specifique.
+- Style CV percutant : Sois concis, technique et percutant (style CV, pas de prose creuse).
+- Pas de copier-coller : Ne JAMAIS copier-coller les descriptions originales mot pour mot.
 
 === TA MISSION ===
-Reecris les sections suivantes du CV orientees vers le poste de {role} chez {comp}. Chaque reecriture doit :
-- Utiliser UNIQUEMENT les faits reels du profil du candidat (zero hallucination)
-- Mettre en avant les aspects de chaque projet/experience les PLUS PERTINENTS pour ce poste specifique
-- Etre concis et percutant (style CV, pas de prose)
-- Ne JAMAIS copier-coller les descriptions originales mot pour mot
+Reecris les sections suivantes du CV orientees vers le poste de {role} chez {comp}.
 
 Reponds dans ce format EXACT (utilise --- comme separateur) :
 
@@ -344,20 +347,18 @@ PROJ_2:
             ],
             model=settings.effective_groq_model,
             temperature=0.2,
-            max_tokens=450,
+            max_tokens=2500,
         )
 
         raw = (resp.choices[0].message.content or "").strip()
         if not raw or len(raw) < 100:
-            logger.warning("Reponse LLM CV trop courte, repli vers descriptions originales.")
-            return {"rewritten_summary": None, "rewritten_experiences": None, "rewritten_projects": None}
-
-        # Anti-hallucination: reject if missing skills appear
-        lower_raw = raw.lower()
-        for ms in missing_skills:
-            if len(ms) > 2 and ms.lower() in lower_raw:
-                logger.warning(f"Rejet redaction CV : competence manquante '{ms}' detectee.")
-                return {"rewritten_summary": None, "rewritten_experiences": None, "rewritten_projects": None}
+            logger.error("Reponse LLM CV trop courte ou vide.")
+            return {
+                "rewritten_summary": None,
+                "rewritten_experiences": None,
+                "rewritten_projects": None,
+                "errors": ["Le modèle IA rencontre un problème. Réponse incomplète reçue. Veuillez réessayer ultérieurement."],
+            }
 
         # Parse le resultat structure
         result = _parse_cv_rewrite_response(raw, n_experiences, n_projects)
@@ -368,8 +369,13 @@ PROJ_2:
         }
 
     except Exception as e:
-        logger.warning(f"CV rewrite Groq echoue: {e}")
-        return {"rewritten_summary": None, "rewritten_experiences": None, "rewritten_projects": None}
+        logger.error(f"CV rewrite Groq echoue: {e}")
+        return {
+            "rewritten_summary": None,
+            "rewritten_experiences": None,
+            "rewritten_projects": None,
+            "errors": ["Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement."],
+        }
 
 
 def _parse_cv_rewrite_response(raw: str, n_exp: int, n_proj: int) -> CVRewriteResult:
@@ -462,6 +468,9 @@ def execute_cv_writer_agent(
     }
 
     final_state = cv_writer_agent.invoke(initial_state)
+
+    if final_state.get("errors"):
+        raise RuntimeError(final_state["errors"][0])
 
     return CVRewriteResult(
         summary=final_state.get("rewritten_summary") or "",

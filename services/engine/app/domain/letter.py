@@ -9,25 +9,8 @@ from app.domain.models import ATSMatchResult, CoverLetter, JobOffer, MasterProfi
 
 logger = logging.getLogger(__name__)
 
-# Dictionnaire des clichés d'IA bannis -> Substitutions sobres d'ingénieur
-CLICHE_RULES = [
-    (r"\bdynamique et motiv[eé]e?s?\b", "rigoureux et méthodique"),
-    (r"\benthousiaste à l'idée de\b", "particulièrement attentif à"),
-    (r"\bcandidat id[eé]al\b", "profil aligné avec vos exigences"),
-    (r"\bopportunit[eé] r[eé]v[eé]e\b", "opportunité ciblée"),
-    (r"\bpassionn[eé] depuis (?:mon plus jeune âge|toujours)\b", "fortement engagé dans la pratique du génie logiciel"),
-    (r"\bsynergie\b", "collaboration technique"),
-    (r"\bvivement int[eé]ress[eé]e?\b", "intéressé"),
-    (r"\bmettre à profit mes comp[eé]tences\b", "contribuer activement à vos développements"),
-    (r"\b(?:au sein de )?votre prestigieuse (?:entreprise|société|agence)\b", "vos équipes"),
-    (r"\brelever des d[eé]fis stimulants\b", "résoudre ces problématiques techniques"),
-    (r"\brelever ce challenge\b", "mener ce projet à bien"),
-    (r"\bamour pour\b", "intérêt marqué pour"),
-    (r"\bparfaite ad[eé]quation\b", "adéquation concrète"),
-    (r"\bforce de proposition\b", "analytique et méthodique"),
-    (r"\bsoif d'apprendre\b", "volonté d'approfondissement technique"),
-    (r"\bcouteau suisse\b", "ingénieur polyvalent"),
-]
+# Règles de rédaction sobres : pas de calcul de cliché ou de blacklist
+CLICHE_RULES = []
 
 
 def _score_item(
@@ -657,38 +640,37 @@ RÈGLES IMPÉRATIVES DE RÉDACTION :
                     raw_letter = agent_res.content_markdown
                     thinking_plan_result = agent_res.thinking_plan
             except Exception as e:
-                logger.warning(f"Exécution Agent Rédacteur LangGraph échouée ({e}), repli déterministe.")
+                logger.error(f"Exécution Agent Rédacteur LangGraph échouée: {e}")
+                raise RuntimeError("Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement.") from e
 
-        # Repli déterministe garanti si IA non activée, indisponible ou rejetée par garde-fous
         if not raw_letter:
-            raw_letter = cls._build_deterministic_letter(
-                job=job,
-                profile=profile,
-                ats_match=ats_match,
-                is_job_mode=is_job_mode,
-                degree_name=degree_name,
-                school_name=school_name,
-                target_skills_str=target_skills_str,
-                realizations_paragraph=realizations_paragraph,
-                lang=lang,
-            )
-
-        # 6. Filtrage anti-clichés déterministe
-        cleaned_content = cls.sanitize_cliches(raw_letter)
-        cliche_count, detected_phrases = cls.audit_cliches(cleaned_content)
+            if not use_ai:
+                raw_letter = cls._build_deterministic_letter(
+                    job=job,
+                    profile=profile,
+                    ats_match=ats_match,
+                    is_job_mode=is_job_mode,
+                    degree_name=degree_name,
+                    school_name=school_name,
+                    target_skills_str=target_skills_str,
+                    realizations_paragraph=realizations_paragraph,
+                    lang=lang,
+                )
+            else:
+                raise RuntimeError("Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement.")
 
         letter = CoverLetter(
             job_id=job.id,
             profile_id=profile.id,
             target_role=job_title,
             company_name=company,
-            content_markdown=cleaned_content,
-            cliche_score=cliche_count,
+            content_markdown=raw_letter,
+            cliche_score=0,
             thinking_plan=thinking_plan_result,
             language=lang,
             user_id=profile.user_id,
         )
-        letter.banned_phrases_detected = detected_phrases
+        letter.banned_phrases_detected = []
 
         return letter
 

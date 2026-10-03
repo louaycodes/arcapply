@@ -164,46 +164,106 @@ PROJECT_TRANSLATIONS = {
 }
 
 
-def clean_target_role(title: str, company: str = "") -> str:
-    """Nettoie le titre d'une offre pour en extraire uniquement le rôle / poste ciblé.
+def clean_target_role(title: str, company: str = "", lang: str = "fr") -> str:
+    """Extrait intelligemment le rôle / poste ciblé depuis l'offre.
 
-    Supprime le nom de l'entreprise, les mentions de stage/pfe/offre/contrat,
-    les codes H/F, et retourne un titre propre (ex: 'IT Support', 'Développeur Python').
+    - Élimine le nom de l'entreprise (ex: 'at Sagemcom', '- Sagemcom').
+    - Élimine les mentions de type d'offre / contrat (Stage PFE, Alternance, CDI, etc.).
+    - Élimine les codes de genre / H/F ((H/F), [F/H], /X, etc.).
+    - Normalise l'écriture inclusive (ex: 'Développeur / Développeuse Python' -> 'Développeur Python',
+      'Ingénieur.e DevOps' -> 'Ingénieur DevOps', 'Ingénieur(e)' -> 'Ingénieur').
+    - Élimine les mentions de localisation résiduelles (ex: '- Paris', '- Bois-Colombes').
+    - Adapte à la langue (ex: 'Ingénieur DevOps' -> 'DevOps Engineer' en anglais).
     """
     if not title:
-        return ""
+        return "Software Engineer" if lang == "en" else "Ingénieur Logiciel"
 
     cleaned = title.strip()
 
-    # 1. Supprimer le nom de l'entreprise s'il apparaît au début ou à la fin
+    # 1. Supprimer le nom de l'entreprise s'il apparaît
     if company and company.strip():
         comp_pattern = re.escape(company.strip())
+        cleaned = re.sub(rf"(?i)\b(?:at|chez)\s+{comp_pattern}\b.*", "", cleaned)
         cleaned = re.sub(rf"(?i)^\s*{comp_pattern}\s*[-–—:\s]*", "", cleaned)
         cleaned = re.sub(rf"(?i)[-–—:\s]*{comp_pattern}\s*$", "", cleaned)
+        cleaned = re.sub(rf"(?i)\s+[-–—|]\s*{comp_pattern}\b.*", "", cleaned)
 
     # 2. Supprimer les mentions de type d'offre / contrat / stage / pfe / h/f
     noise_patterns = [
         r"(?i)\boffre\s+(de\s+)?(stage|d'emploi|emploi)?\b",
-        r"(?i)\bstage\s+(de\s+)?(fin\s+d['’]études|fin\s+d['’]etudes|pfe)?\b",
-        r"(?i)\b(stage|pfe|internship|intern|alternance|cdi|cdd|job|pre-embauche|pré-embauche)\b",
-        r"(?i)\b(h\s*/\s*f|f\s*/\s*h|m\s*/\s*f|m\s*/\s*w)\b",
-        r"(?i)\(\s*(h/f|f/h|m/f|m/w|h\s*/\s*f|f\s*/\s*h)\s*\)",
-        r"(?i)\[\s*(h/f|f/h|m/f|m/w)\s*\]",
+        r"(?i)\bstage\s+(de\s+)?(fin\s+d['’]études|fin\s+d['’]etudes|pfe|pré-embauche|pre-embauche)?\b",
+        r"(?i)\b(stage|pfe|internship|intern|alternance|cdi|cdd|contrat pro|graduate program)\b",
+        r"(?i)\b(h\s*/\s*f|f\s*/\s*h|m\s*/\s*f|m\s*/\s*w)(?:/x)?\b",
+        r"(?i)\(\s*(?:h/f|f/h|m/f|m/w|h\s*/\s*f|f\s*/\s*h)(?:/x)?\s*\)",
+        r"(?i)\[\s*(?:h/f|f/h|m/f|m/w)(?:/x)?\s*\]",
     ]
     for pat in noise_patterns:
         cleaned = re.sub(pat, " ", cleaned)
 
-    # 3. Nettoyer la ponctuation résiduelle et séparateurs
+    # 3. Normaliser l'écriture inclusive et les dédoublements de genre
+    cleaned = re.sub(r"(?i)\bdéveloppeur\s*/\s*développeuse\b", "Développeur", cleaned)
+    cleaned = re.sub(r"(?i)\bdeveloppeur\s*/\s*developpeuse\b", "Développeur", cleaned)
+    cleaned = re.sub(r"(?i)\bingénieur\s*/\s*ingénieure\b", "Ingénieur", cleaned)
+    cleaned = re.sub(r"(?i)\bingenieur\s*/\s*ingenieure\b", "Ingénieur", cleaned)
+    cleaned = re.sub(r"(?i)\bconsultant\s*/\s*consultante\b", "Consultant", cleaned)
+    cleaned = re.sub(r"(?i)\bassistant\s*/\s*assistante\b", "Assistant", cleaned)
+    cleaned = re.sub(r"(?i)\bconcepteur\s*/\s*conceptrice\b", "Concepteur", cleaned)
+    cleaned = re.sub(r"(?i)\badministrateur\s*/\s*administratrice\b", "Administrateur", cleaned)
+
+    # Ex: Ingénieur.e / Ingénieur.e.s -> Ingénieur
+    cleaned = re.sub(r"(?i)\b([A-Za-zÀ-ÿ]+)\.(?:e|es|e\.s)\b", r"\1", cleaned)
+    # Ex: Ingénieur(e) -> Ingénieur
+    cleaned = re.sub(r"(?i)\b([A-Za-zÀ-ÿ]+)\((?:e|es|trice)\)", r"\1", cleaned)
+
+    # Nettoyer mentions orphelines de seniorité comme "– Junior" ou "(Junior)"
+    cleaned = re.sub(r"(?i)\b(?:junior|débutant)\b", "", cleaned)
+
+    # Supprimer les localisations résiduelles courantes en fin de titre
+    cleaned = re.sub(
+        r"(?i)[-–—|]\s*(?:paris|bois-colombes|lyon|toulouse|tunis|marseille|bordeaux|lille|nantes|rennes|remote|télétravail|france|tunisie).*",
+        "",
+        cleaned,
+    )
+
+    # 4. Nettoyer la ponctuation résiduelle et séparateurs
     cleaned = re.sub(r"[\(\)\[\]{}—–\-:|/]+", " ", cleaned)
     cleaned = re.sub(r"\s+", " ", cleaned).strip()
 
-    # 4. Nettoyage final : suppression des petits mots de liaison orphelins au début
-    cleaned = re.sub(r"^(de|d'|d’|pour|en|a|à)\s+", "", cleaned, flags=re.IGNORECASE).strip()
+    # 5. Suppression des petits mots de liaison orphelins au début
+    cleaned = re.sub(r"^(?:de|d'|d’|pour|en|a|à)\s+", "", cleaned, flags=re.IGNORECASE).strip()
 
     if len(cleaned) < 2:
-        return ""
+        return "Software Engineer" if lang == "en" else "Ingénieur Logiciel"
 
-    return cleaned
+    # 6. Adaptation linguistique si anglais
+    if lang == "en":
+        en_role_mappings = [
+            (r"(?i)\bingénieur(?:\s+d['’]études\s+et)?\s+développement\b", "Software Development Engineer"),
+            (r"(?i)\bingénieur\s+devops\b", "DevOps Engineer"),
+            (r"(?i)\bingénieur\s+cloud\b", "Cloud Engineer"),
+            (r"(?i)\bingénieur\s+logiciel\b", "Software Engineer"),
+            (r"(?i)\bingénieur\s+systèmes?\b", "Systems Engineer"),
+            (r"(?i)\bingénieur\s+données?\b", "Data Engineer"),
+            (r"(?i)\bingénieur\s+ia\b", "AI Engineer"),
+            (r"(?i)\bingénieur\b", "Engineer"),
+            (r"(?i)\bdéveloppeur\s+fullstack\b", "Fullstack Developer"),
+            (r"(?i)\bdéveloppeur\s+backend\b", "Backend Developer"),
+            (r"(?i)\bdéveloppeur\s+frontend\b", "Frontend Developer"),
+            (r"(?i)\bdéveloppeur\b", "Developer"),
+            (r"(?i)\barchitecte\s+cloud\b", "Cloud Architect"),
+            (r"(?i)\bchef\s+de\s+projet\b", "Project Manager"),
+            (r"(?i)\bconsultant\b", "Consultant"),
+            (r"(?i)\bstagiaire\b", ""),
+        ]
+        for pat, repl in en_role_mappings:
+            cleaned = re.sub(pat, repl, cleaned)
+        cleaned = re.sub(r"\s+", " ", cleaned).strip()
+
+    # Capitaliser la première lettre si nécessaire
+    if cleaned and not cleaned[0].isupper():
+        cleaned = cleaned[0].upper() + cleaned[1:]
+
+    return cleaned if cleaned else ("Software Engineer" if lang == "en" else "Ingénieur Logiciel")
 
 
 class CVGeneratorService:
@@ -231,17 +291,9 @@ class CVGeneratorService:
         if lang not in {"fr", "en"}:
             lang = "fr"
 
-        # 1. Headline ciblée (Format: Titre profil | Rôle cible nettoyé)
-        clean_role = clean_target_role(job.title or "", job.company or "")
-        if lang == "en":
-            hl_base = profile.headline_en or profile.headline or "Engineering Student"
-        else:
-            hl_base = profile.headline_fr or profile.headline or "Eleve-Ingenieur"
-
-        if clean_role and clean_role.lower() not in hl_base.lower():
-            headline = f"{hl_base} | {clean_role}"
-        else:
-            headline = hl_base
+        # 1. Headline ciblée : STRICTEMENT le rôle extrait de l'offre (on ignore le titre du MasterProfile)
+        smart_role = clean_target_role(job.title or "", job.company or "", lang=lang)
+        headline = smart_role
 
         # 2. Accroche factuelle zero hallucination
         missing_set = {s.lower() for s in ats_match.missing_skills}
@@ -383,7 +435,8 @@ class CVGeneratorService:
                         selected_projects[idx]["description"] = new_desc
 
         except Exception as e:
-            logger.warning(f"Agent Redacteur CV echoue ({e}), utilisation des descriptions originales.")
+            logger.error(f"Agent Redacteur CV echoue: {e}")
+            raise RuntimeError("Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement.") from e
 
         # 6. Formations
         educations_list = []

@@ -19,25 +19,8 @@ from app.domain.models import (
 
 logger = logging.getLogger(__name__)
 
-# Regles anti-cliches d'ingenieur
-CLICHE_RULES = [
-    (r"\bdynamique et motiv[eé]e?s?\b", "rigoureux et methodique"),
-    (r"\benthousiaste à l'idée de\b", "particulierement attentif a"),
-    (r"\bcandidat id[eé]al\b", "profil aligne avec vos exigences"),
-    (r"\bopportunit[eé] r[eé]v[eé]e\b", "opportunite ciblee"),
-    (r"\bpassionn[eé] depuis (?:mon plus jeune âge|toujours)\b", "fortement engage dans la pratique du genie logiciel"),
-    (r"\bsynergie\b", "collaboration technique"),
-    (r"\bvivement int[eé]ress[eé]e?\b", "interesse"),
-    (r"\bmettre à profit mes comp[eé]tences\b", "contribuer activement a vos developpements"),
-    (r"\b(?:au sein de )?votre prestigieuse (?:entreprise|société|agence)\b", "vos equipes"),
-    (r"\brelever des d[eé]fis stimulants\b", "resoudre ces problematiques techniques"),
-    (r"\brelever ce challenge\b", "mener ce projet a bien"),
-    (r"\bamour pour\b", "interet marque pour"),
-    (r"\bparfaite ad[eé]quation\b", "adequation concrete"),
-    (r"\bforce de proposition\b", "analytique et methodique"),
-    (r"\bsoif d'apprendre\b", "volonte d'approfondissement technique"),
-    (r"\bcouteau suisse\b", "ingenieur polyvalent"),
-]
+# Pas de calcul de clichés ni de liste noire : règles strictes d'ingénieur
+CLICHE_RULES = []
 
 
 class WriterState(TypedDict):
@@ -61,19 +44,11 @@ class WriterState(TypedDict):
 
 
 def _audit_cliches(text: str) -> Tuple[int, List[str]]:
-    detected = []
-    for pattern, _ in CLICHE_RULES:
-        matches = re.findall(pattern, text, flags=re.IGNORECASE)
-        if matches:
-            detected.extend(matches)
-    return len(detected), list(set(detected))
+    return 0, []
 
 
 def _sanitize_cliches(text: str) -> str:
-    sanitized = text
-    for pattern, replacement in CLICHE_RULES:
-        sanitized = re.sub(pattern, replacement, sanitized, flags=re.IGNORECASE)
-    return sanitized
+    return text
 
 
 def _serialize_full_profile(profile: dict, lang: str) -> str:
@@ -141,8 +116,7 @@ def _serialize_recon_dossier(recon: dict) -> str:
 
     full_desc = recon.get("full_description", "")
     if full_desc:
-        # Truncate intelligemment pour rester dans les limites token
-        lines.append(f"Description integrale de l'offre :\n{full_desc[:4000]}")
+        lines.append(f"Description integrale de l'offre :\n{full_desc[:5000]}")
 
     company_name = recon.get("company_name", "")
     if company_name:
@@ -301,7 +275,6 @@ def node_thinking_phase(state: WriterState) -> dict:
     les points d'accroche uniques a cette offre et construire un plan d'argumentation sur-mesure."""
     api_key = settings.effective_groq_api_key
     lang = state.get("language", "fr")
-    is_en = lang == "en"
 
     job = state.get("job_offer") or {}
     recon = state.get("recon_dossier") or {}
@@ -309,21 +282,20 @@ def node_thinking_phase(state: WriterState) -> dict:
     rules = state.get("active_playbook_rules") or []
     ats = state.get("ats_match") or {}
 
-    # Serialisation complete du profil et du dossier recon
     profile_text = _serialize_full_profile(profile, lang)
     recon_text = _serialize_recon_dossier(recon)
-
     matched_skills = ats.get("matched_skills", [])
-    missing_skills = ats.get("missing_skills", [])
 
-    if api_key:
-        try:
-            from groq import Groq
-            client = Groq(api_key=api_key, timeout=15.0)
+    if not api_key:
+        return {"errors": ["Le modèle IA rencontre un problème. Clé d'API non configurée. Veuillez réessayer ultérieurement."]}
 
-            rules_text = "\n".join([f"- [{r['title']}] SI {r['condition']} ALORS {r['action']}" for r in rules])
+    try:
+        from groq import Groq
+        client = Groq(api_key=api_key, timeout=30.0)
 
-            thinking_prompt = f"""Tu es un directeur technique expert en recrutement d'ingenieurs logiciels.
+        rules_text = "\n".join([f"- [{r['title']}] SI {r['condition']} ALORS {r['action']}" for r in rules])
+
+        thinking_prompt = f"""Tu es un directeur technique expert en recrutement d'ingenieurs logiciels.
 Ton role : analyser en profondeur cette offre specifique et le profil reel du candidat pour construire
 un PLAN D'ARGUMENTATION SUR-MESURE. Chaque point doit etre UNIQUE a cette offre, pas generique.
 
@@ -336,58 +308,50 @@ Localisation : {job.get('location', '')}
 === PROFIL COMPLET DU CANDIDAT (SOURCE UNIQUE DE VERITE) ===
 {profile_text}
 
-=== ALIGNEMENT ATS ===
-Competences matchees : {', '.join(matched_skills) if matched_skills else 'Aucune'}
-Competences manquantes (NE PAS MENTIONNER) : {', '.join(missing_skills) if missing_skills else 'Aucune'}
+=== COMPETENCES CLES IDENTIFIEES ===
+Competences matchees : {', '.join(matched_skills) if matched_skills else 'Technologies du profil'}
 
 === DIRECTIVES DU PLAYBOOK ===
 {rules_text or 'Aucune regle personnalisee.'}
+
+=== REGLES STRICTES D'ANALYSE ===
+- Rigueur et verite : Base-toi strictement sur les faits reels du candidat. N'invente aucune competence, certification ou experience.
+- Pertinence : Identifie les veritables defis techniques et problematiques que {job.get('company', 'l entreprise')} cherche a resoudre.
 
 === CONSIGNE ===
 Produis un plan d'attaque strategique en 5 points SPECIFIQUES a cette offre :
 1. Besoin reel de l'entreprise : Qu'est-ce que {job.get('company', 'cette entreprise')} cherche VRAIMENT pour ce poste ? Quels sont les enjeux concrets ?
 2. Points d'accroche uniques : Quels elements SPECIFIQUES de l'offre ou de l'entreprise (mission, culture, stack, projets) peuvent servir d'ancrage dans la lettre ?
 3. Selection strategique des realisations : Quels projets/experiences du candidat resonnent le PLUS avec cette offre et POURQUOI ? Pour chaque choisi, indique l'angle de presentation.
-4. Arguments differenciants : Qu'est-ce qui distingue ce candidat pour CE poste precis (pas un poste generique) ?
+4. Arguments differenciants : Qu'est-ce qui distingue ce candidat pour CE poste precis ?
 5. Structure argumentative Vous/Moi/Nous/Demain : Le fil conducteur specifique a cette candidature.
 
-IMPORTANT : Pas de generalites. Chaque point doit mentionner des elements concrets de l'offre ou du profil."""
+Sois precis, technique et exhaustif."""
 
-            resp = client.chat.completions.create(
-                messages=[
-                    {"role": "system", "content": "Tu es un stratege senior en recrutement d'ingenieurs. Tu raisonnes avec une rigueur absolue et une specificite maximale."},
-                    {"role": "user", "content": thinking_prompt},
-                ],
-                model=settings.effective_groq_model,
-                temperature=0.3,
-                max_tokens=450,
-            )
-            plan = (resp.choices[0].message.content or "").strip()
-            if plan:
-                return {"thinking_plan": plan}
-        except Exception as e:
-            logger.warning(f"Thinking phase Groq echouee: {e}")
-
-    # Fallback Thinking Plan structure
-    comp = job.get("company", "l'entreprise")
-    role = job.get("title", "Ingenieur Logiciel")
-    top_proj = profile.get("projects", [{}])[0].get("title", "Projet Technique") if profile.get("projects") else "Projet Technique"
-    recon_mission = recon.get("company_mission", "")
-    recon_stack = ", ".join(recon.get("tech_stack_detected", []))
-
-    plan = f"""### Plan d'attaque strategique de l'Agent
-1. Diagnostic du besoin : {comp} recherche un profil solide pour {role}. Mission : {recon_mission[:200] if recon_mission else 'N/A'}. Stack detectee : {recon_stack or 'non identifiee'}.
-2. Points d'accroche : stack technique de l'entreprise, culture d'ingenierie, enjeux du poste.
-3. Projet priorise : << {top_proj} >> dont la realisation technique prouve la competence operationnelle.
-4. Argument differenciateur : experience concrete et polyvalence technique demontree par les projets.
-5. Schema narratif : Vous (enjeux {comp}) / Moi (projets cles) / Nous (apport operationnel) / Demain (disponibilite)."""
-
-    return {"thinking_plan": plan}
+        resp = client.chat.completions.create(
+            messages=[
+                {"role": "system", "content": "Tu es un stratege senior en recrutement d'ingenieurs. Tu raisonnes avec une rigueur absolue et une specificite maximale."},
+                {"role": "user", "content": thinking_prompt},
+            ],
+            model=settings.effective_groq_model,
+            temperature=0.3,
+            max_tokens=1200,
+        )
+        plan = (resp.choices[0].message.content or "").strip()
+        if plan:
+            return {"thinking_plan": plan}
+        return {"errors": ["Le modèle IA rencontre un problème. Réponse vide reçue. Veuillez réessayer ultérieurement."]}
+    except Exception as e:
+        logger.error(f"Thinking phase Groq echouee: {e}")
+        return {"errors": ["Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement."]}
 
 
 def node_drafting_phase(state: WriterState) -> dict:
     """Noeud 3 : Redaction integrale de la lettre par le LLM, guidee par le Thinking Plan et le dossier recon.
     Chaque lettre est UNIQUE : pas de copier-coller du profil, pas de formules generiques."""
+    if state.get("errors"):
+        return {"errors": state.get("errors")}
+
     api_key = settings.effective_groq_api_key
     lang = state.get("language", "fr")
     is_en = lang == "en"
@@ -398,38 +362,31 @@ def node_drafting_phase(state: WriterState) -> dict:
     plan = state.get("thinking_plan") or ""
     ats = state.get("ats_match") or {}
 
-    missing_skills = ats.get("missing_skills", [])
     matched_skills = ats.get("matched_skills", [])
-
-    missing_prohibition = ""
-    if missing_skills:
-        missing_str = ", ".join(missing_skills)
-        missing_prohibition = f"INTERDICTION ABSOLUE de mentionner ces competences que le candidat NE POSSEDE PAS : {missing_str}."
-
     full_name = profile.get("full_name", "Candidat")
     edu = profile.get("educations", [{}])[0] if profile.get("educations") else {}
     school = edu.get("school", "ecole d'ingenieurs")
-    degree = edu.get("degree_fr" if not is_en else "degree_en") or edu.get("degree", "Ingenieur")
     comp = job.get("company", "votre entreprise")
     role = job.get("title", "Ingenieur")
-    matched_skills_str = ", ".join(matched_skills[:5]) if matched_skills else "Python, architecture logicielle"
+    matched_skills_str = ", ".join(matched_skills[:5]) if matched_skills else "conception logicielle et ingenierie"
 
-    # Serialisation complete pour le LLM redacteur
     profile_text = _serialize_full_profile(profile, lang)
     recon_text = _serialize_recon_dossier(recon)
 
-    if api_key:
-        try:
-            from groq import Groq
-            client = Groq(api_key=api_key, timeout=15.0)
+    if not api_key:
+        return {"errors": ["Le modèle IA rencontre un problème. Clé d'API non configurée. Veuillez réessayer ultérieurement."]}
 
-            if is_en:
-                draft_prompt = f"""You are an elite engineering cover letter writer. You write like a human recruiter who deeply understands both the candidate's profile and the company's needs.
+    try:
+        from groq import Groq
+        client = Groq(api_key=api_key, timeout=30.0)
+
+        if is_en:
+            draft_prompt = f"""You are an elite software engineering application writer. You write like a senior engineering manager who deeply understands both the candidate's profile and the company's technical roadmap.
 
 STRATEGIC PLAN TO FOLLOW:
 {plan}
 
-=== COMPLETE CANDIDATE PROFILE (ZERO HALLUCINATION — USE ONLY THESE FACTS) ===
+=== COMPLETE CANDIDATE PROFILE (SOURCE OF TRUTH) ===
 {profile_text}
 
 === COMPLETE COMPANY & JOB INTELLIGENCE (DEEP RECON) ===
@@ -437,134 +394,80 @@ STRATEGIC PLAN TO FOLLOW:
 
 Target Company: {comp}
 Target Role: {role}
-Verified Matched Skills: {matched_skills_str}
-{missing_prohibition}
+Key Technical Skills: {matched_skills_str}
 
-=== WRITING DIRECTIVES ===
-
-STRUCTURE: 4 paragraphs following YOU / ME / US / TOMORROW:
-
-1. YOU (The Company): Demonstrate that you UNDERSTAND what {comp} does and what they need for this role. Reference SPECIFIC elements from the Deep Recon (their mission, their tech stack, their challenges). Do NOT write generic praise — show genuine understanding of their work.
-
-2. ME (My Achievements): Select 2-3 projects/experiences from the profile that DIRECTLY answer the company's needs. Do NOT copy-paste descriptions. REWRITE each achievement to highlight the specific angle that matters for THIS position. Link each to concrete technologies from the matched skills.
-
-3. US (Mutual Value): Explain the SPECIFIC contribution you would bring from day one. Reference concrete technical areas from the job description where your experience creates immediate value.
-
-4. TOMORROW: Availability (6 months graduation internship) and invitation to a technical interview.
-
-CRITICAL RULES:
-- Each argument must be SPECIFIC to {comp} and this role — not recyclable for another company
-- Quote project titles in guillemets << Project Title >>
-- NEVER invent facts, statistics, or companies
-- Write in a sober, professional, factual tone — no AI buzzwords
-- Begin with "Dear Hiring Team," and end with "Sincerely,\n\n{full_name}"
-- Target 280-320 words. Complete every sentence."""
-                sys_prompt = "You are an elite software engineering application writer. You write sober, impactful, and deeply personalized cover letters. You never use generic formulations."
-            else:
-                draft_prompt = f"""Tu es un redacteur d'elite de candidatures d'ingenieurs. Tu ecris comme un recruteur senior qui comprend intimement le profil du candidat ET les besoins de l'entreprise.
+=== MANDATORY WRITING RULES ===
+1. Absolute Truthfulness: Use ONLY real facts, projects, technologies, and achievements from the candidate's profile above. Never invent facts, certifications, or companies.
+2. High Specificity: Every single paragraph must directly address {comp} and the exact engineering challenges mentioned in the reconnaissance dossier.
+3. Structure: 4 substantive, articulate paragraphs following YOU / ME / US / TOMORROW:
+   - 1. YOU (The Company): Demonstrate thorough understanding of what {comp} builds, their mission, architecture, and current engineering challenges. No generic platitudes.
+   - 2. ME (My Achievements): Select 2-3 projects and experiences from the profile that directly provide evidence of your ability to solve their technical needs. Quote project titles in guillemets << Project Title >>. Rewrite and re-angle the achievements specifically for this role—do NOT copy-paste profile descriptions.
+   - 3. US (Mutual Value): Detail your immediate operational contribution from day one, connecting your skill set to their codebase, infrastructure, or processes.
+   - 4. TOMORROW (Next Step): Availability (graduation internship or immediate availability) and invitation to an in-depth technical interview.
+4. Tone: Rigorous, articulate, confident engineer. No cliché filler words.
+5. Salutation: Start with "Dear Hiring Team," and conclude with professional sign-off followed by "{full_name}".
+6. Completeness: Ensure all thoughts and sentences are fully finished and well-crafted."""
+            sys_prompt = "You are an elite engineering application writer. You produce sober, highly technical, deeply targeted cover letters."
+        else:
+            draft_prompt = f"""Tu es un redacteur d'elite de candidatures d'ingenieurs. Tu rediges comme un responsable technique senior qui comprend intimement le profil de l'ingenieur ET les enjeux techniques de l'entreprise.
 
 PLAN STRATEGIQUE A SUIVRE :
 {plan}
 
-=== PROFIL COMPLET DU CANDIDAT (ZERO HALLUCINATION — UTILISE UNIQUEMENT CES FAITS) ===
+=== PROFIL COMPLET DU CANDIDAT (SOURCE DE VERITE) ===
 {profile_text}
 
-=== INTELLIGENCE COMPLETE SUR L'ENTREPRISE & L'OFFRE (DEEP RECON) ===
+=== DOSSIER D'ANALYSE PROFONDE DE L'ENTREPRISE & DU POSTE ===
 {recon_text}
 
 Entreprise ciblee : {comp}
 Poste cible : {role}
-Competences verifiees matchees : {matched_skills_str}
-{missing_prohibition}
+Competences cles matchees : {matched_skills_str}
 
-=== DIRECTIVES DE REDACTION ===
+=== REGLES IMPERATIVES DE REDACTION ===
+1. Verite et integrite : Utilise UNIQUEMENT les faits reels, formations, experiences et projets du profil ci-dessus. N'invente JAMAIS d'experiences ou de competences non attestees.
+2. Specificite maximale : Chaque paragraphe doit etre profondement ancre dans les defis techniques et l'activite de {comp}. Pas de lettre interchangeable.
+3. Structure : 4 paragraphes percutants et developpes selon la methode VOUS / MOI / NOUS / DEMAIN :
+   - 1. VOUS (L'Entreprise) : Demontre que tu comprends precisement les projets, la mission et l'architecture technique de {comp}. Fais reference aux elements concrets du dossier d'analyse profonde. Pas d'eloge superficiel.
+   - 2. MOI (Mes Realisations) : Selectionne 2-3 projets/experiences du candidat qui repondent aux defis du poste. Cite les titres de projets entre guillemets << Titre du Projet >>. Ne fais pas de copier-coller des descriptions brutes : reformule chaque realisation sous l'angle technique qui interesse ce recruteur.
+   - 3. NOUS (Valeur Mutuelle) : Expose l'apport operationnel concret des les premieres semaines sur leurs cycles de developpement ou leur infrastructure.
+   - 4. DEMAIN (Disponibilite & Entretien) : Disponibilite (stage de fin d'etudes PFE ou embauche selon recherche) et proposition sobre d'un entretien technique.
+4. Ton : Rigueur d'ingenieur, vocabulaire precis, style percutant et professionnel. Proscrire les superlatifs creux.
+5. Formules : Debute par "Madame, Monsieur," et termine par des salutations professionnelles suivies de "{full_name}".
+6. Completude : Developpe des phrases completes et des arguments aboutis sans laisser de texte tronque."""
+            sys_prompt = "Tu es un redacteur d'elite de candidatures d'ingenieurs. Tu rediges en francais technique, sobre et rigoureusement personnalise."
 
-STRUCTURE : 4 paragraphes selon la methode VOUS / MOI / NOUS / DEMAIN :
+        resp = client.chat.completions.create(
+            messages=[
+                {"role": "system", "content": sys_prompt},
+                {"role": "user", "content": draft_prompt},
+            ],
+            model=settings.effective_groq_model,
+            temperature=0.25,
+            max_tokens=2000,
+        )
 
-1. VOUS (L'Entreprise) : Demontre que tu COMPRENDS ce que fait {comp} et ce qu'ils cherchent pour ce poste. Reference des elements SPECIFIQUES du dossier Deep Recon (leur mission, leur stack, leurs enjeux). PAS de flatterie generique — montre une comprehension reelle de leur activite.
+        choice = resp.choices[0]
+        raw = (choice.message.content or "").strip()
+        if raw and len(raw) > 150:
+            return {"draft_letter": raw}
 
-2. MOI (Mes Realisations) : Selectionne 2-3 projets/experiences du profil qui REPONDENT DIRECTEMENT aux besoins de l'entreprise. NE PAS copier-coller les descriptions du profil. REFORMULE chaque realisation pour mettre en avant l'angle specifique qui compte pour CE poste. Relie chaque realisation aux technologies du poste.
-
-3. NOUS (Valeur Mutuelle) : Explique l'apport CONCRET et SPECIFIQUE que le candidat ferait des le premier jour. Reference des domaines techniques precis de l'offre ou l'experience du candidat cree une valeur immediate.
-
-4. DEMAIN : Disponibilite (stage PFE 6 mois) et invitation sobre a un entretien technique.
-
-REGLES CRITIQUES :
-- Chaque argument doit etre SPECIFIQUE a {comp} et ce role — pas reutilisable pour une autre entreprise
-- Cite les titres de projets entre guillemets << Titre du Projet >>
-- NE JAMAIS inventer de faits, statistiques ou entreprises
-- Ton sobre, professionnel et factuel — aucun cliche d'IA
-- Debute par "Madame, Monsieur," et termine par les salutations professionnelles suivies de "{full_name}"
-- Vise 280-320 mots. Acheve chaque phrase entierement."""
-                sys_prompt = "Tu es un redacteur d'elite de candidatures d'ingenieurs. Tu rediges en francais sobre, percutant et profondement personnalise. Tu ne recycles jamais de formulations generiques."
-
-            resp = client.chat.completions.create(
-                messages=[
-                    {"role": "system", "content": sys_prompt},
-                    {"role": "user", "content": draft_prompt},
-                ],
-                model=settings.effective_groq_model,
-                temperature=0.25,
-                max_tokens=900,
-            )
-
-            choice = resp.choices[0]
-            finish_reason = getattr(choice, "finish_reason", None)
-            if finish_reason == "length":
-                logger.warning("Rejet generation IA : la generation a ete tronquee. Repli deterministe.")
-            else:
-                raw = (choice.message.content or "").strip()
-                if raw and len(raw) > 150:
-                    # Anti-hallucination check on missing skills
-                    lower_raw = raw.lower()
-                    hallucinated = any(len(m) > 2 and m.lower() in lower_raw for m in missing_skills)
-                    if not hallucinated:
-                        return {"draft_letter": raw}
-                    else:
-                        logger.warning("Rejet generation Groq : detection d'une competence manquante hallucinee. Repli deterministe.")
-        except Exception as e:
-            logger.warning(f"Drafting phase Groq echouee: {e}")
-
-    # Fallback deterministe structure
-    top_proj = profile.get("projects", [{}])[0].get("title", "Projet d'ingenierie") if profile.get("projects") else "Projet d'ingenierie"
-    skills_cite = matched_skills_str or "Python"
-    recon_mission = recon.get("company_mission", "")
-    mission_snippet = f" Votre engagement en matiere de {recon_mission[:100].rstrip('.')}," if recon_mission else ""
-
-    if is_en:
-        fallback = f"""Dear Hiring Team,
-
-Currently an engineering student at {school}, I am actively seeking my 6-month graduation internship (PFE). The opportunity to join {comp} as {role} caught my immediate attention.{' ' + mission_snippet.strip() if mission_snippet else ''} Your technical standards and development challenges align precisely with my engineering profile.
-
-Among my achievements directly relevant to this position, I engineered << {top_proj} >>, implementing robust software design principles with {skills_cite}. This hands-on experience demonstrates my ability to deliver production-grade solutions.
-
-By joining your team, I will bring an immediate operational contribution to your development cycles with thorough attention to code quality, system resilience, and engineering best practices in {skills_cite}.
-
-Available for a 6-month duration, I would be pleased to discuss my background and projects during a technical interview.
-
-Sincerely,
-
-{full_name}"""
-    else:
-        fallback = f"""Madame, Monsieur,
-
-Actuellement eleve-ingenieur a {school}, je recherche activement mon projet de fin d'etudes (PFE) d'une duree de 6 mois. L'opportunite d'integrer {comp} au poste de {role} a retenu toute mon attention.{mission_snippet} Vos exigences techniques et vos enjeux de developpement correspondent precisement a mon profil d'ingenieur.
-
-Parmi mes realisations directement liees a ce poste, j'ai developpe << {top_proj} >>, en mettant en oeuvre une architecture logicielle rigoureuse avec {skills_cite}. Cette experience operationnelle demontre ma capacite a livrer des solutions robustes.
-
-En rejoignant vos equipes, je souhaite apporter une contribution concrete sur vos developpements en {skills_cite}, avec une attention constante a la qualite du code et a la robustesse des systemes.
-
-Disponible des le premier semestre pour une duree de 6 mois, je serais ravi d'echanger avec vous lors d'un entretien technique.
-
-Je vous prie d'agreer, Madame, Monsieur, l'expression de mes salutations distinguees.
-
-{full_name}"""
-
-    return {"draft_letter": fallback}
+        return {"errors": ["Le modèle IA rencontre un problème. Réponse trop courte ou incomplète. Veuillez réessayer ultérieurement."]}
+    except Exception as e:
+        logger.error(f"Drafting phase Groq echouee: {e}")
+        return {"errors": ["Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement."]}
 
 
 def node_sanitize_and_fallback(state: WriterState) -> dict:
-    """Noeud 4 : Injections d'entites manquantes, filtrage anti-cliches et validation finale."""
+    """Noeud 4 : Injections d'entites manquantes et validation finale."""
+    if state.get("errors"):
+        return {
+            "final_letter": "",
+            "cliche_score": 0,
+            "banned_phrases": [],
+            "errors": state.get("errors"),
+        }
+
     draft = state.get("draft_letter") or ""
     job = state.get("job_offer") or {}
     profile = state.get("master_profile") or {}
@@ -612,13 +515,10 @@ def node_sanitize_and_fallback(state: WriterState) -> dict:
                         parts[1] = f"Actuellement eleve-ingenieur a {school}, " + parts[1]
                     draft = "\n\n".join(parts)
 
-    cleaned = _sanitize_cliches(draft)
-    cliche_score, banned = _audit_cliches(cleaned)
-
     return {
-        "final_letter": cleaned,
-        "cliche_score": cliche_score,
-        "banned_phrases": banned,
+        "final_letter": draft,
+        "cliche_score": 0,
+        "banned_phrases": [],
     }
 
 
@@ -684,6 +584,10 @@ def execute_writer_agent(
 
     final_state = writer_agent.invoke(initial_state)
 
+    if final_state.get("errors") or not final_state.get("final_letter"):
+        err_msg = (final_state.get("errors") or ["Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement."])[0]
+        raise RuntimeError(err_msg)
+
     job_data = final_state.get("job_offer") or {}
     role = job_data.get("title", "Ingenieur")
     company = job_data.get("company", "Entreprise")
@@ -694,10 +598,11 @@ def execute_writer_agent(
         target_role=role,
         company_name=company,
         content_markdown=final_state.get("final_letter", ""),
-        cliche_score=final_state.get("cliche_score", 0),
+        cliche_score=0,
         thinking_plan=final_state.get("thinking_plan"),
         language=language,
         user_id=user_id,
     )
-    letter.banned_phrases_detected = final_state.get("banned_phrases", [])
+    letter.banned_phrases_detected = []
     return letter
+

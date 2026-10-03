@@ -1,7 +1,10 @@
 import json
+import logging
 import re
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile, status
 from sqlmodel import Session, select
+
+logger = logging.getLogger(__name__)
 
 from app.adapters.pdf import PDFCompilerService
 from app.adapters.database import get_session
@@ -87,14 +90,28 @@ def _get_or_create_cv(
 
     if not cv:
         ats_match = ATSMatchingEngine.evaluate_alignment(job, profile)
-        cv = CVGeneratorService.generate_cv(job, profile, ats_match, language=normalized_lang)
+        try:
+            cv = CVGeneratorService.generate_cv(job, profile, ats_match, language=normalized_lang)
+        except Exception as e:
+            logger.error(f"Erreur lors de la génération du CV: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail={"error_code": "MODEL_ERROR", "message": "Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement."},
+            )
         cv.user_id = username
         session.add(cv)
         session.commit()
         session.refresh(cv)
     elif is_outdated:
         ats_match = ATSMatchingEngine.evaluate_alignment(job, profile)
-        fresh_cv = CVGeneratorService.generate_cv(job, profile, ats_match, language=normalized_lang)
+        try:
+            fresh_cv = CVGeneratorService.generate_cv(job, profile, ats_match, language=normalized_lang)
+        except Exception as e:
+            logger.error(f"Erreur lors de la régénération du CV: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail={"error_code": "MODEL_ERROR", "message": "Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement."},
+            )
         cv.headline = fresh_cv.headline
         cv.summary = fresh_cv.summary
         cv.html_content = fresh_cv.html_content
@@ -148,7 +165,14 @@ def generate_targeted_cv(
         )
 
     ats_match = ATSMatchingEngine.evaluate_alignment(job, profile)
-    new_cv = CVGeneratorService.generate_cv(job, profile, ats_match, language=normalized_lang)
+    try:
+        new_cv = CVGeneratorService.generate_cv(job, profile, ats_match, language=normalized_lang)
+    except Exception as e:
+        logger.error(f"Erreur lors de la génération du CV: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={"error_code": "MODEL_ERROR", "message": "Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement."},
+        )
     new_cv.user_id = username
 
     statement = select(TargetedCV).where(

@@ -539,7 +539,7 @@ def test_clean_target_role_and_headline_format():
 
         ats_match = ATSMatchingEngine.evaluate_alignment(job, profile)
         cv = CVGeneratorService.generate_cv(job, profile, ats_match, language="fr")
-        assert cv.headline == "ETUDIANT INGENIEUR CLOUD | DEVOPS | AI | IT Support"
+        assert cv.headline == "IT Support"
 
 
 
