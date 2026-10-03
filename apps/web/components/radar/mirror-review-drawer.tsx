@@ -47,6 +47,105 @@ import {
 } from "lucide-react";
 import { LetterDownloadMenu } from "./letter-download-menu";
 
+function renderInlineMarkdown(text: string) {
+  const tokens = text.split(/(\*\*\*.*?\*\*\*|\*\*.*?\*\*|\*.*?\*)/g);
+  return tokens.map((token, i) => {
+    if (token.startsWith("***") && token.endsWith("***") && token.length > 6) {
+      return (
+        <strong key={i} className="font-bold text-primary underline decoration-primary/40">
+          {token.slice(3, -3)}
+        </strong>
+      );
+    }
+    if (token.startsWith("**") && token.endsWith("**") && token.length > 4) {
+      return (
+        <strong key={i} className="font-bold text-foreground">
+          {token.slice(2, -2)}
+        </strong>
+      );
+    }
+    if (token.startsWith("*") && token.endsWith("*") && token.length > 2) {
+      return (
+        <span key={i} className="italic text-foreground/80">
+          {token.slice(1, -1)}
+        </span>
+      );
+    }
+    const clean = token.replace(/\*{1,3}/g, "");
+    return <span key={i}>{clean}</span>;
+  });
+}
+
+function FormattedThinkingPlan({ content }: { content: string }) {
+  if (!content) return null;
+
+  const lines = content.split("\n");
+  const nodes: React.ReactNode[] = [];
+  let currentBullets: string[] = [];
+
+  const flushBullets = (key: string | number) => {
+    if (currentBullets.length === 0) return;
+    const items = [...currentBullets];
+    currentBullets = [];
+    nodes.push(
+      <ul key={`ul-${key}`} className="space-y-2 my-2.5 pl-1">
+        {items.map((item, bIdx) => (
+          <li key={bIdx} className="flex items-start gap-2.5 text-xs text-foreground/90 leading-relaxed font-sans">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+            <div className="flex-1">{renderInlineMarkdown(item)}</div>
+          </li>
+        ))}
+      </ul>
+    );
+  };
+
+  lines.forEach((rawLine, idx) => {
+    const line = rawLine.trim();
+    if (!line) {
+      flushBullets(idx);
+      return;
+    }
+
+    if (/^(\*{3,}|-{3,}|_{3,})$/.test(line)) {
+      flushBullets(idx);
+      nodes.push(<hr key={`hr-${idx}`} className="my-3 border-border/60" />);
+      return;
+    }
+
+    if (/^#{1,6}\s+/.test(line)) {
+      flushBullets(idx);
+      const heading = line.replace(/^#{1,6}\s+/, "").replace(/\*{1,3}/g, "").trim();
+      const isSub = line.startsWith("####");
+      nodes.push(
+        <div key={`h-${idx}`} className="pt-3 pb-1 border-b border-border/60 first:pt-0">
+          <h4 className={`font-bold text-foreground flex items-center gap-2 ${isSub ? "text-xs text-primary" : "text-xs sm:text-sm"}`}>
+            <span className="w-1.5 h-1.5 rounded-xs bg-primary shrink-0" />
+            <span>{heading}</span>
+          </h4>
+        </div>
+      );
+      return;
+    }
+
+    if (/^[\*\-•]\s+/.test(line)) {
+      const bullet = line.replace(/^[\*\-•]\s+/, "").trim();
+      currentBullets.push(bullet);
+      return;
+    }
+
+    flushBullets(idx);
+    nodes.push(
+      <p key={`p-${idx}`} className="text-xs text-muted-foreground leading-relaxed my-1 font-sans">
+        {renderInlineMarkdown(line)}
+      </p>
+    );
+  });
+
+  flushBullets("end");
+
+  return <div className="space-y-1">{nodes}</div>;
+}
+
 interface MirrorReviewDrawerProps {
   job: JobOffer | null;
   atsMatch?: ATSMatchResult;
@@ -80,7 +179,7 @@ export function MirrorReviewDrawer({
   const [letterContent, setLetterContent] = useState("");
   const [isLetterSaving, setIsLetterSaving] = useState(false);
   const [letterSaveSuccess, setLetterSaveSuccess] = useState(false);
-  const [showThinkingPlan, setShowThinkingPlan] = useState(true);
+  const [showThinkingPlan, setShowThinkingPlan] = useState(false);
 
   // Analyse Profonde state
   const [reconDossier, setReconDossier] = useState<ReconDossier | null>(null);
@@ -105,6 +204,7 @@ export function MirrorReviewDrawer({
       setStatus(job.status);
       setErrorMsg(null);
       setActiveTab("letter");
+      setShowThinkingPlan(false);
 
       // Charger le dossier d'analyse
       fetchReconDossier(job.id)
@@ -942,21 +1042,8 @@ export function MirrorReviewDrawer({
                             </button>
                           </div>
 
-                          <div className="max-h-56 overflow-y-auto space-y-2 pr-1 font-sans text-xs text-foreground/90 leading-relaxed">
-                            {letter.thinking_plan.split(/\n+/).filter(Boolean).map((line, lIdx) => {
-                              const trimmed = line.trim();
-                              const isHeading = /^[0-9]+[.)]\s*|^[-*]\s*|\b(VOUS|MOI|NOUS|ACCROCHE|PREUVE|PROJECTION)\b/i.test(trimmed);
-                              return (
-                                <div
-                                  key={lIdx}
-                                  className={isHeading ? "p-2.5 rounded-lg bg-primary/5 border border-primary/10" : "pl-1 text-muted-foreground"}
-                                >
-                                  <p className={isHeading ? "font-semibold text-primary" : ""}>
-                                    {trimmed}
-                                  </p>
-                                </div>
-                              );
-                            })}
+                          <div className="max-h-72 overflow-y-auto space-y-2 pr-1 font-sans text-xs text-foreground/90 leading-relaxed">
+                            <FormattedThinkingPlan content={letter.thinking_plan} />
                           </div>
                         </div>
                       )}
