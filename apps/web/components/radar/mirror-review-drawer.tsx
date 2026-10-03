@@ -387,22 +387,22 @@ export function MirrorReviewDrawer({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-stone-950/40 backdrop-blur-md animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 !mt-0 flex items-center justify-center p-2 sm:p-4 bg-stone-950/40 backdrop-blur-md animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-7xl h-[95vh] rounded-3xl border border-white/80 dark:border-stone-800 bg-white/95 dark:bg-stone-950/95 backdrop-blur-2xl shadow-2xl ring-1 ring-stone-900/10 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+        className="w-full max-w-7xl h-[95dvh] rounded-2xl sm:rounded-3xl border border-white/80 dark:border-stone-800 bg-white/95 dark:bg-stone-950/95 backdrop-blur-2xl shadow-2xl ring-1 ring-stone-900/10 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-4 sm:px-6 py-4 border-b border-stone-200/80 dark:border-stone-800 flex items-center justify-between gap-4 bg-white/85 dark:bg-stone-900/85 backdrop-blur-xl">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-orange-100/80 dark:bg-orange-950/50 border border-orange-200/80 dark:border-orange-800/60 flex items-center justify-center text-primary font-bold shadow-xs">
+        <div className="p-3 sm:px-6 sm:py-4 border-b border-stone-200/80 dark:border-stone-800 flex items-center justify-between gap-3 sm:gap-4 bg-white/85 dark:bg-stone-900/85 backdrop-blur-xl">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="hidden sm:flex shrink-0 w-10 h-10 rounded-xl bg-orange-100/80 dark:bg-orange-950/50 border border-orange-200/80 dark:border-orange-800/60 items-center justify-center text-primary font-bold shadow-xs">
               <Sparkles className="w-5 h-5" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-mono font-semibold uppercase tracking-wider text-primary">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span className="text-[10px] sm:text-xs font-mono font-semibold uppercase tracking-wider text-primary">
                   Analyse Profonde & Préparation
                 </span>
                 {isApplied ? (
@@ -421,16 +421,16 @@ export function MirrorReviewDrawer({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             {(job.apply_url || job.url) && (
               <a
                 href={job.apply_url || job.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-background hover:bg-muted text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-lg border border-border bg-background hover:bg-muted text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
-                <span>Annonce source</span>
+                <span className="hidden sm:inline">Annonce source</span>
               </a>
             )}
             <button
@@ -445,7 +445,7 @@ export function MirrorReviewDrawer({
 
         {/* Global Error Banner */}
         {errorMsg && (
-          <div className="px-6 py-2.5 bg-destructive/15 border-b border-destructive/30 flex items-center justify-between text-xs text-destructive">
+          <div className="px-4 sm:px-6 py-2.5 bg-destructive/15 border-b border-destructive/30 flex items-center justify-between text-xs text-destructive">
             <div className="flex items-center gap-2">
               <ShieldAlert className="w-4 h-4 shrink-0" />
               <span>{errorMsg}</span>
@@ -460,10 +460,10 @@ export function MirrorReviewDrawer({
         )}
 
         {/* Main Split Body */}
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
+        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 overflow-y-auto lg:overflow-hidden">
           {/* LEFT PANEL: 100% ANALYSE PROFONDE, STACK & SCRAPED DETAILS (5 cols) */}
-          <div className="lg:col-span-5 border-r border-border/80 flex flex-col h-full overflow-hidden bg-background/50">
-            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+          <div className="lg:col-span-5 border-b lg:border-b-0 lg:border-r border-border/80 flex flex-col lg:h-full lg:overflow-hidden bg-background/50">
+            <div className="lg:flex-1 lg:overflow-y-auto p-4 sm:p-5 space-y-4">
               {/* Opportunity Card */}
               <div className="p-4 rounded-xl border border-border bg-card shadow-xs space-y-3">
                 <div className="flex items-center justify-between">
@@ -536,10 +536,10 @@ export function MirrorReviewDrawer({
 
               {/* Analyse Profonde Header Card */}
               <div className="p-4 rounded-xl border border-border bg-card shadow-xs space-y-3">
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-primary" />
+                      <Sparkles className="w-4 h-4 text-primary shrink-0" />
                       <h4 className="text-sm font-bold text-foreground">
                         Analyse Profonde de l'Offre & de l'Entreprise
                       </h4>
@@ -686,9 +686,9 @@ export function MirrorReviewDrawer({
           </div>
 
           {/* RIGHT PANEL: EXCLUSIVELY DEDICATED TO LA LETTRE & LE CV (7 cols) */}
-          <div className="lg:col-span-7 flex flex-col h-full overflow-hidden bg-card/60">
+          <div className="lg:col-span-7 flex flex-col lg:h-full lg:overflow-hidden bg-card/60">
             {/* Tabs Header */}
-            <div className="px-5 py-3 border-b border-border/80 flex items-center justify-between bg-muted/10">
+            <div className="px-3 sm:px-5 py-3 border-b border-border/80 flex flex-wrap items-center justify-between gap-2 bg-muted/10">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -923,7 +923,7 @@ export function MirrorReviewDrawer({
             </div>
 
             {/* Document Content Area */}
-            <div className="flex-1 overflow-hidden relative">
+            <div className="flex-1 overflow-hidden relative min-h-[75dvh] lg:min-h-0">
               {/* Message d'erreur spécifique du modèle si applicable */}
               {errorMsg && (
                 <div className="p-4 m-4 rounded-xl border border-destructive/30 bg-destructive/10 text-destructive flex items-center justify-between gap-3 text-xs">
@@ -1091,8 +1091,8 @@ export function MirrorReviewDrawer({
         </div>
 
         {/* BOTTOM ACTION BAR */}
-        <div className="p-4 sm:px-6 py-3.5 border-t border-stone-200/80 dark:border-stone-800 bg-white/85 dark:bg-stone-900/85 backdrop-blur-xl flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+        <div className="p-3 sm:px-6 sm:py-3.5 border-t border-stone-200/80 dark:border-stone-800 bg-white/85 dark:bg-stone-900/85 backdrop-blur-xl flex items-center justify-between gap-4">
+          <div className="hidden sm:flex items-center gap-2">
             <span className="text-xs font-semibold text-stone-600 dark:text-stone-400 font-mono">
               Statut :
             </span>
@@ -1108,7 +1108,7 @@ export function MirrorReviewDrawer({
             )}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
             {(job.apply_url || job.url) && (
               <a
                 href={job.apply_url || job.url}
@@ -1126,7 +1126,7 @@ export function MirrorReviewDrawer({
                 type="button"
                 onClick={handleUnmarkSubmitted}
                 disabled={loadingAction}
-                className="px-4 py-2 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+                className="w-full sm:w-auto justify-center px-4 py-2 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
                 title="Cliquer pour annuler et marquer comme non envoyée"
               >
                 {loadingAction ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
@@ -1137,7 +1137,7 @@ export function MirrorReviewDrawer({
                 type="button"
                 onClick={handleMarkSubmitted}
                 disabled={loadingAction}
-                className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold flex items-center gap-2 transition-all tactile-button shadow-artisan-button cursor-pointer disabled:opacity-50"
+                className="w-full sm:w-auto justify-center px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold flex items-center gap-2 transition-all tactile-button shadow-artisan-button cursor-pointer disabled:opacity-50"
               >
                 {loadingAction ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 <span>Marquer comme candidature envoyée</span>

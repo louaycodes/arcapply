@@ -49,6 +49,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+// Largeur d'une page A4 (210mm) en pixels CSS, et zoom minimal autorisé (écrans mobiles)
+const A4_WIDTH_PX = 794;
+const MIN_ZOOM = 0.3;
+
 export default function StudioCVPage() {
   const [cvData, setCvData] = useState<CustomCVData | null>(null);
   const [htmlContent, setHtmlContent] = useState<string>("");
@@ -113,15 +117,33 @@ export default function StudioCVPage() {
     });
   }, []);
 
+  // Zoom qui fait tenir la feuille A4 dans la largeur disponible
+  const computeFitZoom = useCallback(() => {
+    if (!canvasContainerRef.current) return 1;
+    const containerWidth = canvasContainerRef.current.clientWidth;
+    const margin = containerWidth < 640 ? 16 : 64;
+    return Number(Math.min(1.5, Math.max(MIN_ZOOM, (containerWidth - margin) / A4_WIDTH_PX)).toFixed(2));
+  }, []);
+
   // Fit to screen width for maximum visual clarity
   const fitWidth = useCallback(() => {
-    if (!canvasContainerRef.current) return;
-    const containerWidth = canvasContainerRef.current.clientWidth;
-    // A4 width: 210mm ≈ 794px + 64px comfortable margins
-    const targetZoom = Math.min(1.5, Math.max(0.7, (containerWidth - 64) / 794));
-    setZoomScale(Number(targetZoom.toFixed(2)));
+    const targetZoom = computeFitZoom();
+    setZoomScale(targetZoom);
     showNotification("info", `Zoom ajusté à la largeur de votre écran (${Math.round(targetZoom * 100)}%).`);
-  }, []);
+  }, [computeFitZoom]);
+
+  // Sur petit écran, la feuille A4 (794px) est réduite automatiquement pour tenir dans la largeur
+  useEffect(() => {
+    const fitIfTooNarrow = () => {
+      if (!canvasContainerRef.current) return;
+      if (canvasContainerRef.current.clientWidth < A4_WIDTH_PX + 64) {
+        setZoomScale(computeFitZoom());
+      }
+    };
+    fitIfTooNarrow();
+    window.addEventListener("resize", fitIfTooNarrow);
+    return () => window.removeEventListener("resize", fitIfTooNarrow);
+  }, [computeFitZoom, isLoading]);
 
   // 1. Initial Load: Check for draft or load from Master Profile
   const loadInitialData = async () => {
@@ -725,7 +747,7 @@ export default function StudioCVPage() {
       />
 
       {/* Top Cockpit Header: Identity & Global Actions */}
-      <header className="px-5 py-2.5 border-b border-stone-200/80 dark:border-stone-800 bg-white/85 dark:bg-stone-900/90 backdrop-blur-xl flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-xs z-20">
+      <header className="px-3 sm:px-5 py-2.5 border-b border-stone-200/80 dark:border-stone-800 bg-white/85 dark:bg-stone-900/90 backdrop-blur-xl flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-xs z-20">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-orange-100 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-900/60 flex items-center justify-center text-primary dark:text-orange-400 shadow-sm">
             <FileText className="w-5 h-5" />
@@ -855,7 +877,7 @@ export default function StudioCVPage() {
       )}
 
       {/* Floating Canvas Formatting Toolbar (Like Google Docs / Acrobat / Sejda) */}
-      <div className="sticky top-0 z-10 px-5 py-2 border-b border-stone-200/80 dark:border-stone-800 bg-white/80 dark:bg-stone-900/90 backdrop-blur-xl flex flex-wrap items-center justify-between gap-3 shrink-0 text-xs shadow-xs">
+      <div className={`sticky ${isFullscreen ? "top-0" : "top-14"} z-20 px-3 sm:px-5 py-2 border-b border-stone-200/80 dark:border-stone-800 bg-white/80 dark:bg-stone-900/90 backdrop-blur-xl flex flex-wrap items-center justify-between gap-3 shrink-0 text-xs shadow-xs`}>
         {/* Left: Text Formatting Controls */}
         <div className="flex items-center flex-wrap gap-1">
           <span className="text-[11px] font-semibold text-muted-foreground mr-1 hidden sm:inline">Mise en forme :</span>
@@ -952,7 +974,7 @@ export default function StudioCVPage() {
         </div>
 
         {/* Right: Typography Calibration & Zoom */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           {/* Font Size slider */}
           <div className="flex items-center gap-1.5">
             <span className="text-[11px] text-muted-foreground">Taille :</span>
@@ -991,7 +1013,7 @@ export default function StudioCVPage() {
           <div className="flex items-center gap-1">
             <button
               type="button"
-              onClick={() => setZoomScale((z) => Math.max(0.6, Number((z - 0.1).toFixed(2))))}
+              onClick={() => setZoomScale((z) => Math.max(MIN_ZOOM, Number((z - 0.1).toFixed(2))))}
               className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
               title="Zoom -"
             >
@@ -1076,10 +1098,19 @@ export default function StudioCVPage() {
         )}
 
         {/* Real A4 Paper Sheet (210mm x dynamic height for 1 or 2 pages) */}
+        {/* Le wrapper occupe la taille réellement affichée : transform: scale ne réduit pas la boîte de layout */}
+        <div
+          className="shrink-0 relative"
+          style={{
+            width: `${A4_WIDTH_PX * zoomScale}px`,
+            height: `${iframeHeightPx * zoomScale}px`,
+            transition: "width 0.15s ease-out, height 0.15s ease-out",
+          }}
+        >
         <div
           style={{
             transform: `scale(${zoomScale})`,
-            transformOrigin: "top center",
+            transformOrigin: "top left",
             transition: "transform 0.15s ease-out",
             height: `${iframeHeightPx}px`,
           }}
@@ -1096,6 +1127,7 @@ export default function StudioCVPage() {
               minHeight: "1123px",
             }}
           />
+        </div>
         </div>
       </div>
     </div>

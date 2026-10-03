@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
@@ -314,6 +314,15 @@ export function OnboardingShell({
   const currentStep = ONBOARDING_STEPS[stepNumber - 1] || ONBOARDING_STEPS[0];
   const progressPct = Math.round((stepNumber / ONBOARDING_STEPS.length) * 100);
 
+  // Garde l'étape courante visible dans la barre d'étapes défilante (mobile)
+  const stepperRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const container = stepperRef.current;
+    const current = container?.querySelector<HTMLElement>('[data-current-step="true"]');
+    if (!container || !current) return;
+    container.scrollLeft = current.offsetLeft - container.clientWidth / 2 + current.clientWidth / 2;
+  }, [stepNumber]);
+
   return (
     <OnboardingContext.Provider
       value={{
@@ -329,14 +338,14 @@ export function OnboardingShell({
     >
       <div className="min-h-screen bg-[#FBF9F5] dark:bg-[#12100E] flex flex-col font-sans selection:bg-orange-100 selection:text-orange-900 pb-16">
         {/* Top Header */}
-        <header className="border-b border-stone-200 dark:border-stone-800 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md sticky top-0 z-30 shadow-xs">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-orange-700 flex items-center justify-center text-white shadow-md shadow-orange-600/20">
+        <header className="border-b border-stone-200 dark:border-stone-800 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md sm:sticky sm:top-14 z-20 shadow-xs">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="hidden sm:flex w-9 h-9 shrink-0 rounded-xl bg-gradient-to-br from-primary to-orange-700 items-center justify-center text-white shadow-md shadow-orange-600/20">
                 <Compass className="w-5 h-5" />
               </div>
-              <div>
-                <div className="flex items-center gap-2">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                   <h1 className="text-sm font-bold text-stone-900 dark:text-stone-100 font-display">
                     Walkthrough de Configuration Initiale
                   </h1>
@@ -344,13 +353,13 @@ export function OnboardingShell({
                     Étape {stepNumber} sur {ONBOARDING_STEPS.length}
                   </span>
                 </div>
-                <p className="text-xs text-stone-500 dark:text-stone-400">
+                <p className="hidden sm:block text-xs text-stone-500 dark:text-stone-400">
                   Complétez votre profil étape par étape pour maximiser votre impact auprès des recruteurs
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 shrink-0">
               <button
                 type="button"
                 onClick={() => fillDemoData(stepNumber)}
@@ -362,7 +371,7 @@ export function OnboardingShell({
               </button>
               <Link
                 href="/profile"
-                className="text-xs text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 px-2 py-1 transition-colors"
+                className="text-xs text-right text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 px-2 py-1 transition-colors max-w-[7rem] sm:max-w-none"
                 title="Quitter le guide et aller directement sur le profil complet"
               >
                 Passer au profil libre
@@ -381,7 +390,7 @@ export function OnboardingShell({
 
         {/* Stepper Pipeline Navigation Bar */}
         <div className="bg-white dark:bg-stone-900 border-b border-stone-200/80 dark:border-stone-800 shadow-xs">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-2.5 overflow-x-auto scrollbar-none">
+          <div ref={stepperRef} className="relative max-w-5xl mx-auto px-4 sm:px-6 py-2.5 overflow-x-auto scrollbar-none">
             <nav className="flex items-center gap-2 min-w-max">
               {ONBOARDING_STEPS.map((s, idx) => {
                 const Icon = s.icon;
@@ -395,6 +404,7 @@ export function OnboardingShell({
                     )}
                     <Link
                       href={s.path}
+                      data-current-step={isCurrent ? "true" : undefined}
                       className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
                         isCurrent
                           ? "bg-primary text-white shadow-xs font-semibold"
@@ -420,14 +430,14 @@ export function OnboardingShell({
         {/* Main Content Area */}
         <main className="max-w-4xl mx-auto w-full px-4 sm:px-6 pt-6 flex-1">
           {/* Step Header Banner */}
-          <div className="mb-6 p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 shadow-artisan flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="mb-6 p-4 sm:p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 shadow-artisan flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 text-primary text-xs font-bold uppercase tracking-wider mb-1">
                 <span>Étape {stepNumber} / {ONBOARDING_STEPS.length}</span>
                 <span>•</span>
                 <span>{progressPct}% Complété</span>
               </div>
-              <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100 font-display">
+              <h2 className="text-lg sm:text-xl font-bold text-stone-900 dark:text-stone-100 font-display">
                 {currentStep.title}
               </h2>
               <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 max-w-2xl leading-relaxed">

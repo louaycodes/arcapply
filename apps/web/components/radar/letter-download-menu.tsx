@@ -145,7 +145,7 @@ export function LetterDownloadMenu({
       </button>
 
       {isOpen && (
-        <div className={`absolute right-0 ${positionClasses} w-72 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-2xl py-2 z-[9999] animate-in fade-in zoom-in-95 duration-150`}>
+        <div className={`absolute right-0 ${positionClasses} w-72 max-w-[calc(100vw-2rem)] rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-2xl py-2 z-[9999] animate-in fade-in zoom-in-95 duration-150`}>
           <div className="px-3.5 py-1.5 border-b border-stone-100 dark:border-stone-800 flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400">
               Format d'exportation

@@ -622,7 +622,7 @@ export default function RadarPage() {
         </div>
 
         {/* Champ de Recherche Live */}
-        <form onSubmit={handleSearchSubmit} className="relative min-w-[240px]">
+        <form onSubmit={handleSearchSubmit} className="relative w-full sm:w-auto sm:min-w-[240px]">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
@@ -841,7 +841,7 @@ export default function RadarPage() {
 
       {/* Collect Modal */}
       {showCollectModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 !mt-0 flex items-center justify-center bg-stone-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
           <div className="w-full max-w-lg rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-xl space-y-5 animate-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between border-b border-stone-200 dark:border-stone-800 pb-3">
               <div className="flex items-center gap-2">

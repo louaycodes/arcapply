@@ -53,7 +53,7 @@ function Step7Content() {
   return (
     <div className="space-y-6">
       {/* Celebration Banner */}
-      <div className="bg-gradient-to-br from-emerald-600 to-teal-800 rounded-3xl p-8 sm:p-10 text-white shadow-xl shadow-emerald-900/20 relative overflow-hidden">
+      <div className="bg-gradient-to-br from-emerald-600 to-teal-800 rounded-3xl p-6 sm:p-10 text-white shadow-xl shadow-emerald-900/20 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
 
         <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6 text-center sm:text-left">

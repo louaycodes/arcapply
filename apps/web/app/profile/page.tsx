@@ -668,7 +668,7 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center p-12">
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-12">
         <div className="text-center space-y-4">
           <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-sm font-medium text-muted-foreground">Chargement de votre profil...</p>
@@ -679,7 +679,7 @@ export default function ProfilePage() {
 
   if (!profile) {
     return (
-      <div className="p-8 max-w-4xl mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
         <div className="p-6 rounded-2xl border border-destructive/30 bg-destructive/10 text-destructive">
           <h2 className="text-lg font-bold mb-2">Erreur de chargement</h2>
           <p className="text-sm mb-4">Impossible de récupérer votre profil. Veuillez vérifier la connexion ou actualiser la page.</p>
@@ -698,12 +698,12 @@ export default function ProfilePage() {
   const percentage = status?.completion_percentage ?? 0;
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-8">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto space-y-6 sm:space-y-8">
       {/* Top Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-border/60 pb-6">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground font-display">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground font-display">
               Mon Profil Professionnel
             </h1>
             <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-orange-100 dark:bg-orange-900/40 text-orange-900 dark:text-orange-300 border border-orange-200 dark:border-orange-800/60">
@@ -715,7 +715,7 @@ export default function ProfilePage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto">
           <Link
             href="/onboarding/step-1"
             className="px-3.5 py-2 rounded-md border border-orange-200 dark:border-orange-800/60 bg-orange-50 dark:bg-orange-950/40 hover:bg-orange-100 text-xs font-semibold text-primary flex items-center gap-1.5 transition-colors shadow-xs"
@@ -1896,7 +1896,7 @@ export default function ProfilePage() {
               Aucune langue renseignée. Ajoutez vos langues maîtrisées (Français, Anglais, Arabe...) pour votre CV.
             </p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
               {(profile.languages || []).map((lang, idx) => (
                 <div key={idx} className="p-3 rounded-lg bg-muted/40 border border-border/70 flex items-center gap-2">
                   <input
@@ -1904,12 +1904,12 @@ export default function ProfilePage() {
                     placeholder="Langue (ex: Anglais) *"
                     value={lang.name}
                     onChange={(e) => updateLanguage(idx, { ...lang, name: e.target.value })}
-                    className="flex-1 px-2.5 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    className="flex-1 min-w-0 px-2.5 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                   />
                   <select
                     value={lang.level}
                     onChange={(e) => updateLanguage(idx, { ...lang, level: e.target.value })}
-                    className="px-2 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                    className="min-w-0 max-w-[50%] px-2 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                   >
                     <option value="Langue maternelle">Maternelle</option>
                     <option value="Courant / Bilingue (C1/C2)">Courant (C1/C2)</option>

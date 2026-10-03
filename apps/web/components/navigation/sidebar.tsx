@@ -1,5 +1,6 @@
 "use client";
 
+import React, { createContext, useContext, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -12,6 +13,7 @@ import {
   LogOut,
   LogIn,
   Sparkles,
+  X,
 } from "lucide-react";
 import { useAuth } from "@/components/auth/auth-context";
 
@@ -25,12 +27,61 @@ const navigationItems = [
   { name: "Paramètres", href: "/settings", icon: Settings },
 ];
 
-export function Sidebar() {
+interface MobileNavContextType {
+  isOpen: boolean;
+  open: () => void;
+  close: () => void;
+}
+
+const MobileNavContext = createContext<MobileNavContextType>({
+  isOpen: false,
+  open: () => {},
+  close: () => {},
+});
+
+export function MobileNavProvider({ children }: { children: React.ReactNode }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const pathname = usePathname();
+
+  // Ferme le tiroir à chaque navigation
+  useEffect(() => {
+    setIsOpen(false);
+  }, [pathname]);
+
+  // Bloque le défilement de la page et gère la touche Échap quand le tiroir est ouvert
+  useEffect(() => {
+    if (!isOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [isOpen]);
+
+  return (
+    <MobileNavContext.Provider
+      value={{ isOpen, open: () => setIsOpen(true), close: () => setIsOpen(false) }}
+    >
+      {children}
+    </MobileNavContext.Provider>
+  );
+}
+
+export function useMobileNav() {
+  return useContext(MobileNavContext);
+}
+
+function SidebarContent({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
   return (
-    <aside className="w-64 border-r border-border dark:border-stone-800 bg-[#F7F3EC] dark:bg-[#171513] flex flex-col justify-between p-4 min-h-screen shrink-0">
+    <>
       <div>
         {/* Brand / Logo */}
         <div className="flex items-center gap-3 px-2 py-3 mb-6 border-b border-border/80 dark:border-stone-800">
@@ -39,12 +90,22 @@ export function Sidebar() {
             alt="ArcApply Logo"
             className="w-14 h-14 shrink-0 object-contain drop-shadow-sm"
           />
-          <div>
+          <div className="min-w-0 flex-1">
             <h1 className="text-lg font-bold tracking-tight text-stone-900 dark:text-stone-100 font-display">
               ArcApply
             </h1>
             <p className="text-xs text-stone-500 dark:text-stone-400 font-medium">Assistant Candidatures</p>
           </div>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Fermer le menu"
+              className="p-2 -mr-1 rounded-lg text-stone-500 dark:text-stone-400 hover:bg-stone-200/60 dark:hover:bg-stone-800 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
         {/* Navigation Links */}
@@ -59,6 +120,7 @@ export function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={onClose}
                 className={`flex items-center px-3 py-2.5 rounded-lg text-sm transition-all duration-150 ${
                   isActive
                     ? "bg-primary text-white shadow-sm shadow-orange-600/25 font-semibold"
@@ -80,7 +142,7 @@ export function Sidebar() {
       </div>
 
       {/* Bottom Session & User Section */}
-      <div className="pt-4 border-t border-border/70 space-y-2.5">
+      <div className="pt-4 mt-6 border-t border-border/70 space-y-2.5">
         {user ? (
           <>
             <div className="px-3.5 py-2.5 rounded-xl bg-white dark:bg-stone-800/80 border border-border dark:border-stone-700 shadow-artisan flex items-center gap-3">
@@ -116,6 +178,38 @@ export function Sidebar() {
           </Link>
         )}
       </div>
-    </aside>
+    </>
+  );
+}
+
+export function Sidebar() {
+  const { isOpen, close } = useMobileNav();
+
+  return (
+    <>
+      {/* Desktop : barre latérale fixe */}
+      <aside className="hidden lg:flex w-64 border-r border-border dark:border-stone-800 bg-[#F7F3EC] dark:bg-[#171513] flex-col justify-between p-4 h-screen sticky top-0 overflow-y-auto shrink-0">
+        <SidebarContent />
+      </aside>
+
+      {/* Mobile / tablette : tiroir de navigation */}
+      <div
+        className={`lg:hidden fixed inset-0 z-50 transition-opacity duration-200 ${
+          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+        aria-hidden={!isOpen}
+      >
+        <div className="absolute inset-0 bg-stone-950/50 backdrop-blur-xs" onClick={close} />
+        <aside
+          role="dialog"
+          aria-modal="true"
+          className={`absolute inset-y-0 left-0 w-72 max-w-[85vw] bg-[#F7F3EC] dark:bg-[#171513] border-r border-border dark:border-stone-800 flex flex-col justify-between p-4 overflow-y-auto shadow-2xl transition-transform duration-200 ${
+            isOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
+          <SidebarContent onClose={close} />
+        </aside>
+      </div>
+    </>
   );
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Sidebar } from "@/components/navigation/sidebar";
+import { Sidebar, MobileNavProvider } from "@/components/navigation/sidebar";
 import { TopNavbar } from "@/components/navigation/top-navbar";
 import { AuthProvider } from "@/components/auth/auth-context";
 import { LanguageProvider } from "@/lib/language-context";
@@ -50,15 +50,17 @@ export default function RootLayout({
         <AuthProvider>
           <LanguageProvider>
             <ThemeProvider>
+              <MobileNavProvider>
               <div className="flex w-full min-h-screen bg-background text-foreground">
                 <Sidebar />
                 <div className="flex-1 flex flex-col min-w-0 bg-background text-foreground">
                   <TopNavbar />
-                  <main className="flex-1 overflow-y-auto bg-background text-foreground">
+                  <main className="flex-1 min-w-0 bg-background text-foreground">
                     {children}
                   </main>
                 </div>
               </div>
+              </MobileNavProvider>
             </ThemeProvider>
           </LanguageProvider>
         </AuthProvider>

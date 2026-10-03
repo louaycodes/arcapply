@@ -163,21 +163,21 @@ export function EmailInboxModal({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-stone-900/60 backdrop-blur-xs animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 !mt-0 flex items-center justify-center p-3 sm:p-6 bg-stone-900/60 backdrop-blur-xs animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-4xl h-[90vh] rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+        className="w-full max-w-4xl h-[90dvh] rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-4 sm:px-6 py-4 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between gap-4 bg-stone-50/70 dark:bg-stone-900/90">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800/60 flex items-center justify-center text-primary">
+        <div className="p-4 sm:px-6 py-4 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between gap-3 sm:gap-4 bg-stone-50/70 dark:bg-stone-900/90">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="hidden sm:flex shrink-0 w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800/60 items-center justify-center text-primary">
               <Mail className="w-5 h-5" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <h3 className="text-base sm:text-lg font-bold text-stone-900 dark:text-stone-100 font-display">
                   Boîte de réception des recruteurs
                 </h3>
@@ -191,7 +191,7 @@ export function EmailInboxModal({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={handleSync}
@@ -371,12 +371,12 @@ export function EmailInboxModal({
           </div>
 
           {loading ? (
-            <div className="p-12 text-center space-y-3">
+            <div className="p-6 sm:p-12 text-center space-y-3">
               <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto" />
               <p className="text-xs text-muted-foreground font-medium">Recherche des nouveaux messages...</p>
             </div>
           ) : emails.length === 0 ? (
-            <div className="p-12 border border-dashed border-border/60 rounded-xl text-center space-y-2">
+            <div className="p-6 sm:p-12 border border-dashed border-border/60 rounded-xl text-center space-y-2">
               <Mail className="w-8 h-8 text-muted-foreground/40 mx-auto" />
               <p className="text-xs font-semibold text-foreground">Aucun message de recruteur pour le moment</p>
               <p className="text-[11px] text-muted-foreground max-w-sm mx-auto">

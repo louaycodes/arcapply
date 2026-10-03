@@ -16,7 +16,7 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
       <button
         type="button"
         onClick={() => setTheme("light")}
-        className={`flex items-center gap-1.5 py-1 px-2.5 rounded-md font-medium transition-all cursor-pointer ${
+        className={`flex items-center gap-1.5 py-1 px-2 sm:px-2.5 rounded-md font-medium transition-all cursor-pointer ${
           theme === "light"
             ? "bg-white text-stone-900 shadow-xs font-bold border border-stone-200/60"
             : "text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
@@ -30,7 +30,7 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
       <button
         type="button"
         onClick={() => setTheme("dark")}
-        className={`flex items-center gap-1.5 py-1 px-2.5 rounded-md font-medium transition-all cursor-pointer ${
+        className={`flex items-center gap-1.5 py-1 px-2 sm:px-2.5 rounded-md font-medium transition-all cursor-pointer ${
           theme === "dark"
             ? "bg-stone-900 text-white shadow-xs font-bold border border-stone-700"
             : "text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"

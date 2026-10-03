@@ -309,9 +309,9 @@ export default function KanbanPage() {
       )}
 
       {/* Analytics KPI Widgets Grid : 4 cartes reflétant les 4 colonnes */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* KPI 1: Offres */}
-        <div className="p-4 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-artisan flex items-center justify-between">
+        <div className="p-4 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-artisan flex items-center justify-between gap-2 min-w-0">
           <div>
             <span className="text-[11px] font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider font-mono">
               Offres identifiées
@@ -323,13 +323,13 @@ export default function KanbanPage() {
               En prospection active
             </span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 flex items-center justify-center text-blue-700 dark:text-blue-300 shadow-xs">
+          <div className="hidden sm:flex w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 items-center justify-center shrink-0 text-blue-700 dark:text-blue-300 shadow-xs">
             <Briefcase className="w-5 h-5" />
           </div>
         </div>
 
         {/* KPI 2: Candidatures envoyées */}
-        <div className="p-4 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-artisan flex items-center justify-between">
+        <div className="p-4 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-artisan flex items-center justify-between gap-2 min-w-0">
           <div>
             <span className="text-[11px] font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider font-mono">
               Candidatures envoyées
@@ -341,13 +341,13 @@ export default function KanbanPage() {
               Dossiers transmis
             </span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800/60 flex items-center justify-center text-primary shadow-xs">
+          <div className="hidden sm:flex w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800/60 items-center justify-center shrink-0 text-primary shadow-xs">
             <Send className="w-5 h-5" />
           </div>
         </div>
 
         {/* KPI 3: Retenue */}
-        <div className="p-4 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-artisan flex items-center justify-between">
+        <div className="p-4 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-artisan flex items-center justify-between gap-2 min-w-0">
           <div>
             <span className="text-[11px] font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider font-mono">
               Retenue
@@ -359,13 +359,13 @@ export default function KanbanPage() {
               Offres confirmées
             </span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-center text-emerald-700 dark:text-emerald-300 shadow-xs">
+          <div className="hidden sm:flex w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 items-center justify-center shrink-0 text-emerald-700 dark:text-emerald-300 shadow-xs">
             <Trophy className="w-5 h-5" />
           </div>
         </div>
 
         {/* KPI 4: Non retenue */}
-        <div className="p-4 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-artisan flex items-center justify-between">
+        <div className="p-4 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-artisan flex items-center justify-between gap-2 min-w-0">
           <div>
             <span className="text-[11px] font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider font-mono">
               Non retenue
@@ -377,19 +377,19 @@ export default function KanbanPage() {
               Candidatures classées
             </span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 flex items-center justify-center text-stone-500 dark:text-stone-400 shadow-xs">
+          <div className="hidden sm:flex w-10 h-10 rounded-xl bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 items-center justify-center shrink-0 text-stone-500 dark:text-stone-400 shadow-xs">
             <XCircle className="w-5 h-5" />
           </div>
         </div>
       </div>
 
       {/* Main Kanban Board: EXACTEMENT 4 COLONNES */}
-      <div className="overflow-x-auto pb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 min-w-[1000px] xl:min-w-full">
+      <div className="overflow-x-auto md:overflow-visible pb-6 -mx-4 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0 snap-x snap-mandatory md:snap-none scroll-px-4">
+        <div className="flex md:grid md:grid-cols-2 xl:grid-cols-4 gap-4">
           {COLUMNS.map((col) => {
             const columnJobs = getJobsForColumn(col.id);
             return (
-              <div key={col.id} className="min-w-[280px]">
+              <div key={col.id} className="w-[85vw] max-w-[340px] shrink-0 snap-start md:w-auto md:max-w-none md:min-w-0">
                 <KanbanColumn
                   id={col.id}
                   title={col.title}
