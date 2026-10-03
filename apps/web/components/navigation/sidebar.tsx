@@ -62,13 +62,13 @@ export function Sidebar() {
                 className={`flex items-center px-3 py-2.5 rounded-lg text-sm transition-all duration-150 ${
                   isActive
                     ? "bg-primary text-white shadow-sm shadow-orange-600/25 font-semibold"
-                    : "text-stone-600 hover:text-stone-900 hover:bg-[#EDE5DA] font-medium"
+                    : "text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-[#EDE5DA] dark:hover:bg-stone-800/60 font-medium"
                 }`}
               >
                 <div className="flex items-center gap-3">
                   <Icon
                     className={`w-4 h-4 ${
-                      isActive ? "text-white" : "text-stone-500"
+                      isActive ? "text-white" : "text-stone-500 dark:text-stone-400"
                     }`}
                   />
                   <span>{item.name}</span>
@@ -83,12 +83,12 @@ export function Sidebar() {
       <div className="pt-4 border-t border-border/70 space-y-2.5">
         {user ? (
           <>
-            <div className="px-3.5 py-2.5 rounded-xl bg-white border border-border shadow-artisan flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-orange-200 text-primary font-bold flex items-center justify-center text-xs shrink-0 border border-primary/30">
+            <div className="px-3.5 py-2.5 rounded-xl bg-white dark:bg-stone-800/80 border border-border dark:border-stone-700 shadow-artisan flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-orange-200 dark:from-primary/30 dark:to-orange-900 text-primary font-bold flex items-center justify-center text-xs shrink-0 border border-primary/30">
                 {user.full_name?.substring(0, 2).toUpperCase() || user.username.substring(0, 2).toUpperCase()}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold text-stone-800 truncate leading-tight">
+                <p className="text-xs font-bold text-stone-800 dark:text-stone-100 truncate leading-tight">
                   {user.full_name || user.username}
                 </p>
                 <p className="text-[11px] text-muted-foreground truncate font-mono">
@@ -100,7 +100,7 @@ export function Sidebar() {
             <button
               type="button"
               onClick={logout}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-stone-200 bg-white hover:bg-red-50 text-stone-600 hover:text-red-600 hover:border-red-200 transition-all text-xs font-semibold shadow-xs cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800/80 hover:bg-red-50 dark:hover:bg-red-950/40 text-stone-600 dark:text-stone-300 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-800 transition-all text-xs font-semibold shadow-xs cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>Se déconnecter</span>

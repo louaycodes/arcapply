@@ -10,18 +10,18 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "#FAF7F2",
-        foreground: "#1C1917",
+        background: "var(--background)",
+        foreground: "var(--foreground)",
         muted: {
-          DEFAULT: "#F3EDE4",
-          foreground: "#78716C",
+          DEFAULT: "var(--muted)",
+          foreground: "var(--muted-foreground)",
         },
-        border: "#E7DFD4",
-        input: "#FFFFFF",
-        ring: "#EA580C",
+        border: "var(--border)",
+        input: "var(--input)",
+        ring: "var(--ring)",
         card: {
-          DEFAULT: "#FFFFFF",
-          foreground: "#1C1917",
+          DEFAULT: "var(--card)",
+          foreground: "var(--card-foreground)",
         },
         primary: {
           DEFAULT: "#EA580C",

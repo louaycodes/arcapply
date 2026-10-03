@@ -33,7 +33,6 @@ import {
   AlertCircle,
   X,
   Trash2,
-  GraduationCap,
   Briefcase,
   Flame,
   Calendar,
@@ -430,15 +429,6 @@ export default function RadarPage() {
               <Radar className="w-6 h-6 text-primary" />
               <span>Offres de Stage PFE</span>
             </h1>
-            <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-orange-100 text-orange-900 border border-orange-200 flex items-center gap-1.5 font-semibold">
-              <span className="w-2 h-2 rounded-full bg-emerald-600" />
-              <span>En direct</span>
-            </span>
-
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border bg-emerald-50 text-emerald-900 border-emerald-300 shadow-xs">
-              <GraduationCap className="w-3.5 h-3.5 text-emerald-700" />
-              <span>Mode PFE (Stage Fin d'Études)</span>
-            </span>
           </div>
           <p className="text-xs md:text-sm text-muted-foreground mt-1">
             Détection en temps réel sur les portails dédiés des 100 meilleures firmes IT mondiales (France & Tunisie) et plateformes vérifiées.

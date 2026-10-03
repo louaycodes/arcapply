@@ -22,12 +22,27 @@
   --primary-foreground: #FFFFFF;
 }
 
+.dark {
+  --background: #12100E;
+  --foreground: #F5F5F4;
+  --card: #1C1917;
+  --card-foreground: #F5F5F4;
+  --muted: #26221F;
+  --muted-foreground: #A8A29E;
+  --border: #2E2A26;
+  --input: #1C1917;
+  --ring: #EA580C;
+  --primary: #EA580C;
+  --primary-foreground: #FFFFFF;
+}
+
 body {
   background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
   min-height: 100vh;
   letter-spacing: -0.01em;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 h1, h2, h3, .font-display {
@@ -42,23 +57,37 @@ h1, h2, h3, .font-display {
 }
 
 ::-webkit-scrollbar-track {
-  background: #F3EDE4;
+  background: var(--muted);
 }
 
 ::-webkit-scrollbar-thumb {
   background: #D4C7B8;
   border-radius: 9999px;
-  border: 2px solid #F3EDE4;
+  border: 2px solid var(--muted);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #44403C;
+  border: 2px solid var(--muted);
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #B8A693;
 }
 
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #57534E;
+}
+
 /* Selection */
 ::selection {
   background-color: #FFEDD5;
   color: #7C2D12;
+}
+
+.dark ::selection {
+  background-color: #7C2D12;
+  color: #FED7AA;
 }
 
 /* Artisan UI Utilities */
@@ -77,6 +106,44 @@ h1, h2, h3, .font-display {
 
 .artisan-card {
   box-shadow: 0 1px 3px rgba(44, 28, 16, 0.04), 0 8px 24px -4px rgba(44, 28, 16, 0.06);
-  border: 1px solid #E7DFD4;
-  background-color: #FFFFFF;
+  border: 1px solid var(--border);
+  background-color: var(--card);
+}
+
+/* Dark mode utility harmonizations */
+.dark .bg-white {
+  background-color: #1C1917 !important;
+}
+
+.dark .border-stone-200,
+.dark .border-stone-100 {
+  border-color: #2E2A26 !important;
+}
+
+.dark .text-stone-900,
+.dark .text-stone-800 {
+  color: #F5F5F4 !important;
+}
+
+.dark .text-stone-700,
+.dark .text-stone-600 {
+  color: #D6D3D1 !important;
+}
+
+.dark .bg-stone-50,
+.dark .bg-stone-100 {
+  background-color: #26221F !important;
+}
+
+.dark .bg-stone-200 {
+  background-color: #38332E !important;
+}
+
+.dark aside {
+  background-color: #171513 !important;
+  border-color: #2E2A26 !important;
+}
+
+.dark .bg-\[\#F5EFE6\]\/70 {
+  background-color: rgba(28, 25, 23, 0.7) !important;
 }
