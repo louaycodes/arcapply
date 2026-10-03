@@ -360,7 +360,7 @@ def main():
         session.add(profile)
         session.commit()
 
-        print(f"✅ Profil de Louay Zorai mis à jour avec succès !")
+        print(f"[OK] Profil de Louay Zorai mis à jour avec succès !")
         print(f"Nom : {profile.full_name}")
         print(f"Complétude : {status.completion_percentage}% (Complet: {status.is_complete})")
         print(f"Formations : {len(profile.educations)}")
