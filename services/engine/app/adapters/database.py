@@ -58,6 +58,19 @@ def _migrate_db(engine) -> None:
         except Exception:
             pass
 
+        try:
+            conn.execute(text("ALTER TABLE master_profiles ADD COLUMN groq_api_key VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
+
+        try:
+            conn.execute(text("ALTER TABLE master_profiles ADD COLUMN groq_model VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
+
+
         # Migrations additives pour le Deep Scraping & Filtrage Temporel
         additive_columns = [
             ("published_at", "TIMESTAMP"),

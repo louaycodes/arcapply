@@ -8,6 +8,7 @@ import {
   fetchProfileStatus,
   verifyGenerationEligibility,
   downloadProfileCVPdf,
+  testGroqKey,
   MasterProfile,
   ProfileCompletenessStatus,
   Education,
@@ -43,6 +44,10 @@ import {
   Check,
   X,
   Compass,
+  Key,
+  Loader2,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 function StackInput({
@@ -108,6 +113,9 @@ export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDownloadingCv, setIsDownloadingCv] = useState(false);
   const [cvDownloadLang, setCvDownloadLang] = useState<"fr" | "en">(appLanguage);
+  const [testingGroq, setTestingGroq] = useState(false);
+  const [groqTestResult, setGroqTestResult] = useState<{ status: "idle" | "success" | "error"; message?: string }>({ status: "idle" });
+  const [showGroqKey, setShowGroqKey] = useState(false);
   const [notification, setNotification] = useState<{
     type: "success" | "error" | "info";
     message: string;
@@ -864,6 +872,143 @@ export default function ProfilePage() {
 
       {/* Profile Form Sections */}
       <div className="space-y-8">
+        {/* Section BYOK: Moteur IA & Clé d'API Groq Personnelle */}
+        <div className="p-6 rounded-xl border border-primary/25 bg-primary/5 dark:bg-primary/10 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-primary/15 pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-primary/15 border border-primary/25 flex items-center justify-center text-primary shadow-xs">
+                <Key className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
+                  <span>Clé d'API Groq Personnelle (BYOK)</span>
+                  <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-primary/20 text-primary font-semibold">
+                    Multi-Tenant Isolé
+                  </span>
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  Chaque utilisateur peut renseigner sa propre clé Groq pour disposer de son quota journalier dédié (200 000 tokens/jour) sans dépendre du serveur.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+            <div className="md:col-span-2 space-y-1.5">
+              <label className="block text-xs font-semibold text-foreground flex items-center justify-between">
+                <span>Clé d'API Groq (gsk_...)</span>
+                <a
+                  href="https://console.groq.com/keys"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-primary hover:underline flex items-center gap-1 font-normal"
+                >
+                  <span>Obtenir une clé gratuite sur console.groq.com</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </label>
+              <div className="relative flex items-center">
+                <input
+                  type={showGroqKey ? "text" : "password"}
+                  value={profile?.groq_api_key || ""}
+                  onChange={(e) => {
+                    if (profile) setProfile({ ...profile, groq_api_key: e.target.value });
+                    setGroqTestResult({ status: "idle" });
+                  }}
+                  placeholder="gsk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  className="w-full pr-12 pl-3.5 py-2.5 rounded-lg bg-background border border-border focus:outline-none focus:ring-1 focus:ring-primary font-mono text-xs text-foreground placeholder:text-muted-foreground/40 shadow-xs"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowGroqKey(!showGroqKey)}
+                  className="absolute right-2 p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  title={showGroqKey ? "Masquer la clé" : "Afficher la clé"}
+                >
+                  {showGroqKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Si laissé vide, le serveur utilise la clé par défaut de la plateforme. Vos clés sont strictement privées à votre session.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-foreground">
+                Modèle LLM Groq
+              </label>
+              <select
+                value={profile?.groq_model || "qwen/qwen3.8-27b"}
+                onChange={(e) => {
+                  if (profile) setProfile({ ...profile, groq_model: e.target.value });
+                }}
+                className="w-full px-3.5 py-2.5 rounded-lg bg-background border border-border focus:outline-none focus:ring-1 focus:ring-primary text-xs text-foreground shadow-xs cursor-pointer"
+              >
+                <option value="qwen/qwen3.8-27b">Qwen 2.5 (qwen/qwen3.8-27b) [Recommandé]</option>
+                <option value="openai/gpt-oss-120b">GPT OSS 120B (openai/gpt-oss-120b)</option>
+              </select>
+              <p className="text-[11px] text-muted-foreground">
+                Modèle de raisonnement haute vitesse pour la rédaction du CV et de la lettre.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2 border-t border-primary/10">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!profile?.groq_api_key?.trim()) {
+                    setGroqTestResult({ status: "error", message: "Veuillez d'abord saisir une clé d'API Groq (gsk_...)." });
+                    return;
+                  }
+                  try {
+                    setTestingGroq(true);
+                    setGroqTestResult({ status: "idle" });
+                    const res = await testGroqKey(profile.groq_api_key, profile.groq_model || undefined);
+                    setGroqTestResult({ status: "success", message: res.message || "Clé Groq validée avec succès !" });
+                  } catch (err: any) {
+                    setGroqTestResult({ status: "error", message: err.message || "Échec de validation de la clé Groq." });
+                  } finally {
+                    setTestingGroq(false);
+                  }
+                }}
+                disabled={testingGroq || !profile?.groq_api_key?.trim()}
+                className="px-3.5 py-1.5 rounded-lg border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold flex items-center gap-2 transition-colors disabled:opacity-40 cursor-pointer"
+              >
+                {testingGroq ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Test de connexion en cours...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Tester la clé Groq</span>
+                  </>
+                )}
+              </button>
+
+              {groqTestResult.status === "success" && (
+                <span className="text-xs font-medium text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 px-2.5 py-1 rounded-md flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>{groqTestResult.message}</span>
+                </span>
+              )}
+
+              {groqTestResult.status === "error" && (
+                <span className="text-xs font-medium text-rose-800 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 px-2.5 py-1 rounded-md flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                  <span>{groqTestResult.message}</span>
+                </span>
+              )}
+            </div>
+
+            <div className="text-[11px] text-muted-foreground">
+              Cliquez sur « Enregistrer les modifications » en haut pour sauvegarder la clé.
+            </div>
+          </div>
+        </div>
+
         {/* Section 1: Identité & Coordonnées */}
         <div className="p-6 rounded-xl border border-border bg-card space-y-5">
           <div className="flex items-center gap-3 border-b border-border/50 pb-3">

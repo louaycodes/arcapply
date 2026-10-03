@@ -131,6 +131,8 @@ export interface MasterProfile {
   extracurriculars_raw?: string;
   is_complete: boolean;
   onboarding_completed?: boolean;
+  groq_api_key?: string | null;
+  groq_model?: string | null;
   /** Préférence de recherche : exclusivement "PFE". */
   search_mode: "PFE";
   created_at: string;
@@ -197,6 +199,26 @@ export async function verifyGenerationEligibility(): Promise<{
     throw new Error(
       errorData?.detail?.message || "Vérification d'éligibilité de génération échouée."
     );
+  }
+  return res.json();
+}
+
+export async function testGroqKey(
+  apiKey: string,
+  model?: string
+): Promise<{ status: string; message: string }> {
+  const res = await authFetch(`${API_BASE_URL}/api/profile/test-groq-key`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ groq_api_key: apiKey, groq_model: model }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const message =
+      typeof errorData?.detail === "string"
+        ? errorData.detail
+        : errorData?.detail?.message || "Échec de validation de la clé Groq.";
+    throw new Error(message);
   }
   return res.json();
 }

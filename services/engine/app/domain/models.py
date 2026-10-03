@@ -180,6 +180,8 @@ class MasterProfileBase(SQLModel):
     extracurriculars_raw: str = Field(default="[]")
     user_id: str = Field(default="louay", index=True)
     onboarding_completed: bool = Field(default=False)
+    groq_api_key: Optional[str] = Field(default=None)
+    groq_model: Optional[str] = Field(default=None)
 
 
 class MasterProfile(MasterProfileBase, table=True):
@@ -297,6 +299,8 @@ class MasterProfileUpdate(SQLModel):
     skills: Optional[list[SkillBase]] = None
     languages: Optional[list[LanguageBase]] = None
     extracurriculars: Optional[list[ExtracurricularBase]] = None
+    groq_api_key: Optional[str] = None
+    groq_model: Optional[str] = None
 
 
 class ProfileCompletenessStatus(SQLModel):

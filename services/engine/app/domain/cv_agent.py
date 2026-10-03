@@ -225,6 +225,8 @@ def node_load_cv_context(state: CVWriterState) -> dict:
                     for p in (profile.projects or [])
                 ],
                 "skills": [{"name": s.name, "category": s.category} for s in (profile.skills or [])],
+                "groq_api_key": getattr(profile, "groq_api_key", None),
+                "groq_model": getattr(profile, "groq_model", None),
             }
 
     return {
@@ -236,13 +238,14 @@ def node_load_cv_context(state: CVWriterState) -> dict:
 
 def node_rewrite_cv_sections(state: CVWriterState) -> dict:
     """Noeud 2 : Redige le summary, les descriptions de projets et d'experiences orientes vers le poste."""
-    api_key = settings.effective_groq_api_key
+    profile = state.get("master_profile") or {}
+    api_key = (profile.get("groq_api_key") or "").strip() or settings.effective_groq_api_key
+    model_name = (profile.get("groq_model") or "").strip() or settings.effective_groq_model
     lang = state.get("language", "fr")
     is_en = lang == "en"
 
     job = state.get("job_offer") or {}
     recon = state.get("recon_dossier") or {}
-    profile = state.get("master_profile") or {}
     ats = state.get("ats_match") or {}
 
     missing_skills = ats.get("missing_skills", [])
@@ -345,7 +348,7 @@ PROJ_2:
                 {"role": "system", "content": sys_prompt},
                 {"role": "user", "content": rewrite_prompt},
             ],
-            model=settings.effective_groq_model,
+            model=model_name,
             temperature=0.2,
             max_tokens=2500,
         )

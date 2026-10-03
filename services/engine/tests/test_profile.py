@@ -188,3 +188,23 @@ def test_profile_stages_extracurriculars_languages_and_pdf():
     assert "attachment;" in pdf_res.headers["content-disposition"]
     assert len(pdf_res.content) > 1000
 
+
+def test_byok_groq_api_key_profile_update_and_test_endpoint():
+    """Vérifie la persistance de la clé Groq personnelle BYOK et l'endpoint de test."""
+    # 1. Mise à jour de la clé personnelle
+    res = client.put("/api/profile", json={"groq_api_key": "gsk_test_key_123", "groq_model": "qwen/qwen3.8-27b"})
+    assert res.status_code == 200
+    data = res.json()
+    assert data["groq_api_key"] == "gsk_test_key_123"
+    assert data["groq_model"] == "qwen/qwen3.8-27b"
+
+    # 2. Re-lecture du profil
+    get_res = client.get("/api/profile")
+    assert get_res.status_code == 200
+    assert get_res.json()["groq_api_key"] == "gsk_test_key_123"
+
+    # 3. Test endpoint avec clé vide (doit renvoyer 400)
+    test_empty = client.post("/api/profile/test-groq-key", json={"groq_api_key": ""})
+    assert test_empty.status_code == 400
+
+

@@ -1,6 +1,9 @@
+import logging
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session, select
+from sqlmodel import Session, select, SQLModel
 from app.adapters.database import get_session
+from app.config import settings
 from app.domain.models import (
     Education,
     Experience,
@@ -15,6 +18,8 @@ from app.domain.models import (
 )
 from app.domain.validation import evaluate_profile_completeness
 from app.api.auth import get_current_username
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/profile", tags=["Master Profile"])
 
@@ -99,6 +104,8 @@ def update_profile(
         "github_url",
         "website_url",
         "onboarding_completed",
+        "groq_api_key",
+        "groq_model",
     ]
     for field in scalar_fields:
         if field in update_dict:
@@ -245,3 +252,39 @@ def verify_generation_eligibility(
         "message": "Master Profile complet et validé. Génération autorisée.",
         "completion_percentage": status_result.completion_percentage,
     }
+
+
+class TestGroqKeyRequest(SQLModel):
+    groq_api_key: str
+    groq_model: Optional[str] = None
+
+
+@router.post("/test-groq-key")
+def test_groq_key(
+    data: TestGroqKeyRequest,
+    username: str = Depends(get_current_username),
+):
+    """Valide immédiatement la connectivité d'une clé d'API Groq personnelle."""
+    key = (data.groq_api_key or "").strip()
+    if not key:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La clé d'API Groq ne peut pas être vide.",
+        )
+    model = (data.groq_model or "").strip() or settings.effective_groq_model
+    try:
+        from groq import Groq
+        client = Groq(api_key=key, timeout=10.0)
+        res = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": "ping"}],
+            max_tokens=5,
+        )
+        return {"status": "ok", "message": "Clé Groq opérationnelle et validée avec succès !"}
+    except Exception as e:
+        logger.warning(f"Test clé Groq échoué pour {username}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Échec de validation de la clé Groq : {str(e)}",
+        )
+

@@ -243,6 +243,8 @@ def node_load_full_context(state: WriterState) -> dict:
                     for p in (profile.projects or [])
                 ],
                 "skills": [{"name": s.name, "category": s.category} for s in (profile.skills or [])],
+                "groq_api_key": getattr(profile, "groq_api_key", None),
+                "groq_model": getattr(profile, "groq_model", None),
             }
 
         # 4. Playbook Rules actives de l'utilisateur
@@ -273,12 +275,13 @@ def node_load_full_context(state: WriterState) -> dict:
 def node_thinking_phase(state: WriterState) -> dict:
     """Noeud 2 : Phase de raisonnement strategique — analyse croisee profil/offre/recon pour identifier
     les points d'accroche uniques a cette offre et construire un plan d'argumentation sur-mesure."""
-    api_key = settings.effective_groq_api_key
+    profile = state.get("master_profile") or {}
+    api_key = (profile.get("groq_api_key") or "").strip() or settings.effective_groq_api_key
+    model_name = (profile.get("groq_model") or "").strip() or settings.effective_groq_model
     lang = state.get("language", "fr")
 
     job = state.get("job_offer") or {}
     recon = state.get("recon_dossier") or {}
-    profile = state.get("master_profile") or {}
     rules = state.get("active_playbook_rules") or []
     ats = state.get("ats_match") or {}
 
@@ -333,7 +336,7 @@ Sois precis, technique et exhaustif."""
                 {"role": "system", "content": "Tu es un stratege senior en recrutement d'ingenieurs. Tu raisonnes avec une rigueur absolue et une specificite maximale."},
                 {"role": "user", "content": thinking_prompt},
             ],
-            model=settings.effective_groq_model,
+            model=model_name,
             temperature=0.3,
             max_tokens=1200,
         )
@@ -352,13 +355,14 @@ def node_drafting_phase(state: WriterState) -> dict:
     if state.get("errors"):
         return {"errors": state.get("errors")}
 
-    api_key = settings.effective_groq_api_key
+    profile = state.get("master_profile") or {}
+    api_key = (profile.get("groq_api_key") or "").strip() or settings.effective_groq_api_key
+    model_name = (profile.get("groq_model") or "").strip() or settings.effective_groq_model
     lang = state.get("language", "fr")
     is_en = lang == "en"
 
     job = state.get("job_offer") or {}
     recon = state.get("recon_dossier") or {}
-    profile = state.get("master_profile") or {}
     plan = state.get("thinking_plan") or ""
     ats = state.get("ats_match") or {}
 
@@ -442,7 +446,7 @@ Competences cles matchees : {matched_skills_str}
                 {"role": "system", "content": sys_prompt},
                 {"role": "user", "content": draft_prompt},
             ],
-            model=settings.effective_groq_model,
+            model=model_name,
             temperature=0.25,
             max_tokens=2000,
         )
