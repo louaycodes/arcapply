@@ -59,7 +59,7 @@ export function KanbanCard({
             {isLinkedIn ? "LinkedIn" : "Jobteaser"}
           </span>
           <span className="text-[10px] text-stone-500 font-medium">
-            {job.country === "France" ? "🇫🇷" : job.country === "Tunisie" ? "🇹🇳" : ""}
+            {job.country === "France" ? "FR" : job.country === "Tunisie" ? "TN" : job.country || ""}
           </span>
         </div>
 
@@ -165,7 +165,7 @@ export function KanbanCard({
                 className="px-2 py-1 rounded-lg bg-sky-50 hover:bg-sky-600 text-sky-800 hover:text-white border border-sky-200 text-[10px] font-bold flex items-center gap-1 transition-all disabled:opacity-50 cursor-pointer"
                 title="Marquer comme entretien décroché"
               >
-                <span>Entretien 🎉</span>
+                <span>Entretien</span>
               </button>
               <button
                 type="button"

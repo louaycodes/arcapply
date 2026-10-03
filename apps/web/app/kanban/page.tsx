@@ -28,6 +28,7 @@ import {
   Eye,
   Send,
   CalendarCheck,
+  X,
   XCircle,
   Radio,
   Mail,
@@ -96,7 +97,7 @@ export default function KanbanPage() {
       },
       (emailPayload) => {
         setEmailToast(
-          `📩 Email recruteur reçu [${emailPayload.category}] : ${emailPayload.company || "Candidature"} — ${emailPayload.subject}`
+          `Email recruteur reçu [${emailPayload.category}] : ${emailPayload.company || "Candidature"} — ${emailPayload.subject}`
         );
         loadData();
         setTimeout(() => setEmailToast(null), 8000);
@@ -255,7 +256,7 @@ export default function KanbanPage() {
             onClick={() => setEmailToast(null)}
             className="p-1 hover:bg-emerald-100 rounded text-emerald-800"
           >
-            ✕
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
       )}
@@ -272,7 +273,7 @@ export default function KanbanPage() {
             onClick={() => setErrorNotification(null)}
             className="p-1 hover:bg-destructive/20 rounded"
           >
-            ✕
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
       )}

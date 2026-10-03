@@ -35,7 +35,7 @@ interface JobCardProps {
 
 const PLATFORM_CONFIG: Record<string, { label: string; className: string }> = {
   top100_enterprises: {
-    label: "🏢 Portail Officiel",
+    label: "Portail Officiel",
     className: "bg-amber-50 text-amber-900 border-amber-300 font-semibold",
   },
   linkedin: {
@@ -216,7 +216,7 @@ export function JobCard({
           <div className="flex items-center gap-1.5 flex-wrap">
             {job.is_direct_career_site ? (
               <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full border bg-amber-100 text-amber-900 border-amber-300 flex items-center gap-1 shadow-xs">
-                <span>🏢</span>
+                <Building2 className="w-3 h-3" />
                 <span>Site Officiel</span>
               </span>
             ) : (
@@ -228,7 +228,7 @@ export function JobCard({
             )}
 
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-stone-100 text-stone-700 border border-stone-200">
-              {isFrance ? "🇫🇷 France" : isTunisia ? "🇹🇳 Tunisie" : job.country}
+              {isFrance ? "France" : isTunisia ? "Tunisie" : job.country}
             </span>
 
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-800 border-emerald-200">

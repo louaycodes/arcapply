@@ -86,7 +86,7 @@ function Step2Content() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
             <label className="block text-xs font-semibold text-stone-800 mb-1.5 flex items-center gap-1.5">
-              <span>🇫🇷 Titre d'accroche (Français) *</span>
+              <span>[FR] Titre d'accroche (Français) *</span>
             </label>
             <input
               type="text"
@@ -106,7 +106,7 @@ function Step2Content() {
 
           <div>
             <label className="block text-xs font-semibold text-stone-800 mb-1.5 flex items-center gap-1.5">
-              <span>🇬🇧 Professional Headline (English)</span>
+              <span>[EN] Professional Headline (English)</span>
             </label>
             <input
               type="text"
@@ -122,7 +122,7 @@ function Step2Content() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
           <div>
             <label className="block text-xs font-semibold text-stone-800 mb-1.5 flex items-center gap-1.5">
-              <span>🇫🇷 Bio & Pitch de Présentation (Français)</span>
+              <span>[FR] Bio & Pitch de Présentation (Français)</span>
             </label>
             <textarea
               rows={4}
@@ -141,7 +141,7 @@ function Step2Content() {
 
           <div>
             <label className="block text-xs font-semibold text-stone-800 mb-1.5 flex items-center gap-1.5">
-              <span>🇬🇧 Professional Summary (English)</span>
+              <span>[EN] Professional Summary (English)</span>
             </label>
             <textarea
               rows={4}
