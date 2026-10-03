@@ -639,7 +639,7 @@ RÈGLES IMPÉRATIVES DE RÉDACTION :
 
         company = job.company or ("your company" if lang == "en" else "votre entreprise")
 
-        # 5. Exécution de l'Agent Rédacteur LangGraph (Thinking ➔ Drafting)
+        # 5. Exécution de l'Agent Rédacteur LangGraph (Thinking -> Drafting)
         thinking_plan_result: Optional[str] = None
         raw_letter: Optional[str] = None
         if use_ai:
