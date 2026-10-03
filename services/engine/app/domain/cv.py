@@ -164,6 +164,48 @@ PROJECT_TRANSLATIONS = {
 }
 
 
+def clean_target_role(title: str, company: str = "") -> str:
+    """Nettoie le titre d'une offre pour en extraire uniquement le rôle / poste ciblé.
+
+    Supprime le nom de l'entreprise, les mentions de stage/pfe/offre/contrat,
+    les codes H/F, et retourne un titre propre (ex: 'IT Support', 'Développeur Python').
+    """
+    if not title:
+        return ""
+
+    cleaned = title.strip()
+
+    # 1. Supprimer le nom de l'entreprise s'il apparaît au début ou à la fin
+    if company and company.strip():
+        comp_pattern = re.escape(company.strip())
+        cleaned = re.sub(rf"(?i)^\s*{comp_pattern}\s*[-–—:\s]*", "", cleaned)
+        cleaned = re.sub(rf"(?i)[-–—:\s]*{comp_pattern}\s*$", "", cleaned)
+
+    # 2. Supprimer les mentions de type d'offre / contrat / stage / pfe / h/f
+    noise_patterns = [
+        r"(?i)\boffre\s+(de\s+)?(stage|d'emploi|emploi)?\b",
+        r"(?i)\bstage\s+(de\s+)?(fin\s+d['’]études|fin\s+d['’]etudes|pfe)?\b",
+        r"(?i)\b(stage|pfe|internship|intern|alternance|cdi|cdd|job|pre-embauche|pré-embauche)\b",
+        r"(?i)\b(h\s*/\s*f|f\s*/\s*h|m\s*/\s*f|m\s*/\s*w)\b",
+        r"(?i)\(\s*(h/f|f/h|m/f|m/w|h\s*/\s*f|f\s*/\s*h)\s*\)",
+        r"(?i)\[\s*(h/f|f/h|m/f|m/w)\s*\]",
+    ]
+    for pat in noise_patterns:
+        cleaned = re.sub(pat, " ", cleaned)
+
+    # 3. Nettoyer la ponctuation résiduelle et séparateurs
+    cleaned = re.sub(r"[\(\)\[\]{}—–\-:|/]+", " ", cleaned)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+
+    # 4. Nettoyage final : suppression des petits mots de liaison orphelins au début
+    cleaned = re.sub(r"^(de|d'|d’|pour|en|a|à)\s+", "", cleaned, flags=re.IGNORECASE).strip()
+
+    if len(cleaned) < 2:
+        return ""
+
+    return cleaned
+
+
 class CVGeneratorService:
     """
     Moteur de génération et d'adaptation de CV ciblé (AD-4 Étape 3, AD-7).
@@ -189,13 +231,17 @@ class CVGeneratorService:
         if lang not in {"fr", "en"}:
             lang = "fr"
 
-        # 1. Headline ciblee
+        # 1. Headline ciblée (Format: Titre profil | Rôle cible nettoyé)
+        clean_role = clean_target_role(job.title or "", job.company or "")
         if lang == "en":
             hl_base = profile.headline_en or profile.headline or "Engineering Student"
-            headline = f"{hl_base} — {job.title}" if job.title else hl_base
         else:
             hl_base = profile.headline_fr or profile.headline or "Eleve-Ingenieur"
-            headline = f"{hl_base} — {job.title}" if job.title else hl_base
+
+        if clean_role and clean_role.lower() not in hl_base.lower():
+            headline = f"{hl_base} | {clean_role}"
+        else:
+            headline = hl_base
 
         # 2. Accroche factuelle zero hallucination
         missing_set = {s.lower() for s in ats_match.missing_skills}

@@ -12,23 +12,23 @@ class JobStatus(str, Enum):
     ARCHIVED = "ARCHIVED"
 
 
-# Transitions légales rigoureuses selon AD-6
+# Transitions légales selon le cycle de vie simplifié (Offres -> Candidatures envoyées -> Retenue / Non retenue)
 ALLOWED_TRANSITIONS: dict[str, set[str]] = {
-    JobStatus.DISCOVERED.value: {JobStatus.REVIEWING.value, JobStatus.ARCHIVED.value},
-    JobStatus.REVIEWING.value: {JobStatus.READY.value, JobStatus.DISCOVERED.value, JobStatus.ARCHIVED.value},
+    JobStatus.DISCOVERED.value: {JobStatus.SUBMITTED.value, JobStatus.REVIEWING.value, JobStatus.ARCHIVED.value},
+    JobStatus.REVIEWING.value: {JobStatus.READY.value, JobStatus.SUBMITTED.value, JobStatus.DISCOVERED.value, JobStatus.ARCHIVED.value},
     JobStatus.READY.value: {JobStatus.SUBMITTED.value, JobStatus.REVIEWING.value, JobStatus.ARCHIVED.value},
-    JobStatus.SUBMITTED.value: {JobStatus.INTERVIEW.value, JobStatus.REJECTED.value, JobStatus.ARCHIVED.value},
-    JobStatus.INTERVIEW.value: {JobStatus.OFFER.value, JobStatus.REJECTED.value, JobStatus.ARCHIVED.value},
-    JobStatus.OFFER.value: {JobStatus.ARCHIVED.value},
-    JobStatus.REJECTED.value: {JobStatus.ARCHIVED.value},
-    JobStatus.ARCHIVED.value: {JobStatus.DISCOVERED.value},
+    JobStatus.SUBMITTED.value: {JobStatus.OFFER.value, JobStatus.REJECTED.value, JobStatus.DISCOVERED.value, JobStatus.ARCHIVED.value, JobStatus.INTERVIEW.value},
+    JobStatus.INTERVIEW.value: {JobStatus.OFFER.value, JobStatus.REJECTED.value, JobStatus.SUBMITTED.value, JobStatus.ARCHIVED.value},
+    JobStatus.OFFER.value: {JobStatus.SUBMITTED.value, JobStatus.ARCHIVED.value},
+    JobStatus.REJECTED.value: {JobStatus.SUBMITTED.value, JobStatus.ARCHIVED.value},
+    JobStatus.ARCHIVED.value: {JobStatus.DISCOVERED.value, JobStatus.SUBMITTED.value},
 }
 
 
 class ApplicationFSM:
     """
-    Machine à états finis des candidatures PFE (AD-6).
-    Empêche les envois automatiques sauvages et garantit le passage préalable par READY.
+    Machine à états finis des candidatures ArcApply.
+    Gère les transitions entre Offres, Candidatures envoyées, Retenue et Non retenue.
     """
 
     @classmethod
@@ -44,11 +44,6 @@ class ApplicationFSM:
 
         valid_targets = ALLOWED_TRANSITIONS.get(current, set())
         if target not in valid_targets:
-            if current == JobStatus.DISCOVERED.value and target == JobStatus.SUBMITTED.value:
-                raise ValueError(
-                    "Violation AD-6 : Le passage direct de DISCOVERED à SUBMITTED est interdit. "
-                    "L'offre doit obligatoirement transiter par REVIEWING puis READY avant soumission."
-                )
             raise ValueError(
                 f"Transition d'état invalide : {current} -> {target}. "
                 f"Transitions autorisées depuis {current} : {sorted(list(valid_targets))}."

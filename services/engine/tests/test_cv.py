@@ -511,3 +511,35 @@ def test_cv_draft_and_from_profile_persistence():
     assert "Architecte Cloud Senior" in draft_resp["html_content"]
 
 
+def test_clean_target_role_and_headline_format():
+    from app.domain.cv import clean_target_role
+    assert clean_target_role("HBNS offre Stage IT Support", "HBNS") == "IT Support"
+    assert clean_target_role("Stage PFE Développeur Python (H/F)", "Google") == "Développeur Python"
+    assert clean_target_role("Kubernetes specialist", "Thales") == "Kubernetes specialist"
+
+    # Test format in generate_cv
+    with Session(engine) as session:
+        job = JobOffer(
+            id="job-headline-test",
+            platform="linkedin",
+            external_id="ext-hl-1",
+            title="HBNS offre Stage IT Support",
+            company="HBNS",
+            description_raw="Poste de support IT avec Docker et Linux.",
+            status="DISCOVERED",
+        )
+        session.add(job)
+        profile = session.get(MasterProfile, "default-profile")
+        if profile:
+            profile.is_complete = True
+            profile.headline = "ETUDIANT INGENIEUR CLOUD | DEVOPS | AI"
+            profile.headline_fr = "ETUDIANT INGENIEUR CLOUD | DEVOPS | AI"
+            session.add(profile)
+        session.commit()
+
+        ats_match = ATSMatchingEngine.evaluate_alignment(job, profile)
+        cv = CVGeneratorService.generate_cv(job, profile, ats_match, language="fr")
+        assert cv.headline == "ETUDIANT INGENIEUR CLOUD | DEVOPS | AI | IT Support"
+
+
+
