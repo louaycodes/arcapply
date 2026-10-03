@@ -7,6 +7,7 @@ import {
   generateTargetedCV,
   getCVPreviewUrl,
   getCVPdfDownloadUrl,
+  downloadTargetedCVPdf,
 } from "@/lib/api";
 import { useAppLanguage } from "@/lib/language-context";
 import {
@@ -38,6 +39,7 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"preview" | "audit">("preview");
   const [language, setLanguage] = useState<"fr" | "en">(appLanguage);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     setLanguage(appLanguage);
@@ -148,14 +150,32 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
               <span className="hidden sm:inline">Modifier dans Studio CV</span>
             </a>
 
-            <a
-              href={pdfUrl}
-              download
-              className="px-3.5 py-2 rounded-lg bg-primary hover:bg-primary-hover text-white text-xs font-semibold flex items-center gap-2 tactile-button shadow-artisan-button transition-all"
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  setIsDownloading(true);
+                  await downloadTargetedCVPdf({
+                    jobId: job.id,
+                    companyName: job.company,
+                    lang: language,
+                  });
+                } catch (err: any) {
+                  setError(err?.message || "Erreur lors du téléchargement du CV.");
+                } finally {
+                  setIsDownloading(false);
+                }
+              }}
+              disabled={isDownloading}
+              className="px-3.5 py-2 rounded-lg bg-primary hover:bg-primary-hover text-white text-xs font-semibold flex items-center gap-2 tactile-button shadow-artisan-button transition-all disabled:opacity-50 cursor-pointer"
             >
-              <Download className="w-4 h-4" />
+              {isDownloading ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
               <span className="hidden sm:inline">Télécharger PDF ({language.toUpperCase()})</span>
-            </a>
+            </button>
 
             <button
               type="button"

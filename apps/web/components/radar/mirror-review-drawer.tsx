@@ -13,6 +13,7 @@ import {
   unmarkJobAsApplied,
   getCVPreviewUrl,
   getCVPdfDownloadUrl,
+  downloadTargetedCVPdf,
   ReconDossier,
   fetchReconDossier,
   triggerReconInvestigation,
@@ -41,6 +42,7 @@ import {
   Lock,
   Layers,
   Briefcase,
+  Download,
 } from "lucide-react";
 import { LetterDownloadMenu } from "./letter-download-menu";
 
@@ -69,6 +71,7 @@ export function MirrorReviewDrawer({
   const [cvLoading, setCvLoading] = useState(false);
   const [cvGenerated, setCvGenerated] = useState(false);
   const [cvLanguage, setCvLanguage] = useState<"fr" | "en">(appLanguage);
+  const [isDownloadingCv, setIsDownloadingCv] = useState(false);
 
   // Letter state
   const [letter, setLetter] = useState<CoverLetter | null>(null);
@@ -738,13 +741,33 @@ export function MirrorReviewDrawer({
 
                 {activeTab === "cv" && isAnalysisReady && (
                   <>
-                    <a
-                      href={pdfUrl}
-                      download={`CV_${job.company.replace(/\s+/g, "_")}_${cvLanguage.toUpperCase()}.pdf`}
-                      className="px-2.5 py-1 rounded-md border border-border bg-background hover:bg-muted text-xs font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors"
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          setIsDownloadingCv(true);
+                          await downloadTargetedCVPdf({
+                            jobId: job.id,
+                            companyName: job.company,
+                            lang: cvLanguage,
+                          });
+                        } catch (err: any) {
+                          setErrorMsg(err?.message || "Erreur lors du téléchargement du CV.");
+                        } finally {
+                          setIsDownloadingCv(false);
+                        }
+                      }}
+                      disabled={isDownloadingCv}
+                      className="px-2.5 py-1 rounded-md border border-border bg-background hover:bg-muted text-xs font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer"
+                      title={`Télécharger le CV pour ${job.company}`}
                     >
+                      {isDownloadingCv ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Download className="w-3.5 h-3.5" />
+                      )}
                       <span>PDF A4</span>
-                    </a>
+                    </button>
                     <button
                       type="button"
                       onClick={() => {

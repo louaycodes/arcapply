@@ -811,6 +811,47 @@ export function getCoverLetterDownloadUrl(
   return `${API_BASE_URL}/api/letter/download/${jobId}?format=${format}&lang=${lang}${authParams}`;
 }
 
+export async function downloadTargetedCVPdf({
+  jobId,
+  companyName,
+  lang = "fr",
+}: {
+  jobId: string;
+  companyName?: string;
+  lang?: string;
+}): Promise<void> {
+  const url = `${API_BASE_URL}/api/cv/pdf/${jobId}?lang=${lang}`;
+  const response = await authFetch(url);
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData?.detail?.message || "Erreur lors du téléchargement du CV.");
+  }
+
+  const blob = await response.blob();
+  const cleanCompany = (companyName || "").trim().replace(/[^\w\s-]/g, "").replace(/\s+/g, "_");
+  let filename = cleanCompany ? `CV_${cleanCompany}_${lang.toUpperCase()}.pdf` : `CV_${lang.toUpperCase()}.pdf`;
+
+  const disposition = response.headers.get("Content-Disposition");
+  if (disposition && disposition.includes("filename=")) {
+    const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
+    if (matches?.[1]) {
+      const serverFilename = matches[1].replace(/['"]/g, "").trim();
+      if (serverFilename) {
+        filename = serverFilename;
+      }
+    }
+  }
+
+  const blobUrl = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = blobUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(blobUrl);
+  document.body.removeChild(a);
+}
+
 export async function downloadCoverLetterFile({
   jobId,
   format = "pdf",
@@ -856,12 +897,16 @@ export async function downloadCoverLetterFile({
   }
 
   const blob = await response.blob();
-  let filename = `Lettre_Motivation.${format}`;
+  const cleanCompany = (companyName || "").trim().replace(/[^\w\s-]/g, "").replace(/\s+/g, "_");
+  let filename = cleanCompany ? `Lettre_${cleanCompany}.${format}` : `Lettre_Motivation.${format}`;
   const disposition = response.headers.get("Content-Disposition");
   if (disposition && disposition.includes("filename=")) {
     const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
     if (matches?.[1]) {
-      filename = matches[1].replace(/['"]/g, "");
+      const serverFilename = matches[1].replace(/['"]/g, "").trim();
+      if (serverFilename) {
+        filename = serverFilename;
+      }
     }
   }
 
