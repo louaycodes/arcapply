@@ -236,6 +236,41 @@ def node_load_cv_context(state: CVWriterState) -> dict:
     }
 
 
+def _call_groq_resilient(
+    client,
+    messages: list[dict],
+    requested_model: str,
+    target_max_tokens: int,
+    temperature: float = 0.2,
+) -> str:
+    """Appelle Groq avec adaptation intelligente des quotas et repli multi-modèles pour le CV."""
+    models_to_try = [requested_model]
+    for fallback in ["openai/gpt-oss-120b", "openai/gpt-oss-20b"]:
+        if fallback not in models_to_try:
+            models_to_try.append(fallback)
+
+    last_error = None
+    for model in models_to_try:
+        is_qwen = "qwen" in model.lower()
+        actual_tokens = min(target_max_tokens, 750) if is_qwen else target_max_tokens
+        try:
+            resp = client.chat.completions.create(
+                messages=messages,
+                model=model,
+                temperature=temperature,
+                max_tokens=actual_tokens,
+            )
+            content = (resp.choices[0].message.content or "").strip()
+            if content:
+                return content
+        except Exception as e:
+            logger.warning(f"Appel Groq CV modèle {model} échoué ({e}), essai modèle de repli...")
+            last_error = e
+            continue
+
+    raise last_error or RuntimeError("Tous les modèles LLM ont échoué pour la réécriture du CV.")
+
+
 def node_rewrite_cv_sections(state: CVWriterState) -> dict:
     """Noeud 2 : Redige le summary, les descriptions de projets et d'experiences orientes vers le poste."""
     profile = state.get("master_profile") or {}
@@ -343,17 +378,18 @@ PROJ_2:
 (continue pour les {n_projects} projets)"""
             sys_prompt = "Tu es un redacteur de CV de precision. Tu reecris le contenu pour cibler des postes specifiques tout en maintenant une exactitude factuelle absolue."
 
-        resp = client.chat.completions.create(
+        cv_tokens = 750 if "qwen" in model_name.lower() else 2500
+        raw = _call_groq_resilient(
+            client=client,
             messages=[
                 {"role": "system", "content": sys_prompt},
                 {"role": "user", "content": rewrite_prompt},
             ],
-            model=model_name,
+            requested_model=model_name,
+            target_max_tokens=cv_tokens,
             temperature=0.2,
-            max_tokens=2500,
         )
 
-        raw = (resp.choices[0].message.content or "").strip()
         if not raw or len(raw) < 100:
             logger.error("Reponse LLM CV trop courte ou vide.")
             return {

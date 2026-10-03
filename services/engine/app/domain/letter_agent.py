@@ -272,6 +272,45 @@ def node_load_full_context(state: WriterState) -> dict:
     }
 
 
+def _call_groq_resilient(
+    client,
+    messages: list[dict],
+    requested_model: str,
+    target_max_tokens: int,
+    temperature: float = 0.25,
+) -> str:
+    """Appelle Groq avec adaptation intelligente des quotas et repli multi-modèles.
+
+    1. Si Qwen est demandé : limite max_tokens pour respecter le plafond strict de 1000 OTPM.
+    2. Si rate limit (429) ou erreur : bascule automatiquement vers openai/gpt-oss-120b (quota illimité en tokens de sortie).
+    """
+    models_to_try = [requested_model]
+    for fallback in ["openai/gpt-oss-120b", "openai/gpt-oss-20b"]:
+        if fallback not in models_to_try:
+            models_to_try.append(fallback)
+
+    last_error = None
+    for model in models_to_try:
+        is_qwen = "qwen" in model.lower()
+        actual_tokens = min(target_max_tokens, 500) if is_qwen else target_max_tokens
+        try:
+            resp = client.chat.completions.create(
+                messages=messages,
+                model=model,
+                temperature=temperature,
+                max_tokens=actual_tokens,
+            )
+            content = (resp.choices[0].message.content or "").strip()
+            if content:
+                return content
+        except Exception as e:
+            logger.warning(f"Appel Groq modèle {model} échoué ({e}), essai modèle de repli...")
+            last_error = e
+            continue
+
+    raise last_error or RuntimeError("Tous les modèles LLM ont échoué.")
+
+
 def node_thinking_phase(state: WriterState) -> dict:
     """Noeud 2 : Phase de raisonnement strategique — analyse croisee profil/offre/recon pour identifier
     les points d'accroche uniques a cette offre et construire un plan d'argumentation sur-mesure."""
@@ -331,16 +370,17 @@ Produis un plan d'attaque strategique en 5 points SPECIFIQUES a cette offre :
 
 Sois precis, technique et exhaustif."""
 
-        resp = client.chat.completions.create(
+        thinking_tokens = 320 if "qwen" in model_name.lower() else 800
+        plan = _call_groq_resilient(
+            client=client,
             messages=[
                 {"role": "system", "content": "Tu es un stratege senior en recrutement d'ingenieurs. Tu raisonnes avec une rigueur absolue et une specificite maximale."},
                 {"role": "user", "content": thinking_prompt},
             ],
-            model=model_name,
+            requested_model=model_name,
+            target_max_tokens=thinking_tokens,
             temperature=0.3,
-            max_tokens=1200,
         )
-        plan = (resp.choices[0].message.content or "").strip()
         if plan:
             return {"thinking_plan": plan}
         return {"errors": ["Le modèle IA rencontre un problème. Réponse vide reçue. Veuillez réessayer ultérieurement."]}
@@ -441,18 +481,18 @@ Competences cles matchees : {matched_skills_str}
 6. Completude : Developpe des phrases completes et des arguments aboutis sans laisser de texte tronque."""
             sys_prompt = "Tu es un redacteur d'elite de candidatures d'ingenieurs. Tu rediges en francais technique, sobre et rigoureusement personnalise."
 
-        resp = client.chat.completions.create(
+        drafting_tokens = 580 if "qwen" in model_name.lower() else 1800
+        raw = _call_groq_resilient(
+            client=client,
             messages=[
                 {"role": "system", "content": sys_prompt},
                 {"role": "user", "content": draft_prompt},
             ],
-            model=model_name,
+            requested_model=model_name,
+            target_max_tokens=drafting_tokens,
             temperature=0.25,
-            max_tokens=2000,
         )
 
-        choice = resp.choices[0]
-        raw = (choice.message.content or "").strip()
         if raw and len(raw) > 150:
             return {"draft_letter": raw}
 

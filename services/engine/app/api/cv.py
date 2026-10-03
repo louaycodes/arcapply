@@ -92,6 +92,13 @@ def _get_or_create_cv(
         ats_match = ATSMatchingEngine.evaluate_alignment(job, profile)
         try:
             cv = CVGeneratorService.generate_cv(job, profile, ats_match, language=normalized_lang)
+        except HTTPException:
+            raise
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={"error_code": "PROFILE_INCOMPLETE", "message": str(e)},
+            )
         except Exception as e:
             logger.error(f"Erreur lors de la génération du CV: {e}")
             raise HTTPException(
@@ -106,6 +113,13 @@ def _get_or_create_cv(
         ats_match = ATSMatchingEngine.evaluate_alignment(job, profile)
         try:
             fresh_cv = CVGeneratorService.generate_cv(job, profile, ats_match, language=normalized_lang)
+        except HTTPException:
+            raise
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={"error_code": "PROFILE_INCOMPLETE", "message": str(e)},
+            )
         except Exception as e:
             logger.error(f"Erreur lors de la régénération du CV: {e}")
             raise HTTPException(
@@ -167,6 +181,13 @@ def generate_targeted_cv(
     ats_match = ATSMatchingEngine.evaluate_alignment(job, profile)
     try:
         new_cv = CVGeneratorService.generate_cv(job, profile, ats_match, language=normalized_lang)
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"error_code": "PROFILE_INCOMPLETE", "message": str(e)},
+        )
     except Exception as e:
         logger.error(f"Erreur lors de la génération du CV: {e}")
         raise HTTPException(

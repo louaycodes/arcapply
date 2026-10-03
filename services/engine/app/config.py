@@ -11,9 +11,11 @@ class Settings(BaseSettings):
     cors_origins: list[str] = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "https://arcapply-app.louaycodes.tn",
+        "https://arcapply.louaycodes.tn",
     ]
     groq_api_key: str = ""
-    groq_model: str = "qwen/qwen3.8-27b"
+    groq_model: str = "openai/gpt-oss-120b"
 
     model_config = SettingsConfigDict(
         env_prefix="ARCAPPLY_",
@@ -27,7 +29,7 @@ class Settings(BaseSettings):
 
     @property
     def effective_groq_model(self) -> str:
-        return self.groq_model or os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b")
+        return self.groq_model or os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 
     @property
     def db_path(self) -> Path:

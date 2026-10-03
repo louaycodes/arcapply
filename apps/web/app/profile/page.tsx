@@ -937,14 +937,15 @@ export default function ProfilePage() {
                 Modèle LLM Groq
               </label>
               <select
-                value={profile?.groq_model || "qwen/qwen3.8-27b"}
+                value={profile?.groq_model || "openai/gpt-oss-120b"}
                 onChange={(e) => {
                   if (profile) setProfile({ ...profile, groq_model: e.target.value });
                 }}
                 className="w-full px-3.5 py-2.5 rounded-lg bg-background border border-border focus:outline-none focus:ring-1 focus:ring-primary text-xs text-foreground shadow-xs cursor-pointer"
               >
-                <option value="qwen/qwen3.8-27b">Qwen 2.5 (qwen/qwen3.8-27b) [Recommandé]</option>
-                <option value="openai/gpt-oss-120b">GPT OSS 120B (openai/gpt-oss-120b)</option>
+                <option value="openai/gpt-oss-120b">GPT OSS 120B (openai/gpt-oss-120b) [Recommandé — Quota élevé & Rapide]</option>
+                <option value="openai/gpt-oss-20b">GPT OSS 20B (openai/gpt-oss-20b) [Ultra-rapide]</option>
+                <option value="qwen/qwen3.8-27b">Qwen 2.5 27B (qwen/qwen3.8-27b) [Plafond 1000 OTPM]</option>
               </select>
               <p className="text-[11px] text-muted-foreground">
                 Modèle de raisonnement haute vitesse pour la rédaction du CV et de la lettre.

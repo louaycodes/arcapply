@@ -91,6 +91,13 @@ def generate_cover_letter(
     ats_match = ATSMatchingEngine.evaluate_alignment(job, profile)
     try:
         new_letter = CoverLetterService.generate_cover_letter(job, profile, ats_match, language=normalized_lang)
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"error_code": "PROFILE_INCOMPLETE", "message": str(e)},
+        )
     except Exception as e:
         logger.error(f"Erreur lors de la génération de la lettre: {e}")
         raise HTTPException(
