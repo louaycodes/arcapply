@@ -18,6 +18,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   ShieldCheck,
+  Check,
+  Zap,
   Eye,
   Layers,
   Sparkles,
@@ -118,7 +120,7 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
                 }`}
                 title="Version Française"
               >
-                🇫🇷 FR
+                FR
               </button>
               <button
                 type="button"
@@ -133,7 +135,7 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
                 }`}
                 title="English Version"
               >
-                🇬🇧 EN
+                EN
               </button>
             </div>
 
@@ -262,9 +264,10 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
                       {cv.matched_skills.map((s) => (
                         <span
                           key={s}
-                          className="px-2 py-0.5 rounded bg-emerald-100/80 border border-emerald-300 text-emerald-950 font-semibold font-mono"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-100/80 border border-emerald-300 text-emerald-950 font-semibold font-mono"
                         >
-                          ✓ {s}
+                          <Check className="w-3 h-3 text-emerald-700" />
+                          <span>{s}</span>
                         </span>
                       ))}
                     </div>
@@ -280,9 +283,10 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
                         {cv.transferable_skills.map((s) => (
                           <span
                             key={s}
-                            className="px-2 py-0.5 rounded bg-amber-100/80 border border-amber-300 text-amber-950 font-semibold font-mono"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-100/80 border border-amber-300 text-amber-950 font-semibold font-mono"
                           >
-                            ⚡ {s}
+                            <Zap className="w-3 h-3 text-amber-700" />
+                            <span>{s}</span>
                           </span>
                         ))}
                       </div>

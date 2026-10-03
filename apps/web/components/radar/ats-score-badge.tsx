@@ -4,6 +4,8 @@ import { useState } from "react";
 import { ATSMatchResult } from "@/lib/api";
 import {
   CheckCircle2,
+  Check,
+  Zap,
   AlertTriangle,
   XCircle,
   ShieldAlert,
@@ -141,9 +143,10 @@ export function AtsScoreBadge({ match, loading = false }: AtsScoreBadgeProps) {
                     {match.matched_skills.map((s) => (
                       <span
                         key={s}
-                        className="px-2 py-0.5 rounded-md bg-emerald-100/70 border border-emerald-300 text-emerald-900 text-xs font-semibold font-mono"
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100/70 border border-emerald-300 text-emerald-900 text-xs font-semibold font-mono"
                       >
-                        ✓ {s}
+                        <Check className="w-3 h-3 text-emerald-700" />
+                        <span>{s}</span>
                       </span>
                     ))}
                   </div>
@@ -163,9 +166,10 @@ export function AtsScoreBadge({ match, loading = false }: AtsScoreBadgeProps) {
                     {match.transferable_skills.map((s) => (
                       <span
                         key={s}
-                        className="px-2 py-0.5 rounded-md bg-amber-100/70 border border-amber-300 text-amber-900 text-xs font-semibold font-mono"
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-100/70 border border-amber-300 text-amber-900 text-xs font-semibold font-mono"
                       >
-                        ⚡ {s}
+                        <Zap className="w-3 h-3 text-amber-700" />
+                        <span>{s}</span>
                       </span>
                     ))}
                   </div>
@@ -191,9 +195,10 @@ export function AtsScoreBadge({ match, loading = false }: AtsScoreBadgeProps) {
                     {match.missing_skills.map((s) => (
                       <span
                         key={s}
-                        className="px-2 py-0.5 rounded-md bg-rose-100/70 border border-rose-300 text-rose-900 text-xs font-semibold font-mono"
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-100/70 border border-rose-300 text-rose-900 text-xs font-semibold font-mono"
                       >
-                        ✕ {s}
+                        <X className="w-3 h-3 text-rose-700" />
+                        <span>{s}</span>
                       </span>
                     ))}
                   </div>

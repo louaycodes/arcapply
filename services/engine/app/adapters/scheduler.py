@@ -38,12 +38,12 @@ from app.domain.models import JobOffer, utc_now
 from app.ports.connectors import BaseJobConnector
 
 ALL_CONNECTORS: dict[str, type[BaseJobConnector]] = {
-    # 🏆 Top 100 Entreprises IT (Portails Carrières Dédiés & ATS direct)
+    # Top 100 Entreprises IT (Portails Carrieres Dedies & ATS direct)
     "top100_enterprises": Top100EnterprisesJobConnector,
-    # 🌍 International & Global
+    # International & Global
     "linkedin": LinkedInJobConnector,
     "stackoverflow_jobs": StackOverflowJobsJobConnector,
-    # 🇹🇳 Tunisie
+    # Tunisie
     "keejob": KeejobJobConnector,
     "tunisietravail": TunisieTravailJobConnector,
     "tanitjobs": TanitjobsJobConnector,
@@ -52,7 +52,7 @@ ALL_CONNECTORS: dict[str, type[BaseJobConnector]] = {
     "optioncarriere": OptionCarriereJobConnector,
     "aneti": AnetiJobConnector,
     "offre_emploi_tn": OffreEmploiTnJobConnector,
-    # 🇫🇷 France
+    # France
     "wttj": WTTJJobConnector,
     "1jeune1solution": UnJeuneUneSolutionJobConnector,
     "jobteaser": JobteaserJobConnector,
@@ -66,7 +66,7 @@ ALL_CONNECTORS: dict[str, type[BaseJobConnector]] = {
     "meteojob": MeteojobJobConnector,
     "letudiant": LEtudiantJobConnector,
     "chooseyourboss": ChooseYourBossJobConnector,
-    # 🏢 Portails ESN & Écosystèmes Tech
+    # Portails ESN & Ecosystemes Tech
     "esn_direct": ESNDirectJobConnector,
     "numeum": NumeumJobConnector,
     "capdigital": CapDigitalJobConnector,

@@ -14,7 +14,6 @@ import {
   Sliders,
   Compass,
   ArrowRight,
-  RotateCcw,
 } from "lucide-react";
 import {
   AgentPlaybookRule,
@@ -22,7 +21,6 @@ import {
   createPlaybookRule,
   updatePlaybookRule,
   deletePlaybookRule,
-  restorePlaybookTemplates,
 } from "@/lib/api";
 
 export default function PlaybookPage() {
@@ -37,7 +35,7 @@ export default function PlaybookPage() {
   const [conditionTrigger, setConditionTrigger] = useState("");
   const [actionInstruction, setActionInstruction] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isRestoring, setIsRestoring] = useState(false);
+
 
   const loadRules = async () => {
     try {
@@ -75,18 +73,7 @@ export default function PlaybookPage() {
     }
   };
 
-  const handleRestore = async () => {
-    if (!confirm("Voulez-vous restaurer les modèles de directives recommandés (DevOps, Backend, Tonalité) ?")) return;
-    try {
-      setIsRestoring(true);
-      const data = await restorePlaybookTemplates();
-      setRules(data);
-    } catch (err: any) {
-      alert(err.message || "Échec de restauration des modèles");
-    } finally {
-      setIsRestoring(false);
-    }
-  };
+
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,19 +123,6 @@ export default function PlaybookPage() {
           </div>
           <div className="flex flex-wrap items-center gap-3 shrink-0 self-start md:self-auto">
             <button
-              onClick={handleRestore}
-              disabled={isRestoring}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-stone-800/80 hover:bg-stone-700/80 text-stone-200 border border-stone-700 font-medium text-sm transition-all shrink-0 disabled:opacity-50"
-              title="Restaurer les modèles recommandés par défaut"
-            >
-              {isRestoring ? (
-                <Loader2 className="w-4 h-4 animate-spin text-orange-400" />
-              ) : (
-                <RotateCcw className="w-4 h-4 text-orange-400" />
-              )}
-              Modèles recommandés
-            </button>
-            <button
               onClick={() => setIsModalOpen(true)}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary hover:bg-orange-600 text-white font-semibold text-sm transition-all shadow-md shadow-orange-600/30 shrink-0"
             >
@@ -182,7 +156,7 @@ export default function PlaybookPage() {
             <p className="text-sm font-bold text-stone-900 font-display mt-1">
               LangGraph + Groq 70B
             </p>
-            <p className="text-[11px] text-stone-400">Thinking ➔ Drafting</p>
+            <p className="text-[11px] text-stone-400">Thinking &gt; Drafting</p>
           </div>
           <div className="w-10 h-10 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center">
             <Sliders className="w-5 h-5" />
@@ -225,23 +199,11 @@ export default function PlaybookPage() {
         ) : rules.length === 0 ? (
           <div className="p-8 text-center bg-white border border-dashed border-stone-300 rounded-2xl space-y-3">
             <Lightbulb className="w-8 h-8 text-amber-500 mx-auto" />
-            <h3 className="text-base font-semibold text-stone-800">Aucune directive enregistrée</h3>
+            <h3 className="text-base font-semibold text-stone-800">Aucune directive enregistree</h3>
             <p className="text-xs text-stone-500 max-w-md mx-auto">
-              Toutes les directives ont été supprimées. Vous pouvez en créer une personnalisée ou restaurer les modèles recommandés par défaut (DevOps, Backend, Tonalité).
+              Toutes les directives ont ete supprimees. Vous pouvez en creer une personnalisee.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-              <button
-                onClick={handleRestore}
-                disabled={isRestoring}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-semibold rounded-lg transition-all border border-stone-300 disabled:opacity-50"
-              >
-                {isRestoring ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-stone-600" />
-                ) : (
-                  <RotateCcw className="w-3.5 h-3.5 text-stone-600" />
-                )}
-                Restaurer les modèles recommandés
-              </button>
               <button
                 onClick={() => setIsModalOpen(true)}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-xs font-semibold rounded-lg hover:bg-orange-600 transition-all"
@@ -304,7 +266,7 @@ export default function PlaybookPage() {
                 {/* Condition Box */}
                 <div className="p-3 rounded-xl bg-[#FAF8F5] border border-stone-200/80 space-y-1">
                   <p className="text-[11px] font-semibold uppercase tracking-wider text-orange-800">
-                    ⚡ Quand cette condition est détectée :
+                    Condition de declenchement :
                   </p>
                   <p className="text-xs text-stone-700 leading-relaxed font-mono">
                     {rule.condition_trigger}
@@ -314,7 +276,7 @@ export default function PlaybookPage() {
                 {/* Action Box */}
                 <div className="p-3 rounded-xl bg-stone-50 border border-stone-200/80 space-y-1">
                   <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-600">
-                    🎯 Ce que l'Agent Rédacteur doit faire :
+                    Action de l'Agent Redacteur :
                   </p>
                   <p className="text-xs text-stone-800 leading-relaxed">
                     {rule.action_instruction}
@@ -343,7 +305,7 @@ export default function PlaybookPage() {
                 onClick={() => setIsModalOpen(false)}
                 className="text-stone-400 hover:text-stone-600 text-lg font-bold"
               >
-                ✕
+                x
               </button>
             </div>
 

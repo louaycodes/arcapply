@@ -90,3 +90,10 @@
   - LLM calls must be defensive: on any exception (timeout, 429, schema mismatch, or anti-hallucination check failure), immediately fall back to the deterministic letter builder without raising a 500 error to the client.
   - Always respect `profile.search_mode` and `job.offer_type` (never hardcode PFE / 6 months when the user or offer is in JOB mode).
 
+### Pitfall 5: Zero Emojis in Codebase (Strict Clean Engineering UI/UX)
+- **Symptom:** Unprofessional UI rendering, inconsistent typography, font rendering discrepancies on certain operating systems, or cluttered logs.
+- **Mandatory Rule:**
+  - DO NOT use emojis (flags, symbols, smileys, decorative unicode icons) in frontend components, UI templates, backend code, print/log statements, or comments.
+  - Always use Lucide React icons (e.g. `Building2`, `Sparkles`, `Check`, `Zap`, `X`, `ShieldCheck`) for visual indicators.
+  - Use clean text codes (e.g. `FR`, `TN`, `EN`, `[FR]`, `[EN]`) for country or language tags instead of emoji flags.
+

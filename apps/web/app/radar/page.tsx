@@ -48,7 +48,7 @@ import {
 } from "lucide-react";
 
 const AVAILABLE_PLATFORMS = [
-  { id: "top100_enterprises", label: "🏢 Top 100 Firmes IT (Portails Carrières Dédiés)", country: "Global" },
+  { id: "top100_enterprises", label: "Top 100 Firmes IT (Portails Carrières Dédiés)", country: "Global" },
   { id: "linkedin", label: "LinkedIn", country: "Global" },
   { id: "stackoverflow_jobs", label: "StackOverflow Jobs", country: "Global" },
   { id: "keejob", label: "Keejob", country: "Tunisie" },
@@ -621,8 +621,8 @@ export default function RadarPage() {
           <div className="flex items-center bg-muted/60 p-0.5 rounded-lg border border-border/40">
             {[
               { id: "all", label: "Tous" },
-              { id: "France", label: "🇫🇷 France" },
-              { id: "Tunisie", label: "🇹🇳 Tunisie" },
+              { id: "France", label: "France" },
+              { id: "Tunisie", label: "Tunisie" },
             ].map((c) => (
               <button
                 key={c.id}

@@ -264,7 +264,7 @@ export function MirrorReviewDrawer({
       case "INTERVIEW":
         return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-50 text-sky-900 border border-sky-300">Entretien planifié</span>;
       case "OFFER":
-        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-900 border border-emerald-300">Offre reçue 🎉</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-900 border border-emerald-300">Offre reçue</span>;
       case "REJECTED":
         return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-stone-100 text-stone-600 border border-stone-200">Non retenu</span>;
       default:
@@ -424,7 +424,7 @@ export function MirrorReviewDrawer({
                         key={s}
                         className="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-50 text-rose-900 border border-rose-300"
                       >
-                        ✕ {s}
+                        {s}
                       </span>
                     ))}
                   </div>
@@ -698,7 +698,7 @@ export function MirrorReviewDrawer({
                           >
                             <div className="flex items-center gap-2">
                               <Sparkles className="w-3.5 h-3.5" />
-                              <span>🧠 Plan d'attaque stratégique de l'Agent (Thinking Process)</span>
+                              <span>Plan d'attaque stratégique de l'Agent (Thinking Process)</span>
                             </div>
                             <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showThinkingPlan ? "rotate-180" : ""}`} />
                           </button>
@@ -800,7 +800,7 @@ export function MirrorReviewDrawer({
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="p-4 rounded-xl border border-border bg-card space-y-2">
                           <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                            <span>🎯 Mission & Enjeux</span>
+                            <span>Mission & Enjeux</span>
                           </span>
                           <p className="text-xs text-foreground/90 leading-relaxed">
                             {reconDossier.company_mission || "Mission en cours d'analyse..."}
@@ -809,7 +809,7 @@ export function MirrorReviewDrawer({
 
                         <div className="p-4 rounded-xl border border-border bg-card space-y-2">
                           <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                            <span>🌱 Culture & Valeurs Techniques</span>
+                            <span>Culture & Valeurs Techniques</span>
                           </span>
                           <p className="text-xs text-foreground/90 leading-relaxed">
                             {reconDossier.company_culture || "Culture ingénierie en cours d'analyse..."}
@@ -821,7 +821,7 @@ export function MirrorReviewDrawer({
                       {reconDossier.tech_stack_detected && reconDossier.tech_stack_detected.length > 0 && (
                         <div className="p-4 rounded-xl border border-border bg-card space-y-2">
                           <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                            💻 Stack & Technologies Détectées
+                            Stack & Technologies Détectées
                           </span>
                           <div className="flex flex-wrap gap-1.5 pt-1">
                             {reconDossier.tech_stack_detected.map((tech) => (
@@ -839,7 +839,7 @@ export function MirrorReviewDrawer({
                       {/* Annonce complète un-truncated */}
                       <div className="p-4 rounded-xl border border-border bg-card space-y-2">
                         <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                          📄 Texte Intégral sans troncature ({reconDossier.full_description?.length || 0} caractères)
+                          Texte Intégral sans troncature ({reconDossier.full_description?.length || 0} caractères)
                         </span>
                         <div className="p-3.5 rounded-lg bg-muted/40 font-mono text-xs text-muted-foreground max-h-64 overflow-y-auto whitespace-pre-wrap leading-relaxed border border-border/50">
                           {reconDossier.full_description || job.description_raw}

@@ -192,9 +192,9 @@ export default function ProfilePage() {
     try {
       setTestGenResult("Vérification en cours...");
       const result = await verifyGenerationEligibility();
-      setTestGenResult(`✓ Succès : ${result.message} (${result.completion_percentage}%)`);
+      setTestGenResult(`Succès : ${result.message} (${result.completion_percentage}%)`);
     } catch (err: any) {
-      setTestGenResult(`✕ Bloqué (CAP-1) : ${err.message}`);
+      setTestGenResult(`Bloqué (CAP-1) : ${err.message}`);
     }
   };
 
@@ -848,9 +848,9 @@ export default function ProfilePage() {
             {testGenResult && (
               <div
                 className={`p-2.5 rounded-lg text-xs font-medium border ${
-                  testGenResult.startsWith("✓")
+                  testGenResult.startsWith("Succès")
                     ? "bg-emerald-50 border-emerald-300 text-emerald-950"
-                    : testGenResult.startsWith("✕")
+                    : testGenResult.startsWith("Bloqué")
                     ? "bg-rose-50 border-rose-300 text-rose-950"
                     : "bg-stone-50 border-stone-200 text-stone-800"
                 }`}
@@ -927,7 +927,7 @@ export default function ProfilePage() {
             <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
-                  <span>🇫🇷 Titre professionnel / Accroche (Français) *</span>
+                  <span>[FR] Titre professionnel / Accroche (Français) *</span>
                 </label>
                 <input
                   type="text"
@@ -939,7 +939,7 @@ export default function ProfilePage() {
               </div>
               <div>
                 <label className="block text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
-                  <span>🇬🇧 Professional Headline / Tagline (English)</span>
+                  <span>[EN] Professional Headline / Tagline (English)</span>
                 </label>
                 <input
                   type="text"
@@ -954,7 +954,7 @@ export default function ProfilePage() {
             <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
-                  <span>🇫🇷 Bio / Synthèse de parcours (Français)</span>
+                  <span>[FR] Bio / Synthèse de parcours (Français)</span>
                 </label>
                 <textarea
                   rows={3}
@@ -966,7 +966,7 @@ export default function ProfilePage() {
               </div>
               <div>
                 <label className="block text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
-                  <span>🇬🇧 Bio / Summary (English)</span>
+                  <span>[EN] Bio / Summary (English)</span>
                 </label>
                 <textarea
                   rows={3}
@@ -1092,7 +1092,7 @@ export default function ProfilePage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
                     <input
                       type="text"
-                      placeholder="🇫🇷 Diplôme préparé (ex: Diplôme National d'Ingénieur) *"
+                      placeholder="[FR] Diplôme préparé (ex: Diplôme National d'Ingénieur) *"
                       value={edu.degree_fr ?? edu.degree}
                       onChange={(e) => {
                         const updated = [...profile.educations];
@@ -1104,7 +1104,7 @@ export default function ProfilePage() {
                     />
                     <input
                       type="text"
-                      placeholder="🇬🇧 Degree (ex: Master of Science in Software Engineering)"
+                      placeholder="[EN] Degree (ex: Master of Science in Software Engineering)"
                       value={edu.degree_en || ""}
                       onChange={(e) => {
                         const updated = [...profile.educations];
@@ -1115,7 +1115,7 @@ export default function ProfilePage() {
                     />
                     <input
                       type="text"
-                      placeholder="🇫🇷 Filière / Spécialité (ex: Génie Logiciel)"
+                      placeholder="[FR] Filière / Spécialité (ex: Génie Logiciel)"
                       value={edu.field_of_study_fr ?? edu.field_of_study}
                       onChange={(e) => {
                         const updated = [...profile.educations];
@@ -1127,7 +1127,7 @@ export default function ProfilePage() {
                     />
                     <input
                       type="text"
-                      placeholder="🇬🇧 Field of study (ex: Software Engineering)"
+                      placeholder="[EN] Field of study (ex: Software Engineering)"
                       value={edu.field_of_study_en || ""}
                       onChange={(e) => {
                         const updated = [...profile.educations];
@@ -1138,7 +1138,7 @@ export default function ProfilePage() {
                     />
                     <textarea
                       rows={2}
-                      placeholder="🇫🇷 Détails académiques (Français)"
+                      placeholder="[FR] Détails académiques (Français)"
                       value={edu.description_fr ?? edu.description ?? ""}
                       onChange={(e) => {
                         const updated = [...profile.educations];
@@ -1150,7 +1150,7 @@ export default function ProfilePage() {
                     />
                     <textarea
                       rows={2}
-                      placeholder="🇬🇧 Academic details (English)"
+                      placeholder="[EN] Academic details (English)"
                       value={edu.description_en || ""}
                       onChange={(e) => {
                         const updated = [...profile.educations];
@@ -1252,28 +1252,28 @@ export default function ProfilePage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
                     <input
                       type="text"
-                      placeholder="🇫🇷 Intitulé du stage / Rôle * (ex: Stagiaire Ingénieur DevOps)"
+                      placeholder="[FR] Intitulé du stage / Rôle * (ex: Stagiaire Ingénieur DevOps)"
                       value={stage.role_fr ?? stage.role}
                       onChange={(e) => updateStage(idx, { ...stage, role: e.target.value, role_fr: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <input
                       type="text"
-                      placeholder="🇬🇧 Internship Role (ex: DevOps Engineering Intern)"
+                      placeholder="[EN] Internship Role (ex: DevOps Engineering Intern)"
                       value={stage.role_en || ""}
                       onChange={(e) => updateStage(idx, { ...stage, role_en: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <textarea
                       rows={2}
-                      placeholder="🇫🇷 Description concrète des missions, livrables et impact *"
+                      placeholder="[FR] Description concrète des missions, livrables et impact *"
                       value={stage.description_fr ?? stage.description}
                       onChange={(e) => updateStage(idx, { ...stage, description: e.target.value, description_fr: e.target.value })}
                       className="w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <textarea
                       rows={2}
-                      placeholder="🇬🇧 Concrete description of missions, deliverables and impact"
+                      placeholder="[EN] Concrete description of missions, deliverables and impact"
                       value={stage.description_en || ""}
                       onChange={(e) => updateStage(idx, { ...stage, description_en: e.target.value })}
                       className="w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
@@ -1371,28 +1371,28 @@ export default function ProfilePage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
                     <input
                       type="text"
-                      placeholder="🇫🇷 Intitulé du poste / Rôle * (ex: Développeur Backend Freelance)"
+                      placeholder="[FR] Intitulé du poste / Rôle * (ex: Développeur Backend Freelance)"
                       value={job.role_fr ?? job.role}
                       onChange={(e) => updateJob(idx, { ...job, role: e.target.value, role_fr: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <input
                       type="text"
-                      placeholder="🇬🇧 Position / Role (ex: Freelance Backend Developer)"
+                      placeholder="[EN] Position / Role (ex: Freelance Backend Developer)"
                       value={job.role_en || ""}
                       onChange={(e) => updateJob(idx, { ...job, role_en: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <textarea
                       rows={2}
-                      placeholder="🇫🇷 Description des responsabilités et réalisations *"
+                      placeholder="[FR] Description des responsabilités et réalisations *"
                       value={job.description_fr ?? job.description}
                       onChange={(e) => updateJob(idx, { ...job, description: e.target.value, description_fr: e.target.value })}
                       className="w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <textarea
                       rows={2}
-                      placeholder="🇬🇧 Description of responsibilities and achievements"
+                      placeholder="[EN] Description of responsibilities and achievements"
                       value={job.description_en || ""}
                       onChange={(e) => updateJob(idx, { ...job, description_en: e.target.value })}
                       className="w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
@@ -1465,7 +1465,7 @@ export default function ProfilePage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
                     <input
                       type="text"
-                      placeholder="🇫🇷 Titre du projet (ex: Copilote IA Local) *"
+                      placeholder="[FR] Titre du projet (ex: Copilote IA Local) *"
                       value={proj.title_fr ?? proj.title}
                       onChange={(e) => {
                         const updated = [...profile.projects];
@@ -1477,7 +1477,7 @@ export default function ProfilePage() {
                     />
                     <input
                       type="text"
-                      placeholder="🇬🇧 Project Title (ex: Local AI Copilot)"
+                      placeholder="[EN] Project Title (ex: Local AI Copilot)"
                       value={proj.title_en || ""}
                       onChange={(e) => {
                         const updated = [...profile.projects];
@@ -1488,7 +1488,7 @@ export default function ProfilePage() {
                     />
                     <input
                       type="text"
-                      placeholder="🇫🇷 Rôle (ex: Architecte & Lead Dev)"
+                      placeholder="[FR] Rôle (ex: Architecte & Lead Dev)"
                       value={proj.role_fr ?? proj.role ?? ""}
                       onChange={(e) => {
                         const updated = [...profile.projects];
@@ -1500,7 +1500,7 @@ export default function ProfilePage() {
                     />
                     <input
                       type="text"
-                      placeholder="🇬🇧 Role (ex: Lead Architect & Developer)"
+                      placeholder="[EN] Role (ex: Lead Architect & Developer)"
                       value={proj.role_en || ""}
                       onChange={(e) => {
                         const updated = [...profile.projects];
@@ -1511,7 +1511,7 @@ export default function ProfilePage() {
                     />
                     <textarea
                       rows={2}
-                      placeholder="🇫🇷 Description de l'architecture, problématique et performances *"
+                      placeholder="[FR] Description de l'architecture, problématique et performances *"
                       value={proj.description_fr ?? proj.description}
                       onChange={(e) => {
                         const updated = [...profile.projects];
@@ -1523,7 +1523,7 @@ export default function ProfilePage() {
                     />
                     <textarea
                       rows={2}
-                      placeholder="🇬🇧 Architecture, technical challenge and performance achievements"
+                      placeholder="[EN] Architecture, technical challenge and performance achievements"
                       value={proj.description_en || ""}
                       onChange={(e) => {
                         const updated = [...profile.projects];
@@ -1692,28 +1692,28 @@ export default function ProfilePage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
                     <input
                       type="text"
-                      placeholder="🇫🇷 Rôle / Responsabilité * (ex: Chef de Projet, Membre Actif)"
+                      placeholder="[FR] Rôle / Responsabilité * (ex: Chef de Projet, Membre Actif)"
                       value={extra.role_fr ?? extra.role}
                       onChange={(e) => updateExtracurricular(idx, { ...extra, role: e.target.value, role_fr: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <input
                       type="text"
-                      placeholder="🇬🇧 Role / Responsibility (ex: Project Lead, Active Member)"
+                      placeholder="[EN] Role / Responsibility (ex: Project Lead, Active Member)"
                       value={extra.role_en || ""}
                       onChange={(e) => updateExtracurricular(idx, { ...extra, role_en: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <textarea
                       rows={2}
-                      placeholder="🇫🇷 Description des actions, projets menés et réalisations (Français)..."
+                      placeholder="[FR] Description des actions, projets menés et réalisations (Français)..."
                       value={extra.description_fr ?? extra.description}
                       onChange={(e) => updateExtracurricular(idx, { ...extra, description: e.target.value, description_fr: e.target.value })}
                       className="w-full px-3 py-2 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <textarea
                       rows={2}
-                      placeholder="🇬🇧 Description of actions, projects and achievements (English)..."
+                      placeholder="[EN] Description of actions, projects and achievements (English)..."
                       value={extra.description_en || ""}
                       onChange={(e) => updateExtracurricular(idx, { ...extra, description_en: e.target.value })}
                       className="w-full px-3 py-2 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"

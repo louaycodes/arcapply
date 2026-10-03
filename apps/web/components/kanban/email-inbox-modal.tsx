@@ -219,7 +219,7 @@ export function EmailInboxModal({
               onClick={() => setNotification(null)}
               className="p-1 hover:bg-orange-100 rounded text-orange-800"
             >
-              ✕
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
         )}

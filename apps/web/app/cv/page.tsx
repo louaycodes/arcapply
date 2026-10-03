@@ -33,6 +33,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   Briefcase,
+  X,
   GraduationCap,
   FolderGit2,
   Code2,
@@ -848,7 +849,7 @@ export default function StudioCVPage() {
             onClick={() => setNotification(null)}
             className="text-xs opacity-70 hover:opacity-100 px-1"
           >
-            ✕
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
       )}

@@ -189,15 +189,15 @@ class CVGeneratorService:
         if lang not in {"fr", "en"}:
             lang = "fr"
 
-        # 1. Headline ciblée
+        # 1. Headline ciblee
         if lang == "en":
             hl_base = profile.headline_en or profile.headline or "Engineering Student"
             headline = f"{hl_base} — {job.title}" if job.title else hl_base
         else:
-            hl_base = profile.headline_fr or profile.headline or "Élève-Ingénieur"
+            hl_base = profile.headline_fr or profile.headline or "Eleve-Ingenieur"
             headline = f"{hl_base} — {job.title}" if job.title else hl_base
 
-        # 2. Accroche factuelle zéro hallucination
+        # 2. Accroche factuelle zero hallucination
         missing_set = {s.lower() for s in ats_match.missing_skills}
         safe_matched = [s for s in ats_match.matched_skills if s.lower() not in missing_set]
         safe_transferable = [s for s in ats_match.transferable_skills if s.lower() not in missing_set]
@@ -207,11 +207,11 @@ class CVGeneratorService:
         else:
             summary = profile.bio_fr or profile.bio or ""
 
-        # 3. Ordonnancement des expériences : filtrer spécifiquement les stages professionnels
+        # 3. Ordonnancement des experiences : filtrer specifiquement les stages professionnels
         target_skills_lower = {s.lower() for s in (safe_matched + safe_transferable)}
 
-        # Les activités associatives / clubs sont présentées dans la section EXTRACURRICULAR dédiée
-        extracurricular_keywords = ["club", "association", "basketball", "ascb", "enactus", "lycée pilote", "tuteur", "tache-lik"]
+        # Les activites associatives / clubs sont presentees dans la section EXTRACURRICULAR dediee
+        extracurricular_keywords = ["club", "association", "basketball", "ascb", "enactus", "lycee pilote", "tuteur", "tache-lik"]
 
         professional_experiences = []
         for exp in profile.experiences:
@@ -221,7 +221,7 @@ class CVGeneratorService:
             if not is_club:
                 professional_experiences.append(exp)
 
-        # Si le filtre éliminait tout, on conserve les expériences existantes
+        # Si le filtre eliminait tout, on conserve les experiences existantes
         if not professional_experiences:
             professional_experiences = profile.experiences
 
@@ -234,7 +234,7 @@ class CVGeneratorService:
 
             # Traduction / prise en compte bilingue
             company = exp.company
-            end_date = exp.end_date or ("Present" if lang == "en" else "Présent")
+            end_date = exp.end_date or ("Present" if lang == "en" else "Present")
 
             if lang == "en":
                 role = exp.role_en or exp.role
@@ -249,7 +249,7 @@ class CVGeneratorService:
                                 description = r_data.get("desc_en", description)
                                 break
                     else:
-                        role = role.replace("Stagiaire", "Intern").replace("Ingénieur", "Engineer")
+                        role = role.replace("Stagiaire", "Intern").replace("Ingenieur", "Engineer")
             else:
                 role = exp.role_fr or exp.role
                 description = exp.description_fr or (exp.description or "")
@@ -265,11 +265,11 @@ class CVGeneratorService:
             }
             scored_experiences.append((overlap_score, exp_dict))
 
-        # Étalé sur 2 pages : conservation de l'ensemble des stages (jusqu'à 4 stages)
+        # Etale sur 2 pages : conservation de l'ensemble des stages (jusqu'a 4 stages)
         scored_experiences.sort(key=lambda x: x[0], reverse=True)
         selected_experiences = [item[1] for item in scored_experiences[:4]]
 
-        # 4. Ordonnancement des projets par pertinence (jusqu'à 4-5 projets sélectionnés)
+        # 4. Ordonnancement des projets par pertinence (jusqu'a 4-5 projets selectionnes)
         scored_projects: list[tuple[float, dict]] = []
         for proj in profile.projects:
             proj_techs_lower = {t.lower().strip() for t in proj.technologies if t.strip()}
@@ -290,7 +290,7 @@ class CVGeneratorService:
                             break
             else:
                 title = proj.title_fr or proj.title
-                role = proj.role_fr or (proj.role or "Développeur")
+                role = proj.role_fr or (proj.role or "Developpeur")
                 description = proj.description_fr or (proj.description or "")
 
             proj_dict = {
@@ -305,7 +305,41 @@ class CVGeneratorService:
         scored_projects.sort(key=lambda x: x[0], reverse=True)
         selected_projects = [item[1] for item in scored_projects[:5]]
 
-        # 5. Formations
+        # 5. Agent Redacteur de CV — reecriture LLM des sections orientees vers le poste
+        try:
+            from app.domain.cv_agent import execute_cv_writer_agent
+            cv_rewrite = execute_cv_writer_agent(
+                job_id=job.id,
+                user_id=profile.user_id,
+                language=lang,
+                ats_match=ats_match,
+                job_offer=job,
+                master_profile=profile,
+            )
+            # Appliquer le summary reecrit
+            if cv_rewrite.summary:
+                summary = cv_rewrite.summary
+
+            # Appliquer les descriptions d'experiences reecrites
+            if cv_rewrite.experiences:
+                for rewrite in cv_rewrite.experiences:
+                    idx = rewrite.get("index", -1)
+                    new_desc = rewrite.get("description", "")
+                    if 0 <= idx < len(selected_experiences) and new_desc:
+                        selected_experiences[idx]["description"] = new_desc
+
+            # Appliquer les descriptions de projets reecrites
+            if cv_rewrite.projects:
+                for rewrite in cv_rewrite.projects:
+                    idx = rewrite.get("index", -1)
+                    new_desc = rewrite.get("description", "")
+                    if 0 <= idx < len(selected_projects) and new_desc:
+                        selected_projects[idx]["description"] = new_desc
+
+        except Exception as e:
+            logger.warning(f"Agent Redacteur CV echoue ({e}), utilisation des descriptions originales.")
+
+        # 6. Formations
         educations_list = []
         for edu in sorted(profile.educations, key=lambda e: e.start_date, reverse=True):
             school = edu.school
@@ -317,7 +351,7 @@ class CVGeneratorService:
                 description = edu.description_en or (edu.description or "")
                 if not edu.degree_en and "esprit" in school.lower():
                     school = "ESPRIT School of Engineering"
-                if not edu.degree_en and "ingénieur" in degree.lower():
+                if not edu.degree_en and "ingenieur" in degree.lower():
                     degree = "Master of Science in Computer Engineering"
                 if not edu.field_of_study_en and "architectures cloud" in field_of_study.lower():
                     field_of_study = "Cloud Architecture & Distributed Systems"
@@ -334,14 +368,14 @@ class CVGeneratorService:
                 "end_date": end_date,
                 "description": description,
             })
-        # 6. Compétences Techniques organisées par catégories
+        # 7. Competences Techniques organisees par categories
         categorized_skills = cls._build_categorized_skills(
             profile=profile,
             target_skills_lower=target_skills_lower,
             lang=lang,
         )
 
-        # 7. Rendu HTML A4 ATS
+        # 8. Rendu HTML A4 ATS
         html_content = cls.render_html_template(
             profile=profile,
             job=job,
