@@ -413,6 +413,8 @@ class CVGeneratorService:
                 ats_match=ats_match,
                 job_offer=job,
                 master_profile=profile,
+                selected_experiences=selected_experiences,
+                selected_projects=selected_projects,
             )
             # Appliquer le summary reecrit
             if cv_rewrite.summary:

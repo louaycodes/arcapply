@@ -542,4 +542,60 @@ def test_clean_target_role_and_headline_format():
         assert cv.headline == "IT Support"
 
 
+def test_cv_writer_experiences_projects_order_alignment(monkeypatch):
+    from app.domain.cv_agent import _build_cv_context, _parse_cv_rewrite_response, CVRewriteResult
+
+    selected_exps = [
+        {"company": "Capgemini", "role": "Stagiaire DevOps", "description": "CI/CD avec Jenkins.", "technologies": ["Jenkins", "Docker"]},
+        {"company": "Natilait", "role": "Stagiaire IT", "description": "Support réseaux.", "technologies": ["Linux"]},
+    ]
+    selected_projs = [
+        {"title": "FinOps Agent", "role": "Lead", "description": "Optimisation des coûts AWS.", "technologies": ["AWS", "Python"]},
+        {"title": "Skill Sphere", "role": "Dev", "description": "Simulateur d'entretien IA.", "technologies": ["FastAPI", "React"]},
+    ]
+
+    ctx = _build_cv_context(
+        profile={"full_name": "Test User"},
+        recon={},
+        job={"title": "DevOps", "company": "TechCorp"},
+        ats={},
+        lang="fr",
+        experiences=selected_exps,
+        projects=selected_projs,
+    )
+
+    assert "EXP_1 : Stagiaire DevOps chez Capgemini" in ctx
+    assert "EXP_2 : Stagiaire IT chez Natilait" in ctx
+    assert "PROJ_1 : « FinOps Agent » (Lead)" in ctx
+    assert "PROJ_2 : « Skill Sphere » (Dev)" in ctx
+
+    # Test parser
+    raw_response = (
+        "SUMMARY:\nIngénieur DevOps orienté cloud.\n\n"
+        "---EXPERIENCES---\n"
+        "EXP_1 (pour Stagiaire DevOps chez Capgemini):\n"
+        "Mise en place de pipelines CI/CD résilients sur Jenkins.\n\n"
+        "EXP_2 (pour Stagiaire IT chez Natilait):\n"
+        "Administration et supervision des infrastructures réseaux.\n\n"
+        "---PROJECTS---\n"
+        "PROJ_1 (pour FinOps Agent):\n"
+        "Développement d'un système multi-agents autonome pour les coûts cloud.\n\n"
+        "PROJ_2 (pour Skill Sphere):\n"
+        "Conception d'une plateforme d'évaluation IA full-stack.\n"
+    )
+
+    parsed = _parse_cv_rewrite_response(raw_response, n_exp=2, n_proj=2)
+    assert len(parsed.experiences) == 2
+    assert parsed.experiences[0]["index"] == 0
+    assert "Jenkins" in parsed.experiences[0]["description"]
+    assert parsed.experiences[1]["index"] == 1
+    assert "réseaux" in parsed.experiences[1]["description"]
+
+    assert len(parsed.projects) == 2
+    assert parsed.projects[0]["index"] == 0
+    assert "multi-agents" in parsed.projects[0]["description"]
+    assert parsed.projects[1]["index"] == 1
+    assert "full-stack" in parsed.projects[1]["description"]
+
+
 

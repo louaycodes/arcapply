@@ -71,7 +71,7 @@ def mock_external_llm_agents(monkeypatch):
             user_id=user_id,
         )
 
-    def fake_execute_cv_writer_agent(job_id, user_id="louay", language="fr", engine=None, ats_match=None, job_offer=None, master_profile=None):
+    def fake_execute_cv_writer_agent(job_id, user_id="louay", language="fr", engine=None, ats_match=None, job_offer=None, master_profile=None, **kwargs):
         bio = (master_profile.bio if master_profile and master_profile.bio else "") if master_profile else ""
         return CVRewriteResult(
             summary=bio or ("Software Engineer." if language == "en" else "Élève-ingénieur en génie logiciel."),
