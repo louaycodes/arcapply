@@ -160,6 +160,7 @@ def _migrate_db(engine) -> None:
             ("job_offers", "is_applied", "BOOLEAN DEFAULT 0"),
             ("job_offers", "applied_at", "TIMESTAMP"),
             ("users", "onboarding_completed", "BOOLEAN DEFAULT 0"),
+            ("users", "playbook_initialized", "BOOLEAN DEFAULT 0"),
             ("master_profiles", "onboarding_completed", "BOOLEAN DEFAULT 0"),
         ]
         for tbl_name, col_name, col_type in applied_columns:
@@ -168,6 +169,14 @@ def _migrate_db(engine) -> None:
                 conn.commit()
             except Exception:
                 pass
+
+        # Pour les utilisateurs pré-existants en production, marquer playbook_initialized = 1
+        # afin de préserver définitivement les suppressions de directives
+        try:
+            conn.execute(text("UPDATE users SET playbook_initialized = 1 WHERE playbook_initialized = 0"))
+            conn.commit()
+        except Exception:
+            pass
 
         try:
             conn.execute(text("CREATE INDEX IF NOT EXISTS ix_job_offers_is_applied ON job_offers (is_applied)"))

@@ -680,6 +680,7 @@ class UserBase(SQLModel):
     full_name: str = Field(default="")
     role: str = Field(default="user")
     onboarding_completed: bool = Field(default=False)
+    playbook_initialized: bool = Field(default=False)
 
 
 class User(UserBase, table=True):
@@ -695,6 +696,7 @@ class UserRead(SQLModel):
     full_name: str
     role: str
     onboarding_completed: bool = False
+    playbook_initialized: bool = False
 
 
 class UserLoginRequest(SQLModel):

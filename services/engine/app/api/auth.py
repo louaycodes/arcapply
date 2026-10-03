@@ -34,6 +34,8 @@ def register(payload: UserRegisterRequest, session: Session = Depends(get_sessio
         full_name=full_name,
         role="user",
         password_hash=hash_password(payload.password),
+        onboarding_completed=False,
+        playbook_initialized=False,
     )
     session.add(new_user)
     session.commit()
@@ -64,6 +66,7 @@ def register(payload: UserRegisterRequest, session: Session = Depends(get_sessio
             full_name=new_user.full_name,
             role=new_user.role,
             onboarding_completed=new_user.onboarding_completed,
+            playbook_initialized=new_user.playbook_initialized,
         ),
     )
 
@@ -85,6 +88,7 @@ def login(payload: UserLoginRequest, session: Session = Depends(get_session)):
             full_name=user.full_name,
             role=user.role,
             onboarding_completed=user.onboarding_completed,
+            playbook_initialized=user.playbook_initialized,
         ),
     )
 
@@ -114,6 +118,7 @@ def get_current_user(
         full_name=user.full_name,
         role=user.role,
         onboarding_completed=user.onboarding_completed,
+        playbook_initialized=user.playbook_initialized,
     )
 
 
@@ -152,6 +157,7 @@ def complete_onboarding(
             full_name=user.full_name,
             role=user.role,
             onboarding_completed=True,
+            playbook_initialized=user.playbook_initialized,
         )
 
     raise HTTPException(status_code=401, detail="Utilisateur non identifié")

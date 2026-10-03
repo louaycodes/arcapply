@@ -9,6 +9,7 @@ from app.domain.models import (
     AgentPlaybookRule,
     AgentPlaybookRuleCreate,
     AgentPlaybookRuleUpdate,
+    User,
 )
 
 router = APIRouter(prefix="/api/agent/playbook", tags=["agent-playbook"])
@@ -45,15 +46,52 @@ def get_playbook_rules(
     session: Session = Depends(get_session),
 ):
     """Récupère toutes les directives stratégiques de l'utilisateur."""
+    user = session.exec(select(User).where(User.username == username)).first()
+
     rules = session.exec(
         select(AgentPlaybookRule)
         .where(AgentPlaybookRule.user_id == username)
         .order_by(AgentPlaybookRule.created_at.asc())
     ).all()
 
-    # Si aucune règle n'existe encore pour l'utilisateur, initialiser avec les modèles par défaut
-    if not rules:
-        for tpl in DEFAULT_PLAYBOOK_TEMPLATES:
+    # Si l'utilisateur n'a jamais été initialisé, initialiser une unique fois avec les modèles par défaut
+    if user and not user.playbook_initialized:
+        if not rules:
+            for tpl in DEFAULT_PLAYBOOK_TEMPLATES:
+                rule = AgentPlaybookRule(
+                    user_id=username,
+                    title=tpl["title"],
+                    category=tpl["category"],
+                    condition_trigger=tpl["condition_trigger"],
+                    action_instruction=tpl["action_instruction"],
+                    is_active=tpl["is_active"],
+                )
+                session.add(rule)
+        user.playbook_initialized = True
+        session.add(user)
+        session.commit()
+        rules = session.exec(
+            select(AgentPlaybookRule)
+            .where(AgentPlaybookRule.user_id == username)
+            .order_by(AgentPlaybookRule.created_at.asc())
+        ).all()
+
+    return rules
+
+
+@router.post("/restore-templates", response_model=List[AgentPlaybookRule])
+def restore_playbook_templates(
+    username: str = Depends(get_current_username),
+    session: Session = Depends(get_session),
+):
+    """Restaure les modèles de directives recommandés pour l'utilisateur sans écraser ses règles existantes."""
+    existing_rules = session.exec(
+        select(AgentPlaybookRule).where(AgentPlaybookRule.user_id == username)
+    ).all()
+    existing_titles = {r.title for r in existing_rules}
+
+    for tpl in DEFAULT_PLAYBOOK_TEMPLATES:
+        if tpl["title"] not in existing_titles:
             rule = AgentPlaybookRule(
                 user_id=username,
                 title=tpl["title"],
@@ -63,14 +101,19 @@ def get_playbook_rules(
                 is_active=tpl["is_active"],
             )
             session.add(rule)
-        session.commit()
-        rules = session.exec(
-            select(AgentPlaybookRule)
-            .where(AgentPlaybookRule.user_id == username)
-            .order_by(AgentPlaybookRule.created_at.asc())
-        ).all()
 
-    return rules
+    user = session.exec(select(User).where(User.username == username)).first()
+    if user and not user.playbook_initialized:
+        user.playbook_initialized = True
+        session.add(user)
+
+    session.commit()
+
+    return session.exec(
+        select(AgentPlaybookRule)
+        .where(AgentPlaybookRule.user_id == username)
+        .order_by(AgentPlaybookRule.created_at.asc())
+    ).all()
 
 
 @router.post("", response_model=AgentPlaybookRule)
