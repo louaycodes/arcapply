@@ -10,14 +10,9 @@ import {
   Archive,
   Sparkles,
   Clock,
-  Mail,
   CheckCircle2,
-  Briefcase,
-  Layers,
-  Laptop,
   Coins,
   Send,
-  RotateCcw,
 } from "lucide-react";
 
 interface JobCardProps {
@@ -25,8 +20,6 @@ interface JobCardProps {
   atsMatch?: ATSMatchResult;
   atsLoading?: boolean;
   onArchive: (id: string) => void;
-  onOpenCV?: (job: JobOffer) => void;
-  onOpenLetter?: (job: JobOffer) => void;
   onOpenMirror?: (job: JobOffer) => void;
   onToggleMarkApplied?: (jobId: string, isApplied: boolean) => void;
   isAppliedSection?: boolean;
@@ -149,20 +142,25 @@ export function JobCard({
   atsMatch,
   atsLoading = false,
   onArchive,
-  onOpenCV,
-  onOpenLetter,
   onOpenMirror,
   onToggleMarkApplied,
   isAppliedSection = false,
   isNew = false,
 }: JobCardProps) {
-  const platKey = job.platform.toLowerCase();
+  const platKey = (job.platform || "").toLowerCase();
   const platformInfo = PLATFORM_CONFIG[platKey] || {
-    label: job.platform,
+    label: job.platform || "Source Externe",
     className: "bg-muted text-muted-foreground border-border/50",
   };
-  const isFrance = job.country.toLowerCase() === "france";
-  const isTunisia = job.country.toLowerCase() === "tunisie";
+
+  const isFrance = (job.country || "").toLowerCase() === "france";
+  const isTunisia = (job.country || "").toLowerCase() === "tunisie";
+  const countryLabel = isFrance ? "France" : isTunisia ? "Tunisie" : job.country || "France";
+
+  const isJob =
+    job.offer_type === "JOB" ||
+    (!job.offer_type && /\b(cdi|cdd|job|emploi)\b/i.test(job.title || ""));
+  const contractLabel = isJob ? "Job" : "Stage";
 
   const isApplied = Boolean(
     job.is_applied ||
@@ -171,7 +169,19 @@ export function JobCard({
       job.status === "OFFER"
   );
 
-  // Calcul du temps relatif ergonomique (sans format rigide)
+  // Nettoyage localisation pour ne pas répéter le pays
+  const cleanLocation = useMemo(() => {
+    if (!job.location) return "";
+    let loc = job.location.trim();
+    const cName = isFrance ? "france" : isTunisia ? "tunisie" : (job.country || "").toLowerCase();
+    if (cName && loc.toLowerCase() === cName) return "";
+    if (cName) {
+      loc = loc.replace(new RegExp(`[,\\s-]+${cName}$`, "i"), "").trim();
+    }
+    return loc;
+  }, [job.location, job.country, isFrance, isTunisia]);
+
+  // Calcul de la date de publication
   const relativeTime = useMemo(() => {
     const rawDate = job.published_at || job.collected_at;
     if (!rawDate) return "Récemment";
@@ -189,7 +199,7 @@ export function JobCard({
     return `Il y a ${weeks} sem.`;
   }, [job.published_at, job.collected_at]);
 
-  // Parsing sécurisé des compétences
+  // Parsing des compétences
   const skillsList: string[] = useMemo(() => {
     if (!job.skills_required) return [];
     try {
@@ -214,6 +224,7 @@ export function JobCard({
         {/* Top Badges Header */}
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-1.5 flex-wrap">
+            {/* 1. Source d'où on l'a scrappé */}
             {job.is_direct_career_site ? (
               <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full border bg-amber-100 text-amber-900 border-amber-300 flex items-center gap-1 shadow-xs">
                 <Building2 className="w-3 h-3" />
@@ -227,12 +238,20 @@ export function JobCard({
               </span>
             )}
 
+            {/* 2. Pays : France / Tunisie une seule fois */}
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-stone-100 text-stone-700 border border-stone-200">
-              {isFrance ? "France" : isTunisia ? "Tunisie" : job.country}
+              {countryLabel}
             </span>
 
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-800 border-emerald-200">
-              Stage PFE
+            {/* 3. Stage ou Job une seule fois */}
+            <span
+              className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                contractLabel === "Job"
+                  ? "bg-blue-50 text-blue-800 border-blue-200"
+                  : "bg-emerald-50 text-emerald-800 border-emerald-200"
+              }`}
+            >
+              {contractLabel}
             </span>
 
             {job.contract_duration && (
@@ -241,51 +260,52 @@ export function JobCard({
               </span>
             )}
 
-            {isApplied ? (
+            {isApplied && (
               <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 flex items-center gap-1 shadow-xs">
                 <CheckCircle2 className="w-3 h-3 text-emerald-700" />
-                <span>Déjà postulé</span>
+                <span>Postulé</span>
               </span>
-            ) : (
-              <>
-                {job.status === "REVIEWING" && (
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-300">
-                    En révision
-                  </span>
-                )}
-                {job.status === "READY" && (
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-900 border border-emerald-300">
-                    Prêt
-                  </span>
-                )}
-              </>
             )}
           </div>
 
+          {/* ATS Badge & Date de publication */}
           <div className="flex items-center gap-2">
             <AtsScoreBadge match={atsMatch} loading={atsLoading} />
-            <div className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground bg-muted/40 px-2 py-0.5 rounded-full border border-border/30">
+            <div
+              className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground bg-muted/40 px-2 py-0.5 rounded-full border border-border/30"
+              title={
+                job.published_at
+                  ? `Publié le ${new Date(job.published_at).toLocaleDateString("fr-FR")}`
+                  : "Date de collecte"
+              }
+            >
               <Clock className="w-3 h-3 text-muted-foreground/70" />
               <span>{relativeTime}</span>
             </div>
           </div>
         </div>
 
-        {/* Title & Company */}
+        {/* Titre de l'offre */}
         <div>
           <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2 leading-snug">
             {job.title}
           </h3>
+
+          {/* Entreprise & Localisation une seule fois */}
           <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs text-muted-foreground">
             <span className="font-semibold text-foreground flex items-center gap-1">
               <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
               {job.company}
             </span>
-            <span>•</span>
-            <span className="flex items-center gap-1">
-              <MapPin className="w-3 h-3 text-muted-foreground" />
-              {job.location || job.country}
-            </span>
+            {cleanLocation && (
+              <>
+                <span>•</span>
+                <span className="flex items-center gap-1">
+                  <MapPin className="w-3 h-3 text-muted-foreground" />
+                  {cleanLocation}
+                </span>
+              </>
+            )}
             {job.salary_stipend && (
               <>
                 <span>•</span>
@@ -325,7 +345,7 @@ export function JobCard({
 
       {/* Footer Actions */}
       <div className="pt-3.5 mt-3 border-t border-stone-100 flex flex-col gap-2.5">
-        <div className="flex items-center justify-between gap-1.5">
+        <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
             <button
               type="button"
@@ -347,72 +367,51 @@ export function JobCard({
                 <ExternalLink className="w-4 h-4" />
               </a>
             )}
-
-            {onToggleMarkApplied && (
-              <button
-                type="button"
-                onClick={() => onToggleMarkApplied(job.id, !isApplied)}
-                className={`px-2 py-1 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                  isApplied
-                    ? "bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-amber-50 hover:text-amber-800 hover:border-amber-300"
-                    : "bg-stone-50 text-stone-600 border-stone-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300"
-                }`}
-                title={
-                  isApplied
-                    ? "Cliquer pour démarquer (remettre en prospection)"
-                    : "Marquer comme déjà postulé (ne sera plus jamais re-scrappé)"
-                }
-              >
-                {isApplied ? (
-                  <>
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Déjà postulé</span>
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-3.5 h-3.5 text-stone-500 shrink-0" />
-                    <span>J'ai postulé</span>
-                  </>
-                )}
-              </button>
-            )}
           </div>
 
-          <div className="flex items-center gap-1.5">
+          {onToggleMarkApplied && (
             <button
               type="button"
-              onClick={() => onOpenLetter?.(job)}
-              className="px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 hover:text-stone-900 text-xs font-semibold flex items-center gap-1 shadow-xs transition-colors cursor-pointer whitespace-nowrap"
-              title="Générer une lettre de motivation adaptée"
+              onClick={() => onToggleMarkApplied(job.id, !isApplied)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                isApplied
+                  ? "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-amber-50 hover:text-amber-800 hover:border-amber-300"
+                  : "bg-stone-50 text-stone-700 border-stone-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300"
+              }`}
+              title={
+                isApplied
+                  ? "Cliquer pour réintégrer l'offre"
+                  : "Marquer comme déjà postulé"
+              }
             >
-              <Mail className="w-3.5 h-3.5 text-primary shrink-0" />
-              <span>Lettre</span>
+              {isApplied ? (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>Déjà postulé</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-3.5 h-3.5 text-stone-500 shrink-0" />
+                  <span>J'ai postulé</span>
+                </>
+              )}
             </button>
-
-            <button
-              type="button"
-              onClick={() => onOpenCV?.(job)}
-              className="px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 hover:text-stone-900 text-xs font-semibold flex items-center gap-1 shadow-xs transition-colors cursor-pointer whitespace-nowrap"
-              title="Aperçu du CV personnalisé pour cette offre"
-            >
-              <span>CV</span>
-            </button>
-          </div>
+          )}
         </div>
 
-        {/* Bouton Consulter Principal */}
+        {/* Bouton Préparer les documents de l'offre (Principal) */}
         <button
           type="button"
           onClick={() => onOpenMirror?.(job)}
-          className={`w-full py-2 px-3.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all tactile-button shadow-artisan-button cursor-pointer ${
+          className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all tactile-button shadow-artisan-button cursor-pointer ${
             isApplied
               ? "bg-stone-800 hover:bg-stone-900 text-white"
               : "bg-primary hover:bg-primary-hover text-white"
           }`}
-          title={isApplied ? "Consulter le dossier de candidature" : "Consulter l'offre et préparer ma candidature"}
+          title="Ouvrir l'analyse profonde et préparer les documents de l'offre"
         >
           <Sparkles className="w-3.5 h-3.5 shrink-0" />
-          <span>{isApplied ? "Consulter le dossier" : "Consulter l'offre"}</span>
+          <span>Préparer les documents de l'offre</span>
         </button>
       </div>
     </div>

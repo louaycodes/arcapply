@@ -38,7 +38,6 @@ import {
   Flame,
   Calendar,
   Clock,
-  Building2,
   LayoutGrid,
   ListFilter,
   Laptop,
@@ -91,7 +90,6 @@ export default function RadarPage() {
   const [selectedCountry, setSelectedCountry] = useState<string>("all");
   const [selectedPlatform, setSelectedPlatform] = useState<string>("all");
   const [selectedPeriod, setSelectedPeriod] = useState<"all" | "today" | "week" | "month">("all");
-  const [directOnly, setDirectOnly] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [viewMode, setViewMode] = useState<"timeline" | "grid">("timeline");
 
@@ -121,7 +119,6 @@ export default function RadarPage() {
         country: selectedCountry,
         platform: selectedPlatform,
         period: selectedPeriod,
-        direct_only: directOnly,
         search: searchQuery,
       });
       setJobs(data);
@@ -143,7 +140,7 @@ export default function RadarPage() {
 
   useEffect(() => {
     loadJobs();
-  }, [selectedCountry, selectedPlatform, selectedPeriod, directOnly]);
+  }, [selectedCountry, selectedPlatform, selectedPeriod]);
 
   // Écoute SSE en direct
   useEffect(() => {
@@ -337,9 +334,6 @@ export default function RadarPage() {
       if (selectedPlatform !== "all" && job.platform.toLowerCase() !== selectedPlatform.toLowerCase()) {
         return false;
       }
-      if (directOnly && !job.is_direct_career_site) {
-        return false;
-      }
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const inTitle = job.title.toLowerCase().includes(q);
@@ -351,7 +345,7 @@ export default function RadarPage() {
       }
       return true;
     });
-  }, [jobs, selectedCountry, selectedPlatform, directOnly, searchQuery]);
+  }, [jobs, selectedCountry, selectedPlatform, searchQuery]);
 
   // Séparation stricte : Offres à postuler vs Offres déjà postulées
   const { unappliedJobs, appliedJobs } = useMemo(() => {
@@ -374,7 +368,7 @@ export default function RadarPage() {
   }, [filteredJobs]);
 
   // Répartition temporelle pour calcul des métriques et affichage chronologique (sur les offres non postulées)
-  const { todayJobs, weekJobs, olderJobs, countToday, countWeek, countMonth, countDirect } = useMemo(() => {
+  const { todayJobs, weekJobs, olderJobs, countToday, countWeek, countMonth } = useMemo(() => {
     const now = new Date().getTime();
     const isWithinHours = (dateStr: string | null | undefined, hours: number) => {
       if (!dateStr) return false;
@@ -389,7 +383,6 @@ export default function RadarPage() {
     let cToday = 0;
     let cWeek = 0;
     let cMonth = 0;
-    let cDirect = 0;
 
     for (const j of jobs) {
       const isApplied = Boolean(
@@ -404,7 +397,6 @@ export default function RadarPage() {
       if (isWithinHours(d, 24)) cToday++;
       if (isWithinHours(d, 24 * 7)) cWeek++;
       if (isWithinHours(d, 24 * 30)) cMonth++;
-      if (j.is_direct_career_site) cDirect++;
     }
 
     for (const j of unappliedJobs) {
@@ -425,7 +417,6 @@ export default function RadarPage() {
       countToday: cToday,
       countWeek: cWeek,
       countMonth: cMonth,
-      countDirect: cDirect,
     };
   }, [jobs, unappliedJobs]);
 
@@ -638,25 +629,6 @@ export default function RadarPage() {
               </button>
             ))}
           </div>
-
-          {/* Filtre Sites Officiels Directs Uniquement */}
-          <button
-            type="button"
-            onClick={() => setDirectOnly((prev) => !prev)}
-            className={`px-3 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 border ${
-              directOnly
-                ? "bg-amber-100 text-amber-950 border-amber-300 font-semibold shadow-xs"
-                : "bg-stone-100 text-stone-600 border-stone-200 hover:bg-stone-200/70 hover:text-stone-900"
-            }`}
-          >
-            <Building2 className="w-3.5 h-3.5 text-amber-700" />
-            <span>Portails Officiels Uniquement</span>
-            {countDirect > 0 && (
-              <span className="text-[10px] font-mono px-1 rounded bg-amber-200 text-amber-900 font-bold">
-                {countDirect}
-              </span>
-            )}
-          </button>
         </div>
 
         {/* Champ de Recherche Live */}
@@ -733,8 +705,6 @@ export default function RadarPage() {
                     atsMatch={atsScores[job.id]}
                     atsLoading={isAtsLoading && !atsScores[job.id]}
                     onArchive={handleArchive}
-                    onOpenCV={(j) => setSelectedJobForCV(j)}
-                    onOpenLetter={(j) => setSelectedJobForLetter(j)}
                     onOpenMirror={(j) => setSelectedJobForMirror(j)}
                     onToggleMarkApplied={handleToggleMarkApplied}
                     isNew={newJobIds.has(job.id)}
@@ -765,8 +735,6 @@ export default function RadarPage() {
                     atsMatch={atsScores[job.id]}
                     atsLoading={isAtsLoading && !atsScores[job.id]}
                     onArchive={handleArchive}
-                    onOpenCV={(j) => setSelectedJobForCV(j)}
-                    onOpenLetter={(j) => setSelectedJobForLetter(j)}
                     onOpenMirror={(j) => setSelectedJobForMirror(j)}
                     onToggleMarkApplied={handleToggleMarkApplied}
                     isNew={newJobIds.has(job.id)}
@@ -797,8 +765,6 @@ export default function RadarPage() {
                     atsMatch={atsScores[job.id]}
                     atsLoading={isAtsLoading && !atsScores[job.id]}
                     onArchive={handleArchive}
-                    onOpenCV={(j) => setSelectedJobForCV(j)}
-                    onOpenLetter={(j) => setSelectedJobForLetter(j)}
                     onOpenMirror={(j) => setSelectedJobForMirror(j)}
                     onToggleMarkApplied={handleToggleMarkApplied}
                     isNew={newJobIds.has(job.id)}
@@ -818,8 +784,6 @@ export default function RadarPage() {
               atsMatch={atsScores[job.id]}
               atsLoading={isAtsLoading && !atsScores[job.id]}
               onArchive={handleArchive}
-              onOpenCV={(j) => setSelectedJobForCV(j)}
-              onOpenLetter={(j) => setSelectedJobForLetter(j)}
               onOpenMirror={(j) => setSelectedJobForMirror(j)}
               onToggleMarkApplied={handleToggleMarkApplied}
               isNew={newJobIds.has(job.id)}
@@ -875,8 +839,6 @@ export default function RadarPage() {
                   atsMatch={atsScores[job.id]}
                   atsLoading={isAtsLoading && !atsScores[job.id]}
                   onArchive={handleArchive}
-                  onOpenCV={(j) => setSelectedJobForCV(j)}
-                  onOpenLetter={(j) => setSelectedJobForLetter(j)}
                   onOpenMirror={(j) => setSelectedJobForMirror(j)}
                   onToggleMarkApplied={handleToggleMarkApplied}
                   isAppliedSection={true}

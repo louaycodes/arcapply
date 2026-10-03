@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   fetchJobs,
   fetchPipelineMetrics,
@@ -16,22 +16,17 @@ import { MirrorReviewDrawer } from "@/components/radar/mirror-review-drawer";
 import { EmailInboxModal } from "@/components/kanban/email-inbox-modal";
 import {
   KanbanSquare,
-  Sparkles,
-  TrendingUp,
-  Clock,
-  CheckCircle2,
   Trophy,
   AlertTriangle,
   RefreshCw,
   Search,
-  Filter,
-  Eye,
   Send,
-  CalendarCheck,
   X,
   XCircle,
   Radio,
   Mail,
+  Briefcase,
+  CheckCircle2,
 } from "lucide-react";
 
 export default function KanbanPage() {
@@ -112,7 +107,6 @@ export default function KanbanPage() {
       setErrorNotification(null);
       const updated = await transitionJobStatus(jobId, newStatus);
       setJobs((prev) => prev.map((j) => (j.id === updated.id ? updated : j)));
-      // Actualisation des métriques
       fetchPipelineMetrics().then(setMetrics).catch(() => {});
     } catch (err: any) {
       setErrorNotification(err.message || "Erreur lors du changement d'étape.");
@@ -121,68 +115,104 @@ export default function KanbanPage() {
     }
   };
 
-  const filteredJobs = jobs.filter((job) => {
-    if (!searchQuery) return true;
+  const filteredJobs = useMemo(() => {
+    if (!searchQuery) return jobs;
     const query = searchQuery.toLowerCase();
-    return (
-      job.title.toLowerCase().includes(query) ||
-      job.company.toLowerCase().includes(query) ||
-      (job.location && job.location.toLowerCase().includes(query))
+    return jobs.filter(
+      (job) =>
+        job.title.toLowerCase().includes(query) ||
+        job.company.toLowerCase().includes(query) ||
+        (job.location && job.location.toLowerCase().includes(query))
     );
-  });
+  }, [jobs, searchQuery]);
 
-  // Définition des 7 colonnes Kanban selon AD-6
+  // Définition stricte des 4 colonnes Kanban : Offres, Candidatures envoyées, Retenue, Non retenue
   const COLUMNS = [
     {
       id: "DISCOVERED",
-      title: "Découvertes",
+      title: "Offres",
       icon: Radio,
       colorClass: "text-blue-800",
       badgeBg: "bg-blue-50 border border-blue-200",
     },
     {
-      id: "REVIEWING",
-      title: "En préparation",
-      icon: Eye,
-      colorClass: "text-amber-800",
-      badgeBg: "bg-amber-50 border border-amber-200",
-    },
-    {
-      id: "READY",
-      title: "Prêt pour envoi",
-      icon: Sparkles,
-      colorClass: "text-emerald-800",
-      badgeBg: "bg-emerald-50 border border-emerald-200",
-    },
-    {
       id: "SUBMITTED",
       title: "Candidatures envoyées",
       icon: Send,
-      colorClass: "text-purple-800",
-      badgeBg: "bg-purple-50 border border-purple-200",
-    },
-    {
-      id: "INTERVIEW",
-      title: "Entretiens",
-      icon: CalendarCheck,
-      colorClass: "text-sky-800",
-      badgeBg: "bg-sky-50 border border-sky-200",
+      colorClass: "text-orange-950",
+      badgeBg: "bg-orange-50 border border-orange-200",
     },
     {
       id: "OFFER",
-      title: "Offres obtenues",
+      title: "Retenue",
       icon: Trophy,
       colorClass: "text-emerald-800",
       badgeBg: "bg-emerald-50 border border-emerald-200",
     },
     {
       id: "REJECTED",
-      title: "Non retenu",
+      title: "Non retenue",
       icon: XCircle,
       colorClass: "text-stone-700",
       badgeBg: "bg-stone-100 border border-stone-200",
     },
   ];
+
+  // Regroupement des offres par colonne
+  const getJobsForColumn = (colId: string) => {
+    return filteredJobs.filter((j) => {
+      if (colId === "DISCOVERED") {
+        return (
+          !j.is_applied &&
+          (j.status === "DISCOVERED" ||
+            j.status === "REVIEWING" ||
+            j.status === "READY")
+        );
+      }
+      if (colId === "SUBMITTED") {
+        return (
+          j.is_applied ||
+          j.status === "SUBMITTED" ||
+          j.status === "INTERVIEW"
+        );
+      }
+      if (colId === "OFFER") {
+        return j.status === "OFFER";
+      }
+      if (colId === "REJECTED") {
+        return j.status === "REJECTED";
+      }
+      return false;
+    });
+  };
+
+  // Métriques KPI calculées sur les 4 catégories
+  const kpiData = useMemo(() => {
+    const totalOffres = jobs.filter(
+      (j) =>
+        !j.is_applied &&
+        (j.status === "DISCOVERED" ||
+          j.status === "REVIEWING" ||
+          j.status === "READY")
+    ).length;
+
+    const totalSubmitted = jobs.filter(
+      (j) =>
+        j.is_applied ||
+        j.status === "SUBMITTED" ||
+        j.status === "INTERVIEW"
+    ).length;
+
+    const totalOffer = jobs.filter((j) => j.status === "OFFER").length;
+    const totalRejected = jobs.filter((j) => j.status === "REJECTED").length;
+
+    return {
+      totalOffres,
+      totalSubmitted,
+      totalOffer,
+      totalRejected,
+    };
+  }, [jobs]);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1800px] mx-auto space-y-6">
@@ -196,14 +226,14 @@ export default function KanbanPage() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground font-display">
-                  Suivi de vos Candidatures
+                  Suivi des Candidatures
                 </h1>
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-100 text-orange-900 border border-orange-200">
-                  En temps réel
+                  Temps réel
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Consultez l'avancement de chaque candidature et vos taux de réponse.
+                Pipeline épuré en 4 étapes clés : Offres, Candidatures envoyées, Retenue et Non retenue.
               </p>
             </div>
           </div>
@@ -236,7 +266,7 @@ export default function KanbanPage() {
             type="button"
             onClick={loadData}
             disabled={isRefreshing}
-            className="p-2 rounded-lg border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+            className="p-2 rounded-lg border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 cursor-pointer"
             title="Rafraîchir le Kanban"
           >
             <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
@@ -254,7 +284,7 @@ export default function KanbanPage() {
           <button
             type="button"
             onClick={() => setEmailToast(null)}
-            className="p-1 hover:bg-emerald-100 rounded text-emerald-800"
+            className="p-1 hover:bg-emerald-100 rounded text-emerald-800 cursor-pointer"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -271,26 +301,44 @@ export default function KanbanPage() {
           <button
             type="button"
             onClick={() => setErrorNotification(null)}
-            className="p-1 hover:bg-destructive/20 rounded"
+            className="p-1 hover:bg-destructive/20 rounded cursor-pointer"
           >
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
       )}
 
-      {/* Analytics KPI Widgets Grid */}
+      {/* Analytics KPI Widgets Grid : 4 cartes reflétant les 4 colonnes */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Metric 1: Candidatures Actives */}
+        {/* KPI 1: Offres */}
         <div className="p-4 rounded-2xl border border-stone-200 bg-white shadow-artisan flex items-center justify-between">
           <div>
             <span className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider font-mono">
-              En cours actif
+              Offres identifiées
             </span>
             <div className="text-2xl font-bold font-mono text-stone-900 mt-1">
-              {metrics ? metrics.active_count : "--"}
+              {kpiData.totalOffres}
             </div>
             <span className="text-[10px] text-stone-500">
-              {metrics ? `${metrics.submitted_total} soumises au total` : "Calcul..."}
+              En prospection active
+            </span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700 shadow-xs">
+            <Briefcase className="w-5 h-5" />
+          </div>
+        </div>
+
+        {/* KPI 2: Candidatures envoyées */}
+        <div className="p-4 rounded-2xl border border-stone-200 bg-white shadow-artisan flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider font-mono">
+              Candidatures envoyées
+            </span>
+            <div className="text-2xl font-bold font-mono text-primary mt-1">
+              {kpiData.totalSubmitted}
+            </div>
+            <span className="text-[10px] text-stone-500">
+              Dossiers transmis
             </span>
           </div>
           <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center text-primary shadow-xs">
@@ -298,40 +346,17 @@ export default function KanbanPage() {
           </div>
         </div>
 
-        {/* Metric 2: Taux de conversion en entretien */}
-        <div className="p-4 rounded-2xl border border-stone-200 bg-white shadow-artisan flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider font-mono">
-                Taux d'entretien
-              </span>
-              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
-                Cible &gt; 15%
-              </span>
-            </div>
-            <div className="text-2xl font-bold font-mono text-emerald-700 mt-1">
-              {metrics ? `${metrics.interview_rate_percent}%` : "--%"}
-            </div>
-            <span className="text-[10px] text-stone-500">
-              {metrics ? `${metrics.interview_count} entretiens décrochés` : "Calcul..."}
-            </span>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 shadow-xs">
-            <TrendingUp className="w-5 h-5" />
-          </div>
-        </div>
-
-        {/* Metric 3: Offres de stage reçues */}
+        {/* KPI 3: Retenue */}
         <div className="p-4 rounded-2xl border border-stone-200 bg-white shadow-artisan flex items-center justify-between">
           <div>
             <span className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider font-mono">
-              Offres reçues
+              Retenue
             </span>
             <div className="text-2xl font-bold font-mono text-emerald-700 mt-1">
-              {metrics ? metrics.offer_count : "--"}
+              {kpiData.totalOffer}
             </div>
             <span className="text-[10px] text-stone-500">
-              Objectif stage PFE janvier 2027
+              Offres confirmées
             </span>
           </div>
           <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 shadow-xs">
@@ -339,62 +364,45 @@ export default function KanbanPage() {
           </div>
         </div>
 
-        {/* Metric 4: Alertes de relance */}
-        <div
-          className={`p-4 rounded-2xl border shadow-artisan flex items-center justify-between ${
-            metrics && metrics.stale_relance_count > 0
-              ? "border-amber-300 bg-amber-50/70"
-              : "border-stone-200 bg-white"
-          }`}
-        >
+        {/* KPI 4: Non retenue */}
+        <div className="p-4 rounded-2xl border border-stone-200 bg-white shadow-artisan flex items-center justify-between">
           <div>
             <span className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider font-mono">
-              Relances à faire
+              Non retenue
             </span>
-            <div
-              className={`text-2xl font-bold font-mono mt-1 ${
-                metrics && metrics.stale_relance_count > 0
-                  ? "text-amber-800"
-                  : "text-stone-900"
-              }`}
-            >
-              {metrics ? metrics.stale_relance_count : "--"}
+            <div className="text-2xl font-bold font-mono text-stone-700 mt-1">
+              {kpiData.totalRejected}
             </div>
             <span className="text-[10px] text-stone-500">
-              Sans retour après 7 jours
+              Candidatures classées
             </span>
           </div>
-          <div
-            className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-              metrics && metrics.stale_relance_count > 0
-                ? "bg-amber-100 border border-amber-300 text-amber-800 shadow-xs"
-                : "bg-stone-100 border border-stone-200 text-stone-400"
-            }`}
-          >
-            <Clock className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-xl bg-stone-100 border border-stone-200 flex items-center justify-center text-stone-500 shadow-xs">
+            <XCircle className="w-5 h-5" />
           </div>
         </div>
       </div>
 
-      {/* Main Kanban Board: 7 Horizontal Scrollable Columns */}
+      {/* Main Kanban Board: EXACTEMENT 4 COLONNES */}
       <div className="overflow-x-auto pb-6">
-        <div className="flex items-start gap-4 min-w-max">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 min-w-[1000px] xl:min-w-full">
           {COLUMNS.map((col) => {
-            const columnJobs = filteredJobs.filter((j) => j.status === col.id);
+            const columnJobs = getJobsForColumn(col.id);
             return (
-              <KanbanColumn
-                key={col.id}
-                id={col.id}
-                title={col.title}
-                icon={col.icon}
-                colorClass={col.colorClass}
-                badgeBg={col.badgeBg}
-                jobs={columnJobs}
-                atsScores={atsScores}
-                onOpenMirror={(job) => setSelectedJobForMirror(job)}
-                onTransition={handleTransition}
-                transitioningJobId={transitioningJobId}
-              />
+              <div key={col.id} className="min-w-[280px]">
+                <KanbanColumn
+                  id={col.id}
+                  title={col.title}
+                  icon={col.icon}
+                  colorClass={col.colorClass}
+                  badgeBg={col.badgeBg}
+                  jobs={columnJobs}
+                  atsScores={atsScores}
+                  onOpenMirror={(job) => setSelectedJobForMirror(job)}
+                  onTransition={handleTransition}
+                  transitioningJobId={transitioningJobId}
+                />
+              </div>
             );
           })}
         </div>

@@ -4,16 +4,13 @@ import { useMemo } from "react";
 import { JobOffer, ATSMatchResult } from "@/lib/api";
 import {
   Building2,
-  MapPin,
-  Clock,
   Sparkles,
-  ArrowRight,
-  CheckCircle2,
   Trophy,
   XCircle,
   AlertTriangle,
-  ChevronRight,
-  ExternalLink,
+  Send,
+  RotateCcw,
+  CheckCircle2,
 } from "lucide-react";
 
 interface KanbanCardProps {
@@ -31,18 +28,18 @@ export function KanbanCard({
   onTransition,
   isTransitioning = false,
 }: KanbanCardProps) {
-  const isLinkedIn = job.platform.toLowerCase() === "linkedin";
+  const isLinkedIn = (job.platform || "").toLowerCase() === "linkedin";
 
-  // Calcul du délai pour alerte relance (> 7 jours)
+  // Calcul du délai pour alerte relance (> 7 jours pour les candidatures envoyées)
   const diffDays = useMemo(() => {
-    const rawDate = job.published_at || job.collected_at;
+    const rawDate = job.applied_at || job.published_at || job.collected_at;
     if (!rawDate) return 0;
     const date = new Date(rawDate);
     const now = new Date();
     return Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-  }, [job.published_at, job.collected_at]);
+  }, [job.applied_at, job.published_at, job.collected_at]);
 
-  const isRelanceDue = job.status === "SUBMITTED" && diffDays >= 7;
+  const isRelanceDue = (job.status === "SUBMITTED" || job.status === "INTERVIEW") && diffDays >= 7;
 
   return (
     <div className="group relative p-4 rounded-xl border border-stone-200 bg-white hover:border-stone-300 transition-all duration-200 shadow-artisan hover:shadow-artisan-card space-y-3">
@@ -56,7 +53,7 @@ export function KanbanCard({
                 : "bg-emerald-50 text-emerald-800 border-emerald-200"
             }`}
           >
-            {isLinkedIn ? "LinkedIn" : "Jobteaser"}
+            {isLinkedIn ? "LinkedIn" : job.platform || "Source"}
           </span>
           <span className="text-[10px] text-stone-500 font-medium">
             {job.country === "France" ? "FR" : job.country === "Tunisie" ? "TN" : job.country || ""}
@@ -84,7 +81,7 @@ export function KanbanCard({
       {isRelanceDue && (
         <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-50 border border-amber-300 text-[10px] font-semibold text-amber-900 shadow-xs">
           <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-700" />
-          <span>Relance due (J+{diffDays})</span>
+          <span>Relance conseillée (J+{diffDays})</span>
         </div>
       )}
 
@@ -112,108 +109,90 @@ export function KanbanCard({
         <button
           type="button"
           onClick={() => onOpenMirror(job)}
-          className="p-1.5 rounded-lg text-stone-500 hover:text-stone-900 hover:bg-stone-100 transition-colors flex items-center gap-1 cursor-pointer"
-          title="Ouvrir la vue miroir de révision"
+          className="p-1.5 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-100 transition-colors flex items-center gap-1 cursor-pointer"
+          title="Ouvrir l'analyse profonde et les documents"
         >
           <Sparkles className="w-3 h-3 text-primary" />
-          <span className="text-[10px] font-semibold hidden sm:inline">Miroir</span>
+          <span className="text-[10px] font-semibold">Analyse</span>
         </button>
 
-        {/* Status contextual actions */}
+        {/* 4-Column Contextual Transitions */}
         <div className="flex items-center gap-1">
-          {job.status === "DISCOVERED" && (
+          {/* Colonne 1 : OFFRES (DISCOVERED / REVIEWING / READY) */}
+          {(job.status === "DISCOVERED" || job.status === "REVIEWING" || job.status === "READY") && (
             <button
               type="button"
               disabled={isTransitioning}
-              onClick={() => onTransition(job.id, "REVIEWING")}
-              className="px-2 py-1 rounded-lg bg-orange-50 hover:bg-primary text-primary hover:text-white border border-orange-200 text-[10px] font-bold flex items-center gap-1 transition-all disabled:opacity-50 cursor-pointer"
+              onClick={() => onTransition(job.id, "SUBMITTED")}
+              className="px-2.5 py-1 rounded-lg bg-orange-50 hover:bg-primary text-primary hover:text-white border border-orange-200 text-[10px] font-bold flex items-center gap-1 transition-all disabled:opacity-50 cursor-pointer"
+              title="Marquer comme candidature envoyée"
             >
-              <span>Préparer</span>
-              <ChevronRight className="w-3 h-3" />
+              <Send className="w-3 h-3" />
+              <span>Envoyée</span>
             </button>
           )}
 
-          {job.status === "REVIEWING" && (
-            <button
-              type="button"
-              disabled={isTransitioning}
-              onClick={() => onTransition(job.id, "READY")}
-              className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-600 text-emerald-800 hover:text-white border border-emerald-200 text-[10px] font-bold flex items-center gap-1 transition-all disabled:opacity-50 cursor-pointer"
-            >
-              <span>Valider</span>
-              <CheckCircle2 className="w-3 h-3" />
-            </button>
-          )}
-
-          {job.status === "READY" && (
-            <button
-              type="button"
-              onClick={() => onOpenMirror(job)}
-              className="px-2.5 py-1 rounded-lg bg-primary hover:bg-primary-hover text-white text-[10px] font-bold flex items-center gap-1 shadow-artisan-button tactile-button transition-all cursor-pointer"
-            >
-              <span>Finaliser</span>
-              <ArrowRight className="w-3 h-3" />
-            </button>
-          )}
-
-          {job.status === "SUBMITTED" && (
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                disabled={isTransitioning}
-                onClick={() => onTransition(job.id, "INTERVIEW")}
-                className="px-2 py-1 rounded-lg bg-sky-50 hover:bg-sky-600 text-sky-800 hover:text-white border border-sky-200 text-[10px] font-bold flex items-center gap-1 transition-all disabled:opacity-50 cursor-pointer"
-                title="Marquer comme entretien décroché"
-              >
-                <span>Entretien</span>
-              </button>
-              <button
-                type="button"
-                disabled={isTransitioning}
-                onClick={() => onTransition(job.id, "REJECTED")}
-                className="p-1 rounded-lg text-stone-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 cursor-pointer"
-                title="Marquer comme non retenu"
-              >
-                <XCircle className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
-
-          {job.status === "INTERVIEW" && (
+          {/* Colonne 2 : CANDIDATURES ENVOYÉES (SUBMITTED / INTERVIEW) */}
+          {(job.status === "SUBMITTED" || job.status === "INTERVIEW") && (
             <div className="flex items-center gap-1">
               <button
                 type="button"
                 disabled={isTransitioning}
                 onClick={() => onTransition(job.id, "OFFER")}
                 className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-600 text-emerald-800 hover:text-white border border-emerald-200 text-[10px] font-bold flex items-center gap-1 transition-all disabled:opacity-50 cursor-pointer"
-                title="Offre de stage reçue !"
+                title="Candidature retenue !"
               >
                 <Trophy className="w-3 h-3 text-emerald-600" />
-                <span>Offre reçue</span>
+                <span>Retenue</span>
               </button>
               <button
                 type="button"
                 disabled={isTransitioning}
                 onClick={() => onTransition(job.id, "REJECTED")}
                 className="p-1 rounded-lg text-stone-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 cursor-pointer"
-                title="Non retenu après entretien"
+                title="Non retenue"
               >
                 <XCircle className="w-3.5 h-3.5" />
               </button>
             </div>
           )}
 
+          {/* Colonne 3 : RETENUE (OFFER) */}
           {job.status === "OFFER" && (
-            <span className="text-[10px] font-bold text-emerald-800 flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-              <Trophy className="w-3 h-3 text-emerald-600" />
-              <span>Gagné</span>
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-bold text-emerald-800 flex items-center gap-1 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-300">
+                <Trophy className="w-3 h-3 text-emerald-600" />
+                <span>Retenue</span>
+              </span>
+              <button
+                type="button"
+                disabled={isTransitioning}
+                onClick={() => onTransition(job.id, "SUBMITTED")}
+                className="p-1 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded transition-colors cursor-pointer"
+                title="Remettre en candidatures envoyées"
+              >
+                <RotateCcw className="w-3 h-3" />
+              </button>
+            </div>
           )}
 
+          {/* Colonne 4 : NON RETENUE (REJECTED) */}
           {job.status === "REJECTED" && (
-            <span className="text-[10px] font-medium text-stone-500 bg-stone-100 px-2 py-0.5 rounded-full border border-stone-200">
-              Classé
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-medium text-stone-600 bg-stone-100 px-2 py-0.5 rounded-full border border-stone-200 flex items-center gap-1">
+                <XCircle className="w-3 h-3 text-stone-400" />
+                <span>Non retenue</span>
+              </span>
+              <button
+                type="button"
+                disabled={isTransitioning}
+                onClick={() => onTransition(job.id, "SUBMITTED")}
+                className="p-1 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded transition-colors cursor-pointer"
+                title="Remettre en candidatures envoyées"
+              >
+                <RotateCcw className="w-3 h-3" />
+              </button>
+            </div>
           )}
         </div>
       </div>

@@ -221,7 +221,7 @@ export interface JobOffer {
   description_raw: string;
   url: string;
   status: string;
-  offer_type?: "PFE";
+  offer_type?: "PFE" | "STAGE" | "JOB" | string;
   is_applied?: boolean;
   applied_at?: string | null;
   published_at?: string | null;

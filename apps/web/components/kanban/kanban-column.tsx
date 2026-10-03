@@ -30,7 +30,7 @@ export function KanbanColumn({
   transitioningJobId,
 }: KanbanColumnProps) {
   return (
-    <div className="flex flex-col flex-shrink-0 w-80 md:w-72 lg:w-80 rounded-2xl border border-stone-200 bg-[#F5EFE6]/70 overflow-hidden shadow-artisan">
+    <div className="flex flex-col w-full rounded-2xl border border-stone-200 bg-[#F5EFE6]/70 overflow-hidden shadow-artisan">
       {/* Column Header */}
       <div className="p-3.5 border-b border-stone-200 flex items-center justify-between bg-white/70 backdrop-blur-xs">
         <div className="flex items-center gap-2">
