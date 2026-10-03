@@ -993,6 +993,7 @@ export interface User {
   full_name: string;
   role: string;
   onboarding_completed?: boolean;
+  playbook_initialized?: boolean;
 }
 
 export interface LoginResponse {
@@ -1111,6 +1112,14 @@ export async function deletePlaybookRule(ruleId: string): Promise<void> {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Impossible de supprimer la directive");
+}
+
+export async function restorePlaybookTemplates(): Promise<AgentPlaybookRule[]> {
+  const res = await authFetch(`${API_BASE_URL}/api/agent/playbook/restore-templates`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error("Impossible de restaurer les modèles recommandés");
+  return res.json();
 }
 
 
