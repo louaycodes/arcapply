@@ -63,6 +63,7 @@ def register(payload: UserRegisterRequest, session: Session = Depends(get_sessio
             username=new_user.username,
             full_name=new_user.full_name,
             role=new_user.role,
+            onboarding_completed=new_user.onboarding_completed,
         ),
     )
 
@@ -83,6 +84,7 @@ def login(payload: UserLoginRequest, session: Session = Depends(get_session)):
             username=user.username,
             full_name=user.full_name,
             role=user.role,
+            onboarding_completed=user.onboarding_completed,
         ),
     )
 
@@ -90,26 +92,69 @@ def login(payload: UserLoginRequest, session: Session = Depends(get_session)):
 @router.get("/me", response_model=UserRead)
 def get_current_user(
     authorization: Optional[str] = Header(None),
+    x_username: Optional[str] = Header(None, alias="X-Username"),
     session: Session = Depends(get_session),
 ):
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Session non authentifiée")
+    user = None
+    if authorization:
+        token = authorization.replace("Bearer ", "").strip()
+        if token.startswith("arcapply-token-"):
+            user_id = token.replace("arcapply-token-", "")
+            user = session.exec(select(User).where(User.id == user_id)).first()
 
-    token = authorization.replace("Bearer ", "").strip()
-    if not token.startswith("arcapply-token-"):
-        raise HTTPException(status_code=401, detail="Jeton de session invalide")
+    if not user and x_username:
+        user = session.exec(select(User).where(User.username == x_username.strip().lower())).first()
 
-    user_id = token.replace("arcapply-token-", "")
-    user = session.exec(select(User).where(User.id == user_id)).first()
     if not user:
-        raise HTTPException(status_code=404, detail="Utilisateur introuvable")
+        raise HTTPException(status_code=401, detail="Session non authentifiée")
 
     return UserRead(
         id=user.id,
         username=user.username,
         full_name=user.full_name,
         role=user.role,
+        onboarding_completed=user.onboarding_completed,
     )
+
+
+@router.post("/complete-onboarding", response_model=UserRead)
+def complete_onboarding(
+    authorization: Optional[str] = Header(None),
+    x_username: Optional[str] = Header(None, alias="X-Username"),
+    session: Session = Depends(get_session),
+):
+    """Marque le walkthrough d'onboarding comme complété pour l'utilisateur."""
+    user = None
+    if authorization:
+        token = authorization.replace("Bearer ", "").strip()
+        if token.startswith("arcapply-token-"):
+            user_id = token.replace("arcapply-token-", "")
+            user = session.exec(select(User).where(User.id == user_id)).first()
+
+    if not user and x_username:
+        user = session.exec(select(User).where(User.username == x_username.strip().lower())).first()
+
+    if not user:
+        user = session.exec(select(User).where(User.username == "louay")).first()
+
+    if user:
+        user.onboarding_completed = True
+        session.add(user)
+        profile = session.exec(select(MasterProfile).where(MasterProfile.user_id == user.username)).first()
+        if profile:
+            profile.onboarding_completed = True
+            session.add(profile)
+        session.commit()
+        session.refresh(user)
+        return UserRead(
+            id=user.id,
+            username=user.username,
+            full_name=user.full_name,
+            role=user.role,
+            onboarding_completed=True,
+        )
+
+    raise HTTPException(status_code=401, detail="Utilisateur non identifié")
 
 
 @router.get("/available-users")

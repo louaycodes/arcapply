@@ -22,8 +22,12 @@ from app.domain.models import (
 )
 from app.domain.anti_rescrape import (
     is_job_already_applied,
+    is_job_already_archived,
+    is_job_excluded_from_scraping,
     record_applied_signature,
     remove_applied_signature,
+    record_archived_signature,
+    remove_archived_signature,
 )
 from app.ports.connectors import BaseJobConnector
 from app.api.auth import get_current_username
@@ -311,6 +315,9 @@ async def archive_job(
     session.commit()
     session.refresh(job)
 
+    # Enregistrement pérenne du bouclier anti-rescrape
+    record_archived_signature(session, job)
+
     # Diffusion SSE
     await broadcast_event(
         "JOB_ARCHIVED",
@@ -353,6 +360,7 @@ async def transition_job_status(
         )
 
     target_st = payload.new_status.upper()
+    old_st = job.status
     job.status = target_st
     if target_st in ("SUBMITTED", "INTERVIEW", "OFFER"):
         job.is_applied = True
@@ -363,6 +371,11 @@ async def transition_job_status(
         job.is_applied = False
         job.applied_at = None
         remove_applied_signature(session, username, job.id)
+
+    if target_st == "ARCHIVED":
+        record_archived_signature(session, job)
+    elif old_st == "ARCHIVED" and target_st != "ARCHIVED":
+        remove_archived_signature(session, username, job.id)
 
     job.updated_at = utc_now()
     session.add(job)
@@ -514,8 +527,8 @@ async def trigger_collection(
         for raw in raw_jobs:
             total_collected += 1
 
-            # Bouclier Anti-Rescrape : Toute offre déjà postulée ne sera JAMAIS re-scrappée
-            if is_job_already_applied(session, username, raw):
+            # Bouclier Anti-Rescrape : Toute offre déjà postulée ou archivée ne sera JAMAIS re-scrappée
+            if is_job_excluded_from_scraping(session, username, raw):
                 duplicate_count += 1
                 continue
 

@@ -98,6 +98,7 @@ def update_profile(
         "linkedin_url",
         "github_url",
         "website_url",
+        "onboarding_completed",
     ]
     for field in scalar_fields:
         if field in update_dict:

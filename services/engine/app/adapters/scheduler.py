@@ -32,7 +32,7 @@ from app.adapters.connectors.wttj import WTTJJobConnector
 from app.adapters.database import get_engine
 from app.api.events import broadcast_event
 from app.adapters.connectors import infer_offer_type, is_pfe_offer
-from app.domain.anti_rescrape import is_job_already_applied
+from app.domain.anti_rescrape import is_job_already_applied, is_job_already_archived, is_job_excluded_from_scraping
 from app.domain.job_extractor import JobDeepExtractor
 from app.domain.models import JobOffer, utc_now
 from app.ports.connectors import BaseJobConnector
@@ -164,8 +164,8 @@ class CrawlerScheduler:
                     ext_id = j.get("external_id")
                     plat = j.get("platform", platform)
 
-                    # Bouclier Anti-Rescrape : Toute offre déjà postulée ne sera JAMAIS re-scrappée
-                    if is_job_already_applied(sess, target_user, j):
+                    # Bouclier Anti-Rescrape : Toute offre déjà postulée ou archivée ne sera JAMAIS re-scrappée
+                    if is_job_excluded_from_scraping(sess, target_user, j):
                         total_duplicates += 1
                         continue
 

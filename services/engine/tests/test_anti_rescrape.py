@@ -5,11 +5,15 @@ from sqlmodel import Session, select
 from app.domain.anti_rescrape import (
     clean_text_for_match,
     is_job_already_applied,
+    is_job_already_archived,
+    is_job_excluded_from_scraping,
     normalize_job_url,
     record_applied_signature,
     remove_applied_signature,
+    record_archived_signature,
+    remove_archived_signature,
 )
-from app.domain.models import AppliedJobSignature, JobOffer, MasterProfile
+from app.domain.models import AppliedJobSignature, ArchivedJobSignature, JobOffer, MasterProfile
 from tests.conftest import client, engine
 
 
@@ -167,3 +171,83 @@ async def test_collection_skips_already_applied_jobs():
         summary = res.json()
         assert summary["new_count"] == 0
         assert summary["duplicate_count"] >= 1
+
+
+def test_archived_offer_is_never_rescrapped():
+    """Garantit qu'une offre archivée n'est plus jamais ré-insérée par les scrapers."""
+    with Session(engine) as session:
+        job = JobOffer(
+            id="job-shield-archived-1",
+            platform="linkedin",
+            external_id="ext-archived-sg",
+            title="Stage PFE Société Générale DevOps",
+            company="Société Générale",
+            url="https://www.linkedin.com/jobs/view/ext-archived-sg/?ref=feed",
+            apply_url="https://careers.societegenerale.com/job/123",
+            status="DISCOVERED",
+            user_id="louay",
+        )
+        session.add(job)
+        session.commit()
+
+    # 1. Archiver via l'endpoint
+    res_arch = client.patch("/api/jobs/job-shield-archived-1/archive")
+    assert res_arch.status_code == 200
+    assert res_arch.json()["status"] == "ARCHIVED"
+
+    # Vérification de l'enregistrement de la signature d'archive
+    with Session(engine) as session:
+        sig = session.exec(
+            select(ArchivedJobSignature).where(
+                ArchivedJobSignature.user_id == "louay",
+                ArchivedJobSignature.job_id == "job-shield-archived-1",
+            )
+        ).first()
+        assert sig is not None
+        assert "societe generale" in sig.company_clean
+
+        # Cas 1 : Même plateforme et même external_id
+        raw_same_ext = {
+            "platform": "linkedin",
+            "external_id": "ext-archived-sg",
+            "company": "Société Générale",
+            "title": "Stage PFE Société Générale DevOps",
+        }
+        assert is_job_already_archived(session, "louay", raw_same_ext) is True
+        assert is_job_excluded_from_scraping(session, "louay", raw_same_ext) is True
+
+        # Cas 2 : Autre plateforme mais même entreprise et titre
+        raw_other = {
+            "platform": "jobteaser",
+            "external_id": "jt-sg-999",
+            "company": "Société Générale",
+            "title": "Stage PFE DevOps",
+        }
+        assert is_job_already_archived(session, "louay", raw_other) is True
+        assert is_job_excluded_from_scraping(session, "louay", raw_other) is True
+
+        # Cas 3 : Même URL nettoyée
+        raw_url = {
+            "platform": "indeed",
+            "external_id": "ind-sg-77",
+            "company": "SG Group",
+            "title": "DevOps Intern",
+            "url": "https://careers.societegenerale.com/job/123?utm_campaign=tracker",
+        }
+        assert is_job_already_archived(session, "louay", raw_url) is True
+
+    # 2. Vérifier que la transition vers DISCOVERED retire la signature
+    res_unarch = client.patch(
+        "/api/jobs/job-shield-archived-1/transition",
+        json={"new_status": "DISCOVERED"},
+    )
+    assert res_unarch.status_code == 200
+
+    with Session(engine) as session:
+        sig_after = session.exec(
+            select(ArchivedJobSignature).where(
+                ArchivedJobSignature.user_id == "louay",
+                ArchivedJobSignature.job_id == "job-shield-archived-1",
+            )
+        ).first()
+        assert sig_after is None

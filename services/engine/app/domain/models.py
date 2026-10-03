@@ -179,6 +179,7 @@ class MasterProfileBase(SQLModel):
     languages_raw: str = Field(default="[]")
     extracurriculars_raw: str = Field(default="[]")
     user_id: str = Field(default="louay", index=True)
+    onboarding_completed: bool = Field(default=False)
 
 
 class MasterProfile(MasterProfileBase, table=True):
@@ -289,6 +290,7 @@ class MasterProfileUpdate(SQLModel):
     website_url: Optional[str] = None
     # Préférence de recherche : exclusivement "PFE"
     search_mode: Optional[str] = None
+    onboarding_completed: Optional[bool] = None
     educations: Optional[list[EducationBase]] = None
     experiences: Optional[list[ExperienceBase]] = None
     projects: Optional[list[ProjectBase]] = None
@@ -360,6 +362,23 @@ class AppliedJobSignature(SQLModel, table=True):
     title_clean: str = Field(default="", index=True)
     url_normalized: Optional[str] = Field(default=None, index=True)
     applied_at: datetime = Field(default_factory=utc_now)
+
+
+class ArchivedJobSignature(SQLModel, table=True):
+    """
+    Signature persistante d'une offre archivée par le candidat.
+    Garantit qu'aucun crawler ne réinsérera ou ne re-scrappera ce poste.
+    """
+    __tablename__ = "archived_job_signatures"
+    id: str = Field(default_factory=generate_uuid, primary_key=True)
+    user_id: str = Field(default="louay", index=True)
+    job_id: Optional[str] = Field(default=None, index=True)
+    platform: Optional[str] = Field(default=None, index=True)
+    external_id: Optional[str] = Field(default=None, index=True)
+    company_clean: str = Field(default="", index=True)
+    title_clean: str = Field(default="", index=True)
+    url_normalized: Optional[str] = Field(default=None, index=True)
+    archived_at: datetime = Field(default_factory=utc_now)
 
 
 class JobOfferRead(JobOfferBase):
@@ -660,6 +679,7 @@ class UserBase(SQLModel):
     username: str = Field(unique=True, index=True)
     full_name: str = Field(default="")
     role: str = Field(default="user")
+    onboarding_completed: bool = Field(default=False)
 
 
 class User(UserBase, table=True):
@@ -674,6 +694,7 @@ class UserRead(SQLModel):
     username: str
     full_name: str
     role: str
+    onboarding_completed: bool = False
 
 
 class UserLoginRequest(SQLModel):

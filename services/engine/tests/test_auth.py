@@ -138,3 +138,31 @@ def test_auth_register_validation_and_duplicate():
     res3 = client.post("/api/auth/register", json={"email": "louay", "password": "pass"})
     assert res3.status_code == 400
 
+
+def test_auth_register_and_complete_onboarding():
+    client = TestClient(app)
+    import uuid
+    random_email = f"onboard_{uuid.uuid4().hex[:8]}@example.com"
+    res = client.post(
+        "/api/auth/register",
+        json={"email": random_email, "password": "password123", "full_name": "New Candidate"},
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert data["user"]["onboarding_completed"] is False
+
+    token = data["token"]
+    # Check /me
+    me_res = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
+    assert me_res.status_code == 200
+    assert me_res.json()["onboarding_completed"] is False
+
+    # Complete onboarding
+    comp_res = client.post("/api/auth/complete-onboarding", headers={"Authorization": f"Bearer {token}"})
+    assert comp_res.status_code == 200
+    assert comp_res.json()["onboarding_completed"] is True
+
+    # Verify /me reflects it
+    me_after = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
+    assert me_after.json()["onboarding_completed"] is True
+

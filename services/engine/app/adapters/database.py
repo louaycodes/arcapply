@@ -155,10 +155,12 @@ def _migrate_db(engine) -> None:
         except Exception:
             pass
 
-        # Migrations anti-rescrape & offres déjà postulées
+        # Migrations anti-rescrape & offres déjà postulées ou archivées
         applied_columns = [
             ("job_offers", "is_applied", "BOOLEAN DEFAULT 0"),
             ("job_offers", "applied_at", "TIMESTAMP"),
+            ("users", "onboarding_completed", "BOOLEAN DEFAULT 0"),
+            ("master_profiles", "onboarding_completed", "BOOLEAN DEFAULT 0"),
         ]
         for tbl_name, col_name, col_type in applied_columns:
             try:
@@ -190,6 +192,27 @@ def _migrate_db(engine) -> None:
             conn.commit()
             conn.execute(text("CREATE INDEX IF NOT EXISTS ix_applied_signatures_user ON applied_job_signatures (user_id)"))
             conn.execute(text("CREATE INDEX IF NOT EXISTS ix_applied_signatures_company ON applied_job_signatures (user_id, company_clean)"))
+            conn.commit()
+        except Exception:
+            pass
+
+        try:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS archived_job_signatures (
+                    id VARCHAR PRIMARY KEY,
+                    user_id VARCHAR NOT NULL DEFAULT 'louay',
+                    job_id VARCHAR,
+                    platform VARCHAR,
+                    external_id VARCHAR,
+                    company_clean VARCHAR NOT NULL,
+                    title_clean VARCHAR NOT NULL,
+                    url_normalized VARCHAR,
+                    archived_at TIMESTAMP
+                )
+            """))
+            conn.commit()
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_archived_signatures_user ON archived_job_signatures (user_id)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_archived_signatures_company ON archived_job_signatures (user_id, company_clean)"))
             conn.commit()
         except Exception:
             pass
