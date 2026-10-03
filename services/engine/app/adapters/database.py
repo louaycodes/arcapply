@@ -104,7 +104,30 @@ def _migrate_db(engine) -> None:
         except Exception:
             pass
 
-        for tbl in ["master_profiles", "job_offers", "targeted_cvs", "cover_letters", "email_interactions", "custom_cv_drafts"]:
+        try:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS recon_dossiers (
+                    id VARCHAR PRIMARY KEY,
+                    job_id VARCHAR NOT NULL,
+                    user_id VARCHAR DEFAULT 'louay',
+                    external_url VARCHAR,
+                    full_description TEXT DEFAULT '',
+                    company_name VARCHAR DEFAULT '',
+                    company_website VARCHAR,
+                    company_mission TEXT,
+                    company_culture TEXT,
+                    tech_stack_detected_raw TEXT DEFAULT '[]',
+                    investigation_notes TEXT,
+                    status VARCHAR DEFAULT 'PENDING',
+                    created_at TIMESTAMP,
+                    updated_at TIMESTAMP
+                )
+            """))
+            conn.commit()
+        except Exception:
+            pass
+
+        for tbl in ["master_profiles", "job_offers", "targeted_cvs", "cover_letters", "email_interactions", "custom_cv_drafts", "recon_dossiers"]:
             try:
                 conn.execute(text(f"ALTER TABLE {tbl} ADD COLUMN user_id VARCHAR DEFAULT 'louay'"))
                 conn.commit()

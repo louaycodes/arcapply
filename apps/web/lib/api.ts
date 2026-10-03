@@ -1216,17 +1216,29 @@ export interface ReconDossier {
 }
 
 export async function fetchReconDossier(jobId: string): Promise<ReconDossier | null> {
-  const res = await authFetch(`${API_BASE_URL}/api/recon/dossier/${jobId}`);
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error("Impossible de charger le dossier d'enquête");
-  return res.json();
+  try {
+    const res = await authFetch(`${API_BASE_URL}/api/recon/dossier/${jobId}`);
+    if (res.status === 404) return null;
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
 }
 
 export async function triggerReconInvestigation(jobId: string): Promise<{ status: string; message: string }> {
   const res = await authFetch(`${API_BASE_URL}/api/recon/trigger/${jobId}`, {
     method: "POST",
   });
-  if (!res.ok) throw new Error("Impossible de déclencher l'enquête Deep Recon");
+  if (!res.ok) {
+    let detail = "Impossible de déclencher l'enquête Deep Recon";
+    try {
+      const errData = await res.json();
+      if (errData?.detail?.message) detail = errData.detail.message;
+      else if (typeof errData?.detail === "string") detail = errData.detail;
+    } catch (_) {}
+    throw new Error(detail);
+  }
   return res.json();
 }
 

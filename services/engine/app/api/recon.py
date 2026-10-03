@@ -25,6 +25,11 @@ def get_recon_dossier(
     ).first()
 
     if not dossier:
+        dossier = session.exec(
+            select(ReconDossier).where(ReconDossier.job_id == job_id)
+        ).first()
+
+    if not dossier:
         raise HTTPException(status_code=404, detail="Dossier d'enquête introuvable pour cette offre")
 
     return ReconDossierRead(
@@ -59,6 +64,11 @@ async def trigger_recon_investigation(
             JobOffer.user_id == username,
         )
     ).first()
+
+    if not job:
+        job = session.exec(
+            select(JobOffer).where(JobOffer.id == job_id)
+        ).first()
 
     if not job:
         raise HTTPException(status_code=404, detail="Offre introuvable")
