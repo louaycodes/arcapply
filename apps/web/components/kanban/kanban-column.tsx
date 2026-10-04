@@ -2,6 +2,7 @@
 
 import { JobOffer, ATSMatchResult } from "@/lib/api";
 import { KanbanCard } from "./kanban-card";
+import { useAppLanguage } from "@/lib/language-context";
 import { LucideIcon } from "lucide-react";
 
 interface KanbanColumnProps {
@@ -29,6 +30,7 @@ export function KanbanColumn({
   onTransition,
   transitioningJobId,
 }: KanbanColumnProps) {
+  const { t } = useAppLanguage();
   return (
     <div className="flex flex-col w-full rounded-2xl border border-stone-200 dark:border-stone-800 bg-[#F5EFE6]/70 dark:bg-stone-900/60 overflow-hidden shadow-artisan">
       {/* Column Header */}
@@ -49,7 +51,7 @@ export function KanbanColumn({
         {jobs.length === 0 ? (
           <div className="h-32 border border-dashed border-stone-300 dark:border-stone-700 rounded-xl flex items-center justify-center p-4 text-center">
             <span className="text-xs text-stone-400 dark:text-stone-500 italic">
-              Aucune candidature
+              {t("Aucune candidature", "No applications")}
             </span>
           </div>
         ) : (

@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { JobOffer, ATSMatchResult } from "@/lib/api";
+import { useAppLanguage } from "@/lib/language-context";
 import { AtsScoreBadge } from "./ats-score-badge";
 import {
   Building2,
@@ -147,20 +148,21 @@ export function JobCard({
   isAppliedSection = false,
   isNew = false,
 }: JobCardProps) {
+  const { t, language, locale } = useAppLanguage();
   const platKey = (job.platform || "").toLowerCase();
   const platformInfo = PLATFORM_CONFIG[platKey] || {
-    label: job.platform || "Source Externe",
+    label: job.platform || t("Source Externe", "External source"),
     className: "bg-muted text-muted-foreground border-border/50",
   };
 
   const isFrance = (job.country || "").toLowerCase() === "france";
   const isTunisia = (job.country || "").toLowerCase() === "tunisie";
-  const countryLabel = isFrance ? "France" : isTunisia ? "Tunisie" : job.country || "France";
+  const countryLabel = isFrance ? "France" : isTunisia ? t("Tunisie", "Tunisia") : job.country || "France";
 
   const isJob =
     job.offer_type === "JOB" ||
     (!job.offer_type && /\b(cdi|cdd|job|emploi)\b/i.test(job.title || ""));
-  const contractLabel = isJob ? "Job" : "Stage";
+  const contractLabel = isJob ? "Job" : t("Stage", "Internship");
 
   const isApplied = Boolean(
     job.is_applied ||
@@ -184,20 +186,20 @@ export function JobCard({
   // Calcul de la date de publication
   const relativeTime = useMemo(() => {
     const rawDate = job.published_at || job.collected_at;
-    if (!rawDate) return "Récemment";
+    if (!rawDate) return t("Récemment", "Recently");
     const date = new Date(rawDate);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffHours / 24);
 
-    if (diffHours < 2) return "À l'instant";
-    if (diffHours < 24) return `Il y a ${diffHours}h`;
-    if (diffDays === 1) return "Hier";
-    if (diffDays < 7) return `Il y a ${diffDays}j`;
+    if (diffHours < 2) return t("À l'instant", "Just now");
+    if (diffHours < 24) return t(`Il y a ${diffHours}h`, `${diffHours}h ago`);
+    if (diffDays === 1) return t("Hier", "Yesterday");
+    if (diffDays < 7) return t(`Il y a ${diffDays}j`, `${diffDays}d ago`);
     const weeks = Math.floor(diffDays / 7);
-    return `Il y a ${weeks} sem.`;
-  }, [job.published_at, job.collected_at]);
+    return t(`Il y a ${weeks} sem.`, `${weeks}w ago`);
+  }, [job.published_at, job.collected_at, language, t]);
 
   // Parsing des compétences
   const skillsList: string[] = useMemo(() => {
@@ -228,13 +230,17 @@ export function JobCard({
             {job.is_direct_career_site ? (
               <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full border bg-amber-100 dark:bg-amber-950/50 text-amber-900 dark:text-amber-200 border-amber-300 dark:border-amber-800/60 flex items-center gap-1 shadow-xs">
                 <Building2 className="w-3 h-3" />
-                <span>Site Officiel</span>
+                <span>{t("Site Officiel", "Official Site")}</span>
               </span>
             ) : (
               <span
                 className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full border ${platformInfo.className}`}
               >
-                {platformInfo.label}
+                {platKey === "top100_enterprises"
+                  ? t("Portail Officiel", "Official portal")
+                  : platKey === "esn_direct"
+                  ? t("Portails ESN", "IT services portals")
+                  : platformInfo.label}
               </span>
             )}
 
@@ -263,7 +269,7 @@ export function JobCard({
             {isApplied && (
               <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/50 text-emerald-900 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-800/60 flex items-center gap-1 shadow-xs">
                 <CheckCircle2 className="w-3 h-3 text-emerald-700 dark:text-emerald-400" />
-                <span>Postulé</span>
+                <span>{t("Postulé", "Applied")}</span>
               </span>
             )}
           </div>
@@ -275,8 +281,11 @@ export function JobCard({
               className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground dark:text-stone-400 bg-muted/40 dark:bg-stone-800/50 px-2 py-0.5 rounded-full border border-border/30 dark:border-stone-700/50"
               title={
                 job.published_at
-                  ? `Publié le ${new Date(job.published_at).toLocaleDateString("fr-FR")}`
-                  : "Date de collecte"
+                  ? t(
+                      `Publié le ${new Date(job.published_at).toLocaleDateString(locale)}`,
+                      `Published on ${new Date(job.published_at).toLocaleDateString(locale)}`
+                    )
+                  : t("Date de collecte", "Collection date")
               }
             >
               <Clock className="w-3 h-3 text-muted-foreground/70 dark:text-stone-500" />
@@ -351,7 +360,7 @@ export function JobCard({
               type="button"
               onClick={() => onArchive(job.id)}
               className="p-1.5 rounded-lg text-stone-400 dark:text-stone-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
-              title="Archiver cette offre"
+              title={t("Archiver cette offre", "Archive this offer")}
             >
               <Archive className="w-4 h-4" />
             </button>
@@ -362,7 +371,7 @@ export function JobCard({
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-1.5 rounded-lg text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors inline-flex items-center gap-1 text-xs"
-                title="Ouvrir l'annonce officielle"
+                title={t("Ouvrir l'annonce officielle", "Open the official listing")}
               >
                 <ExternalLink className="w-4 h-4" />
               </a>
@@ -380,19 +389,19 @@ export function JobCard({
               }`}
               title={
                 isApplied
-                  ? "Cliquer pour réintégrer l'offre"
-                  : "Marquer comme déjà postulé"
+                  ? t("Cliquer pour réintégrer l'offre", "Click to restore the offer")
+                  : t("Marquer comme déjà postulé", "Mark as already applied")
               }
             >
               {isApplied ? (
                 <>
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                  <span>Déjà postulé</span>
+                  <span>{t("Déjà postulé", "Already applied")}</span>
                 </>
               ) : (
                 <>
                   <Send className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400 shrink-0" />
-                  <span>J'ai postulé</span>
+                  <span>{t("J'ai postulé", "I applied")}</span>
                 </>
               )}
             </button>
@@ -408,10 +417,10 @@ export function JobCard({
               ? "bg-stone-800 dark:bg-stone-700 hover:bg-stone-900 dark:hover:bg-stone-600 text-white"
               : "bg-primary hover:bg-primary-hover text-white shadow-xs"
           }`}
-          title={isApplied ? "Consulter le dossier de candidature" : "Consulter l'offre et préparer ma candidature"}
+          title={isApplied ? t("Consulter le dossier de candidature", "View the application file") : t("Consulter l'offre et préparer ma candidature", "View the offer and prepare my application")}
         >
           <Sparkles className="w-3.5 h-3.5 shrink-0" />
-          <span>{isApplied ? "Consulter le dossier" : "Consulter l'offre"}</span>
+          <span>{isApplied ? t("Consulter le dossier", "View file") : t("Consulter l'offre", "View offer")}</span>
         </button>
       </div>
     </div>

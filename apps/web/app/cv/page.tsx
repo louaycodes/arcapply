@@ -48,8 +48,14 @@ import {
   ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
+import { useAppLanguage } from "@/lib/language-context";
+
+// Largeur d'une page A4 (210mm) en pixels CSS, et zoom minimal autorisé (écrans mobiles)
+const A4_WIDTH_PX = 794;
+const MIN_ZOOM = 0.3;
 
 export default function StudioCVPage() {
+  const { t } = useAppLanguage();
   const [cvData, setCvData] = useState<CustomCVData | null>(null);
   const [htmlContent, setHtmlContent] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -113,15 +119,39 @@ export default function StudioCVPage() {
     });
   }, []);
 
+  // Zoom qui fait tenir la feuille A4 dans la largeur disponible
+  const computeFitZoom = useCallback(() => {
+    if (!canvasContainerRef.current) return 1;
+    const containerWidth = canvasContainerRef.current.clientWidth;
+    const margin = containerWidth < 640 ? 16 : 64;
+    return Number(Math.min(1.5, Math.max(MIN_ZOOM, (containerWidth - margin) / A4_WIDTH_PX)).toFixed(2));
+  }, []);
+
   // Fit to screen width for maximum visual clarity
   const fitWidth = useCallback(() => {
-    if (!canvasContainerRef.current) return;
-    const containerWidth = canvasContainerRef.current.clientWidth;
-    // A4 width: 210mm ≈ 794px + 64px comfortable margins
-    const targetZoom = Math.min(1.5, Math.max(0.7, (containerWidth - 64) / 794));
-    setZoomScale(Number(targetZoom.toFixed(2)));
-    showNotification("info", `Zoom ajusté à la largeur de votre écran (${Math.round(targetZoom * 100)}%).`);
-  }, []);
+    const targetZoom = computeFitZoom();
+    setZoomScale(targetZoom);
+    showNotification(
+      "info",
+      t(
+        `Zoom ajusté à la largeur de votre écran (${Math.round(targetZoom * 100)}%).`,
+        `Zoom fitted to your screen width (${Math.round(targetZoom * 100)}%).`
+      )
+    );
+  }, [computeFitZoom]);
+
+  // Sur petit écran, la feuille A4 (794px) est réduite automatiquement pour tenir dans la largeur
+  useEffect(() => {
+    const fitIfTooNarrow = () => {
+      if (!canvasContainerRef.current) return;
+      if (canvasContainerRef.current.clientWidth < A4_WIDTH_PX + 64) {
+        setZoomScale(computeFitZoom());
+      }
+    };
+    fitIfTooNarrow();
+    window.addEventListener("resize", fitIfTooNarrow);
+    return () => window.removeEventListener("resize", fitIfTooNarrow);
+  }, [computeFitZoom, isLoading]);
 
   // 1. Initial Load: Check for draft or load from Master Profile
   const loadInitialData = async () => {
@@ -138,7 +168,7 @@ export default function StudioCVPage() {
           setMarginMm(draftRes.data.margin_top_mm || 8.0);
         }
         setIsProfileEmpty(Boolean(draftRes.is_profile_empty));
-        showNotification("info", "Brouillon sauvegardé chargé avec succès.");
+        showNotification("info", t("Brouillon sauvegardé chargé avec succès.", "Saved draft loaded successfully."));
       } else {
         const profRes = await fetchCVFromProfile("fr");
         setCvData(profRes.data);
@@ -150,7 +180,7 @@ export default function StudioCVPage() {
         setIsProfileEmpty(Boolean(profRes.is_profile_empty));
       }
     } catch (err: any) {
-      showNotification("error", err.message || "Erreur de chargement du CV.");
+      showNotification("error", err.message || t("Erreur de chargement du CV.", "Error loading the CV."));
     } finally {
       setIsLoading(false);
     }
@@ -408,7 +438,7 @@ export default function StudioCVPage() {
     }
     setHasUnsavedEdits(true);
     currentHtmlRef.current = doc.documentElement.outerHTML;
-    showNotification("info", "Nouvelle expérience insérée. Cliquez pour modifier.");
+    showNotification("info", t("Nouvelle expérience insérée. Cliquez pour modifier.", "New experience inserted. Click to edit."));
   };
 
   const insertEducationBlock = () => {
@@ -441,7 +471,7 @@ export default function StudioCVPage() {
     newEdu.scrollIntoView({ behavior: "smooth", block: "center" });
     setHasUnsavedEdits(true);
     currentHtmlRef.current = doc.documentElement.outerHTML;
-    showNotification("info", "Nouvelle formation insérée. Cliquez pour modifier.");
+    showNotification("info", t("Nouvelle formation insérée. Cliquez pour modifier.", "New education inserted. Click to edit."));
   };
 
   const insertProjectBlock = () => {
@@ -473,7 +503,7 @@ export default function StudioCVPage() {
     newProj.scrollIntoView({ behavior: "smooth", block: "center" });
     setHasUnsavedEdits(true);
     currentHtmlRef.current = doc.documentElement.outerHTML;
-    showNotification("info", "Nouveau projet inséré. Cliquez pour modifier.");
+    showNotification("info", t("Nouveau projet inséré. Cliquez pour modifier.", "New project inserted. Click to edit."));
   };
 
   const insertSkillCategory = () => {
@@ -529,7 +559,7 @@ export default function StudioCVPage() {
     setHasUnsavedEdits(true);
     currentHtmlRef.current = doc.documentElement.outerHTML;
     updateIframeHeight();
-    showNotification("info", "Nouvelle activité extra-professionnelle insérée directement sur la page.");
+    showNotification("info", t("Nouvelle activité extra-professionnelle insérée directement sur la page.", "New extracurricular activity inserted directly on the page."));
   };
 
   // 6. Delete Selected Item Block
@@ -545,12 +575,12 @@ export default function StudioCVPage() {
         node.remove();
         setHasUnsavedEdits(true);
         currentHtmlRef.current = doc.documentElement.outerHTML;
-        showNotification("info", "Élément supprimé.");
+        showNotification("info", t("Élément supprimé.", "Element deleted."));
         return;
       }
       node = node.parentNode;
     }
-    showNotification("error", "Placez votre curseur dans un bloc (stage, projet, formation) pour le supprimer.");
+    showNotification("error", t("Placez votre curseur dans un bloc (stage, projet, formation) pour le supprimer.", "Place your cursor inside a block (internship, project, education) to delete it."));
   };
 
   // 7. Adjust Live Font Size & Margins directly on the sheet
@@ -597,15 +627,15 @@ export default function StudioCVPage() {
 
     try {
       setIsUploading(true);
-      showNotification("info", `Extraction de ${file.name} en cours...`);
+      showNotification("info", t(`Extraction de ${file.name} en cours...`, `Extracting ${file.name}...`));
       const result = await uploadCVFile(file, false);
       setCvData(result.data);
       setHtmlContent(result.html_content);
       currentHtmlRef.current = result.html_content;
       setHasUnsavedEdits(true);
-      showNotification("success", `CV extrait avec succès ! Modifiable directement sur la feuille A4.`);
+      showNotification("success", t("CV extrait avec succès ! Modifiable directement sur la feuille A4.", "CV extracted successfully! Editable directly on the A4 sheet."));
     } catch (err: any) {
-      showNotification("error", err.message || "Échec de l'analyse du fichier.");
+      showNotification("error", err.message || t("Échec de l'analyse du fichier.", "Failed to parse the file."));
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -633,9 +663,15 @@ export default function StudioCVPage() {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-      showNotification("success", `PDF vectoriel A4 téléchargé (${filename}) avec fidélité 100% identique !`);
+      showNotification(
+        "success",
+        t(
+          `PDF vectoriel A4 téléchargé (${filename}) avec fidélité 100% identique !`,
+          `A4 vector PDF downloaded (${filename}), 100% identical!`
+        )
+      );
     } catch (err: any) {
-      showNotification("error", err.message || "Erreur de compilation du PDF.");
+      showNotification("error", err.message || t("Erreur de compilation du PDF.", "PDF compilation error."));
     } finally {
       setIsCompiling(false);
     }
@@ -664,9 +700,9 @@ export default function StudioCVPage() {
         margin_bottom_mm: marginMm,
       });
       setHasUnsavedEdits(false);
-      showNotification("success", "Votre CV a été enregistré avec succès.");
+      showNotification("success", t("Votre CV a été enregistré avec succès.", "Your CV was saved successfully."));
     } catch (err: any) {
-      showNotification("error", err.message || "Échec de la sauvegarde.");
+      showNotification("error", err.message || t("Échec de la sauvegarde.", "Save failed."));
     } finally {
       setIsSaving(false);
     }
@@ -683,12 +719,12 @@ export default function StudioCVPage() {
       setHasUnsavedEdits(false);
       setIsProfileEmpty(Boolean(res.is_profile_empty));
       if (res.is_profile_empty) {
-        showNotification("info", "Votre profil est actuellement vide.");
+        showNotification("info", t("Votre profil est actuellement vide.", "Your profile is currently empty."));
       } else {
-        showNotification("success", "Données de votre profil rechargées.");
+        showNotification("success", t("Données de votre profil rechargées.", "Your profile data was reloaded."));
       }
     } catch (err: any) {
-      showNotification("error", err.message || "Échec du rechargement.");
+      showNotification("error", err.message || t("Échec du rechargement.", "Reload failed."));
     } finally {
       setIsLoading(false);
     }
@@ -700,7 +736,7 @@ export default function StudioCVPage() {
         <div className="text-center space-y-4">
           <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-sm font-mono text-muted-foreground">
-            Chargement de l'éditeur de PDF visuel...
+            {t("Chargement de l'éditeur de PDF visuel...", "Loading the visual PDF editor...")}
           </p>
         </div>
       </div>
@@ -725,7 +761,7 @@ export default function StudioCVPage() {
       />
 
       {/* Top Cockpit Header: Identity & Global Actions */}
-      <header className="px-5 py-2.5 border-b border-stone-200/80 dark:border-stone-800 bg-white/85 dark:bg-stone-900/90 backdrop-blur-xl flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-xs z-20">
+      <header className="px-3 sm:px-5 py-2.5 border-b border-stone-200/80 dark:border-stone-800 bg-white/85 dark:bg-stone-900/90 backdrop-blur-xl flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-xs z-20">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-orange-100 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-900/60 flex items-center justify-center text-primary dark:text-orange-400 shadow-sm">
             <FileText className="w-5 h-5" />
@@ -733,19 +769,19 @@ export default function StudioCVPage() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100 tracking-tight font-display flex items-center gap-2">
-                Éditeur Visuel de CV
+                {t("Éditeur Visuel de CV", "Visual CV Editor")}
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
-                  Édition Directe
+                  {t("Édition Directe", "Direct Editing")}
                 </span>
               </h1>
               {hasUnsavedEdits && (
                 <span className="text-[10px] text-amber-900 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded border border-amber-300 dark:border-amber-800/60 font-semibold">
-                  Modifications non enregistrées
+                  {t("Modifications non enregistrées", "Unsaved changes")}
                 </span>
               )}
             </div>
             <p className="text-[11px] text-stone-600 dark:text-stone-400 line-clamp-1">
-              Cliquez directement sur n'importe quel texte du CV pour le modifier en temps réel.
+              {t("Cliquez directement sur n'importe quel texte du CV pour le modifier en temps réel.", "Click any text on the CV to edit it in real time.")}
             </p>
           </div>
         </div>
@@ -761,10 +797,10 @@ export default function StudioCVPage() {
                 ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20"
                 : "border-border/80 bg-muted/40 hover:bg-muted text-foreground"
             }`}
-            title={isFullscreen ? "Quitter le mode plein écran (Échap)" : "Agrandir en plein écran pour un visuel maximal"}
+            title={isFullscreen ? t("Quitter le mode plein écran (Échap)", "Exit full screen (Esc)") : t("Agrandir en plein écran pour un visuel maximal", "Expand to full screen for maximum visibility")}
           >
             {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-            <span className="hidden sm:inline">{isFullscreen ? "Fenêtre normale" : "Plein Écran"}</span>
+            <span className="hidden sm:inline">{isFullscreen ? t("Fenêtre normale", "Normal window") : t("Plein Écran", "Full Screen")}</span>
           </button>
 
           {/* Upload Button */}
@@ -775,7 +811,7 @@ export default function StudioCVPage() {
             className="px-3 py-1.5 rounded-lg border border-border/80 bg-muted/40 hover:bg-muted text-xs font-semibold text-foreground flex items-center gap-1.5 transition-all shadow-sm disabled:opacity-50"
           >
             <Upload className={`w-3.5 h-3.5 ${isUploading ? "animate-bounce" : ""}`} />
-            <span>{isUploading ? "Lecture..." : "Importer CV (PDF/TXT)"}</span>
+            <span>{isUploading ? t("Lecture...", "Reading...") : t("Importer CV (PDF/TXT)", "Import CV (PDF/TXT)")}</span>
           </button>
 
           {/* Reset from Profile */}
@@ -783,10 +819,10 @@ export default function StudioCVPage() {
             type="button"
             onClick={handleResetMasterProfile}
             className="px-3 py-1.5 rounded-lg border border-border/80 bg-muted/40 hover:bg-muted text-xs font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-all shadow-sm"
-            title="Recharger les données de mon profil"
+            title={t("Recharger les données de mon profil", "Reload my profile data")}
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">Mon Profil</span>
+            <span className="hidden md:inline">{t("Mon Profil", "My Profile")}</span>
           </button>
 
           {/* Save Draft */}
@@ -797,7 +833,7 @@ export default function StudioCVPage() {
             className="px-3 py-1.5 rounded-lg border border-border/80 bg-muted/40 hover:bg-muted text-xs font-semibold text-foreground flex items-center gap-1.5 transition-all shadow-sm"
           >
             <Save className={`w-3.5 h-3.5 ${isSaving ? "animate-spin" : ""}`} />
-            <span>Sauvegarder</span>
+            <span>{t("Sauvegarder", "Save")}</span>
           </button>
 
           {/* Native Print */}
@@ -805,7 +841,7 @@ export default function StudioCVPage() {
             type="button"
             onClick={handlePrint}
             className="p-1.5 rounded-lg border border-border/80 bg-muted/40 hover:bg-muted text-foreground transition-all"
-            title="Imprimer directement"
+            title={t("Imprimer directement", "Print directly")}
           >
             <Printer className="w-4 h-4" />
           </button>
@@ -818,7 +854,7 @@ export default function StudioCVPage() {
             className="px-3.5 py-1.5 rounded-lg bg-primary hover:bg-primary/90 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-primary/25 transition-all disabled:opacity-50"
           >
             <Download className={`w-4 h-4 ${isCompiling ? "animate-spin" : ""}`} />
-            <span>{isCompiling ? "Compilation..." : "Télécharger PDF (Identique)"}</span>
+            <span>{isCompiling ? t("Compilation...", "Compiling...") : t("Télécharger PDF (Identique)", "Download PDF (Identical)")}</span>
           </button>
         </div>
       </header>
@@ -855,15 +891,15 @@ export default function StudioCVPage() {
       )}
 
       {/* Floating Canvas Formatting Toolbar (Like Google Docs / Acrobat / Sejda) */}
-      <div className="sticky top-0 z-10 px-5 py-2 border-b border-stone-200/80 dark:border-stone-800 bg-white/80 dark:bg-stone-900/90 backdrop-blur-xl flex flex-wrap items-center justify-between gap-3 shrink-0 text-xs shadow-xs">
+      <div className={`sticky ${isFullscreen ? "top-0" : "top-14"} z-20 px-3 sm:px-5 py-2 border-b border-stone-200/80 dark:border-stone-800 bg-white/80 dark:bg-stone-900/90 backdrop-blur-xl flex flex-wrap items-center justify-between gap-3 shrink-0 text-xs shadow-xs`}>
         {/* Left: Text Formatting Controls */}
         <div className="flex items-center flex-wrap gap-1">
-          <span className="text-[11px] font-semibold text-muted-foreground mr-1 hidden sm:inline">Mise en forme :</span>
+          <span className="text-[11px] font-semibold text-muted-foreground mr-1 hidden sm:inline">{t("Mise en forme :", "Formatting:")}</span>
           <button
             type="button"
             onClick={() => executeDocCommand("bold")}
             className="p-1.5 rounded hover:bg-muted/70 text-foreground transition-colors font-bold"
-            title="Gras (Ctrl+B)"
+            title={t("Gras (Ctrl+B)", "Bold (Ctrl+B)")}
           >
             <Bold className="w-3.5 h-3.5" />
           </button>
@@ -871,7 +907,7 @@ export default function StudioCVPage() {
             type="button"
             onClick={() => executeDocCommand("italic")}
             className="p-1.5 rounded hover:bg-muted/70 text-foreground transition-colors italic"
-            title="Italique (Ctrl+I)"
+            title={t("Italique (Ctrl+I)", "Italic (Ctrl+I)")}
           >
             <Italic className="w-3.5 h-3.5" />
           </button>
@@ -879,7 +915,7 @@ export default function StudioCVPage() {
             type="button"
             onClick={() => executeDocCommand("underline")}
             className="p-1.5 rounded hover:bg-muted/70 text-foreground transition-colors underline"
-            title="Souligné (Ctrl+U)"
+            title={t("Souligné (Ctrl+U)", "Underline (Ctrl+U)")}
           >
             <Underline className="w-3.5 h-3.5" />
           </button>
@@ -887,7 +923,7 @@ export default function StudioCVPage() {
             type="button"
             onClick={() => executeDocCommand("insertUnorderedList")}
             className="p-1.5 rounded hover:bg-muted/70 text-foreground transition-colors"
-            title="Liste à puces"
+            title={t("Liste à puces", "Bulleted list")}
           >
             <List className="w-3.5 h-3.5" />
           </button>
@@ -895,48 +931,48 @@ export default function StudioCVPage() {
           <div className="h-4 w-px bg-border/80 mx-1.5" />
 
           {/* Direct Document Inserters */}
-          <span className="text-[11px] font-semibold text-muted-foreground mr-1 hidden md:inline">Insérer sur le CV :</span>
+          <span className="text-[11px] font-semibold text-muted-foreground mr-1 hidden md:inline">{t("Insérer sur le CV :", "Insert on the CV:")}</span>
           <button
             type="button"
             onClick={insertExperienceBlock}
             className="px-2 py-1 rounded bg-primary/15 hover:bg-primary/25 text-primary text-[11px] font-bold flex items-center gap-1 transition-colors"
-            title="Insérer un nouveau bloc stage / expérience"
+            title={t("Insérer un nouveau bloc stage / expérience", "Insert a new internship / experience block")}
           >
             <Briefcase className="w-3 h-3" />
-            <span>+ Stage</span>
+            <span>{t("+ Stage", "+ Internship")}</span>
           </button>
           <button
             type="button"
             onClick={insertEducationBlock}
             className="px-2 py-1 rounded bg-primary/15 hover:bg-primary/25 text-primary text-[11px] font-bold flex items-center gap-1 transition-colors"
-            title="Insérer une formation"
+            title={t("Insérer une formation", "Insert an education entry")}
           >
             <GraduationCap className="w-3 h-3" />
-            <span>+ Formation</span>
+            <span>{t("+ Formation", "+ Education")}</span>
           </button>
           <button
             type="button"
             onClick={insertProjectBlock}
             className="px-2 py-1 rounded bg-primary/15 hover:bg-primary/25 text-primary text-[11px] font-bold flex items-center gap-1 transition-colors"
-            title="Insérer un projet"
+            title={t("Insérer un projet", "Insert a project")}
           >
             <FolderGit2 className="w-3 h-3" />
-            <span>+ Projet</span>
+            <span>{t("+ Projet", "+ Project")}</span>
           </button>
           <button
             type="button"
             onClick={insertSkillCategory}
             className="px-2 py-1 rounded bg-primary/15 hover:bg-primary/25 text-primary text-[11px] font-bold flex items-center gap-1 transition-colors"
-            title="Insérer une catégorie de compétences"
+            title={t("Insérer une catégorie de compétences", "Insert a skills category")}
           >
             <Code2 className="w-3 h-3" />
-            <span>+ Compétences</span>
+            <span>{t("+ Compétences", "+ Skills")}</span>
           </button>
           <button
             type="button"
             onClick={insertExtracurricularBlock}
             className="px-2 py-1 rounded bg-primary/15 hover:bg-primary/25 text-primary text-[11px] font-bold flex items-center gap-1 transition-colors"
-            title="Insérer une activité extra-professionnelle (club, association, hackathon)"
+            title={t("Insérer une activité extra-professionnelle (club, association, hackathon)", "Insert an extracurricular activity (club, association, hackathon)")}
           >
             <Award className="w-3 h-3" />
             <span>+ Extra-pro</span>
@@ -945,17 +981,17 @@ export default function StudioCVPage() {
             type="button"
             onClick={deleteCurrentItem}
             className="p-1 rounded text-stone-500 hover:text-rose-700 hover:bg-rose-50 dark:text-stone-400 dark:hover:text-rose-400 dark:hover:bg-rose-950/40 transition-colors ml-1"
-            title="Supprimer le bloc sous le curseur"
+            title={t("Supprimer le bloc sous le curseur", "Delete the block under the cursor")}
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
 
         {/* Right: Typography Calibration & Zoom */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           {/* Font Size slider */}
           <div className="flex items-center gap-1.5">
-            <span className="text-[11px] text-muted-foreground">Taille :</span>
+            <span className="text-[11px] text-muted-foreground">{t("Taille :", "Size:")}</span>
             <input
               type="range"
               min={8.0}
@@ -972,16 +1008,16 @@ export default function StudioCVPage() {
 
           {/* Margins */}
           <div className="flex items-center gap-1.5">
-            <span className="text-[11px] text-muted-foreground">Marges :</span>
+            <span className="text-[11px] text-muted-foreground">{t("Marges :", "Margins:")}</span>
             <select
               value={marginMm}
               onChange={(e) => handleMarginChange(parseFloat(e.target.value))}
               className="bg-background border border-border/80 text-foreground text-[11px] rounded px-1.5 py-0.5 outline-none cursor-pointer"
             >
-              <option value={6}>6 mm (Compact)</option>
-              <option value={8}>8 mm (Standard)</option>
-              <option value={10}>10 mm (Aéré)</option>
-              <option value={12}>12 mm (Large)</option>
+              <option value={6}>{t("6 mm (Compact)", "6 mm (Compact)")}</option>
+              <option value={8}>{t("8 mm (Standard)", "8 mm (Standard)")}</option>
+              <option value={10}>{t("10 mm (Aéré)", "10 mm (Airy)")}</option>
+              <option value={12}>{t("12 mm (Large)", "12 mm (Wide)")}</option>
             </select>
           </div>
 
@@ -991,7 +1027,7 @@ export default function StudioCVPage() {
           <div className="flex items-center gap-1">
             <button
               type="button"
-              onClick={() => setZoomScale((z) => Math.max(0.6, Number((z - 0.1).toFixed(2))))}
+              onClick={() => setZoomScale((z) => Math.max(MIN_ZOOM, Number((z - 0.1).toFixed(2))))}
               className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
               title="Zoom -"
             >
@@ -1016,7 +1052,7 @@ export default function StudioCVPage() {
                   ? "bg-primary/20 text-primary border-primary/40 font-bold"
                   : "border-border/60 hover:bg-muted text-muted-foreground hover:text-foreground"
               }`}
-              title="Taille réelle A4 (100%)"
+              title={t("Taille réelle A4 (100%)", "Actual A4 size (100%)")}
             >
               100%
             </button>
@@ -1024,9 +1060,9 @@ export default function StudioCVPage() {
               type="button"
               onClick={fitWidth}
               className="text-[10px] font-mono px-2 py-0.5 rounded border border-border/60 hover:bg-primary/15 hover:text-primary hover:border-primary/30 text-muted-foreground transition-colors"
-              title="Ajuster à la largeur de votre écran pour un visuel agrandi et clair"
+              title={t("Ajuster à la largeur de votre écran pour un visuel agrandi et clair", "Fit to your screen width for a larger, clearer view")}
             >
-              Ajuster Largeur
+              {t("Ajuster Largeur", "Fit Width")}
             </button>
           </div>
         </div>
@@ -1046,10 +1082,10 @@ export default function StudioCVPage() {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100 font-display">
-                  Votre Master Profile est actuellement vide
+                  {t("Votre Master Profile est actuellement vide", "Your Master Profile is currently empty")}
                 </h3>
                 <p className="text-xs text-stone-700 dark:text-stone-300 mt-1 leading-relaxed">
-                  Pour garantir un CV factuel et zéro hallucination, ArcApply construit votre CV directement à partir des formations, expériences et compétences de votre profil. Renseignez d'abord votre profil pour générer votre CV complet.
+                  {t("Pour garantir un CV factuel et zéro hallucination, ArcApply construit votre CV directement à partir des formations, expériences et compétences de votre profil. Renseignez d'abord votre profil pour générer votre CV complet.", "To guarantee a factual CV with zero hallucination, ArcApply builds your CV directly from the education, experience and skills in your profile. Fill in your profile first to generate your complete CV.")}
                 </p>
               </div>
             </div>
@@ -1058,7 +1094,7 @@ export default function StudioCVPage() {
                 href="/profile"
                 className="px-4 py-2 rounded-lg bg-stone-900 hover:bg-black dark:bg-stone-100 dark:hover:bg-white text-white dark:text-stone-900 text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all"
               >
-                <span>Remplir mon profil</span>
+                <span>{t("Remplir mon profil", "Fill in my profile")}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
@@ -1070,16 +1106,28 @@ export default function StudioCVPage() {
           <div className="sticky top-0 z-10 pointer-events-none mb-1">
             <div className="px-3.5 py-1 rounded-full bg-white/95 dark:bg-stone-900/95 border border-orange-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 text-[11px] font-medium backdrop-blur-md shadow-md flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-600" />
-              <span>Cliquez sur un élément pour le modifier &bull; Le texte s'adapte automatiquement</span>
+              <span>
+                {t("Cliquez sur un élément pour le modifier", "Click an element to edit it")} &bull;{" "}
+                {t("Le texte s'adapte automatiquement", "Text adapts automatically")}
+              </span>
             </div>
           </div>
         )}
 
         {/* Real A4 Paper Sheet (210mm x dynamic height for 1 or 2 pages) */}
+        {/* Le wrapper occupe la taille réellement affichée : transform: scale ne réduit pas la boîte de layout */}
+        <div
+          className="shrink-0 relative"
+          style={{
+            width: `${A4_WIDTH_PX * zoomScale}px`,
+            height: `${iframeHeightPx * zoomScale}px`,
+            transition: "width 0.15s ease-out, height 0.15s ease-out",
+          }}
+        >
         <div
           style={{
             transform: `scale(${zoomScale})`,
-            transformOrigin: "top center",
+            transformOrigin: "top left",
             transition: "transform 0.15s ease-out",
             height: `${iframeHeightPx}px`,
           }}
@@ -1089,13 +1137,14 @@ export default function StudioCVPage() {
             ref={iframeRef}
             srcDoc={htmlContent}
             onLoad={setupIframeEditable}
-            title="Éditeur de CV Direct A4"
+            title={t("Éditeur de CV Direct A4", "Direct A4 CV Editor")}
             className="w-full flex-1 border-0 bg-white"
             style={{
               height: `${iframeHeightPx}px`,
               minHeight: "1123px",
             }}
           />
+        </div>
         </div>
       </div>
     </div>

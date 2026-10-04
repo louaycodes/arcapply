@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ATSMatchResult } from "@/lib/api";
+import { useAppLanguage } from "@/lib/language-context";
 import {
   CheckCircle2,
   Check,
@@ -21,6 +22,7 @@ interface AtsScoreBadgeProps {
 }
 
 export function AtsScoreBadge({ match, loading = false }: AtsScoreBadgeProps) {
+  const { t } = useAppLanguage();
   const [isOpen, setIsOpen] = useState(false);
 
   if (loading) {
@@ -65,7 +67,7 @@ export function AtsScoreBadge({ match, loading = false }: AtsScoreBadgeProps) {
           setIsOpen(true);
         }}
         className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-bold transition-all cursor-pointer ${badgeStyle}`}
-        title="Cliquer pour voir l'inventaire des compétences et l'audit ATS"
+        title={t("Cliquer pour voir l'inventaire des compétences et l'audit ATS", "Click to see the skills inventory and the ATS audit")}
       >
         <span
           className="w-2 h-2 rounded-full mr-0.5 shrink-0 shadow-xs"
@@ -81,7 +83,7 @@ export function AtsScoreBadge({ match, loading = false }: AtsScoreBadgeProps) {
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/60 backdrop-blur-md animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 !mt-0 flex items-center justify-center p-4 bg-stone-950/60 backdrop-blur-md animate-in fade-in duration-150"
           onClick={() => setIsOpen(false)}
         >
           <div
@@ -96,14 +98,14 @@ export function AtsScoreBadge({ match, loading = false }: AtsScoreBadgeProps) {
                     className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-mono font-bold border ${badgeStyle}`}
                   >
                     <Target className="w-3.5 h-3.5" />
-                    Alignement ATS : {score}%
+                    {t(`Alignement ATS : ${score}%`, `ATS match: ${score}%`)}
                   </span>
                   <span className="text-xs text-stone-500 dark:text-stone-400 font-mono">
-                    ({match.matched_skills.length} validées / {match.total_required} requises)
+                    {t(`(${match.matched_skills.length} validées / ${match.total_required} requises)`, `(${match.matched_skills.length} matched / ${match.total_required} required)`)}
                   </span>
                 </div>
                 <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 font-display mt-2">
-                  Inventaire Déterministe des Compétences
+                  {t("Inventaire Déterministe des Compétences", "Deterministic Skills Inventory")}
                 </h3>
               </div>
 
@@ -119,7 +121,7 @@ export function AtsScoreBadge({ match, loading = false }: AtsScoreBadgeProps) {
             {/* Score Progress Bar */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-xs font-mono">
-                <span className="text-stone-500 dark:text-stone-400">Niveau de correspondance</span>
+                <span className="text-stone-500 dark:text-stone-400">{t("Niveau de correspondance", "Match level")}</span>
                 <span className="font-semibold text-stone-900 dark:text-stone-100">{score} / 100</span>
               </div>
               <div className="h-2 w-full bg-stone-100 dark:bg-stone-800 rounded-full overflow-hidden border border-stone-200 dark:border-stone-700">
@@ -136,7 +138,7 @@ export function AtsScoreBadge({ match, loading = false }: AtsScoreBadgeProps) {
               <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/50 dark:bg-emerald-950/20 space-y-2">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  <span>Présentes sur votre profil ({match.matched_skills.length})</span>
+                  <span>{t(`Présentes sur votre profil (${match.matched_skills.length})`, `Found on your profile (${match.matched_skills.length})`)}</span>
                 </div>
                 {match.matched_skills.length > 0 ? (
                   <div className="flex flex-wrap gap-1.5 pt-1">
@@ -151,7 +153,7 @@ export function AtsScoreBadge({ match, loading = false }: AtsScoreBadgeProps) {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-stone-500 dark:text-stone-400 italic">Aucune correspondance directe détectée.</p>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 italic">{t("Aucune correspondance directe détectée.", "No direct match detected.")}</p>
                 )}
               </div>
 
@@ -159,7 +161,7 @@ export function AtsScoreBadge({ match, loading = false }: AtsScoreBadgeProps) {
               <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/50 dark:bg-amber-950/20 space-y-2">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-amber-800 dark:text-amber-300">
                   <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                  <span>Compétences proches ou transférables ({match.transferable_skills.length})</span>
+                  <span>{t(`Compétences proches ou transférables (${match.transferable_skills.length})`, `Related or transferable skills (${match.transferable_skills.length})`)}</span>
                 </div>
                 {match.transferable_skills.length > 0 ? (
                   <div className="flex flex-wrap gap-1.5 pt-1">
@@ -174,7 +176,7 @@ export function AtsScoreBadge({ match, loading = false }: AtsScoreBadgeProps) {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-stone-500 dark:text-stone-400 italic">Aucune compétence transférable identifiée.</p>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 italic">{t("Aucune compétence transférable identifiée.", "No transferable skills identified.")}</p>
                 )}
               </div>
 
@@ -183,11 +185,11 @@ export function AtsScoreBadge({ match, loading = false }: AtsScoreBadgeProps) {
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-rose-800 dark:text-rose-300">
                     <XCircle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-                    <span>Compétences à acquérir ({match.missing_skills.length})</span>
+                    <span>{t(`Compétences à acquérir (${match.missing_skills.length})`, `Skills to acquire (${match.missing_skills.length})`)}</span>
                   </div>
                   <span className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800 font-semibold">
                     <ShieldAlert className="w-3 h-3 text-rose-600 dark:text-rose-400" />
-                    Non inventées
+                    {t("Non inventées", "Never invented")}
                   </span>
                 </div>
                 {match.missing_skills.length > 0 ? (
@@ -203,7 +205,7 @@ export function AtsScoreBadge({ match, loading = false }: AtsScoreBadgeProps) {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-stone-500 dark:text-stone-400 italic">Toutes les compétences requises sont couvertes !</p>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 italic">{t("Toutes les compétences requises sont couvertes !", "All required skills are covered!")}</p>
                 )}
               </div>
             </div>
@@ -212,7 +214,7 @@ export function AtsScoreBadge({ match, loading = false }: AtsScoreBadgeProps) {
             <div className="p-3 rounded-xl bg-stone-50 dark:bg-stone-800/60 border border-stone-200 dark:border-stone-700 text-xs text-stone-600 dark:text-stone-300 flex items-start gap-2">
               <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
               <p className="leading-relaxed">
-                Ce score évalue la compatibilité entre votre profil et les attentes du recruteur. Vos candidatures n'incluent que vos compétences réelles pour garantir la crédibilité de votre dossier.
+                {t("Ce score évalue la compatibilité entre votre profil et les attentes du recruteur. Vos candidatures n'incluent que vos compétences réelles pour garantir la crédibilité de votre dossier.", "This score assesses how well your profile matches the recruiter's expectations. Your applications only include your real skills to keep your file credible.")}
               </p>
             </div>
           </div>

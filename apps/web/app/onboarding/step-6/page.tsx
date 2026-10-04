@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { OnboardingShell, useOnboarding } from "@/components/onboarding/onboarding-shell";
-import { Skill, Language, SKILL_CATEGORIES } from "@/lib/api";
+import { useAppLanguage } from "@/lib/language-context";
+import { Skill, Language, SKILL_CATEGORIES, skillCategoryLabel } from "@/lib/api";
 import {
   Code2,
   Globe2,
@@ -33,6 +34,7 @@ const SUGGESTED_SKILLS = [
 function Step6Content() {
   const router = useRouter();
   const { profile, setProfile, saveCurrentStep, isSaving } = useOnboarding();
+  const { t, language } = useAppLanguage();
   const [error, setError] = useState<string | null>(null);
 
   const [newSkillName, setNewSkillName] = useState("");
@@ -98,7 +100,7 @@ function Step6Content() {
     setError(null);
 
     if (skills.length === 0) {
-      setError("Veuillez renseigner au moins 2 ou 3 compétences clés pour permettre le matching ATS.");
+      setError(t("Veuillez renseigner au moins 2 ou 3 compétences clés pour permettre le matching ATS.", "Please add at least 2 or 3 key skills to enable ATS matching."));
       return;
     }
 
@@ -117,10 +119,10 @@ function Step6Content() {
           </div>
           <div>
             <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 font-display">
-              Compétences Techniques & Langues Étrangères
+              {t("Compétences Techniques & Langues Étrangères", "Technical Skills & Foreign Languages")}
             </h3>
             <p className="text-xs text-stone-500">
-              Le moteur de matching ATS compare ces compétences directement avec les mots-clés des offres.
+              {t("Le moteur de matching ATS compare ces compétences directement avec les mots-clés des offres.", "The ATS matching engine compares these skills directly with the offers' keywords.")}
             </p>
           </div>
         </div>
@@ -135,7 +137,7 @@ function Step6Content() {
         {/* Quick add suggestions */}
         <div className="space-y-2">
           <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300">
-            Compétences populaires recommandées pour élèves-ingénieurs :
+            {t("Compétences populaires recommandées pour élèves-ingénieurs :", "Popular skills recommended for engineering students:")}
           </label>
           <div className="flex flex-wrap gap-1.5">
             {SUGGESTED_SKILLS.map((sug) => {
@@ -165,7 +167,7 @@ function Step6Content() {
         {/* Add custom skill input */}
         <div className="p-4 rounded-xl bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-800 space-y-3">
           <label className="block text-xs font-semibold text-stone-800 dark:text-stone-200">
-            Ajouter une compétence personnalisée :
+            {t("Ajouter une compétence personnalisée :", "Add a custom skill:")}
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
             <div className="sm:col-span-2">
@@ -179,7 +181,7 @@ function Step6Content() {
                     addSkill(newSkillName, newSkillCategory, newSkillLevel);
                   }
                 }}
-                placeholder="Ex. PyTorch, Ansible, Go, Terraform..."
+                placeholder={t("Ex. PyTorch, Ansible, Go, Terraform...", "e.g. PyTorch, Ansible, Go, Terraform...")}
                 className="w-full px-3 py-2 text-xs bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 rounded-lg focus:outline-none focus:border-primary text-stone-900 dark:text-stone-100"
               />
             </div>
@@ -191,7 +193,7 @@ function Step6Content() {
               >
                 {SKILL_CATEGORIES.map((c) => (
                   <option key={c} value={c}>
-                    {c}
+                    {skillCategoryLabel(c, language)}
                   </option>
                 ))}
               </select>
@@ -203,7 +205,7 @@ function Step6Content() {
                 className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-primary hover:bg-orange-700 text-white text-xs font-semibold shadow-xs cursor-pointer transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>Ajouter</span>
+                <span>{t("Ajouter", "Add")}</span>
               </button>
             </div>
           </div>
@@ -213,13 +215,13 @@ function Step6Content() {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h4 className="text-xs font-bold text-stone-800 dark:text-stone-200 uppercase tracking-wider">
-              Compétences enregistrées ({skills.length})
+              {t(`Compétences enregistrées (${skills.length})`, `Saved skills (${skills.length})`)}
             </h4>
           </div>
 
           {skills.length === 0 ? (
             <p className="text-xs text-stone-500 italic">
-              Aucune compétence ajoutée pour le moment.
+              {t("Aucune compétence ajoutée pour le moment.", "No skills added yet.")}
             </p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
@@ -230,13 +232,13 @@ function Step6Content() {
                 >
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-stone-900 dark:text-stone-100 truncate">{s.name}</p>
-                    <p className="text-[10px] text-stone-500 truncate">{s.category}</p>
+                    <p className="text-[10px] text-stone-500 truncate">{skillCategoryLabel(s.category, language)}</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => removeSkill(idx)}
                     className="p-1 rounded-md text-stone-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                    title="Supprimer"
+                    title={t("Supprimer", "Delete")}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -252,7 +254,7 @@ function Step6Content() {
             <div className="flex items-center gap-2">
               <Globe2 className="w-4 h-4 text-primary" />
               <h4 className="text-xs font-bold text-stone-800 dark:text-stone-200 uppercase tracking-wider">
-                Langues maîtrisées
+                {t("Langues maîtrisées", "Languages spoken")}
               </h4>
             </div>
             <button
@@ -261,7 +263,7 @@ function Step6Content() {
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-primary/30 bg-primary/5 text-primary text-xs font-semibold hover:bg-primary/10 transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Ajouter une langue</span>
+              <span>{t("Ajouter une langue", "Add a language")}</span>
             </button>
           </div>
 
@@ -276,14 +278,14 @@ function Step6Content() {
                     type="text"
                     value={lang.name}
                     onChange={(e) => updateLanguage(idx, "name", e.target.value)}
-                    placeholder="Ex. Français, Anglais..."
+                    placeholder={t("Ex. Français, Anglais...", "e.g. French, English...")}
                     className="w-full px-2 py-1 text-xs bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 rounded font-semibold text-stone-900 dark:text-stone-100"
                   />
                   <input
                     type="text"
                     value={lang.level}
                     onChange={(e) => updateLanguage(idx, "level", e.target.value)}
-                    placeholder="Ex. Bilingue (C2), Professionnel (C1)..."
+                    placeholder={t("Ex. Bilingue (C2), Professionnel (C1)...", "e.g. Bilingual (C2), Professional (C1)...")}
                     className="w-full px-2 py-1 text-[11px] bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 rounded text-stone-600 dark:text-stone-400"
                   />
                 </div>
@@ -308,7 +310,7 @@ function Step6Content() {
           className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 hover:bg-stone-50 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300 text-xs font-semibold transition-all shadow-xs"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Étape précédente</span>
+          <span>{t("Étape précédente", "Previous step")}</span>
         </button>
 
         <button
@@ -319,11 +321,11 @@ function Step6Content() {
           {isSaving ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Enregistrement...</span>
+              <span>{t("Enregistrement...", "Saving...")}</span>
             </>
           ) : (
             <>
-              <span>Finaliser & Découvrir le Cockpit</span>
+              <span>{t("Finaliser & Découvrir le Cockpit", "Finish & Discover the Cockpit")}</span>
               <ArrowRight className="w-4 h-4" />
             </>
           )}

@@ -12,6 +12,7 @@ import {
   Check,
 } from "lucide-react";
 import { downloadCoverLetterFile, CoverLetterFormat } from "@/lib/api";
+import { useAppLanguage } from "@/lib/language-context";
 
 interface LetterDownloadMenuProps {
   jobId?: string;
@@ -26,39 +27,39 @@ interface LetterDownloadMenuProps {
 
 interface FormatOption {
   format: CoverLetterFormat;
-  label: string;
+  label: { fr: string; en: string };
   ext: string;
-  desc: string;
+  desc: { fr: string; en: string };
   icon: typeof FileText;
 }
 
 const FORMAT_OPTIONS: FormatOption[] = [
   {
     format: "pdf",
-    label: "PDF Vectoriel",
+    label: { fr: "PDF Vectoriel", en: "Vector PDF" },
     ext: ".pdf",
-    desc: "Format standard A4 haute qualité",
+    desc: { fr: "Format standard A4 haute qualité", en: "High-quality standard A4 format" },
     icon: FileText,
   },
   {
     format: "html",
-    label: "Document Web",
+    label: { fr: "Document Web", en: "Web document" },
     ext: ".html",
-    desc: "Page HTML stylisée et imprimable",
+    desc: { fr: "Page HTML stylisée et imprimable", en: "Styled, printable HTML page" },
     icon: Globe,
   },
   {
     format: "jpeg",
-    label: "Image Haute Définition",
+    label: { fr: "Image Haute Définition", en: "High-definition image" },
     ext: ".jpeg",
-    desc: "Rendu graphique A4 retina 2x",
+    desc: { fr: "Rendu graphique A4 retina 2x", en: "A4 retina 2x graphic render" },
     icon: ImageIcon,
   },
   {
     format: "txt",
-    label: "Texte Brut",
+    label: { fr: "Texte Brut", en: "Plain text" },
     ext: ".txt",
-    desc: "Format épuré pour formulaires ATS",
+    desc: { fr: "Format épuré pour formulaires ATS", en: "Clean format for ATS forms" },
     icon: FileCode,
   },
 ];
@@ -73,6 +74,7 @@ export function LetterDownloadMenu({
   variant = "secondary",
   placement = "bottom",
 }: LetterDownloadMenuProps) {
+  const { t, language } = useAppLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [downloadingFormat, setDownloadingFormat] = useState<CoverLetterFormat | null>(null);
   const [downloadSuccess, setDownloadSuccess] = useState<CoverLetterFormat | null>(null);
@@ -107,7 +109,7 @@ export function LetterDownloadMenu({
       setIsOpen(false);
     } catch (err: any) {
       console.error(`Erreur téléchargement ${format}:`, err);
-      setError(err?.message || `Échec du téléchargement en .${format}`);
+      setError(err?.message || t(`Échec du téléchargement en .${format}`, `Download failed as .${format}`));
     } finally {
       setDownloadingFormat(null);
     }
@@ -129,14 +131,14 @@ export function LetterDownloadMenu({
         onClick={() => setIsOpen(!isOpen)}
         disabled={!!downloadingFormat}
         className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 ${buttonStyle}`}
-        title="Télécharger la lettre de motivation (.pdf, .html, .jpeg, .txt)"
+        title={t("Télécharger la lettre de motivation (.pdf, .html, .jpeg, .txt)", "Download the cover letter (.pdf, .html, .jpeg, .txt)")}
       >
         {downloadingFormat ? (
           <Loader2 className="w-3.5 h-3.5 animate-spin" />
         ) : (
           <Download className="w-3.5 h-3.5" />
         )}
-        <span>{downloadingFormat ? "Génération..." : "Télécharger"}</span>
+        <span>{downloadingFormat ? t("Génération...", "Generating...") : t("Télécharger", "Download")}</span>
         <ChevronDown
           className={`w-3 h-3 opacity-70 transition-transform duration-200 ${
             isOpen ? "rotate-180" : ""
@@ -145,10 +147,10 @@ export function LetterDownloadMenu({
       </button>
 
       {isOpen && (
-        <div className={`absolute right-0 ${positionClasses} w-72 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-2xl py-2 z-[9999] animate-in fade-in zoom-in-95 duration-150`}>
+        <div className={`absolute right-0 ${positionClasses} w-72 max-w-[calc(100vw-2rem)] rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-2xl py-2 z-[9999] animate-in fade-in zoom-in-95 duration-150`}>
           <div className="px-3.5 py-1.5 border-b border-stone-100 dark:border-stone-800 flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-stone-600 dark:text-stone-400">
-              Format d'exportation
+              {t("Format d'exportation", "Export format")}
             </span>
             {error && (
               <span className="text-[10px] text-red-600 dark:text-red-400 font-semibold truncate max-w-[140px]">
@@ -178,14 +180,14 @@ export function LetterDownloadMenu({
                     <div>
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs font-bold text-stone-900 dark:text-stone-100">
-                          {opt.label}
+                          {opt.label[language]}
                         </span>
                         <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 font-semibold">
                           {opt.ext}
                         </span>
                       </div>
                       <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-tight">
-                        {opt.desc}
+                        {opt.desc[language]}
                       </p>
                     </div>
                   </div>

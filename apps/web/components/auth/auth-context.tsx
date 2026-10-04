@@ -4,6 +4,9 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, loginUser, registerUser, fetchCurrentUser } from "@/lib/api";
 import { Loader2 } from "lucide-react";
 import { LoginForm } from "@/components/auth/login-form";
+import { LanguageSwitcher } from "@/components/navigation/language-switcher";
+import { ThemeToggle } from "@/components/navigation/theme-toggle";
+import { useAppLanguage } from "@/lib/language-context";
 
 interface AuthContextType {
   user: User | null;
@@ -28,6 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { t } = useAppLanguage();
 
 
   useEffect(() => {
@@ -87,10 +91,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center min-h-screen bg-[#FBF9F5]">
+      <div className="flex-1 flex items-center justify-center min-h-screen bg-[#FBF9F5] dark:bg-[#12100E]">
         <div className="flex flex-col items-center gap-3 text-stone-600 dark:text-stone-400">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <span className="text-sm font-medium">Chargement d'ArcApply...</span>
+          <span className="text-sm font-medium">{t("Chargement d'ArcApply...", "Loading ArcApply...")}</span>
         </div>
       </div>
     );
@@ -99,7 +103,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   if (!user) {
     return (
       <AuthContext.Provider value={{ user, token, isLoading, login, logout, register }}>
-        <div className="min-h-screen w-full flex items-center justify-center bg-[#F7F3EC] p-4 font-sans selection:bg-orange-100">
+        <div className="relative min-h-screen w-full flex items-center justify-center bg-[#F7F3EC] dark:bg-[#12100E] p-4 pt-16 font-sans selection:bg-orange-100">
+          <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex items-center gap-2">
+            <LanguageSwitcher />
+            <ThemeToggle />
+          </div>
           <LoginForm />
         </div>
       </AuthContext.Provider>

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { OnboardingShell, useOnboarding } from "@/components/onboarding/onboarding-shell";
+import { useAppLanguage } from "@/lib/language-context";
 import {
   User,
   Mail,
@@ -20,6 +21,7 @@ import {
 function Step1Content() {
   const router = useRouter();
   const { profile, setProfile, saveCurrentStep, isSaving } = useOnboarding();
+  const { t } = useAppLanguage();
   const [error, setError] = useState<string | null>(null);
 
   if (!profile) return null;
@@ -29,11 +31,11 @@ function Step1Content() {
     setError(null);
 
     if (!profile.full_name?.trim()) {
-      setError("Veuillez renseigner votre nom complet.");
+      setError(t("Veuillez renseigner votre nom complet.", "Please enter your full name."));
       return;
     }
     if (!profile.email?.trim() || !profile.email.includes("@")) {
-      setError("Veuillez renseigner une adresse email valide.");
+      setError(t("Veuillez renseigner une adresse email valide.", "Please enter a valid email address."));
       return;
     }
 
@@ -52,10 +54,10 @@ function Step1Content() {
           </div>
           <div>
             <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 font-display">
-              Identité & Coordonnées Principales
+              {t("Identité & Coordonnées Principales", "Identity & Main Contact Details")}
             </h3>
             <p className="text-xs text-stone-500">
-              Ces informations apparaîtront dans l'en-tête de votre CV et sur vos lettres de motivation.
+              {t("Ces informations apparaîtront dans l'en-tête de votre CV et sur vos lettres de motivation.", "This information will appear in the header of your CV and on your cover letters.")}
             </p>
           </div>
         </div>
@@ -70,7 +72,7 @@ function Step1Content() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
             <label className="block text-xs font-semibold text-stone-800 dark:text-stone-200 mb-1.5 flex items-center gap-1.5">
-              <span>Nom complet *</span>
+              <span>{t("Nom complet *", "Full name *")}</span>
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
@@ -81,7 +83,7 @@ function Step1Content() {
                 required
                 value={profile.full_name || ""}
                 onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-                placeholder="Ex. Alexandre Dupont"
+                placeholder={t("Ex. Alexandre Dupont", "e.g. Alex Johnson")}
                 className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-stone-900 dark:text-stone-100 transition-all placeholder:text-stone-400"
               />
             </div>
@@ -89,7 +91,7 @@ function Step1Content() {
 
           <div>
             <label className="block text-xs font-semibold text-stone-800 dark:text-stone-200 mb-1.5 flex items-center gap-1.5">
-              <span>Email de contact *</span>
+              <span>{t("Email de contact *", "Contact email *")}</span>
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
@@ -100,7 +102,7 @@ function Step1Content() {
                 required
                 value={profile.email || ""}
                 onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                placeholder="Ex. alexandre.dupont@ecole.fr"
+                placeholder={t("Ex. alexandre.dupont@ecole.fr", "e.g. alex.johnson@school.edu")}
                 className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-stone-900 dark:text-stone-100 transition-all placeholder:text-stone-400"
               />
             </div>
@@ -108,7 +110,7 @@ function Step1Content() {
 
           <div>
             <label className="block text-xs font-semibold text-stone-800 dark:text-stone-200 mb-1.5 flex items-center gap-1.5">
-              <span>Numéro de téléphone</span>
+              <span>{t("Numéro de téléphone", "Phone number")}</span>
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
@@ -118,7 +120,7 @@ function Step1Content() {
                 type="tel"
                 value={profile.phone || ""}
                 onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                placeholder="Ex. +33 6 12 34 56 78"
+                placeholder={t("Ex. +33 6 12 34 56 78", "e.g. +33 6 12 34 56 78")}
                 className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-stone-900 dark:text-stone-100 transition-all placeholder:text-stone-400"
               />
             </div>
@@ -126,7 +128,7 @@ function Step1Content() {
 
           <div>
             <label className="block text-xs font-semibold text-stone-800 dark:text-stone-200 mb-1.5 flex items-center gap-1.5">
-              <span>Localisation cible (Stage PFE) *</span>
+              <span>{t("Localisation cible (Stage PFE) *", "Target location (PFE internship) *")}</span>
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
@@ -136,7 +138,7 @@ function Step1Content() {
                 type="text"
                 value={profile.location || ""}
                 onChange={(e) => setProfile({ ...profile, location: e.target.value })}
-                placeholder="Ex. Paris, France / Tunis, Tunisie"
+                placeholder={t("Ex. Paris, France / Tunis, Tunisie", "e.g. Paris, France / Tunis, Tunisia")}
                 className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-stone-900 dark:text-stone-100 transition-all placeholder:text-stone-400"
               />
             </div>
@@ -146,12 +148,12 @@ function Step1Content() {
         {/* Liens professionnels */}
         <div className="pt-4 border-t border-stone-200/60 dark:border-stone-800 space-y-4">
           <h4 className="text-xs font-bold text-stone-800 dark:text-stone-200 uppercase tracking-wider">
-            Présence en ligne & Portfolios
+            {t("Présence en ligne & Portfolios", "Online Presence & Portfolios")}
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1.5">
-                Profil LinkedIn
+                {t("Profil LinkedIn", "LinkedIn profile")}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-stone-400">
@@ -169,7 +171,7 @@ function Step1Content() {
 
             <div>
               <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1.5">
-                Profil GitHub
+                {t("Profil GitHub", "GitHub profile")}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-stone-400">
@@ -187,7 +189,7 @@ function Step1Content() {
 
             <div>
               <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1.5">
-                Site Web / Portfolio
+                {t("Site Web / Portfolio", "Website / Portfolio")}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-stone-400">
@@ -197,7 +199,7 @@ function Step1Content() {
                   type="url"
                   value={profile.website_url || ""}
                   onChange={(e) => setProfile({ ...profile, website_url: e.target.value })}
-                  placeholder="https://mon-portfolio.dev"
+                  placeholder={t("https://mon-portfolio.dev", "https://my-portfolio.dev")}
                   className="w-full pl-9 pr-3 py-2 text-xs bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg focus:bg-white focus:outline-none focus:border-primary text-stone-900 dark:text-stone-100"
                 />
               </div>
@@ -209,7 +211,7 @@ function Step1Content() {
       {/* Action Bar */}
       <div className="flex items-center justify-between pt-2">
         <div className="text-xs text-stone-500">
-          * Champs obligatoires pour la conformité ATS
+          {t("* Champs obligatoires pour la conformité ATS", "* Required fields for ATS compliance")}
         </div>
         <button
           type="submit"
@@ -219,11 +221,11 @@ function Step1Content() {
           {isSaving ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Enregistrement...</span>
+              <span>{t("Enregistrement...", "Saving...")}</span>
             </>
           ) : (
             <>
-              <span>Étape suivante : Objectif & Bio</span>
+              <span>{t("Étape suivante : Objectif & Bio", "Next step: Goal & Bio")}</span>
               <ArrowRight className="w-4 h-4" />
             </>
           )}

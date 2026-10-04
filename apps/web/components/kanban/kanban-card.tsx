@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { JobOffer, ATSMatchResult } from "@/lib/api";
+import { useAppLanguage } from "@/lib/language-context";
 import {
   Building2,
   Sparkles,
@@ -28,6 +29,7 @@ export function KanbanCard({
   onTransition,
   isTransitioning = false,
 }: KanbanCardProps) {
+  const { t } = useAppLanguage();
   const isLinkedIn = (job.platform || "").toLowerCase() === "linkedin";
 
   // Calcul du délai pour alerte relance (> 7 jours pour les candidatures envoyées)
@@ -81,7 +83,7 @@ export function KanbanCard({
       {isRelanceDue && (
         <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800/60 text-[10px] font-semibold text-amber-900 dark:text-amber-300 shadow-xs">
           <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-700 dark:text-amber-400" />
-          <span>Relance conseillée (J+{diffDays})</span>
+          <span>{t(`Relance conseillée (J+${diffDays})`, `Follow-up recommended (D+${diffDays})`)}</span>
         </div>
       )}
 
@@ -110,10 +112,10 @@ export function KanbanCard({
           type="button"
           onClick={() => onOpenMirror(job)}
           className="p-1.5 rounded-lg text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors flex items-center gap-1 cursor-pointer"
-          title="Ouvrir l'analyse profonde et les documents"
+          title={t("Ouvrir l'analyse profonde et les documents", "Open the deep analysis and documents")}
         >
           <Sparkles className="w-3 h-3 text-primary" />
-          <span className="text-[10px] font-semibold">Analyse</span>
+          <span className="text-[10px] font-semibold">{t("Analyse", "Analysis")}</span>
         </button>
 
         {/* 4-Column Contextual Transitions */}
@@ -125,10 +127,10 @@ export function KanbanCard({
               disabled={isTransitioning}
               onClick={() => onTransition(job.id, "SUBMITTED")}
               className="px-2.5 py-1 rounded-lg bg-orange-50 dark:bg-orange-950/40 hover:bg-primary text-primary hover:text-white border border-orange-200 dark:border-orange-800/60 text-[10px] font-bold flex items-center gap-1 transition-all disabled:opacity-50 cursor-pointer"
-              title="Marquer comme candidature envoyée"
+              title={t("Marquer comme candidature envoyée", "Mark as application sent")}
             >
               <Send className="w-3 h-3" />
-              <span>Envoyée</span>
+              <span>{t("Envoyée", "Sent")}</span>
             </button>
           )}
 
@@ -140,17 +142,17 @@ export function KanbanCard({
                 disabled={isTransitioning}
                 onClick={() => onTransition(job.id, "OFFER")}
                 className="px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-600 text-emerald-800 dark:text-emerald-300 hover:text-white border border-emerald-200 dark:border-emerald-800/60 text-[10px] font-bold flex items-center gap-1 transition-all disabled:opacity-50 cursor-pointer"
-                title="Candidature retenue !"
+                title={t("Candidature retenue !", "Application accepted!")}
               >
                 <Trophy className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                <span>Retenue</span>
+                <span>{t("Retenue", "Accepted")}</span>
               </button>
               <button
                 type="button"
                 disabled={isTransitioning}
                 onClick={() => onTransition(job.id, "REJECTED")}
                 className="p-1 rounded-lg text-stone-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors disabled:opacity-50 cursor-pointer"
-                title="Non retenue"
+                title={t("Non retenue", "Not selected")}
               >
                 <XCircle className="w-3.5 h-3.5" />
               </button>
@@ -162,14 +164,14 @@ export function KanbanCard({
             <div className="flex items-center gap-1.5">
               <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-800/60">
                 <Trophy className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                <span>Retenue</span>
+                <span>{t("Retenue", "Accepted")}</span>
               </span>
               <button
                 type="button"
                 disabled={isTransitioning}
                 onClick={() => onTransition(job.id, "SUBMITTED")}
                 className="p-1 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 rounded transition-colors cursor-pointer"
-                title="Remettre en candidatures envoyées"
+                title={t("Remettre en candidatures envoyées", "Move back to applications sent")}
               >
                 <RotateCcw className="w-3 h-3" />
               </button>
@@ -181,14 +183,14 @@ export function KanbanCard({
             <div className="flex items-center gap-1.5">
               <span className="text-[10px] font-medium text-stone-600 dark:text-stone-300 bg-stone-100 dark:bg-stone-800 px-2 py-0.5 rounded-full border border-stone-200 dark:border-stone-700 flex items-center gap-1">
                 <XCircle className="w-3 h-3 text-stone-400 dark:text-stone-500" />
-                <span>Non retenue</span>
+                <span>{t("Non retenue", "Not selected")}</span>
               </span>
               <button
                 type="button"
                 disabled={isTransitioning}
                 onClick={() => onTransition(job.id, "SUBMITTED")}
                 className="p-1 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 rounded transition-colors cursor-pointer"
-                title="Remettre en candidatures envoyées"
+                title={t("Remettre en candidatures envoyées", "Move back to applications sent")}
               >
                 <RotateCcw className="w-3 h-3" />
               </button>
