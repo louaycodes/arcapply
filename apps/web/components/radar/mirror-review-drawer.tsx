@@ -39,7 +39,6 @@ import {
   MapPin,
   ShieldAlert,
   ChevronDown,
-  Lock,
   Layers,
   Briefcase,
   Download,
@@ -462,8 +461,8 @@ export function MirrorReviewDrawer({
         {/* Main Split Body */}
         <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 overflow-y-auto lg:overflow-hidden">
           {/* LEFT PANEL: 100% ANALYSE PROFONDE, STACK & SCRAPED DETAILS (5 cols) */}
-          <div className="lg:col-span-5 border-b lg:border-b-0 lg:border-r border-border/80 flex flex-col lg:h-full lg:overflow-hidden bg-background/50">
-            <div className="lg:flex-1 lg:overflow-y-auto p-4 sm:p-5 space-y-4">
+          <div className={`${isAnalysisReady ? "lg:col-span-5 border-b lg:border-b-0 lg:border-r border-border/80" : "lg:col-span-12"} flex flex-col lg:h-full lg:overflow-hidden bg-background/50`}>
+            <div className={`lg:flex-1 lg:overflow-y-auto p-4 sm:p-5 space-y-4 ${isAnalysisReady ? "" : "w-full max-w-3xl mx-auto"}`}>
               {/* Opportunity Card */}
               <div className="p-4 rounded-xl border border-border bg-card shadow-xs space-y-3">
                 <div className="flex items-center justify-between">
@@ -681,7 +680,8 @@ export function MirrorReviewDrawer({
             </div>
           </div>
 
-          {/* RIGHT PANEL: EXCLUSIVELY DEDICATED TO LA LETTRE & LE CV (7 cols) */}
+          {/* RIGHT PANEL : lettre & CV, affiché uniquement une fois l'Analyse Profonde terminée */}
+          {isAnalysisReady && (
           <div className="lg:col-span-7 flex flex-col lg:h-full lg:overflow-hidden bg-card/60">
             {/* Tabs Header */}
             <div className="px-3 sm:px-5 py-3 border-b border-border/80 flex flex-wrap items-center justify-between gap-2 bg-muted/10">
@@ -697,9 +697,6 @@ export function MirrorReviewDrawer({
                 >
                   <Mail className="w-3.5 h-3.5" />
                   <span>{t("Lettre de motivation", "Cover letter")}</span>
-                  {!isAnalysisReady && (
-                    <Lock className="w-3 h-3 text-stone-400 ml-0.5" />
-                  )}
                 </button>
 
                 <button
@@ -713,9 +710,6 @@ export function MirrorReviewDrawer({
                 >
                   <FileText className="w-3.5 h-3.5" />
                   <span>{t("CV Ciblé", "Tailored CV")}</span>
-                  {!isAnalysisReady && (
-                    <Lock className="w-3 h-3 text-stone-400 ml-0.5" />
-                  )}
                 </button>
               </div>
 
@@ -939,21 +933,7 @@ export function MirrorReviewDrawer({
               )}
 
               {/* Si Analyse non effectuée */}
-              {!isAnalysisReady ? (
-                <div className="flex-1 flex flex-col items-center justify-center text-center p-6 space-y-4 h-full">
-                  <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950 border border-amber-300 dark:border-amber-800 flex items-center justify-center text-amber-800 dark:text-amber-300">
-                    <Lock className="w-6 h-6" />
-                  </div>
-                  <div className="space-y-1 max-w-md">
-                    <h4 className="text-sm font-bold text-foreground">
-                      {t("Analyse Profonde Requise", "Deep Analysis Required")}
-                    </h4>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      {t("Pour générer des documents rigoureusement alignés sur l'entreprise (zéro hallucination), lancez d'abord l'analyse approfondie de l'offre via le bouton « Lancer l'analyse ».", "To generate documents rigorously aligned with the company (zero hallucination), first run the deep analysis of the offer with the \u201cStart analysis\u201d button.")}
-                    </p>
-                  </div>
-                </div>
-              ) : activeTab === "letter" ? (
+              {activeTab === "letter" ? (
                 /* SECTION LETTRE DE MOTIVATION */
                 <div className="w-full h-full p-4 flex flex-col gap-3 overflow-hidden bg-background/40">
                   {letterLoading ? (
@@ -1081,6 +1061,7 @@ export function MirrorReviewDrawer({
               )}
             </div>
           </div>
+          )}
         </div>
 
         {/* BOTTOM ACTION BAR */}
