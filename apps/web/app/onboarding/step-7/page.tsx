@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { OnboardingShell, useOnboarding } from "@/components/onboarding/onboarding-shell";
+import { useAppLanguage } from "@/lib/language-context";
 import { completeOnboarding } from "@/lib/api";
 import {
   ShieldCheck,
@@ -20,6 +21,7 @@ import {
 function Step7Content() {
   const router = useRouter();
   const { profile, status } = useOnboarding();
+  const { t } = useAppLanguage();
   const [isFinishing, setIsFinishing] = useState(false);
 
   const handleFinish = async () => {
@@ -60,13 +62,16 @@ function Step7Content() {
           <div className="space-y-2 max-w-xl">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-emerald-100 text-xs font-semibold mb-1">
               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span>Configuration Initiale Réussie</span>
+              <span>{t("Configuration Initiale Réussie", "Initial Setup Complete")}</span>
             </div>
             <h3 className="text-2xl sm:text-3xl font-bold font-display text-white">
-              Félicitations {profile?.full_name?.split(" ")[0] || ""} ! Votre profil est prêt.
+              {t(
+                `Félicitations ${profile?.full_name?.split(" ")[0] || ""} ! Votre profil est prêt.`,
+                `Congratulations ${profile?.full_name?.split(" ")[0] || ""}! Your profile is ready.`
+              )}
             </h3>
             <p className="text-sm text-emerald-100/90 leading-relaxed">
-              Vos informations ont été enregistrées avec succès dans votre Master Profile. Le moteur déterministe ArcApply peut maintenant générer des candidatures ultra-ciblées sans aucune hallucination.
+              {t("Vos informations ont été enregistrées avec succès dans votre Master Profile. Le moteur déterministe ArcApply peut maintenant générer des candidatures ultra-ciblées sans aucune hallucination.", "Your information has been saved to your Master Profile. ArcApply's deterministic engine can now generate highly targeted applications with zero hallucination.")}
             </p>
           </div>
 
@@ -75,7 +80,7 @@ function Step7Content() {
               {score}%
             </span>
             <span className="text-[11px] font-semibold text-emerald-100 uppercase tracking-wider block mt-1">
-              Score de Complétude
+              {t("Score de Complétude", "Completeness Score")}
             </span>
           </div>
         </div>
@@ -84,7 +89,7 @@ function Step7Content() {
       {/* 3 Pillars of ArcApply */}
       <div className="space-y-3">
         <h4 className="text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider">
-          Découvrez vos 3 super-pouvoirs de candidature :
+          {t("Découvrez vos 3 super-pouvoirs de candidature :", "Discover your 3 application superpowers:")}
         </h4>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -95,10 +100,10 @@ function Step7Content() {
             </div>
             <div>
               <h5 className="text-sm font-bold text-stone-900 dark:text-stone-100">
-                1. Radar des Offres PFE
+                {t("1. Radar des Offres PFE", "1. PFE Offer Radar")}
               </h5>
               <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed">
-                Collecte automatisée multi-plateformes (LinkedIn, JobTeaser, Apec, etc.). Grâce au bouclier anti-rescrape, les offres déjà postulées et archivées ne réapparaissent jamais.
+                {t("Collecte automatisée multi-plateformes (LinkedIn, JobTeaser, Apec, etc.). Grâce au bouclier anti-rescrape, les offres déjà postulées et archivées ne réapparaissent jamais.", "Automated multi-platform collection (LinkedIn, JobTeaser, Apec, etc.). Thanks to the anti-rescrape shield, offers you already applied to or archived never reappear.")}
               </p>
             </div>
           </div>
@@ -110,10 +115,10 @@ function Step7Content() {
             </div>
             <div>
               <h5 className="text-sm font-bold text-stone-900 dark:text-stone-100">
-                2. CV & Lettre 100% Déterministes
+                {t("2. CV & Lettre 100% Déterministes", "2. 100% Deterministic CV & Letter")}
               </h5>
               <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed">
-                Chaque candidature est ajustée aux mots-clés exacts de l'offre en exploitant uniquement vos vraies expériences, sans aucune compétence inventée.
+                {t("Chaque candidature est ajustée aux mots-clés exacts de l'offre en exploitant uniquement vos vraies expériences, sans aucune compétence inventée.", "Each application is tailored to the offer's exact keywords using only your real experience, with no invented skills.")}
               </p>
             </div>
           </div>
@@ -125,10 +130,10 @@ function Step7Content() {
             </div>
             <div>
               <h5 className="text-sm font-bold text-stone-900 dark:text-stone-100">
-                3. Suivi Kanban Transparent
+                {t("3. Suivi Kanban Transparent", "3. Transparent Kanban Tracking")}
               </h5>
               <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed">
-                Suivez en temps réel le statut de chacune de vos candidatures, des entretiens jusqu'à l'offre finale de stage PFE.
+                {t("Suivez en temps réel le statut de chacune de vos candidatures, des entretiens jusqu'à l'offre finale de stage PFE.", "Track the status of each application in real time, from interviews to the final PFE internship offer.")}
               </p>
             </div>
           </div>
@@ -143,10 +148,10 @@ function Step7Content() {
           </div>
           <div>
             <h5 className="text-sm font-bold text-stone-900 dark:text-stone-100">
-              Prêt à trouver votre stage de rêve ?
+              {t("Prêt à trouver votre stage de rêve ?", "Ready to find your dream internship?")}
             </h5>
             <p className="text-xs text-stone-500">
-              Lancez le Radar pour scanner les meilleures offres de stage PFE adaptées à votre profil.
+              {t("Lancez le Radar pour scanner les meilleures offres de stage PFE adaptées à votre profil.", "Launch the Radar to scan the best PFE internship offers matching your profile.")}
             </p>
           </div>
         </div>
@@ -160,11 +165,11 @@ function Step7Content() {
           {isFinishing ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Ouverture du Radar...</span>
+              <span>{t("Ouverture du Radar...", "Opening the Radar...")}</span>
             </>
           ) : (
             <>
-              <span>Découvrir mes premières offres sur le Radar</span>
+              <span>{t("Découvrir mes premières offres sur le Radar", "Discover my first offers on the Radar")}</span>
               <ArrowRight className="w-4 h-4" />
             </>
           )}

@@ -33,7 +33,7 @@ interface CVPreviewModalProps {
 }
 
 export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
-  const { language: appLanguage, setLanguage: setAppLanguage } = useAppLanguage();
+  const { language: appLanguage, t } = useAppLanguage();
   const [cv, setCv] = useState<TargetedCV | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +53,7 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
       const generated = await generateTargetedCV(job.id, language);
       setCv(generated);
     } catch (err: any) {
-      setError(err.message || "Erreur lors de la génération du CV ciblé.");
+      setError(err.message || t("Erreur lors de la génération du CV ciblé.", "Error while generating the tailored CV."));
     } finally {
       setLoading(false);
     }
@@ -93,11 +93,11 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base sm:text-lg font-bold text-stone-900 dark:text-stone-100 font-display">
-                  CV Adapté à l'offre
+                  {t("CV Adapté à l'offre", "CV Tailored to the Offer")}
                 </h2>
                 <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-800">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
-                  100% Vérifié
+                  {t("100% Vérifié", "100% Verified")}
                 </span>
               </div>
               <p className="text-xs text-stone-600 dark:text-stone-400 mt-0.5 line-clamp-1">
@@ -113,14 +113,13 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
                 type="button"
                 onClick={() => {
                   setLanguage("fr");
-                  setAppLanguage("fr");
                 }}
                 className={`px-2.5 py-1 rounded-md transition-all ${
                   language === "fr"
                     ? "bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 shadow-xs font-bold"
                     : "text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100"
                 }`}
-                title="Version Française"
+                title={t("Version Française", "French version")}
               >
                 FR
               </button>
@@ -128,7 +127,6 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
                 type="button"
                 onClick={() => {
                   setLanguage("en");
-                  setAppLanguage("en");
                 }}
                 className={`px-2.5 py-1 rounded-md transition-all ${
                   language === "en"
@@ -144,10 +142,10 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
             <a
               href="/cv"
               className="px-3 py-2 rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-800 hover:bg-stone-50 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs"
-              title="Ouvrir dans le Studio CV pour modifier le texte directement"
+              title={t("Ouvrir dans le Studio CV pour modifier le texte directement", "Open in CV Studio to edit the text directly")}
             >
               <FileText className="w-3.5 h-3.5 text-primary" />
-              <span className="hidden sm:inline">Modifier dans Studio CV</span>
+              <span className="hidden sm:inline">{t("Modifier dans Studio CV", "Edit in CV Studio")}</span>
             </a>
 
             <button
@@ -161,7 +159,7 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
                     lang: language,
                   });
                 } catch (err: any) {
-                  setError(err?.message || "Erreur lors du téléchargement du CV.");
+                  setError(err?.message || t("Erreur lors du téléchargement du CV.", "Error while downloading the CV."));
                 } finally {
                   setIsDownloading(false);
                 }
@@ -174,14 +172,14 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
               ) : (
                 <Download className="w-4 h-4" />
               )}
-              <span className="hidden sm:inline">Télécharger PDF ({language.toUpperCase()})</span>
+              <span className="hidden sm:inline">{t(`Télécharger PDF (${language.toUpperCase()})`, `Download PDF (${language.toUpperCase()})`)}</span>
             </button>
 
             <button
               type="button"
               onClick={onClose}
               className="p-1.5 rounded-lg text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
-              title="Fermer"
+              title={t("Fermer", "Close")}
             >
               <X className="w-5 h-5" />
             </button>
@@ -201,7 +199,7 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
               }`}
             >
               <Eye className="w-3.5 h-3.5" />
-              <span>Aperçu PDF Direct</span>
+              <span>{t("Aperçu PDF Direct", "Live PDF Preview")}</span>
             </button>
 
             <button
@@ -214,7 +212,7 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
-              <span>Audit de Pertinence ATS</span>
+              <span>{t("Audit de Pertinence ATS", "ATS Relevance Audit")}</span>
             </button>
           </div>
 
@@ -226,7 +224,7 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
               className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-xs font-semibold text-stone-700 dark:text-stone-300 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors disabled:opacity-50 cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-              <span>Régénérer</span>
+              <span>{t("Régénérer", "Regenerate")}</span>
             </button>
           </div>
         </div>
@@ -237,7 +235,7 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
             <div className="h-full flex flex-col items-center justify-center space-y-3">
               <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               <p className="text-xs font-mono text-stone-600 dark:text-stone-400">
-                Génération déterministe du CV ciblé en cours...
+                {t("Génération déterministe du CV ciblé en cours...", "Deterministic generation of the tailored CV in progress...")}
               </p>
             </div>
           ) : error ? (
@@ -248,7 +246,7 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
                 onClick={loadOrGenerateCV}
                 className="px-4 py-2 rounded-xl bg-red-600 text-white text-xs font-semibold hover:bg-red-700 transition-colors"
               >
-                Réessayer
+                {t("Réessayer", "Retry")}
               </button>
             </div>
           ) : activeTab === "preview" ? (
@@ -257,7 +255,7 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
               <iframe
                 src={previewUrl}
                 className="w-full max-w-4xl h-full rounded-xl shadow-[0_12px_36px_rgba(44,28,16,0.12)] border border-stone-300 dark:border-stone-800 bg-white"
-                title="Aperçu du CV"
+                title={t("Aperçu du CV", "CV preview")}
               />
             </div>
           ) : (
@@ -265,10 +263,10 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
             <div className="h-full overflow-y-auto p-6 max-w-3xl mx-auto space-y-6 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl m-4 shadow-artisan">
               <div>
                 <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100 font-display">
-                  Correspondance des compétences
+                  {t("Correspondance des compétences", "Skills match")}
                 </h3>
                 <p className="text-xs text-stone-600 dark:text-stone-400 mt-0.5">
-                  Ce CV met en valeur les compétences et expériences de votre profil les plus pertinentes pour ce poste.
+                  {t("Ce CV met en valeur les compétences et expériences de votre profil les plus pertinentes pour ce poste.", "This CV highlights the skills and experience from your profile that are most relevant to this position.")}
                 </p>
               </div>
 
@@ -278,7 +276,7 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
                   <div className="p-4 rounded-xl border border-emerald-300 dark:border-emerald-800/80 bg-emerald-50/60 dark:bg-emerald-950/20 space-y-2">
                     <span className="font-bold text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5">
                       <CheckCircle2 className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
-                      Compétences Clés Mises en Avant ({cv.matched_skills.length})
+                      {t(`Compétences Clés Mises en Avant (${cv.matched_skills.length})`, `Key Skills Highlighted (${cv.matched_skills.length})`)}
                     </span>
                     <div className="flex flex-wrap gap-1.5">
                       {cv.matched_skills.map((s) => (
@@ -297,7 +295,7 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
                     <div className="p-4 rounded-xl border border-amber-300 dark:border-amber-800/80 bg-amber-50/60 dark:bg-amber-950/20 space-y-2">
                       <span className="font-bold text-amber-900 dark:text-amber-300 flex items-center gap-1.5">
                         <AlertTriangle className="w-4 h-4 text-amber-700 dark:text-amber-400" />
-                        Compétences Transférables Connexes ({cv.transferable_skills.length})
+                        {t(`Compétences Transférables Connexes (${cv.transferable_skills.length})`, `Related Transferable Skills (${cv.transferable_skills.length})`)}
                       </span>
                       <div className="flex flex-wrap gap-1.5">
                         {cv.transferable_skills.map((s) => (
@@ -314,15 +312,15 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
                   )}
 
                   <div className="space-y-2 pt-2 border-t border-stone-200 dark:border-stone-800">
-                    <h4 className="font-bold text-stone-900 dark:text-stone-100">Expériences ordonnées par pertinence :</h4>
+                    <h4 className="font-bold text-stone-900 dark:text-stone-100">{t("Expériences ordonnées par pertinence :", "Experience ordered by relevance:")}</h4>
                     <ul className="space-y-1.5">
                       {cv.experiences.map((exp, idx) => (
                         <li key={idx} className="p-3 rounded-xl bg-stone-50 dark:bg-stone-800/60 border border-stone-200 dark:border-stone-700">
-                          <span className="font-bold text-stone-900 dark:text-stone-100">{exp.role}</span> chez{" "}
+                          <span className="font-bold text-stone-900 dark:text-stone-100">{exp.role}</span> {t("chez", "at")}{" "}
                           <span className="font-semibold text-stone-800 dark:text-stone-200">{exp.company}</span> ({exp.start_date} – {exp.end_date})
                           {exp.technologies && (
                             <p className="text-[11px] text-stone-600 dark:text-stone-400 mt-0.5 font-mono">
-                              Tech : {exp.technologies.join(", ")}
+                              {t("Tech :", "Tech:")} {exp.technologies.join(", ")}
                             </p>
                           )}
                         </li>
@@ -331,14 +329,14 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
                   </div>
 
                   <div className="space-y-2 pt-2 border-t border-stone-200 dark:border-stone-800">
-                    <h4 className="font-bold text-stone-900 dark:text-stone-100">Projets d'ingénierie sélectionnés :</h4>
+                    <h4 className="font-bold text-stone-900 dark:text-stone-100">{t("Projets d'ingénierie sélectionnés :", "Selected engineering projects:")}</h4>
                     <ul className="space-y-1.5">
                       {cv.projects.map((proj, idx) => (
                         <li key={idx} className="p-3 rounded-xl bg-stone-50 dark:bg-stone-800/60 border border-stone-200 dark:border-stone-700">
                           <span className="font-bold text-stone-900 dark:text-stone-100">{proj.title}</span>
                           {proj.technologies && (
                             <p className="text-[11px] text-stone-600 dark:text-stone-400 mt-0.5 font-mono">
-                              Stack : {proj.technologies.join(", ")}
+                              {t("Stack :", "Stack:")} {proj.technologies.join(", ")}
                             </p>
                           )}
                         </li>

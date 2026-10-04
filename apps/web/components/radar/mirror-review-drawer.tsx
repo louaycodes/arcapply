@@ -161,7 +161,7 @@ export function MirrorReviewDrawer({
   onClose,
   onJobUpdated,
 }: MirrorReviewDrawerProps) {
-  const { language: appLanguage, setLanguage: setAppLanguage } = useAppLanguage();
+  const { language: appLanguage, t } = useAppLanguage();
   const [activeTab, setActiveTab] = useState<"letter" | "cv">("letter");
   const [status, setStatus] = useState<string>("DISCOVERED");
   const [loadingAction, setLoadingAction] = useState(false);
@@ -252,7 +252,7 @@ export function MirrorReviewDrawer({
       console.error("Erreur génération CV:", err);
       setErrorMsg(
         err?.message ||
-          "Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement."
+          t("Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement.", "The AI model ran into a problem. Please try again later.")
       );
     } finally {
       setCvLoading(false);
@@ -278,7 +278,7 @@ export function MirrorReviewDrawer({
       console.error("Erreur génération lettre:", err);
       setErrorMsg(
         err?.message ||
-          "Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement."
+          t("Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement.", "The AI model ran into a problem. Please try again later.")
       );
     } finally {
       setLetterLoading(false);
@@ -324,7 +324,7 @@ export function MirrorReviewDrawer({
       }, 2000);
     } catch (err: any) {
       setReconScanning(false);
-      setErrorMsg(err.message || "Erreur lors du lancement de l'analyse profonde.");
+      setErrorMsg(err.message || t("Erreur lors du lancement de l'analyse profonde.", "Error while starting the deep analysis."));
     }
   };
 
@@ -337,7 +337,7 @@ export function MirrorReviewDrawer({
       setLetterSaveSuccess(true);
       setTimeout(() => setLetterSaveSuccess(false), 2500);
     } catch (err: any) {
-      setErrorMsg(err.message || "Erreur lors de la sauvegarde de la lettre.");
+      setErrorMsg(err.message || t("Erreur lors de la sauvegarde de la lettre.", "Error while saving the letter."));
     } finally {
       setIsLetterSaving(false);
     }
@@ -358,7 +358,7 @@ export function MirrorReviewDrawer({
       setStatus(updated.status);
       onJobUpdated?.(updated);
     } catch (err: any) {
-      setErrorMsg(err.message || "Erreur lors du marquage comme candidature envoyée.");
+      setErrorMsg(err.message || t("Erreur lors du marquage comme candidature envoyée.", "Error while marking as application sent."));
     } finally {
       setLoadingAction(false);
     }
@@ -372,7 +372,7 @@ export function MirrorReviewDrawer({
       setStatus(updated.status);
       onJobUpdated?.(updated);
     } catch (err: any) {
-      setErrorMsg(err.message || "Erreur lors de l'annulation du marquage.");
+      setErrorMsg(err.message || t("Erreur lors de l'annulation du marquage.", "Error while undoing the mark."));
     } finally {
       setLoadingAction(false);
     }
@@ -403,15 +403,15 @@ export function MirrorReviewDrawer({
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span className="text-[10px] sm:text-xs font-mono font-semibold uppercase tracking-wider text-primary">
-                  Analyse Profonde & Préparation
+                  {t("Analyse Profonde & Préparation", "Deep Analysis & Preparation")}
                 </span>
                 {isApplied ? (
                   <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                    Candidature envoyée
+                    {t("Candidature envoyée", "Application sent")}
                   </span>
                 ) : (
                   <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-800 dark:bg-stone-800 dark:text-stone-300 border border-stone-300 dark:border-stone-700">
-                    À postuler
+                    {t("À postuler", "To apply")}
                   </span>
                 )}
               </div>
@@ -430,13 +430,13 @@ export function MirrorReviewDrawer({
                 className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-lg border border-border bg-background hover:bg-muted text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Annonce source</span>
+                <span className="hidden sm:inline">{t("Annonce source", "Source listing")}</span>
               </a>
             )}
             <button
               onClick={onClose}
               className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
-              title="Fermer"
+              title={t("Fermer", "Close")}
             >
               <X className="w-5 h-5" />
             </button>
@@ -468,7 +468,7 @@ export function MirrorReviewDrawer({
               <div className="p-4 rounded-xl border border-border bg-card shadow-xs space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    Fiche de l'opportunité
+                    {t("Fiche de l'opportunité", "Opportunity sheet")}
                   </span>
                   <AtsScoreBadge match={atsMatch} />
                 </div>
@@ -501,7 +501,7 @@ export function MirrorReviewDrawer({
                 {atsMatch && (
                   <div className="pt-2 border-t border-border/40 space-y-2">
                     <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                      Audit des compétences (ATS)
+                      {t("Audit des compétences (ATS)", "Skills audit (ATS)")}
                     </div>
                     <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
                       {atsMatch.matched_skills.map((s) => (
@@ -541,11 +541,11 @@ export function MirrorReviewDrawer({
                     <div className="flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-primary shrink-0" />
                       <h4 className="text-sm font-bold text-foreground">
-                        Analyse Profonde de l'Offre & de l'Entreprise
+                        {t("Analyse Profonde de l'Offre & de l'Entreprise", "Deep Analysis of the Offer & the Company")}
                       </h4>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      L'Agent IA inspecte le portail carrière pour cartographier la culture d'entreprise, la mission stratégique, extraire la stack technique requise et l'annonce intégrale sans troncature.
+                      {t("L'Agent IA inspecte le portail carrière pour cartographier la culture d'entreprise, la mission stratégique, extraire la stack technique requise et l'annonce intégrale sans troncature.", "The AI Agent inspects the career portal to map the company culture and strategic mission, and to extract the required tech stack and the full, untruncated listing.")}
                     </p>
                   </div>
 
@@ -559,12 +559,12 @@ export function MirrorReviewDrawer({
                       {reconScanning ? (
                         <>
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          <span>Analyse...</span>
+                          <span>{t("Analyse...", "Analyzing...")}</span>
                         </>
                       ) : (
                         <>
                           <Sparkles className="w-3.5 h-3.5" />
-                          <span>Lancer l'analyse</span>
+                          <span>{t("Lancer l'analyse", "Start analysis")}</span>
                         </>
                       )}
                     </button>
@@ -577,10 +577,10 @@ export function MirrorReviewDrawer({
                 <div className="p-8 rounded-xl border border-dashed border-primary/30 bg-primary/5 flex flex-col items-center justify-center text-center space-y-2">
                   <Loader2 className="w-8 h-8 animate-spin text-primary" />
                   <p className="text-xs font-semibold text-foreground">
-                    Analyse approfondie en cours par l'Agent IA...
+                    {t("Analyse approfondie en cours par l'Agent IA...", "Deep analysis in progress by the AI Agent...")}
                   </p>
                   <p className="text-[11px] text-muted-foreground max-w-sm">
-                    Extraction de la stack technique, analyse des critères d'ingénierie et de la mission de l'entreprise.
+                    {t("Extraction de la stack technique, analyse des critères d'ingénierie et de la mission de l'entreprise.", "Extracting the tech stack and analyzing the engineering criteria and the company's mission.")}
                   </p>
                 </div>
               )}
@@ -593,7 +593,7 @@ export function MirrorReviewDrawer({
                     <div className="p-3.5 rounded-xl border border-border bg-card space-y-2">
                       <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                         <Layers className="w-3.5 h-3.5 text-primary" />
-                        <span>Stack & Technologies Requises par l'Offre</span>
+                        <span>{t("Stack & Technologies Requises par l'Offre", "Stack & Technologies Required by the Offer")}</span>
                       </span>
                       <div className="flex flex-wrap gap-1.5 pt-0.5">
                         {reconDossier.tech_stack_detected.map((tech) => (
@@ -614,7 +614,7 @@ export function MirrorReviewDrawer({
                     {(reconDossier?.external_url || job.apply_url || job.url) && (
                       <div className="pb-3 border-b border-border/80 flex items-center justify-between gap-2">
                         <div className="min-w-0 pr-2">
-                          <strong className="font-bold text-foreground">Portail source : </strong>
+                          <strong className="font-bold text-foreground">{t("Portail source :", "Source portal:")} </strong>
                           <span className="font-mono text-muted-foreground text-[11px] truncate inline-block max-w-[260px] align-bottom">
                             {reconDossier?.external_url || job.apply_url || job.url}
                           </span>
@@ -625,7 +625,7 @@ export function MirrorReviewDrawer({
                           rel="noopener noreferrer"
                           className="text-primary hover:underline flex items-center gap-1 font-semibold shrink-0"
                         >
-                          <span>Visiter le portail</span>
+                          <span>{t("Visiter le portail", "Visit the portal")}</span>
                           <ExternalLink className="w-3 h-3" />
                         </a>
                       </div>
@@ -634,7 +634,7 @@ export function MirrorReviewDrawer({
                     {/* Mission & Enjeux Clés */}
                     {reconDossier.company_mission && (
                       <div className="space-y-1">
-                        <strong className="block font-bold text-foreground">Mission & Enjeux Clés</strong>
+                        <strong className="block font-bold text-foreground">{t("Mission & Enjeux Clés", "Mission & Key Stakes")}</strong>
                         <p className="text-muted-foreground leading-relaxed">
                           {reconDossier.company_mission}
                         </p>
@@ -644,7 +644,7 @@ export function MirrorReviewDrawer({
                     {/* Culture & Valeurs Techniques */}
                     {reconDossier.company_culture && (
                       <div className="space-y-1">
-                        <strong className="block font-bold text-foreground">Culture & Valeurs Techniques</strong>
+                        <strong className="block font-bold text-foreground">{t("Culture & Valeurs Techniques", "Culture & Technical Values")}</strong>
                         <p className="text-muted-foreground leading-relaxed">
                           {reconDossier.company_culture}
                         </p>
@@ -654,7 +654,10 @@ export function MirrorReviewDrawer({
                     {/* Descriptif Intégral Scrappé */}
                     <div className="space-y-1.5 pt-2 border-t border-border/80">
                       <strong className="block font-bold text-foreground">
-                        Descriptif Intégral Scrappé ({reconDossier.full_description?.length || job.description_raw?.length || 0} caractères)
+                        {t(
+                          `Descriptif Intégral Scrappé (${reconDossier.full_description?.length || job.description_raw?.length || 0} caractères)`,
+                          `Full Scraped Description (${reconDossier.full_description?.length || job.description_raw?.length || 0} characters)`
+                        )}
                       </strong>
                       <div className="p-3.5 rounded-lg bg-muted/40 font-mono text-[11px] text-stone-800 dark:text-stone-300 max-h-72 overflow-y-auto whitespace-pre-wrap leading-relaxed border border-border/50">
                         {reconDossier.full_description || job.description_raw}
@@ -667,10 +670,10 @@ export function MirrorReviewDrawer({
                   <Sparkles className="w-8 h-8 text-muted-foreground/50 animate-pulse" />
                   <div className="space-y-1">
                     <p className="text-xs font-semibold text-foreground">
-                      Aucune Analyse Profonde effectuée pour cette offre
+                      {t("Aucune Analyse Profonde effectuée pour cette offre", "No Deep Analysis run for this offer yet")}
                     </p>
                     <p className="text-[11px] text-muted-foreground max-w-xs">
-                      Cliquez ci-dessous pour inspecter l'offre, extraire la stack technique et débloquer les documents personnalisés.
+                      {t("Cliquez ci-dessous pour inspecter l'offre, extraire la stack technique et débloquer les documents personnalisés.", "Click below to inspect the offer, extract the tech stack and unlock the tailored documents.")}
                     </p>
                   </div>
                   <button
@@ -678,7 +681,7 @@ export function MirrorReviewDrawer({
                     onClick={handleTriggerRecon}
                     className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-all shadow-artisan-button cursor-pointer"
                   >
-                    Lancer l'Analyse Profonde
+                    {t("Lancer l'Analyse Profonde", "Start the Deep Analysis")}
                   </button>
                 </div>
               )}
@@ -700,7 +703,7 @@ export function MirrorReviewDrawer({
                   }`}
                 >
                   <Mail className="w-3.5 h-3.5" />
-                  <span>Lettre de motivation</span>
+                  <span>{t("Lettre de motivation", "Cover letter")}</span>
                   {!isAnalysisReady && (
                     <Lock className="w-3 h-3 text-stone-400 ml-0.5" />
                   )}
@@ -716,7 +719,7 @@ export function MirrorReviewDrawer({
                   }`}
                 >
                   <FileText className="w-3.5 h-3.5" />
-                  <span>CV Ciblé</span>
+                  <span>{t("CV Ciblé", "Tailored CV")}</span>
                   {!isAnalysisReady && (
                     <Lock className="w-3 h-3 text-stone-400 ml-0.5" />
                   )}
@@ -731,7 +734,6 @@ export function MirrorReviewDrawer({
                       type="button"
                       onClick={() => {
                         setCvLanguage("fr");
-                        setAppLanguage("fr");
                         if (activeTab === "cv") {
                           setCvLoading(true);
                           generateTargetedCV(job.id, "fr")
@@ -739,7 +741,7 @@ export function MirrorReviewDrawer({
                             .catch((err) =>
                               setErrorMsg(
                                 err?.message ||
-                                  "Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement."
+                                  t("Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement.", "The AI model ran into a problem. Please try again later.")
                               )
                             )
                             .finally(() => setCvLoading(false));
@@ -754,7 +756,7 @@ export function MirrorReviewDrawer({
                             .catch((err) =>
                               setErrorMsg(
                                 err?.message ||
-                                  "Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement."
+                                  t("Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement.", "The AI model ran into a problem. Please try again later.")
                               )
                             )
                             .finally(() => setLetterLoading(false));
@@ -765,7 +767,7 @@ export function MirrorReviewDrawer({
                           ? "bg-primary text-primary-foreground font-bold shadow-xs"
                           : "text-muted-foreground hover:text-foreground"
                       }`}
-                      title="Version Française"
+                      title={t("Version Française", "French version")}
                     >
                       FR
                     </button>
@@ -773,7 +775,6 @@ export function MirrorReviewDrawer({
                       type="button"
                       onClick={() => {
                         setCvLanguage("en");
-                        setAppLanguage("en");
                         if (activeTab === "cv") {
                           setCvLoading(true);
                           generateTargetedCV(job.id, "en")
@@ -781,7 +782,7 @@ export function MirrorReviewDrawer({
                             .catch((err) =>
                               setErrorMsg(
                                 err?.message ||
-                                  "Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement."
+                                  t("Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement.", "The AI model ran into a problem. Please try again later.")
                               )
                             )
                             .finally(() => setCvLoading(false));
@@ -796,7 +797,7 @@ export function MirrorReviewDrawer({
                             .catch((err) =>
                               setErrorMsg(
                                 err?.message ||
-                                  "Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement."
+                                  t("Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement.", "The AI model ran into a problem. Please try again later.")
                               )
                             )
                             .finally(() => setLetterLoading(false));
@@ -827,14 +828,14 @@ export function MirrorReviewDrawer({
                             lang: cvLanguage,
                           });
                         } catch (err: any) {
-                          setErrorMsg(err?.message || "Erreur lors du téléchargement du CV.");
+                          setErrorMsg(err?.message || t("Erreur lors du téléchargement du CV.", "Error while downloading the CV."));
                         } finally {
                           setIsDownloadingCv(false);
                         }
                       }}
                       disabled={isDownloadingCv}
                       className="px-2.5 py-1 rounded-md border border-border bg-background hover:bg-muted text-xs font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer"
-                      title={`Télécharger le CV pour ${job.company}`}
+                      title={t(`Télécharger le CV pour ${job.company}`, `Download the CV for ${job.company}`)}
                     >
                       {isDownloadingCv ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -853,14 +854,14 @@ export function MirrorReviewDrawer({
                           .catch((err) =>
                             setErrorMsg(
                               err?.message ||
-                                "Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement."
+                                t("Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement.", "The AI model ran into a problem. Please try again later.")
                             )
                           )
                           .finally(() => setCvLoading(false));
                       }}
                       disabled={cvLoading}
                       className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50 cursor-pointer"
-                      title="Régénérer le CV"
+                      title={t("Régénérer le CV", "Regenerate the CV")}
                     >
                       <RefreshCw className={`w-3.5 h-3.5 ${cvLoading ? "animate-spin" : ""}`} />
                     </button>
@@ -882,14 +883,14 @@ export function MirrorReviewDrawer({
                           .catch((err) =>
                             setErrorMsg(
                               err?.message ||
-                                "Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement."
+                                t("Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement.", "The AI model ran into a problem. Please try again later.")
                             )
                           )
                           .finally(() => setLetterLoading(false));
                       }}
                       disabled={letterLoading}
                       className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50 cursor-pointer"
-                      title="Régénérer la lettre"
+                      title={t("Régénérer la lettre", "Regenerate the letter")}
                     >
                       <RefreshCw className={`w-3.5 h-3.5 ${letterLoading ? "animate-spin" : ""}`} />
                     </button>
@@ -915,7 +916,7 @@ export function MirrorReviewDrawer({
                       ) : (
                         <Save className="w-3.5 h-3.5" />
                       )}
-                      <span>{letterSaveSuccess ? "Sauvegardé" : "Enregistrer"}</span>
+                      <span>{letterSaveSuccess ? t("Sauvegardé", "Saved") : t("Enregistrer", "Save")}</span>
                     </button>
                   </>
                 )}
@@ -939,7 +940,7 @@ export function MirrorReviewDrawer({
                     }}
                     className="px-3 py-1 rounded-md bg-destructive text-white hover:bg-destructive/90 text-xs font-semibold cursor-pointer shrink-0"
                   >
-                    Réessayer
+                    {t("Réessayer", "Retry")}
                   </button>
                 </div>
               )}
@@ -952,10 +953,10 @@ export function MirrorReviewDrawer({
                   </div>
                   <div className="space-y-1 max-w-md">
                     <h4 className="text-sm font-bold text-foreground">
-                      Analyse Profonde Requise
+                      {t("Analyse Profonde Requise", "Deep Analysis Required")}
                     </h4>
                     <p className="text-xs text-muted-foreground leading-relaxed">
-                      Pour générer des documents rigoureusement alignés sur l'entreprise (zéro hallucination), l'analyse approfondie de l'offre sur le panneau de gauche doit d'abord être lancée.
+                      {t("Pour générer des documents rigoureusement alignés sur l'entreprise (zéro hallucination), l'analyse approfondie de l'offre sur le panneau de gauche doit d'abord être lancée.", "To generate documents rigorously aligned with the company (zero hallucination), the deep analysis of the offer in the left panel must be run first.")}
                     </p>
                   </div>
                   <button
@@ -963,7 +964,7 @@ export function MirrorReviewDrawer({
                     onClick={handleTriggerRecon}
                     className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-all shadow-artisan-button cursor-pointer"
                   >
-                    Lancer l'Analyse Profonde
+                    {t("Lancer l'Analyse Profonde", "Start the Deep Analysis")}
                   </button>
                 </div>
               ) : activeTab === "letter" ? (
@@ -972,27 +973,30 @@ export function MirrorReviewDrawer({
                   {letterLoading ? (
                     <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
                       <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                      <p className="text-xs font-medium">Rédaction de la lettre sur-mesure par l'Agent IA...</p>
+                      <p className="text-xs font-medium">{t("Rédaction de la lettre sur-mesure par l'Agent IA...", "The AI Agent is writing your tailored letter...")}</p>
                     </div>
                   ) : !letter && !errorMsg ? (
                     <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
                       <Mail className="w-10 h-10 text-muted-foreground/50" />
-                      <p className="text-xs">Aucune lettre générée pour cette offre.</p>
+                      <p className="text-xs">{t("Aucune lettre générée pour cette offre.", "No letter generated for this offer yet.")}</p>
                       <button
                         type="button"
                         onClick={handleLoadLetter}
                         className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold cursor-pointer"
                       >
-                        Générer la lettre
+                        {t("Générer la lettre", "Generate the letter")}
                       </button>
                     </div>
                   ) : (
                     <>
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-foreground">Édition en direct :</span>
+                          <span className="font-semibold text-foreground">{t("Édition en direct :", "Live editing:")}</span>
                           <span className="text-[11px] text-muted-foreground">
-                            {letterContent.trim().split(/\s+/).filter(Boolean).length} mots
+                            {t(
+                              `${letterContent.trim().split(/\s+/).filter(Boolean).length} mots`,
+                              `${letterContent.trim().split(/\s+/).filter(Boolean).length} words`
+                            )}
                           </span>
                           {letter?.thinking_plan && (
                             <button
@@ -1003,15 +1007,15 @@ export function MirrorReviewDrawer({
                                   ? "border-primary bg-primary text-white scale-105"
                                   : "border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 hover:scale-105"
                               }`}
-                              title="Plan d'argumentation sur-mesure (Thinking Process)"
-                              aria-label="Plan d'argumentation sur-mesure (Thinking Process)"
+                              title={t("Plan d'argumentation sur-mesure (Thinking Process)", "Tailored argument plan (Thinking Process)")}
+                              aria-label={t("Plan d'argumentation sur-mesure (Thinking Process)", "Tailored argument plan (Thinking Process)")}
                             >
                               <Brain className="w-3.5 h-3.5" />
                             </button>
                           )}
                         </div>
                         <span className="text-[11px] font-mono">
-                          {letterContent.length} caractères
+                          {t(`${letterContent.length} caractères`, `${letterContent.length} characters`)}
                         </span>
                       </div>
 
@@ -1025,10 +1029,13 @@ export function MirrorReviewDrawer({
                               </div>
                               <div>
                                 <h5 className="text-xs font-bold text-foreground">
-                                  Plan d'argumentation sur-mesure (Thinking Process)
+                                  {t("Plan d'argumentation sur-mesure (Thinking Process)", "Tailored argument plan (Thinking Process)")}
                                 </h5>
                                 <p className="text-[10px] text-muted-foreground">
-                                  Raisonnement stratégique de l'Agent IA pour {job.company}
+                                  {t(
+                                    `Raisonnement stratégique de l'Agent IA pour ${job.company}`,
+                                    `AI Agent strategic reasoning for ${job.company}`
+                                  )}
                                 </p>
                               </div>
                             </div>
@@ -1036,7 +1043,7 @@ export function MirrorReviewDrawer({
                               type="button"
                               onClick={() => setShowThinkingPlan(false)}
                               className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
-                              title="Fermer"
+                              title={t("Fermer", "Close")}
                             >
                               <X className="w-3.5 h-3.5" />
                             </button>
@@ -1052,7 +1059,7 @@ export function MirrorReviewDrawer({
                         value={letterContent}
                         onChange={(e) => setLetterContent(e.target.value)}
                         className="flex-1 w-full p-4 rounded-xl border border-border bg-card font-mono text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none leading-relaxed"
-                        placeholder="Rédigez ou éditez votre lettre de motivation sur-mesure ici..."
+                        placeholder={t("Rédigez ou éditez votre lettre de motivation sur-mesure ici...", "Write or edit your tailored cover letter here...")}
                       />
                     </>
                   )}
@@ -1063,24 +1070,24 @@ export function MirrorReviewDrawer({
                   {cvLoading ? (
                     <div className="flex flex-col items-center gap-3 text-muted-foreground">
                       <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                      <p className="text-xs font-medium">Compilation vectorielle du CV A4 ciblé...</p>
+                      <p className="text-xs font-medium">{t("Compilation vectorielle du CV A4 ciblé...", "Compiling the tailored A4 vector CV...")}</p>
                     </div>
                   ) : !cvGenerated && !errorMsg ? (
                     <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
                       <FileText className="w-10 h-10 text-muted-foreground/50" />
-                      <p className="text-xs">Le CV ciblé n'a pas encore été généré.</p>
+                      <p className="text-xs">{t("Le CV ciblé n'a pas encore été généré.", "The tailored CV has not been generated yet.")}</p>
                       <button
                         type="button"
                         onClick={handleLoadCV}
                         className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold cursor-pointer"
                       >
-                        Générer le CV ciblé
+                        {t("Générer le CV ciblé", "Generate the tailored CV")}
                       </button>
                     </div>
                   ) : (
                     <iframe
                       src={previewUrl}
-                      title="Prévisualisation CV"
+                      title={t("Prévisualisation CV", "CV preview")}
                       className="w-full h-full rounded-lg border border-border/80 bg-white shadow-inner"
                     />
                   )}
@@ -1094,16 +1101,16 @@ export function MirrorReviewDrawer({
         <div className="p-3 sm:px-6 sm:py-3.5 border-t border-stone-200/80 dark:border-stone-800 bg-white/85 dark:bg-stone-900/85 backdrop-blur-xl flex items-center justify-between gap-4">
           <div className="hidden sm:flex items-center gap-2">
             <span className="text-xs font-semibold text-stone-600 dark:text-stone-400 font-mono">
-              Statut :
+              {t("Statut :", "Status:")}
             </span>
             {isApplied ? (
               <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
-                <span>Candidature envoyée</span>
+                <span>{t("Candidature envoyée", "Application sent")}</span>
               </span>
             ) : (
               <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300 border border-stone-200 dark:border-stone-700">
-                À postuler
+                {t("À postuler", "To apply")}
               </span>
             )}
           </div>
@@ -1116,7 +1123,7 @@ export function MirrorReviewDrawer({
                 rel="noopener noreferrer"
                 className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:bg-stone-50 dark:hover:bg-stone-800 text-xs font-semibold text-stone-700 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white transition-colors"
               >
-                <span>Postuler sur le site source</span>
+                <span>{t("Postuler sur le site source", "Apply on the source site")}</span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
             )}
@@ -1127,10 +1134,10 @@ export function MirrorReviewDrawer({
                 onClick={handleUnmarkSubmitted}
                 disabled={loadingAction}
                 className="w-full sm:w-auto justify-center px-4 py-2 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
-                title="Cliquer pour annuler et marquer comme non envoyée"
+                title={t("Cliquer pour annuler et marquer comme non envoyée", "Click to cancel and mark as not sent")}
               >
                 {loadingAction ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
-                <span>Candidature déjà envoyée (Cliquer pour annuler)</span>
+                <span>{t("Candidature déjà envoyée (Cliquer pour annuler)", "Application already sent (Click to cancel)")}</span>
               </button>
             ) : (
               <button
@@ -1140,7 +1147,7 @@ export function MirrorReviewDrawer({
                 className="w-full sm:w-auto justify-center px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold flex items-center gap-2 transition-all tactile-button shadow-artisan-button cursor-pointer disabled:opacity-50"
               >
                 {loadingAction ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                <span>Marquer comme candidature envoyée</span>
+                <span>{t("Marquer comme candidature envoyée", "Mark as application sent")}</span>
               </button>
             )}
           </div>

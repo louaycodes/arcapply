@@ -16,8 +16,10 @@ import {
   Clock,
   Target,
 } from "lucide-react";
+import { useAppLanguage } from "@/lib/language-context";
 
 export default function HomePage() {
+  const { t } = useAppLanguage();
   return (
     <div className="p-6 sm:p-10 max-w-6xl mx-auto space-y-10">
       {/* ── Hero Welcome ── */}
@@ -25,15 +27,15 @@ export default function HomePage() {
         <div className="relative z-10 max-w-2xl space-y-5">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-orange-100/90 dark:bg-orange-950/60 border border-orange-200 dark:border-orange-800 text-orange-900 dark:text-orange-300 text-xs font-semibold">
             <Sparkles className="w-3.5 h-3.5 text-primary" />
-            <span>Stages PFE & Emploi Ingénieur 2027</span>
+            <span>{t("Stages PFE & Emploi Ingénieur 2027", "PFE Internships & Engineering Jobs 2027")}</span>
           </div>
 
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-stone-900 dark:text-stone-100 font-display leading-[1.15]">
-            Votre copilote intelligent pour décrocher le poste idéal.
+            {t("Votre copilote intelligent pour décrocher le poste idéal.", "Your smart copilot to land the ideal position.")}
           </h1>
 
           <p className="text-sm sm:text-base text-stone-600 dark:text-stone-300 leading-relaxed font-sans font-normal">
-            Optimisez vos candidatures d'ingénieur en moins de 3 minutes par offre : adaptation ciblée de votre CV, calcul immédiat de votre score de compatibilité et suivi complet de vos envois et entretiens.
+            {t("Optimisez vos candidatures d'ingénieur en moins de 3 minutes par offre : adaptation ciblée de votre CV, calcul immédiat de votre score de compatibilité et suivi complet de vos envois et entretiens.", "Optimize your engineering applications in under 3 minutes per offer: targeted CV tailoring, instant match score and full tracking of your submissions and interviews.")}
           </p>
 
           <div className="pt-2 flex flex-wrap items-center gap-4">
@@ -42,7 +44,7 @@ export default function HomePage() {
               className="px-6 py-3 rounded-xl bg-primary hover:bg-orange-700 text-white text-sm font-semibold flex items-center gap-2.5 tactile-button shadow-artisan-button transition-all"
             >
               <Radar className="w-4 h-4" />
-              <span>Explorer les offres Radar</span>
+              <span>{t("Explorer les offres Radar", "Explore Radar offers")}</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
             <Link
@@ -50,7 +52,7 @@ export default function HomePage() {
               className="px-5 py-3 rounded-xl border border-stone-300 dark:border-stone-700 bg-white/90 dark:bg-stone-800 hover:bg-white dark:hover:bg-stone-700 text-sm font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-2 shadow-sm transition-all hover:border-orange-300 dark:hover:border-orange-500/50"
             >
               <FileText className="w-4 h-4 text-primary" />
-              <span>Éditeur de CV vectoriel</span>
+              <span>{t("Éditeur de CV vectoriel", "Vector CV editor")}</span>
             </Link>
           </div>
         </div>
@@ -65,10 +67,10 @@ export default function HomePage() {
           <div>
             <h2 className="text-lg font-bold text-stone-900 dark:text-stone-100 font-display flex items-center gap-2">
               <Compass className="w-4 h-4 text-primary" />
-              <span>Cockpit de Candidature</span>
+              <span>{t("Cockpit de Candidature", "Application Cockpit")}</span>
             </h2>
             <p className="text-xs text-stone-600 dark:text-stone-400">
-              Accédez directement aux outils d'ingénierie conçus pour votre recherche.
+              {t("Accédez directement aux outils d'ingénierie conçus pour votre recherche.", "Jump straight to the engineering tools built for your search.")}
             </p>
           </div>
         </div>
@@ -85,15 +87,15 @@ export default function HomePage() {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100 font-display group-hover:text-primary transition-colors">
-                  Radar des Offres
+                  {t("Radar des Offres", "Offer Radar")}
                 </h3>
                 <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed">
-                  Flux continu des portails carrières dédiés des 100 meilleures firmes IT (France & Tunisie).
+                  {t("Flux continu des portails carrières dédiés des 100 meilleures firmes IT (France & Tunisie).", "Continuous feed from the career portals of the top 100 IT firms (France & Tunisia).")}
                 </p>
               </div>
             </div>
             <div className="flex items-center text-xs font-semibold text-primary gap-1 group-hover:translate-x-0.5 transition-transform">
-              <span>Voir le flux</span>
+              <span>{t("Voir le flux", "View the feed")}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </div>
           </Link>
@@ -109,15 +111,15 @@ export default function HomePage() {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100 font-display group-hover:text-primary transition-colors">
-                  Éditeur de CV A4
+                  {t("Éditeur de CV A4", "A4 CV Editor")}
                 </h3>
                 <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed">
-                  Modifiez directement sur la feuille A4 et compilez des PDF vectoriels fidèles à 100%.
+                  {t("Modifiez directement sur la feuille A4 et compilez des PDF vectoriels fidèles à 100%.", "Edit directly on the A4 sheet and compile 100% faithful vector PDFs.")}
                 </p>
               </div>
             </div>
             <div className="flex items-center text-xs font-semibold text-primary gap-1 group-hover:translate-x-0.5 transition-transform">
-              <span>Ouvrir l'éditeur</span>
+              <span>{t("Ouvrir l'éditeur", "Open the editor")}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </div>
           </Link>
@@ -133,15 +135,15 @@ export default function HomePage() {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100 font-display group-hover:text-primary transition-colors">
-                  Suivi Kanban
+                  {t("Suivi Kanban", "Kanban Tracker")}
                 </h3>
                 <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed">
-                  Pipeline visuel d'embauche : À postuler, Postulé, Entretiens et Offres finales reçues.
+                  {t("Pipeline visuel d'embauche : À postuler, Postulé, Entretiens et Offres finales reçues.", "Visual hiring pipeline: To apply, Applied, Interviews and Final offers received.")}
                 </p>
               </div>
             </div>
             <div className="flex items-center text-xs font-semibold text-primary gap-1 group-hover:translate-x-0.5 transition-transform">
-              <span>Consulter le suivi</span>
+              <span>{t("Consulter le suivi", "View tracking")}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </div>
           </Link>
@@ -157,15 +159,15 @@ export default function HomePage() {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100 font-display group-hover:text-primary transition-colors">
-                  Profil de Référence
+                  {t("Profil de Référence", "Reference Profile")}
                 </h3>
                 <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed">
-                  Vos compétences et expériences certifiées. Source unique garantissant zéro hallucination.
+                  {t("Vos compétences et expériences certifiées. Source unique garantissant zéro hallucination.", "Your verified skills and experience. A single source of truth guaranteeing zero hallucination.")}
                 </p>
               </div>
             </div>
             <div className="flex items-center text-xs font-semibold text-primary gap-1 group-hover:translate-x-0.5 transition-transform">
-              <span>Mettre à jour</span>
+              <span>{t("Mettre à jour", "Update")}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </div>
           </Link>
@@ -177,7 +179,7 @@ export default function HomePage() {
         <div className="flex items-center gap-2">
           <Zap className="w-4 h-4 text-primary" />
           <h2 className="text-lg font-bold text-stone-900 dark:text-stone-100 font-display">
-            Piliers d'Excellence ArcApply
+            {t("Piliers d'Excellence ArcApply", "ArcApply Pillars of Excellence")}
           </h2>
         </div>
 
@@ -187,14 +189,14 @@ export default function HomePage() {
               <ShieldCheck className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 font-display">Candidatures 100% Sincères</h3>
+              <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 font-display">{t("Candidatures 100% Sincères", "100% Genuine Applications")}</h3>
               <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed">
-                Votre profil sert de référence unique. Vos CV et lettres mettent en valeur vos vraies expériences et compétences, sans jamais rien inventer.
+                {t("Votre profil sert de référence unique. Vos CV et lettres mettent en valeur vos vraies expériences et compétences, sans jamais rien inventer.", "Your profile is the single reference. Your CVs and letters highlight your real experience and skills, without ever inventing anything.")}
               </p>
             </div>
             <div className="pt-1">
               <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700">
-                Fidélité garantie
+                {t("Fidélité garantie", "Guaranteed accuracy")}
               </span>
             </div>
           </div>
@@ -204,14 +206,14 @@ export default function HomePage() {
               <Target className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 font-display">Score de Compatibilité ATS</h3>
+              <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 font-display">{t("Score de Compatibilité ATS", "ATS Match Score")}</h3>
               <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed">
-                Mesurez instantanément la correspondance entre votre profil et les exigences du recruteur pour cibler les offres où vous avez le plus de chances.
+                {t("Mesurez instantanément la correspondance entre votre profil et les exigences du recruteur pour cibler les offres où vous avez le plus de chances.", "Instantly measure how your profile matches the recruiter's requirements to target the offers where you stand the best chance.")}
               </p>
             </div>
             <div className="pt-1">
               <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
-                Score déterministe
+                {t("Score déterministe", "Deterministic score")}
               </span>
             </div>
           </div>
@@ -221,14 +223,14 @@ export default function HomePage() {
               <KanbanSquare className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 font-display">Suivi des Candidatures</h3>
+              <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 font-display">{t("Suivi des Candidatures", "Application Tracking")}</h3>
               <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed">
-                Visualisez chaque étape de vos candidatures, de la découverte à l'offre finale, avec détection automatique des retours recruteurs.
+                {t("Visualisez chaque étape de vos candidatures, de la découverte à l'offre finale, avec détection automatique des retours recruteurs.", "See every stage of your applications, from discovery to final offer, with automatic detection of recruiter replies.")}
               </p>
             </div>
             <div className="pt-1">
               <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
-                Contrôle total
+                {t("Contrôle total", "Full control")}
               </span>
             </div>
           </div>

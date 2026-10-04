@@ -11,6 +11,7 @@ import {
   PipelineMetrics,
   ATSMatchResult,
 } from "@/lib/api";
+import { useAppLanguage } from "@/lib/language-context";
 import { KanbanColumn } from "@/components/kanban/kanban-column";
 import { MirrorReviewDrawer } from "@/components/radar/mirror-review-drawer";
 import { EmailInboxModal } from "@/components/kanban/email-inbox-modal";
@@ -30,6 +31,7 @@ import {
 } from "lucide-react";
 
 export default function KanbanPage() {
+  const { t } = useAppLanguage();
   const [jobs, setJobs] = useState<JobOffer[]>([]);
   const [metrics, setMetrics] = useState<PipelineMetrics | null>(null);
   const [atsScores, setAtsScores] = useState<Record<string, ATSMatchResult>>({});
@@ -57,7 +59,7 @@ export default function KanbanPage() {
         .then((scores) => setAtsScores(scores))
         .catch((err) => console.error("Erreur batch ATS scores:", err));
     } catch (err: any) {
-      setErrorNotification(err.message || "Erreur lors du chargement du pipeline.");
+      setErrorNotification(err.message || t("Erreur lors du chargement du pipeline.", "Error while loading the pipeline."));
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -92,7 +94,10 @@ export default function KanbanPage() {
       },
       (emailPayload) => {
         setEmailToast(
-          `Email recruteur reçu [${emailPayload.category}] : ${emailPayload.company || "Candidature"} — ${emailPayload.subject}`
+          t(
+            `Email recruteur reçu [${emailPayload.category}] : ${emailPayload.company || "Candidature"} — ${emailPayload.subject}`,
+            `Recruiter email received [${emailPayload.category}]: ${emailPayload.company || "Application"} — ${emailPayload.subject}`
+          )
         );
         loadData();
         setTimeout(() => setEmailToast(null), 8000);
@@ -109,7 +114,7 @@ export default function KanbanPage() {
       setJobs((prev) => prev.map((j) => (j.id === updated.id ? updated : j)));
       fetchPipelineMetrics().then(setMetrics).catch(() => {});
     } catch (err: any) {
-      setErrorNotification(err.message || "Erreur lors du changement d'étape.");
+      setErrorNotification(err.message || t("Erreur lors du changement d'étape.", "Error while changing stage."));
     } finally {
       setTransitioningJobId(null);
     }
@@ -130,28 +135,28 @@ export default function KanbanPage() {
   const COLUMNS = [
     {
       id: "DISCOVERED",
-      title: "Offres",
+      title: t("Offres", "Offers"),
       icon: Radio,
       colorClass: "text-blue-800 dark:text-blue-300",
       badgeBg: "bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60",
     },
     {
       id: "SUBMITTED",
-      title: "Candidatures envoyées",
+      title: t("Candidatures envoyées", "Applications sent"),
       icon: Send,
       colorClass: "text-orange-950 dark:text-orange-300",
       badgeBg: "bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800/60",
     },
     {
       id: "OFFER",
-      title: "Retenue",
+      title: t("Retenue", "Accepted"),
       icon: Trophy,
       colorClass: "text-emerald-800 dark:text-emerald-300",
       badgeBg: "bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60",
     },
     {
       id: "REJECTED",
-      title: "Non retenue",
+      title: t("Non retenue", "Not selected"),
       icon: XCircle,
       colorClass: "text-stone-700 dark:text-stone-300",
       badgeBg: "bg-stone-100 dark:bg-stone-800/60 border border-stone-200 dark:border-stone-700",
@@ -226,14 +231,14 @@ export default function KanbanPage() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground font-display">
-                  Suivi des Candidatures
+                  {t("Suivi des Candidatures", "Application Tracker")}
                 </h1>
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/40 text-orange-900 dark:text-orange-300 border border-orange-200 dark:border-orange-800/60">
-                  Temps réel
+                  {t("Temps réel", "Real time")}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Pipeline épuré en 4 étapes clés : Offres, Candidatures envoyées, Retenue et Non retenue.
+                {t("Pipeline épuré en 4 étapes clés : Offres, Candidatures envoyées, Retenue et Non retenue.", "Streamlined 4-stage pipeline: Offers, Applications sent, Accepted and Not selected.")}
               </p>
             </div>
           </div>
@@ -247,7 +252,7 @@ export default function KanbanPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Filtrer poste, entreprise..."
+              placeholder={t("Filtrer poste, entreprise...", "Filter by role, company...")}
               className="pl-8 pr-3 py-1.5 rounded-lg border border-border bg-card text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary w-48 sm:w-60"
             />
           </div>
@@ -256,10 +261,10 @@ export default function KanbanPage() {
             type="button"
             onClick={() => setShowEmailModal(true)}
             className="px-3 py-1.5 rounded-lg border border-primary/30 bg-primary/10 hover:bg-primary text-primary hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
-            title="Consulter les emails et réponses des recruteurs"
+            title={t("Consulter les emails et réponses des recruteurs", "View recruiter emails and replies")}
           >
             <Mail className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Emails Recruteurs</span>
+            <span className="hidden sm:inline">{t("Emails Recruteurs", "Recruiter Emails")}</span>
           </button>
 
           <button
@@ -267,7 +272,7 @@ export default function KanbanPage() {
             onClick={loadData}
             disabled={isRefreshing}
             className="p-2 rounded-lg border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 cursor-pointer"
-            title="Rafraîchir le Kanban"
+            title={t("Rafraîchir le Kanban", "Refresh the Kanban")}
           >
             <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
           </button>
@@ -314,13 +319,13 @@ export default function KanbanPage() {
         <div className="p-4 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-artisan flex items-center justify-between gap-2 min-w-0">
           <div>
             <span className="text-[11px] font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider font-mono">
-              Offres identifiées
+              {t("Offres identifiées", "Offers identified")}
             </span>
             <div className="text-2xl font-bold font-mono text-stone-900 dark:text-stone-100 mt-1">
               {kpiData.totalOffres}
             </div>
             <span className="text-[10px] text-stone-500 dark:text-stone-400">
-              En prospection active
+              {t("En prospection active", "Actively prospecting")}
             </span>
           </div>
           <div className="hidden sm:flex w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 items-center justify-center shrink-0 text-blue-700 dark:text-blue-300 shadow-xs">
@@ -332,13 +337,13 @@ export default function KanbanPage() {
         <div className="p-4 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-artisan flex items-center justify-between gap-2 min-w-0">
           <div>
             <span className="text-[11px] font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider font-mono">
-              Candidatures envoyées
+              {t("Candidatures envoyées", "Applications sent")}
             </span>
             <div className="text-2xl font-bold font-mono text-primary mt-1">
               {kpiData.totalSubmitted}
             </div>
             <span className="text-[10px] text-stone-500 dark:text-stone-400">
-              Dossiers transmis
+              {t("Dossiers transmis", "Applications submitted")}
             </span>
           </div>
           <div className="hidden sm:flex w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800/60 items-center justify-center shrink-0 text-primary shadow-xs">
@@ -350,13 +355,13 @@ export default function KanbanPage() {
         <div className="p-4 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-artisan flex items-center justify-between gap-2 min-w-0">
           <div>
             <span className="text-[11px] font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider font-mono">
-              Retenue
+              {t("Retenue", "Accepted")}
             </span>
             <div className="text-2xl font-bold font-mono text-emerald-700 dark:text-emerald-400 mt-1">
               {kpiData.totalOffer}
             </div>
             <span className="text-[10px] text-stone-500 dark:text-stone-400">
-              Offres confirmées
+              {t("Offres confirmées", "Confirmed offers")}
             </span>
           </div>
           <div className="hidden sm:flex w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 items-center justify-center shrink-0 text-emerald-700 dark:text-emerald-300 shadow-xs">
@@ -368,13 +373,13 @@ export default function KanbanPage() {
         <div className="p-4 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-artisan flex items-center justify-between gap-2 min-w-0">
           <div>
             <span className="text-[11px] font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider font-mono">
-              Non retenue
+              {t("Non retenue", "Not selected")}
             </span>
             <div className="text-2xl font-bold font-mono text-stone-700 dark:text-stone-300 mt-1">
               {kpiData.totalRejected}
             </div>
             <span className="text-[10px] text-stone-500 dark:text-stone-400">
-              Candidatures classées
+              {t("Candidatures classées", "Closed applications")}
             </span>
           </div>
           <div className="hidden sm:flex w-10 h-10 rounded-xl bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 items-center justify-center shrink-0 text-stone-500 dark:text-stone-400 shadow-xs">

@@ -4,9 +4,11 @@ import React, { useState } from "react";
 import { useAuth } from "@/components/auth/auth-context";
 import { ShieldCheck, LogIn, UserCheck, KeyRound, AlertCircle, Loader2, UserPlus, Mail, User as UserIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useAppLanguage } from "@/lib/language-context";
 
 export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
   const { login, register, user, logout } = useAuth();
+  const { t } = useAppLanguage();
   const router = useRouter();
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [emailInput, setEmailInput] = useState("");
@@ -22,9 +24,9 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
           <ShieldCheck className="w-6 h-6" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-foreground">Vous êtes déjà connecté</h2>
+          <h2 className="text-xl font-bold text-foreground">{t("Vous êtes déjà connecté", "You are already signed in")}</h2>
           <p className="text-xs text-muted-foreground mt-1">
-            Connecté en tant que <span className="font-semibold text-stone-800 dark:text-stone-200">{user.full_name || user.username}</span> (@{user.username})
+            {t("Connecté en tant que", "Signed in as")} <span className="font-semibold text-stone-800 dark:text-stone-200">{user.full_name || user.username}</span> (@{user.username})
           </p>
         </div>
         <div className="flex flex-col gap-2.5">
@@ -32,13 +34,13 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
             onClick={() => router.push(redirectTo)}
             className="w-full py-2.5 px-4 rounded-lg bg-primary hover:bg-orange-700 text-white font-medium text-sm transition-all shadow-sm"
           >
-            Accéder à l'application
+            {t("Accéder à l'application", "Go to the application")}
           </button>
           <button
             onClick={logout}
             className="w-full py-2 px-4 rounded-lg border border-stone-200 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300 font-medium text-xs transition-all"
           >
-            Changer de compte (Déconnexion)
+            {t("Changer de compte (Déconnexion)", "Switch account (Sign out)")}
           </button>
         </div>
       </div>
@@ -61,7 +63,7 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
         router.push(redirectTo);
       }
     } catch (err: any) {
-      setError(err.message || (isRegisterMode ? "Échec de l'inscription" : "Échec de connexion"));
+      setError(err.message || (isRegisterMode ? t("Échec de l'inscription", "Sign-up failed") : t("Échec de connexion", "Sign-in failed")));
     } finally {
       setIsSubmitting(false);
     }
@@ -77,13 +79,13 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
         <h1 className="text-2xl font-bold tracking-tight text-foreground font-display flex items-center gap-2">
           ArcApply
           <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-gradient-to-r from-orange-100 to-amber-100 dark:from-orange-950/60 dark:to-amber-950/60 text-orange-900 dark:text-orange-300 border border-orange-200/80 dark:border-orange-800/60">
-            {isRegisterMode ? "Création Compte" : "Accès Sécurisé"}
+            {isRegisterMode ? t("Création Compte", "New Account") : t("Accès Sécurisé", "Secure Access")}
           </span>
         </h1>
         <p className="text-xs text-muted-foreground">
           {isRegisterMode
-            ? "Créez votre compte en 10 secondes pour gérer vos candidatures."
-            : "Connectez-vous pour accéder à vos candidatures et à votre profil ingénieur."}
+            ? t("Créez votre compte en 10 secondes pour gérer vos candidatures.", "Create your account in 10 seconds to manage your applications.")
+            : t("Connectez-vous pour accéder à vos candidatures et à votre profil ingénieur.", "Sign in to access your applications and your engineering profile.")}
         </p>
       </div>
 
@@ -99,7 +101,7 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
           }`}
         >
           <LogIn className="w-3.5 h-3.5" />
-          Se connecter
+          {t("Se connecter", "Sign in")}
         </button>
         <button
           type="button"
@@ -111,7 +113,7 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
           }`}
         >
           <UserPlus className="w-3.5 h-3.5" />
-          Créer un compte
+          {t("Créer un compte", "Create an account")}
         </button>
       </div>
 
@@ -128,7 +130,7 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
         {isRegisterMode && (
           <div>
             <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1.5">
-              Nom complet (optionnel)
+              {t("Nom complet (optionnel)", "Full name (optional)")}
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-stone-400">
@@ -138,7 +140,7 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
                 type="text"
                 value={fullNameInput}
                 onChange={(e) => setFullNameInput(e.target.value)}
-                placeholder="Ex. Louay Zorai"
+                placeholder={t("Ex. Louay Zorai", "e.g. Louay Zorai")}
                 className="w-full pl-9 pr-3 py-2 text-sm bg-white dark:bg-stone-800/80 border border-stone-300 dark:border-stone-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-stone-900 dark:text-stone-100 placeholder-stone-400 dark:placeholder-stone-500"
               />
             </div>
@@ -147,7 +149,7 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
 
         <div>
           <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1.5">
-            {isRegisterMode ? "Adresse Email" : "Email ou Nom d'utilisateur"}
+            {isRegisterMode ? t("Adresse Email", "Email address") : t("Email ou Nom d'utilisateur", "Email or username")}
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-stone-400">
@@ -158,7 +160,7 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
               required
               value={emailInput}
               onChange={(e) => setEmailInput(e.target.value)}
-              placeholder={isRegisterMode ? "votre.email@domaine.com" : "Votre nom d'utilisateur ou email"}
+              placeholder={isRegisterMode ? t("votre.email@domaine.com", "your.email@domain.com") : t("Votre nom d'utilisateur ou email", "Your username or email")}
               className="w-full pl-9 pr-3 py-2 text-sm bg-white dark:bg-stone-800/80 border border-stone-300 dark:border-stone-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-stone-900 dark:text-stone-100 placeholder-stone-400 dark:placeholder-stone-500"
             />
           </div>
@@ -166,7 +168,7 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
 
         <div>
           <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1.5">
-            Mot de passe
+            {t("Mot de passe", "Password")}
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-stone-400">
@@ -191,17 +193,17 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
           {isSubmitting ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              {isRegisterMode ? "Création du compte..." : "Connexion..."}
+              {isRegisterMode ? t("Création du compte...", "Creating account...") : t("Connexion...", "Signing in...")}
             </>
           ) : isRegisterMode ? (
             <>
               <UserPlus className="w-4 h-4" />
-              Créer mon compte
+              {t("Créer mon compte", "Create my account")}
             </>
           ) : (
             <>
               <LogIn className="w-4 h-4" />
-              Se connecter
+              {t("Se connecter", "Sign in")}
             </>
           )}
         </button>

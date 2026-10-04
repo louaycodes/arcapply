@@ -14,6 +14,7 @@ import {
   Sliders,
   Compass,
   ArrowRight,
+  X,
 } from "lucide-react";
 import {
   AgentPlaybookRule,
@@ -22,8 +23,10 @@ import {
   updatePlaybookRule,
   deletePlaybookRule,
 } from "@/lib/api";
+import { useAppLanguage } from "@/lib/language-context";
 
 export default function PlaybookPage() {
+  const { t } = useAppLanguage();
   const [rules, setRules] = useState<AgentPlaybookRule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +47,7 @@ export default function PlaybookPage() {
       const data = await fetchPlaybookRules();
       setRules(data);
     } catch (err: any) {
-      setError(err.message || "Erreur de chargement des directives");
+      setError(err.message || t("Erreur de chargement des directives", "Failed to load directives"));
     } finally {
       setIsLoading(false);
     }
@@ -59,17 +62,17 @@ export default function PlaybookPage() {
       const updated = await updatePlaybookRule(rule.id, { is_active: !rule.is_active });
       setRules((prev) => prev.map((r) => (r.id === rule.id ? updated : r)));
     } catch (err: any) {
-      alert("Échec de mise à jour de la directive");
+      alert(t("Échec de mise à jour de la directive", "Failed to update the directive"));
     }
   };
 
   const handleDelete = async (ruleId: string) => {
-    if (!confirm("Voulez-vous supprimer cette directive de l'agent ?")) return;
+    if (!confirm(t("Voulez-vous supprimer cette directive de l'agent ?", "Do you want to delete this agent directive?"))) return;
     try {
       await deletePlaybookRule(ruleId);
       setRules((prev) => prev.filter((r) => r.id !== ruleId));
     } catch (err: any) {
-      alert("Échec de suppression");
+      alert(t("Échec de suppression", "Deletion failed"));
     }
   };
 
@@ -95,7 +98,7 @@ export default function PlaybookPage() {
       setActionInstruction("");
       setCategory("custom");
     } catch (err: any) {
-      alert(err.message || "Erreur lors de la création de la directive");
+      alert(err.message || t("Erreur lors de la création de la directive", "Error while creating the directive"));
     } finally {
       setIsSubmitting(false);
     }
@@ -111,14 +114,13 @@ export default function PlaybookPage() {
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/20 text-orange-300 text-xs font-semibold border border-orange-500/30">
               <Sparkles className="w-3.5 h-3.5" />
-              Pilotage Agentique & Intelligence Métier
+              {t("Pilotage Agentique & Intelligence Métier", "Agentic Control & Domain Intelligence")}
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-stone-100">
-              Directives Stratégiques de l'Agent
+              {t("Directives Stratégiques de l'Agent", "Agent Strategic Directives")}
             </h1>
             <p className="text-sm text-stone-300 max-w-2xl leading-relaxed">
-              Donnez vos règles en langage naturel à l'Agent Rédacteur. Il consultera ce playbook
-              lors de la phase de réflexion (Thinking) pour aligner ses arguments et valoriser les projets exacts que vous souhaitez mettre en avant.
+              {t("Donnez vos règles en langage naturel à l'Agent Rédacteur. Il consultera ce playbook lors de la phase de réflexion (Thinking) pour aligner ses arguments et valoriser les projets exacts que vous souhaitez mettre en avant.", "Give your rules in plain language to the Writer Agent. It will consult this playbook during its reasoning phase (Thinking) to align its arguments and highlight the exact projects you want to showcase.")}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3 shrink-0 self-start md:self-auto">
@@ -127,7 +129,7 @@ export default function PlaybookPage() {
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary hover:bg-orange-600 text-white font-semibold text-sm transition-all shadow-md shadow-orange-600/30 shrink-0"
             >
               <Plus className="w-4 h-4" />
-              Nouvelle Directive
+              {t("Nouvelle Directive", "New Directive")}
             </button>
           </div>
         </div>
@@ -140,7 +142,7 @@ export default function PlaybookPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl p-4 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs font-medium text-stone-500 dark:text-stone-400">Directives Actives</p>
+            <p className="text-xs font-medium text-stone-500 dark:text-stone-400">{t("Directives Actives", "Active Directives")}</p>
             <p className="text-2xl font-bold text-stone-900 dark:text-stone-100 font-display mt-1">
               {activeCount} <span className="text-xs font-normal text-stone-500 dark:text-stone-400">/ {rules.length}</span>
             </p>
@@ -152,7 +154,7 @@ export default function PlaybookPage() {
 
         <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl p-4 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs font-medium text-stone-500 dark:text-stone-400">Moteur de Décision</p>
+            <p className="text-xs font-medium text-stone-500 dark:text-stone-400">{t("Moteur de Décision", "Decision Engine")}</p>
             <p className="text-sm font-bold text-stone-900 dark:text-stone-100 font-display mt-1">
               LangGraph + Groq 70B
             </p>
@@ -165,11 +167,11 @@ export default function PlaybookPage() {
 
         <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl p-4 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs font-medium text-stone-500 dark:text-stone-400">Invariant Garanti</p>
+            <p className="text-xs font-medium text-stone-500 dark:text-stone-400">{t("Invariant Garanti", "Guaranteed Invariant")}</p>
             <p className="text-sm font-bold text-stone-900 dark:text-stone-100 font-display mt-1">
-              Zéro Hallucination
+              {t("Zéro Hallucination", "Zero Hallucination")}
             </p>
-            <p className="text-[11px] text-stone-400">100% Master Profile réel</p>
+            <p className="text-[11px] text-stone-400">{t("100% Master Profile réel", "100% real Master Profile")}</p>
           </div>
           <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
             <Compass className="w-5 h-5" />
@@ -181,7 +183,7 @@ export default function PlaybookPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-stone-900 dark:text-stone-100 font-display flex items-center gap-2">
-            Directives de l'Agent
+            {t("Directives de l'Agent", "Agent Directives")}
             <span className="text-xs font-normal text-stone-500 dark:text-stone-400">({rules.length})</span>
           </h2>
         </div>
@@ -189,7 +191,7 @@ export default function PlaybookPage() {
         {isLoading ? (
           <div className="py-16 text-center text-stone-500 flex flex-col items-center gap-3">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            <span className="text-sm">Chargement des directives stratégiques...</span>
+            <span className="text-sm">{t("Chargement des directives stratégiques...", "Loading strategic directives...")}</span>
           </div>
         ) : error ? (
           <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 text-red-700 dark:text-red-400 text-sm flex items-center gap-3">
@@ -199,9 +201,9 @@ export default function PlaybookPage() {
         ) : rules.length === 0 ? (
           <div className="p-8 text-center bg-white dark:bg-stone-900 border border-dashed border-stone-300 dark:border-stone-700 rounded-2xl space-y-3">
             <Lightbulb className="w-8 h-8 text-amber-500 mx-auto" />
-            <h3 className="text-base font-semibold text-stone-800 dark:text-stone-200">Aucune directive enregistree</h3>
+            <h3 className="text-base font-semibold text-stone-800 dark:text-stone-200">{t("Aucune directive enregistree", "No directives saved")}</h3>
             <p className="text-xs text-stone-500 max-w-md mx-auto">
-              Toutes les directives ont ete supprimees. Vous pouvez en creer une personnalisee.
+              {t("Toutes les directives ont ete supprimees. Vous pouvez en creer une personnalisee.", "All directives have been deleted. You can create a custom one.")}
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
               <button
@@ -209,7 +211,7 @@ export default function PlaybookPage() {
                 className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-xs font-semibold rounded-lg hover:bg-orange-600 transition-all"
               >
                 <Plus className="w-3.5 h-3.5" />
-                Ajouter une directive
+                {t("Ajouter une directive", "Add a directive")}
               </button>
             </div>
           </div>
@@ -244,7 +246,7 @@ export default function PlaybookPage() {
                   <div className="flex items-center gap-1.5 shrink-0">
                     <button
                       onClick={() => handleToggle(rule)}
-                      title={rule.is_active ? "Désactiver" : "Activer"}
+                      title={rule.is_active ? t("Désactiver", "Disable") : t("Activer", "Enable")}
                       className="p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300 transition-colors cursor-pointer"
                     >
                       {rule.is_active ? (
@@ -255,7 +257,7 @@ export default function PlaybookPage() {
                     </button>
                     <button
                       onClick={() => handleDelete(rule.id)}
-                      title="Supprimer"
+                      title={t("Supprimer", "Delete")}
                       className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 text-stone-400 hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -266,7 +268,7 @@ export default function PlaybookPage() {
                 {/* Condition Box */}
                 <div className="p-3 rounded-xl bg-[#FAF8F5] dark:bg-stone-800/50 border border-stone-200/80 dark:border-stone-700 space-y-1">
                   <p className="text-[11px] font-semibold uppercase tracking-wider text-orange-800 dark:text-orange-300">
-                    Condition de declenchement :
+                    {t("Condition de declenchement :", "Trigger condition:")}
                   </p>
                   <p className="text-xs text-stone-700 dark:text-stone-300 leading-relaxed font-mono">
                     {rule.condition_trigger}
@@ -276,7 +278,7 @@ export default function PlaybookPage() {
                 {/* Action Box */}
                 <div className="p-3 rounded-xl bg-stone-50 dark:bg-stone-800/50 border border-stone-200/80 dark:border-stone-700 space-y-1">
                   <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-600 dark:text-stone-400">
-                    Action de l'Agent Redacteur :
+                    {t("Action de l'Agent Redacteur :", "Writer Agent action:")}
                   </p>
                   <p className="text-xs text-stone-800 dark:text-stone-200 leading-relaxed">
                     {rule.action_instruction}
@@ -298,35 +300,36 @@ export default function PlaybookPage() {
                   <Sparkles className="w-4 h-4" />
                 </div>
                 <h3 className="font-bold text-lg text-stone-900 dark:text-stone-100 font-display">
-                  Nouvelle Directive Stratégique
+                  {t("Nouvelle Directive Stratégique", "New Strategic Directive")}
                 </h3>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 text-lg font-bold cursor-pointer"
+                aria-label={t("Fermer", "Close")}
+                className="p-1 rounded-lg text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 cursor-pointer"
               >
-                x
+                <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
-                  Titre de la directive
+                  {t("Titre de la directive", "Directive title")}
                 </label>
                 <input
                   type="text"
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Ex. Focus Cloud & Kubernetes"
+                  placeholder={t("Ex. Focus Cloud & Kubernetes", "e.g. Cloud & Kubernetes focus")}
                   className="w-full px-3 py-2 text-sm bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-stone-900 dark:text-stone-100"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
-                  Catégorie
+                  {t("Catégorie", "Category")}
                 </label>
                 <select
                   value={category}
@@ -335,36 +338,36 @@ export default function PlaybookPage() {
                 >
                   <option value="devops">DevOps & Cloud</option>
                   <option value="backend">Backend & Architecture</option>
-                  <option value="ai">IA & Data Engineering</option>
-                  <option value="tone">Tonalité & Style</option>
-                  <option value="custom">Sur-mesure</option>
+                  <option value="ai">{t("IA & Data Engineering", "AI & Data Engineering")}</option>
+                  <option value="tone">{t("Tonalité & Style", "Tone & Style")}</option>
+                  <option value="custom">{t("Sur-mesure", "Custom")}</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
-                  Condition de déclenchement (Quand appliquer)
+                  {t("Condition de déclenchement (Quand appliquer)", "Trigger condition (When to apply)")}
                 </label>
                 <textarea
                   required
                   rows={2}
                   value={conditionTrigger}
                   onChange={(e) => setConditionTrigger(e.target.value)}
-                  placeholder="Ex. Si l'offre mentionne Docker, Kubernetes, CI/CD ou Terraform..."
+                  placeholder={t("Ex. Si l'offre mentionne Docker, Kubernetes, CI/CD ou Terraform...", "e.g. If the offer mentions Docker, Kubernetes, CI/CD or Terraform...")}
                   className="w-full px-3 py-2 text-sm bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-stone-900 dark:text-stone-100 resize-none"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
-                  Instruction d'action pour l'agent (Ce qu'il doit faire)
+                  {t("Instruction d'action pour l'agent (Ce qu'il doit faire)", "Action instruction for the agent (What it should do)")}
                 </label>
                 <textarea
                   required
                   rows={3}
                   value={actionInstruction}
                   onChange={(e) => setActionInstruction(e.target.value)}
-                  placeholder="Ex. Mettre impérativement en avant mon projet ArcApply et mon expérience microservices. Insister sur la rigueur de déploiement..."
+                  placeholder={t("Ex. Mettre impérativement en avant mon projet ArcApply et mon expérience microservices. Insister sur la rigueur de déploiement...", "e.g. Always highlight my ArcApply project and my microservices experience. Emphasize deployment rigor...")}
                   className="w-full px-3 py-2 text-sm bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-stone-900 dark:text-stone-100 resize-none"
                 />
               </div>
@@ -375,7 +378,7 @@ export default function PlaybookPage() {
                   onClick={() => setIsModalOpen(false)}
                   className="px-4 py-2 rounded-lg border border-stone-200 dark:border-stone-800 text-stone-700 dark:text-stone-300 text-xs font-semibold hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors"
                 >
-                  Annuler
+                  {t("Annuler", "Cancel")}
                 </button>
                 <button
                   type="submit"
@@ -385,12 +388,12 @@ export default function PlaybookPage() {
                   {isSubmitting ? (
                     <>
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      Enregistrement...
+                      {t("Enregistrement...", "Saving...")}
                     </>
                   ) : (
                     <>
                       <CheckCircle2 className="w-3.5 h-3.5" />
-                      Enregistrer la directive
+                      {t("Enregistrer la directive", "Save directive")}
                     </>
                   )}
                 </button>

@@ -13,6 +13,7 @@ import {
   SKILL_CATEGORIES,
 } from "@/lib/api";
 import { useAuth } from "@/components/auth/auth-context";
+import { useAppLanguage } from "@/lib/language-context";
 import {
   User,
   Compass,
@@ -34,63 +35,63 @@ export const ONBOARDING_STEPS = [
   {
     step: 1,
     id: "contact",
-    name: "Coordonnées",
-    title: "Informations Personnelles & Contact",
-    subtitle: "Renseignez vos coordonnées de contact pour figurer en haut de vos candidatures.",
+    name: { fr: "Coordonnées", en: "Contact" },
+    title: { fr: "Informations Personnelles & Contact", en: "Personal Information & Contact" },
+    subtitle: { fr: "Renseignez vos coordonnées de contact pour figurer en haut de vos candidatures.", en: "Enter your contact details so they appear at the top of your applications." },
     icon: User,
     path: "/onboarding/step-1",
   },
   {
     step: 2,
     id: "objective",
-    name: "Objectif & Bio",
-    title: "Objectif de Recherche & Accroche",
-    subtitle: "Définissez votre cible PFE et l'accroche qui attirera l'attention des recruteurs.",
+    name: { fr: "Objectif & Bio", en: "Goal & Bio" },
+    title: { fr: "Objectif de Recherche & Accroche", en: "Search Goal & Hook" },
+    subtitle: { fr: "Définissez votre cible PFE et l'accroche qui attirera l'attention des recruteurs.", en: "Define your PFE target and the hook that will catch recruiters' attention." },
     icon: Compass,
     path: "/onboarding/step-2",
   },
   {
     step: 3,
     id: "education",
-    name: "Formation",
-    title: "Écoles & Diplômes d'Ingénieur",
-    subtitle: "Ajoutez votre école d'ingénieurs et votre formation académique actuelle.",
+    name: { fr: "Formation", en: "Education" },
+    title: { fr: "Écoles & Diplômes d'Ingénieur", en: "Engineering Schools & Degrees" },
+    subtitle: { fr: "Ajoutez votre école d'ingénieurs et votre formation académique actuelle.", en: "Add your engineering school and your current academic program." },
     icon: GraduationCap,
     path: "/onboarding/step-3",
   },
   {
     step: 4,
     id: "experience",
-    name: "Expériences",
-    title: "Stages & Expériences Précédentes",
-    subtitle: "Mettez en valeur vos stages ouvrier, technicien ou développeur passés.",
+    name: { fr: "Expériences", en: "Experience" },
+    title: { fr: "Stages & Expériences Précédentes", en: "Internships & Previous Experience" },
+    subtitle: { fr: "Mettez en valeur vos stages ouvrier, technicien ou développeur passés.", en: "Highlight your past worker, technician or developer internships." },
     icon: Briefcase,
     path: "/onboarding/step-4",
   },
   {
     step: 5,
     id: "projects",
-    name: "Projets",
-    title: "Projets Académiques & Personnels",
-    subtitle: "Illustrez vos compétences concrètes avec vos réalisations techniques clés.",
+    name: { fr: "Projets", en: "Projects" },
+    title: { fr: "Projets Académiques & Personnels", en: "Academic & Personal Projects" },
+    subtitle: { fr: "Illustrez vos compétences concrètes avec vos réalisations techniques clés.", en: "Show your hands-on skills with your key technical achievements." },
     icon: FolderGit2,
     path: "/onboarding/step-5",
   },
   {
     step: 6,
     id: "skills",
-    name: "Compétences",
-    title: "Compétences Techniques & Langues",
-    subtitle: "Listez votre stack technologique et vos niveaux de langues étrangères.",
+    name: { fr: "Compétences", en: "Skills" },
+    title: { fr: "Compétences Techniques & Langues", en: "Technical Skills & Languages" },
+    subtitle: { fr: "Listez votre stack technologique et vos niveaux de langues étrangères.", en: "List your tech stack and your foreign language levels." },
     icon: Code2,
     path: "/onboarding/step-6",
   },
   {
     step: 7,
     id: "ready",
-    name: "Lancement",
-    title: "Profil Prêt & Découverte du Cockpit",
-    subtitle: "Votre profil est validé ! Découvrez comment ArcApply propulse votre recherche de stage.",
+    name: { fr: "Lancement", en: "Launch" },
+    title: { fr: "Profil Prêt & Découverte du Cockpit", en: "Profile Ready & Cockpit Tour" },
+    subtitle: { fr: "Votre profil est validé ! Découvrez comment ArcApply propulse votre recherche de stage.", en: "Your profile is validated! See how ArcApply boosts your internship search." },
     icon: ShieldCheck,
     path: "/onboarding/step-7",
   },
@@ -205,6 +206,7 @@ export function OnboardingShell({
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useAuth();
+  const { t, language } = useAppLanguage();
   const [profile, setProfile] = useState<MasterProfile | null>(null);
   const [status, setStatus] = useState<ProfileCompletenessStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -256,7 +258,7 @@ export function OnboardingShell({
       setTimeout(() => setSaveSuccess(false), 2000);
       return true;
     } catch (err: any) {
-      alert(`Erreur d'enregistrement : ${err.message || "Problème serveur"}`);
+      alert(t(`Erreur d'enregistrement : ${err.message || "Problème serveur"}`, `Save error: ${err.message || "Server problem"}`));
       return false;
     } finally {
       setIsSaving(false);
@@ -347,14 +349,14 @@ export function OnboardingShell({
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                   <h1 className="text-sm font-bold text-stone-900 dark:text-stone-100 font-display">
-                    Walkthrough de Configuration Initiale
+                    {t("Walkthrough de Configuration Initiale", "Initial Setup Walkthrough")}
                   </h1>
                   <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-950/40 text-orange-900 dark:text-orange-300 border border-orange-200 dark:border-orange-800/60">
-                    Étape {stepNumber} sur {ONBOARDING_STEPS.length}
+                    {t(`Étape ${stepNumber} sur ${ONBOARDING_STEPS.length}`, `Step ${stepNumber} of ${ONBOARDING_STEPS.length}`)}
                   </span>
                 </div>
                 <p className="hidden sm:block text-xs text-stone-500 dark:text-stone-400">
-                  Complétez votre profil étape par étape pour maximiser votre impact auprès des recruteurs
+                  {t("Complétez votre profil étape par étape pour maximiser votre impact auprès des recruteurs", "Complete your profile step by step to maximize your impact with recruiters")}
                 </p>
               </div>
             </div>
@@ -364,17 +366,17 @@ export function OnboardingShell({
                 type="button"
                 onClick={() => fillDemoData(stepNumber)}
                 className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-orange-200 dark:border-orange-800/60 bg-orange-50/80 dark:bg-orange-950/40 hover:bg-orange-100 dark:hover:bg-orange-900/40 text-orange-800 dark:text-orange-300 text-xs font-semibold transition-all shadow-xs"
-                title="Injecter un exemple d'étudiant ingénieur pour cette étape"
+                title={t("Injecter un exemple d'étudiant ingénieur pour cette étape", "Fill in a sample engineering student for this step")}
               >
                 <Sparkles className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" />
-                <span>Exemple Ingénieur PFE</span>
+                <span>{t("Exemple Ingénieur PFE", "PFE Engineer Example")}</span>
               </button>
               <Link
                 href="/profile"
                 className="text-xs text-right text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 px-2 py-1 transition-colors max-w-[7rem] sm:max-w-none"
-                title="Quitter le guide et aller directement sur le profil complet"
+                title={t("Quitter le guide et aller directement sur le profil complet", "Leave the guide and go straight to the full profile")}
               >
-                Passer au profil libre
+                {t("Passer au profil libre", "Skip to the full profile")}
               </Link>
             </div>
           </div>
@@ -418,7 +420,7 @@ export function OnboardingShell({
                       ) : (
                         <Icon className="w-3.5 h-3.5 shrink-0" />
                       )}
-                      <span>{s.step}. {s.name}</span>
+                      <span>{s.step}. {s.name[language]}</span>
                     </Link>
                   </React.Fragment>
                 );
@@ -433,15 +435,15 @@ export function OnboardingShell({
           <div className="mb-6 p-4 sm:p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 shadow-artisan flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 text-primary text-xs font-bold uppercase tracking-wider mb-1">
-                <span>Étape {stepNumber} / {ONBOARDING_STEPS.length}</span>
+                <span>{t(`Étape ${stepNumber} / ${ONBOARDING_STEPS.length}`, `Step ${stepNumber} / ${ONBOARDING_STEPS.length}`)}</span>
                 <span>•</span>
-                <span>{progressPct}% Complété</span>
+                <span>{t(`${progressPct}% Complété`, `${progressPct}% Complete`)}</span>
               </div>
               <h2 className="text-lg sm:text-xl font-bold text-stone-900 dark:text-stone-100 font-display">
-                {currentStep.title}
+                {currentStep.title[language]}
               </h2>
               <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 max-w-2xl leading-relaxed">
-                {currentStep.subtitle}
+                {currentStep.subtitle[language]}
               </p>
             </div>
 
@@ -451,7 +453,7 @@ export function OnboardingShell({
               className="sm:hidden self-start inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-orange-200 dark:border-orange-800/60 bg-orange-50 dark:bg-orange-950/40 text-orange-800 dark:text-orange-300 text-xs font-semibold"
             >
               <Sparkles className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" />
-              <span>Remplir exemple</span>
+              <span>{t("Remplir exemple", "Fill example")}</span>
             </button>
           </div>
 
@@ -459,7 +461,7 @@ export function OnboardingShell({
           {isLoading ? (
             <div className="py-20 flex flex-col items-center justify-center gap-3 text-stone-500">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              <p className="text-xs font-medium">Chargement de votre profil en cours...</p>
+              <p className="text-xs font-medium">{t("Chargement de votre profil en cours...", "Loading your profile...")}</p>
             </div>
           ) : (
             <div className="space-y-6">

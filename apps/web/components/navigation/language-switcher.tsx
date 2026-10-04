@@ -5,13 +5,13 @@ import { useAppLanguage } from "@/lib/language-context";
 import { Languages } from "lucide-react";
 
 export function LanguageSwitcher({ className = "" }: { className?: string }) {
-  const { language, setLanguage } = useAppLanguage();
+  const { language, setLanguage, t } = useAppLanguage();
 
   return (
     <div
       className={`inline-flex items-center gap-1 p-1 bg-stone-100 dark:bg-stone-800/80 rounded-lg border border-stone-200 dark:border-stone-700 text-xs shadow-xs ${className}`}
       role="group"
-      aria-label="Sélection de la langue"
+      aria-label={t("Sélection de la langue", "Language selection")}
     >
       <Languages className="hidden sm:block w-3.5 h-3.5 text-stone-500 dark:text-stone-400 ml-1 shrink-0" />
       <button

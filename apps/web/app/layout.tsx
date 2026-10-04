@@ -47,9 +47,9 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-background text-foreground antialiased selection:bg-orange-100 selection:text-orange-900 dark:selection:bg-orange-950 dark:selection:text-orange-200 flex min-h-screen">
-        <AuthProvider>
-          <LanguageProvider>
-            <ThemeProvider>
+        <LanguageProvider>
+          <ThemeProvider>
+            <AuthProvider>
               <MobileNavProvider>
               <div className="flex w-full min-h-screen bg-background text-foreground">
                 <Sidebar />
@@ -61,9 +61,9 @@ export default function RootLayout({
                 </div>
               </div>
               </MobileNavProvider>
-            </ThemeProvider>
-          </LanguageProvider>
-        </AuthProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

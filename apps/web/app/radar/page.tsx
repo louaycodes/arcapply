@@ -17,6 +17,8 @@ import {
   ATSMatchResult,
 } from "@/lib/api";
 import { JobCard } from "@/components/radar/job-card";
+import { useAppLanguage } from "@/lib/language-context";
+import { localizeServerMessage } from "@/lib/i18n";
 import { CVPreviewModal } from "@/components/radar/cv-preview-modal";
 import { LetterPreviewModal } from "@/components/radar/letter-preview-modal";
 import { MirrorReviewDrawer } from "@/components/radar/mirror-review-drawer";
@@ -45,8 +47,8 @@ import {
   ChevronUp,
 } from "lucide-react";
 
-const AVAILABLE_PLATFORMS = [
-  { id: "top100_enterprises", label: "Top 100 Firmes IT (Portails Carrières Dédiés)", country: "Global" },
+const AVAILABLE_PLATFORMS: { id: string; label: string; labelEn?: string; country: string }[] = [
+  { id: "top100_enterprises", label: "Top 100 Firmes IT (Portails Carrières Dédiés)", labelEn: "Top 100 IT Firms (Dedicated Career Portals)", country: "Global" },
   { id: "linkedin", label: "LinkedIn", country: "Global" },
   { id: "stackoverflow_jobs", label: "StackOverflow Jobs", country: "Global" },
   { id: "keejob", label: "Keejob", country: "Tunisie" },
@@ -70,12 +72,13 @@ const AVAILABLE_PLATFORMS = [
   { id: "meteojob", label: "Meteojob", country: "France" },
   { id: "letudiant", label: "L'Etudiant", country: "France" },
   { id: "chooseyourboss", label: "ChooseYourBoss", country: "France" },
-  { id: "esn_direct", label: "Portails ESN (Capgemini, Sopra...)", country: "France" },
+  { id: "esn_direct", label: "Portails ESN (Capgemini, Sopra...)", labelEn: "IT Services Portals (Capgemini, Sopra...)", country: "France" },
   { id: "numeum", label: "Numeum ESN", country: "France" },
   { id: "capdigital", label: "Cap Digital Tech", country: "France" },
 ];
 
 export default function RadarPage() {
+  const { t, language } = useAppLanguage();
   const [jobs, setJobs] = useState<JobOffer[]>([]);
   const [atsScores, setAtsScores] = useState<Record<string, ATSMatchResult>>({});
   const [isAtsLoading, setIsAtsLoading] = useState(false);
@@ -130,7 +133,7 @@ export default function RadarPage() {
     } catch (err: any) {
       setNotification({
         type: "error",
-        message: err.message || "Erreur lors de la récupération des offres Radar.",
+        message: err.message || t("Erreur lors de la récupération des offres Radar.", "Error while fetching Radar offers."),
       });
     } finally {
       setIsLoading(false);
@@ -164,7 +167,12 @@ export default function RadarPage() {
         }, 8000);
       },
       (progress) => {
-        setScrapeMessage(`${progress.platform.toUpperCase()} : ${progress.message}`);
+        setScrapeMessage(
+          t(
+            `${progress.platform.toUpperCase()} : ${progress.message}`,
+            `${progress.platform.toUpperCase()}: ${localizeServerMessage(progress.message)}`
+          )
+        );
         if (progress.status === "completed") {
           setTimeout(() => setScrapeMessage(null), 4000);
         }
@@ -190,7 +198,7 @@ export default function RadarPage() {
         setAtsScores({});
         setNotification({
           type: "success",
-          message: "La base de données des offres a été vidée.",
+          message: t("La base de données des offres a été vidée.", "The offers database has been cleared."),
         });
         setTimeout(() => setNotification(null), 3500);
       }
@@ -210,13 +218,13 @@ export default function RadarPage() {
       await archiveJob(id);
       setNotification({
         type: "success",
-        message: "Offre archivée avec succès.",
+        message: t("Offre archivée avec succès.", "Offer archived successfully."),
       });
       setTimeout(() => setNotification(null), 3000);
     } catch (err: any) {
       setNotification({
         type: "error",
-        message: err.message || "Impossible d'archiver l'offre.",
+        message: err.message || t("Impossible d'archiver l'offre.", "Unable to archive the offer."),
       });
     }
   };
@@ -225,7 +233,7 @@ export default function RadarPage() {
     try {
       setIsCollecting(true);
       setShowCollectModal(false);
-      setScrapeMessage("Lancement de l'exploration multi-sources & plateformes Top 100 IT...");
+      setScrapeMessage(t("Lancement de l'exploration multi-sources & plateformes Top 100 IT...", "Starting multi-source exploration & Top 100 IT platforms..."));
 
       const keywords = keywordsInput
         .split(",")
@@ -240,13 +248,13 @@ export default function RadarPage() {
 
       setNotification({
         type: "success",
-        message: summary.message || "Collecte multi-sources achevée avec succès.",
+        message: summary.message || t("Collecte multi-sources achevée avec succès.", "Multi-source collection completed successfully."),
       });
       loadJobs();
     } catch (err: any) {
       setNotification({
         type: "error",
-        message: err.message || "Erreur pendant la collecte multi-sources.",
+        message: err.message || t("Erreur pendant la collecte multi-sources.", "Error during multi-source collection."),
       });
     } finally {
       setIsCollecting(false);
@@ -256,7 +264,7 @@ export default function RadarPage() {
 
   const handleClearAllJobs = async () => {
     const confirmed = window.confirm(
-      "Êtes-vous sûr de vouloir vider toutes les offres de la base de données locale ? Les CVs et lettres générés associés seront également réinitialisés."
+      t("Êtes-vous sûr de vouloir vider toutes les offres de la base de données locale ? Les CVs et lettres générés associés seront également réinitialisés.", "Are you sure you want to clear all offers from the local database? The associated generated CVs and letters will also be reset.")
     );
     if (!confirmed) return;
 
@@ -267,12 +275,12 @@ export default function RadarPage() {
       setAtsScores({});
       setNotification({
         type: "success",
-        message: res.message || "Toutes les offres ont été supprimées avec succès.",
+        message: localizeServerMessage(res.message) || t("Toutes les offres ont été supprimées avec succès.", "All offers were deleted successfully."),
       });
     } catch (err: any) {
       setNotification({
         type: "error",
-        message: err.message || "Erreur lors de la suppression des offres.",
+        message: err.message || t("Erreur lors de la suppression des offres.", "Error while deleting the offers."),
       });
     } finally {
       setIsClearing(false);
@@ -304,13 +312,13 @@ export default function RadarPage() {
         await markJobAsApplied(jobId);
         setNotification({
           type: "success",
-          message: "Offre marquée comme déjà postulée. Elle est protégée contre tout re-scraping !",
+          message: t("Offre marquée comme déjà postulée. Elle est protégée contre tout re-scraping !", "Offer marked as already applied. It is protected against any re-scraping!"),
         });
       } else {
         await unmarkJobAsApplied(jobId);
         setNotification({
           type: "success",
-          message: "Offre démarquée et réintégrée dans le radar de prospection.",
+          message: t("Offre démarquée et réintégrée dans le radar de prospection.", "Offer unmarked and restored to the prospecting radar."),
         });
       }
       setTimeout(() => setNotification(null), 3500);
@@ -318,7 +326,7 @@ export default function RadarPage() {
       loadJobs();
       setNotification({
         type: "error",
-        message: err.message || "Erreur lors de la mise à jour du statut postulé.",
+        message: err.message || t("Erreur lors de la mise à jour du statut postulé.", "Error while updating the applied status."),
       });
       setTimeout(() => setNotification(null), 4000);
     }
@@ -427,11 +435,11 @@ export default function RadarPage() {
           <div className="flex flex-wrap items-center gap-2.5">
             <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
               <Radar className="w-6 h-6 text-primary" />
-              <span>Offres de Stage PFE</span>
+              <span>{t("Offres de Stage PFE", "Internship Offers")}</span>
             </h1>
           </div>
           <p className="text-xs md:text-sm text-muted-foreground mt-1">
-            Détection en temps réel sur les portails dédiés des 100 meilleures firmes IT mondiales (France & Tunisie) et plateformes vérifiées.
+            {t("Détection en temps réel sur les portails dédiés des 100 meilleures firmes IT mondiales (France & Tunisie) et plateformes vérifiées.", "Real-time detection on the dedicated portals of the world's top 100 IT firms (France & Tunisia) and verified platforms.")}
           </p>
         </div>
 
@@ -441,10 +449,10 @@ export default function RadarPage() {
             onClick={handleClearAllJobs}
             disabled={isLoading || isClearing || jobs.length === 0}
             className="px-3 py-2 rounded-lg border border-destructive/20 bg-card hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors flex items-center gap-1.5 text-xs font-medium disabled:opacity-40 cursor-pointer"
-            title="Effacer la liste des offres"
+            title={t("Effacer la liste des offres", "Clear the offer list")}
           >
             <Trash2 className={`w-3.5 h-3.5 text-destructive ${isClearing ? "animate-spin" : ""}`} />
-            <span className="text-destructive hidden sm:inline">{isClearing ? "Suppression..." : "Vider"}</span>
+            <span className="text-destructive hidden sm:inline">{isClearing ? t("Suppression...", "Deleting...") : t("Vider", "Clear")}</span>
           </button>
 
           <button
@@ -452,7 +460,7 @@ export default function RadarPage() {
             onClick={loadJobs}
             disabled={isLoading}
             className="p-2 rounded-lg border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-            title="Rafraîchir les offres"
+            title={t("Rafraîchir les offres", "Refresh offers")}
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
           </button>
@@ -464,7 +472,7 @@ export default function RadarPage() {
             className="px-4 py-2 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-xs md:text-sm font-semibold flex items-center gap-2 shadow-sm transition-all disabled:opacity-50 cursor-pointer"
           >
             <Play className={`w-3.5 h-3.5 fill-current ${isCollecting ? "animate-spin" : ""}`} />
-            <span>{isCollecting ? "Recherche en cours..." : "Rechercher des offres"}</span>
+            <span>{isCollecting ? t("Recherche en cours...", "Searching...") : t("Rechercher des offres", "Search for offers")}</span>
           </button>
         </div>
       </div>
@@ -509,7 +517,7 @@ export default function RadarPage() {
             }`}
           >
             <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-            <span>Toutes les offres</span>
+            <span>{t("Toutes les offres", "All offers")}</span>
             <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-muted text-muted-foreground">
               {jobs.length}
             </span>
@@ -525,7 +533,7 @@ export default function RadarPage() {
             }`}
           >
             <Flame className="w-3.5 h-3.5 text-orange-700 dark:text-orange-400" />
-            <span>Aujourd'hui</span>
+            <span>{t("Aujourd'hui", "Today")}</span>
             <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-orange-200 dark:bg-orange-900/60 text-orange-900 dark:text-orange-200 font-bold">
               {countToday}
             </span>
@@ -541,7 +549,7 @@ export default function RadarPage() {
             }`}
           >
             <Calendar className="w-3.5 h-3.5 text-blue-700 dark:text-blue-400" />
-            <span>Cette semaine</span>
+            <span>{t("Cette semaine", "This week")}</span>
             <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-blue-200 dark:bg-blue-900/60 text-blue-900 dark:text-blue-200 font-bold">
               {countWeek}
             </span>
@@ -556,7 +564,7 @@ export default function RadarPage() {
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <span>Ce mois-ci</span>
+            <span>{t("Ce mois-ci", "This month")}</span>
             <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-orange-200 dark:bg-orange-900/60 text-orange-900 dark:text-orange-200 font-bold">
               {countMonth}
             </span>
@@ -565,7 +573,7 @@ export default function RadarPage() {
 
         {/* Bascule de vue (Chronologique vs Grille) */}
         <div className="flex items-center gap-1.5 border-t sm:border-t-0 sm:border-l border-border/60 pt-2 sm:pt-0 sm:pl-3">
-          <span className="text-[11px] text-muted-foreground hidden lg:inline">Affichage :</span>
+          <span className="text-[11px] text-muted-foreground hidden lg:inline">{t("Affichage :", "View:")}</span>
           <button
             type="button"
             onClick={() => setViewMode("timeline")}
@@ -574,7 +582,7 @@ export default function RadarPage() {
                 ? "bg-card text-foreground font-semibold shadow-xs border border-border"
                 : "text-muted-foreground hover:text-foreground"
             }`}
-            title="Vue groupée par période temporelle"
+            title={t("Vue groupée par période temporelle", "View grouped by time period")}
           >
             <ListFilter className="w-3.5 h-3.5" />
             <span className="text-xs">Timeline</span>
@@ -587,10 +595,10 @@ export default function RadarPage() {
                 ? "bg-card text-foreground font-semibold shadow-xs border border-border"
                 : "text-muted-foreground hover:text-foreground"
             }`}
-            title="Vue Grille fluide"
+            title={t("Vue Grille fluide", "Fluid grid view")}
           >
             <LayoutGrid className="w-3.5 h-3.5" />
-            <span className="text-xs">Grille</span>
+            <span className="text-xs">{t("Grille", "Grid")}</span>
           </button>
         </div>
       </div>
@@ -601,9 +609,9 @@ export default function RadarPage() {
           {/* Filtre Pays */}
           <div className="flex items-center bg-muted/60 p-0.5 rounded-lg border border-border/40">
             {[
-              { id: "all", label: "Tous" },
+              { id: "all", label: t("Tous", "All") },
               { id: "France", label: "France" },
-              { id: "Tunisie", label: "Tunisie" },
+              { id: "Tunisie", label: t("Tunisie", "Tunisia") },
             ].map((c) => (
               <button
                 key={c.id}
@@ -626,7 +634,7 @@ export default function RadarPage() {
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Stack, entreprise, pôle..."
+            placeholder={t("Stack, entreprise, pôle...", "Stack, company, team...")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-muted/60 border border-border focus:outline-none focus:border-primary text-xs text-foreground placeholder:text-muted-foreground/60 transition-colors"
@@ -638,7 +646,7 @@ export default function RadarPage() {
       {isLoading ? (
         <div className="p-16 text-center space-y-3">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-xs font-mono text-muted-foreground">Recherche des opportunités en cours...</p>
+          <p className="text-xs font-mono text-muted-foreground">{t("Recherche des opportunités en cours...", "Searching for opportunities...")}</p>
         </div>
       ) : filteredJobs.length === 0 ? (
         <div className="p-16 rounded-xl border border-dashed border-border bg-card/40 text-center space-y-4">
@@ -646,9 +654,9 @@ export default function RadarPage() {
             <Radar className="w-6 h-6" />
           </div>
           <div className="max-w-md mx-auto space-y-1.5">
-            <h3 className="text-sm font-semibold text-foreground">Aucune offre ne correspond aux critères actifs</h3>
+            <h3 className="text-sm font-semibold text-foreground">{t("Aucune offre ne correspond aux critères actifs", "No offers match the active criteria")}</h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Modifiez vos critères de recherche ou lancez une exploration automatique sur les sites des meilleures entreprises IT.
+              {t("Modifiez vos critères de recherche ou lancez une exploration automatique sur les sites des meilleures entreprises IT.", "Change your search criteria or start an automatic exploration of the top IT companies' sites.")}
             </p>
             <div className="pt-3">
               <button
@@ -656,7 +664,7 @@ export default function RadarPage() {
                 onClick={() => setShowCollectModal(true)}
                 className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors cursor-pointer"
               >
-                Lancer une nouvelle collecte
+                {t("Lancer une nouvelle collecte", "Start a new collection")}
               </button>
             </div>
           </div>
@@ -666,9 +674,9 @@ export default function RadarPage() {
           <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 border border-emerald-300 dark:border-emerald-800/60 flex items-center justify-center text-emerald-800 dark:text-emerald-300 mx-auto shadow-xs">
             <CheckCircle2 className="w-5 h-5" />
           </div>
-          <h3 className="text-sm font-bold text-emerald-950 dark:text-emerald-300">Toutes les opportunités filtrées ont été postulées !</h3>
+          <h3 className="text-sm font-bold text-emerald-950 dark:text-emerald-300">{t("Toutes les opportunités filtrées ont été postulées !", "You applied to all filtered opportunities!")}</h3>
           <p className="text-xs text-emerald-800 dark:text-emerald-300 max-w-md mx-auto leading-relaxed">
-            Vous avez déjà postulé à toutes les offres correspondant à vos filtres actuels. Retrouvez le détail de vos candidatures dans la section dédiée en bas de page.
+            {t("Vous avez déjà postulé à toutes les offres correspondant à vos filtres actuels. Retrouvez le détail de vos candidatures dans la section dédiée en bas de page.", "You have already applied to every offer matching your current filters. Find your application details in the dedicated section at the bottom of the page.")}
           </p>
         </div>
       ) : viewMode === "timeline" && selectedPeriod === "all" ? (
@@ -680,12 +688,12 @@ export default function RadarPage() {
               <div className="flex items-center justify-between border-b border-border/50 pb-2">
                 <div className="flex items-center gap-2">
                   <Flame className="w-4 h-4 text-orange-700 dark:text-orange-400" />
-                  <h2 className="text-sm font-bold text-stone-900 dark:text-stone-100 font-display">Aujourd'hui</h2>
+                  <h2 className="text-sm font-bold text-stone-900 dark:text-stone-100 font-display">{t("Aujourd'hui", "Today")}</h2>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-950/40 text-orange-900 dark:text-orange-300 font-semibold border border-orange-200 dark:border-orange-800/60">
-                    {todayJobs.length} opportunité(s)
+                    {t(`${todayJobs.length} opportunité(s)`, `${todayJobs.length} opportunit${todayJobs.length === 1 ? "y" : "ies"}`)}
                   </span>
                 </div>
-                <span className="text-[11px] text-muted-foreground">Détectées il y a moins de 24 heures</span>
+                <span className="text-[11px] text-muted-foreground">{t("Détectées il y a moins de 24 heures", "Detected less than 24 hours ago")}</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {todayJobs.map((job) => (
@@ -710,12 +718,12 @@ export default function RadarPage() {
               <div className="flex items-center justify-between border-b border-border/50 pb-2">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-blue-700 dark:text-blue-400" />
-                  <h2 className="text-sm font-bold text-stone-900 dark:text-stone-100 font-display">Cette Semaine</h2>
+                  <h2 className="text-sm font-bold text-stone-900 dark:text-stone-100 font-display">{t("Cette Semaine", "This Week")}</h2>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/40 text-blue-900 dark:text-blue-300 font-semibold border border-blue-200 dark:border-blue-800/60">
-                    {weekJobs.length} opportunité(s)
+                    {t(`${weekJobs.length} opportunité(s)`, `${weekJobs.length} opportunit${weekJobs.length === 1 ? "y" : "ies"}`)}
                   </span>
                 </div>
-                <span className="text-[11px] text-muted-foreground">Publiées au cours des 7 derniers jours</span>
+                <span className="text-[11px] text-muted-foreground">{t("Publiées au cours des 7 derniers jours", "Published in the last 7 days")}</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {weekJobs.map((job) => (
@@ -740,12 +748,12 @@ export default function RadarPage() {
               <div className="flex items-center justify-between border-b border-border/50 pb-2">
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-muted-foreground" />
-                  <h2 className="text-sm font-bold text-foreground">Plus Anciennes</h2>
+                  <h2 className="text-sm font-bold text-foreground">{t("Plus Anciennes", "Older")}</h2>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-semibold border border-border/50">
-                    {olderJobs.length} offre(s)
+                    {t(`${olderJobs.length} offre(s)`, `${olderJobs.length} offer${olderJobs.length === 1 ? "" : "s"}`)}
                   </span>
                 </div>
-                <span className="text-[11px] text-muted-foreground">Publiées il y a plus d'une semaine</span>
+                <span className="text-[11px] text-muted-foreground">{t("Publiées il y a plus d'une semaine", "Published more than a week ago")}</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {olderJobs.map((job) => (
@@ -793,7 +801,7 @@ export default function RadarPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="text-base font-bold text-stone-900 dark:text-stone-100 font-display">
-                    Offres Déjà Postulées
+                    {t("Offres Déjà Postulées", "Offers Already Applied To")}
                   </h2>
                   <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-200 font-bold border border-emerald-300 dark:border-emerald-800">
                     {appliedJobs.length}
@@ -801,7 +809,11 @@ export default function RadarPage() {
                 </div>
                 <p className="text-xs text-stone-600 dark:text-stone-300 flex items-center gap-1.5 mt-0.5">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                  <span>Ces postes sont verrouillés : ils ne seront <strong>jamais re-scrappés</strong> ni réinsérés.</span>
+                  <span>
+                    {t("Ces postes sont verrouillés : ils ne seront", "These positions are locked: they will")}{" "}
+                    <strong>{t("jamais re-scrappés", "never be re-scraped")}</strong>{" "}
+                    {t("ni réinsérés.", "or reinserted.")}
+                  </span>
                 </p>
               </div>
             </div>
@@ -811,7 +823,7 @@ export default function RadarPage() {
               onClick={() => setShowAppliedSection((prev) => !prev)}
               className="px-3.5 py-1.5 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:bg-stone-50 dark:hover:bg-stone-800 text-xs font-semibold text-stone-700 dark:text-stone-300 hover:text-stone-900 dark:hover:text-stone-100 transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer self-end sm:self-center"
             >
-              <span>{showAppliedSection ? "Masquer la section" : "Afficher les offres"}</span>
+              <span>{showAppliedSection ? t("Masquer la section", "Hide section") : t("Afficher les offres", "Show offers")}</span>
               {showAppliedSection ? (
                 <ChevronUp className="w-4 h-4 text-stone-500" />
               ) : (
@@ -846,7 +858,7 @@ export default function RadarPage() {
             <div className="flex items-center justify-between border-b border-stone-200 dark:border-stone-800 pb-3">
               <div className="flex items-center gap-2">
                 <Radar className="w-5 h-5 text-primary" />
-                <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 font-display">Recherche d'opportunités</h3>
+                <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 font-display">{t("Recherche d'opportunités", "Opportunity Search")}</h3>
               </div>
               <button
                 type="button"
@@ -860,22 +872,25 @@ export default function RadarPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
-                  Métiers et compétences recherchés
+                  {t("Métiers et compétences recherchés", "Target roles and skills")}
                 </label>
                 <input
                   type="text"
                   value={keywordsInput}
                   onChange={(e) => setKeywordsInput(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg bg-muted/60 border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                  placeholder="ex: PFE, Ingénieur, Cloud, Python, DevOps"
+                  placeholder={t("ex: PFE, Ingénieur, Cloud, Python, DevOps", "e.g. PFE, Engineer, Cloud, Python, DevOps")}
                 />
-                <p className="text-[11px] text-muted-foreground mt-1">Séparés par des virgules.</p>
+                <p className="text-[11px] text-muted-foreground mt-1">{t("Séparés par des virgules.", "Comma-separated.")}</p>
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="block text-xs font-semibold text-muted-foreground">
-                    Sources prioritaires ({selectedPlatformsToCrawl.length}/{AVAILABLE_PLATFORMS.length} actives)
+                    {t(
+                      `Sources prioritaires (${selectedPlatformsToCrawl.length}/${AVAILABLE_PLATFORMS.length} actives)`,
+                      `Priority sources (${selectedPlatformsToCrawl.length}/${AVAILABLE_PLATFORMS.length} active)`
+                    )}
                   </label>
                   <button
                     type="button"
@@ -889,8 +904,8 @@ export default function RadarPage() {
                     className="text-[11px] text-primary hover:underline font-semibold cursor-pointer"
                   >
                     {selectedPlatformsToCrawl.length === AVAILABLE_PLATFORMS.length
-                      ? "Tout désélectionner"
-                      : "Tout sélectionner"}
+                      ? t("Tout désélectionner", "Deselect all")
+                      : t("Tout sélectionner", "Select all")}
                   </button>
                 </div>
                 <div className="grid grid-cols-1 gap-1.5 max-h-60 overflow-y-auto pr-1">
@@ -923,10 +938,10 @@ export default function RadarPage() {
                             }}
                             className="rounded accent-primary"
                           />
-                          <span>{plat.label}</span>
+                          <span>{language === "en" && plat.labelEn ? plat.labelEn : plat.label}</span>
                         </div>
                         <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted/80 text-muted-foreground">
-                          {plat.country}
+                          {plat.country === "Tunisie" ? t("Tunisie", "Tunisia") : plat.country}
                         </span>
                       </label>
                     );
@@ -935,7 +950,8 @@ export default function RadarPage() {
               </div>
 
               <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 text-[11px] text-muted-foreground leading-relaxed">
-                <span className="font-bold text-primary">Recherche directe :</span> Les sites carrières des meilleures entreprises sont consultés directement pour trouver les offres les plus récentes.
+                <span className="font-bold text-primary">{t("Recherche directe :", "Direct search:")}</span>{" "}
+                {t("Les sites carrières des meilleures entreprises sont consultés directement pour trouver les offres les plus récentes.", "The career sites of top companies are queried directly to find the most recent offers.")}
               </div>
             </div>
 
@@ -945,7 +961,7 @@ export default function RadarPage() {
                 onClick={() => setShowCollectModal(false)}
                 className="px-3.5 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
               >
-                Annuler
+                {t("Annuler", "Cancel")}
               </button>
               <button
                 type="button"
@@ -953,7 +969,7 @@ export default function RadarPage() {
                 className="px-4 py-2 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold flex items-center gap-2 shadow-xs transition-all cursor-pointer"
               >
                 <Play className="w-3.5 h-3.5 fill-current" />
-                <span>Lancer la recherche</span>
+                <span>{t("Lancer la recherche", "Start the search")}</span>
               </button>
             </div>
           </div>

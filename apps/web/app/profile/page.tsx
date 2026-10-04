@@ -18,8 +18,10 @@ import {
   Language,
   Extracurricular,
   SKILL_CATEGORIES,
+  skillCategoryLabel,
 } from "@/lib/api";
 import { useAppLanguage } from "@/lib/language-context";
+import { localizeServerMessage } from "@/lib/i18n";
 import {
   ShieldAlert,
   ShieldCheck,
@@ -53,7 +55,7 @@ import {
 function StackInput({
   value = [],
   onChange,
-  placeholder = "Technologies / Stack (ex: Python, Docker, AWS)",
+  placeholder,
   className = "px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary",
 }: {
   value?: string[];
@@ -61,6 +63,7 @@ function StackInput({
   placeholder?: string;
   className?: string;
 }) {
+  const { t } = useAppLanguage();
   const [text, setText] = useState<string>((value || []).join(", "));
 
   // Synchronise le texte lorsque la valeur externe change (ex: chargement API ou switch de profil)
@@ -96,7 +99,7 @@ function StackInput({
   return (
     <input
       type="text"
-      placeholder={placeholder}
+      placeholder={placeholder ?? t("Technologies / Stack (ex: Python, Docker, AWS)", "Technologies / Stack (e.g. Python, Docker, AWS)")}
       value={text}
       onChange={handleChange}
       onBlur={handleBlur}
@@ -106,7 +109,7 @@ function StackInput({
 }
 
 export default function ProfilePage() {
-  const { language: appLanguage } = useAppLanguage();
+  const { language: appLanguage, t } = useAppLanguage();
   const [profile, setProfile] = useState<MasterProfile | null>(null);
   const [status, setStatus] = useState<ProfileCompletenessStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -122,6 +125,7 @@ export default function ProfilePage() {
   } | null>(null);
 
   const [testGenResult, setTestGenResult] = useState<string | null>(null);
+  const [testGenKind, setTestGenKind] = useState<"pending" | "success" | "blocked">("pending");
 
   useEffect(() => {
     setCvDownloadLang(appLanguage);
@@ -147,7 +151,7 @@ export default function ProfilePage() {
     } catch (err: any) {
       setNotification({
         type: "error",
-        message: err.message || "Erreur de connexion avec le moteur backend.",
+        message: err.message || t("Erreur de connexion avec le moteur backend.", "Connection error with the backend engine."),
       });
     } finally {
       setIsLoading(false);
@@ -183,12 +187,12 @@ export default function ProfilePage() {
       setStatus(newStatus);
       setNotification({
         type: "success",
-        message: "Votre profil a été enregistré avec succès.",
+        message: t("Votre profil a été enregistré avec succès.", "Your profile was saved successfully."),
       });
     } catch (err: any) {
       setNotification({
         type: "error",
-        message: err.message || "Échec de la sauvegarde.",
+        message: err.message || t("Échec de la sauvegarde.", "Save failed."),
       });
     } finally {
       setIsSaving(false);
@@ -198,11 +202,19 @@ export default function ProfilePage() {
 
   const handleTestGeneration = async () => {
     try {
-      setTestGenResult("Vérification en cours...");
+      setTestGenKind("pending");
+      setTestGenResult(t("Vérification en cours...", "Checking..."));
       const result = await verifyGenerationEligibility();
-      setTestGenResult(`Succès : ${result.message} (${result.completion_percentage}%)`);
+      setTestGenKind("success");
+      setTestGenResult(
+        t(
+          `Succès : ${result.message} (${result.completion_percentage}%)`,
+          `Success: ${localizeServerMessage(result.message)} (${result.completion_percentage}%)`
+        )
+      );
     } catch (err: any) {
-      setTestGenResult(`Bloqué (CAP-1) : ${err.message}`);
+      setTestGenKind("blocked");
+      setTestGenResult(t(`Bloqué (CAP-1) : ${err.message}`, `Blocked (CAP-1): ${err.message}`));
     }
   };
 
@@ -231,12 +243,12 @@ export default function ProfilePage() {
       document.body.removeChild(a);
       setNotification({
         type: "success",
-        message: "Votre CV complet a été téléchargé avec succès (format PDF A4 vectoriel) !",
+        message: t("Votre CV complet a été téléchargé avec succès (format PDF A4 vectoriel) !", "Your complete CV was downloaded successfully (A4 vector PDF)!"),
       });
     } catch (err: any) {
       setNotification({
         type: "error",
-        message: err.message || "Échec du téléchargement du CV.",
+        message: err.message || t("Échec du téléchargement du CV.", "CV download failed."),
       });
     } finally {
       setIsDownloadingCv(false);
@@ -403,7 +415,10 @@ export default function ProfilePage() {
     setProfile(demo);
     setNotification({
       type: "info",
-      message: "Modèle de profil complet et bilingue injecté ! Cliquez sur 'Sauvegarder' pour valider.",
+      message: t(
+        "Modèle de profil complet et bilingue injecté ! Cliquez sur 'Sauvegarder' pour valider.",
+        "Complete bilingual sample profile filled in! Click 'Save' to confirm."
+      ),
     });
   };
 
@@ -671,7 +686,7 @@ export default function ProfilePage() {
       <div className="flex-1 flex items-center justify-center p-6 sm:p-12">
         <div className="text-center space-y-4">
           <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-sm font-medium text-muted-foreground">Chargement de votre profil...</p>
+          <p className="text-sm font-medium text-muted-foreground">{t("Chargement de votre profil...", "Loading your profile...")}</p>
         </div>
       </div>
     );
@@ -681,13 +696,13 @@ export default function ProfilePage() {
     return (
       <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
         <div className="p-6 rounded-2xl border border-destructive/30 bg-destructive/10 text-destructive">
-          <h2 className="text-lg font-bold mb-2">Erreur de chargement</h2>
-          <p className="text-sm mb-4">Impossible de récupérer votre profil. Veuillez vérifier la connexion ou actualiser la page.</p>
+          <h2 className="text-lg font-bold mb-2">{t("Erreur de chargement", "Loading error")}</h2>
+          <p className="text-sm mb-4">{t("Impossible de récupérer votre profil. Veuillez vérifier la connexion ou actualiser la page.", "Unable to retrieve your profile. Please check the connection or refresh the page.")}</p>
           <button
             onClick={loadData}
             className="px-4 py-2 rounded-xl bg-destructive text-white text-sm font-medium hover:bg-destructive/90 transition-colors shadow-xs"
           >
-            Réessayer
+            {t("Réessayer", "Retry")}
           </button>
         </div>
       </div>
@@ -704,14 +719,14 @@ export default function ProfilePage() {
         <div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground font-display">
-              Mon Profil Professionnel
+              {t("Mon Profil Professionnel", "My Professional Profile")}
             </h1>
             <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-orange-100 dark:bg-orange-900/40 text-orange-900 dark:text-orange-300 border border-orange-200 dark:border-orange-800/60">
-              Certifié
+              {t("Certifié", "Verified")}
             </span>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            Renseignez vos coordonnées, stages, expériences, compétences, activités extra-professionnelles et langues pour générer votre CV complet.
+            {t("Renseignez vos coordonnées, stages, expériences, compétences, activités extra-professionnelles et langues pour générer votre CV complet.", "Enter your contact details, internships, experience, skills, extracurricular activities and languages to generate your complete CV.")}
           </p>
         </div>
 
@@ -719,20 +734,20 @@ export default function ProfilePage() {
           <Link
             href="/onboarding/step-1"
             className="px-3.5 py-2 rounded-md border border-orange-200 dark:border-orange-800/60 bg-orange-50 dark:bg-orange-950/40 hover:bg-orange-100 text-xs font-semibold text-primary flex items-center gap-1.5 transition-colors shadow-xs"
-            title="Lancer le walkthrough guidé étape par étape"
+            title={t("Lancer le walkthrough guidé étape par étape", "Start the step-by-step guided walkthrough")}
           >
             <Compass className="w-3.5 h-3.5 text-primary" />
-            <span>Guide pas-à-pas</span>
+            <span>{t("Guide pas-à-pas", "Step-by-step guide")}</span>
           </Link>
 
           <button
             type="button"
             onClick={populateDemoProfile}
             className="px-3.5 py-2 rounded-md border border-border/80 bg-card hover:bg-muted text-xs font-medium text-foreground flex items-center gap-2 transition-colors cursor-pointer"
-            title="Remplir avec des données d'ingénieur réalistes (stages, projets, langues, activités)"
+            title={t("Remplir avec des données d'ingénieur réalistes (stages, projets, langues, activités)", "Fill with realistic engineering data (internships, projects, languages, activities)")}
           >
             <Sparkles className="w-3.5 h-3.5 text-accent" />
-            <span>Exemple PFE</span>
+            <span>{t("Exemple PFE", "PFE Example")}</span>
           </button>
 
           <button
@@ -742,7 +757,7 @@ export default function ProfilePage() {
             className="px-4 py-2 rounded-md bg-primary hover:bg-primary-hover text-white text-sm font-semibold flex items-center gap-2 shadow-lg shadow-primary/20 transition-all disabled:opacity-50 cursor-pointer"
           >
             <Save className="w-4 h-4" />
-            <span>{isSaving ? "Sauvegarde..." : "Sauvegarder"}</span>
+            <span>{isSaving ? t("Sauvegarde...", "Saving...") : t("Sauvegarder", "Save")}</span>
           </button>
         </div>
       </div>
@@ -783,12 +798,12 @@ export default function ProfilePage() {
               )}
               <div>
                 <h3 className="text-base font-semibold text-foreground">
-                  {isComplete ? "Profil Complet & Vérifié" : "Profil Incomplet"}
+                  {isComplete ? t("Profil Complet & Vérifié", "Complete & Verified Profile") : t("Profil Incomplet", "Incomplete Profile")}
                 </h3>
                 <p className="text-xs text-muted-foreground">
                   {isComplete
-                    ? "Toutes les conditions requises sont remplies pour générer des candidatures ciblées."
-                    : "Renseignez les champs manquants pour débloquer la génération automatique de CV et lettres."}
+                    ? t("Toutes les conditions requises sont remplies pour générer des candidatures ciblées.", "All requirements are met to generate targeted applications.")
+                    : t("Renseignez les champs manquants pour débloquer la génération automatique de CV et lettres.", "Fill in the missing fields to unlock automatic CV and letter generation.")}
                 </p>
               </div>
             </div>
@@ -815,7 +830,7 @@ export default function ProfilePage() {
           {!isComplete && status && status.missing_fields.length > 0 && (
             <div className="pt-2">
               <p className="text-xs font-semibold text-stone-700 dark:text-stone-300 mb-2">
-                Éléments recommandés pour optimiser votre profil :
+                {t("Éléments recommandés pour optimiser votre profil :", "Recommended items to optimize your profile:")}
               </p>
               <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                 {status.missing_fields.map((field, idx) => (
@@ -824,7 +839,7 @@ export default function ProfilePage() {
                     className="flex items-center gap-2 text-amber-950 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800/60 font-medium shadow-xs"
                   >
                     <ArrowRight className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400 flex-shrink-0" />
-                    <span>{field}</span>
+                    <span>{localizeServerMessage(field)}</span>
                   </li>
                 ))}
               </ul>
@@ -837,10 +852,10 @@ export default function ProfilePage() {
           <div>
             <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 font-display flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-primary" />
-              <span>Garantie de qualité</span>
+              <span>{t("Garantie de qualité", "Quality guarantee")}</span>
             </h4>
             <p className="text-xs text-stone-600 dark:text-stone-400 mt-1.5 leading-relaxed">
-              Pour assurer l'impact de vos candidatures auprès des recruteurs, ArcApply vérifie que vos coordonnées, formations, expériences et compétences sont bien prêtes.
+              {t("Pour assurer l'impact de vos candidatures auprès des recruteurs, ArcApply vérifie que vos coordonnées, formations, expériences et compétences sont bien prêtes.", "To make sure your applications have impact with recruiters, ArcApply checks that your contact details, education, experience and skills are ready.")}
             </p>
           </div>
 
@@ -850,15 +865,15 @@ export default function ProfilePage() {
               onClick={handleTestGeneration}
               className="w-full py-2 px-3 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 hover:bg-stone-100 dark:hover:bg-stone-700 text-xs font-semibold text-stone-800 dark:text-stone-200 transition-colors shadow-xs cursor-pointer"
             >
-              Vérifier l'éligibilité de mon profil
+              {t("Vérifier l'éligibilité de mon profil", "Check my profile eligibility")}
             </button>
 
             {testGenResult && (
               <div
                 className={`p-2.5 rounded-lg text-xs font-medium border ${
-                  testGenResult.startsWith("Succès")
+                  testGenKind === "success"
                     ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-950 dark:text-emerald-300"
-                    : testGenResult.startsWith("Bloqué")
+                    : testGenKind === "blocked"
                     ? "bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800 text-rose-950 dark:text-rose-300"
                     : "bg-stone-50 dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-800 dark:text-stone-200"
                 }`}
@@ -881,13 +896,13 @@ export default function ProfilePage() {
               </div>
               <div>
                 <h2 className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
-                  <span>Clé d'API Groq Personnelle (BYOK)</span>
+                  <span>{t("Clé d'API Groq Personnelle (BYOK)", "Personal Groq API Key (BYOK)")}</span>
                   <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-primary/20 text-primary font-semibold">
-                    Multi-Tenant Isolé
+                    {t("Multi-Tenant Isolé", "Isolated Multi-Tenant")}
                   </span>
                 </h2>
                 <p className="text-xs text-muted-foreground">
-                  Chaque utilisateur peut renseigner sa propre clé Groq pour disposer de son quota journalier dédié (200 000 tokens/jour) sans dépendre du serveur.
+                  {t("Chaque utilisateur peut renseigner sa propre clé Groq pour disposer de son quota journalier dédié (200 000 tokens/jour) sans dépendre du serveur.", "Each user can enter their own Groq key to get a dedicated daily quota (200,000 tokens/day) without depending on the server.")}
                 </p>
               </div>
             </div>
@@ -896,14 +911,14 @@ export default function ProfilePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
             <div className="md:col-span-2 space-y-1.5">
               <label className="block text-xs font-semibold text-foreground flex items-center justify-between">
-                <span>Clé d'API Groq (gsk_...)</span>
+                <span>{t("Clé d'API Groq (gsk_...)", "Groq API key (gsk_...)")}</span>
                 <a
                   href="https://console.groq.com/keys"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs text-primary hover:underline flex items-center gap-1 font-normal"
                 >
-                  <span>Obtenir une clé gratuite sur console.groq.com</span>
+                  <span>{t("Obtenir une clé gratuite sur console.groq.com", "Get a free key at console.groq.com")}</span>
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </label>
@@ -922,19 +937,19 @@ export default function ProfilePage() {
                   type="button"
                   onClick={() => setShowGroqKey(!showGroqKey)}
                   className="absolute right-2 p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                  title={showGroqKey ? "Masquer la clé" : "Afficher la clé"}
+                  title={showGroqKey ? t("Masquer la clé", "Hide key") : t("Afficher la clé", "Show key")}
                 >
                   {showGroqKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
               <p className="text-[11px] text-muted-foreground">
-                Si laissé vide, le serveur utilise la clé par défaut de la plateforme. Vos clés sont strictement privées à votre session.
+                {t("Si laissé vide, le serveur utilise la clé par défaut de la plateforme. Vos clés sont strictement privées à votre session.", "If left empty, the server uses the platform's default key. Your keys are strictly private to your session.")}
               </p>
             </div>
 
             <div className="space-y-1.5">
               <label className="block text-xs font-semibold text-foreground">
-                Modèle LLM Groq
+                {t("Modèle LLM Groq", "Groq LLM model")}
               </label>
               <select
                 value={profile?.groq_model || "openai/gpt-oss-120b"}
@@ -943,12 +958,12 @@ export default function ProfilePage() {
                 }}
                 className="w-full px-3.5 py-2.5 rounded-lg bg-background border border-border focus:outline-none focus:ring-1 focus:ring-primary text-xs text-foreground shadow-xs cursor-pointer"
               >
-                <option value="openai/gpt-oss-120b">GPT OSS 120B (openai/gpt-oss-120b) [Recommandé — Quota élevé & Rapide]</option>
-                <option value="openai/gpt-oss-20b">GPT OSS 20B (openai/gpt-oss-20b) [Ultra-rapide]</option>
-                <option value="qwen/qwen3.8-27b">Qwen 2.5 27B (qwen/qwen3.8-27b) [Plafond 1000 OTPM]</option>
+                <option value="openai/gpt-oss-120b">{t("GPT OSS 120B (openai/gpt-oss-120b) [Recommandé — Quota élevé & Rapide]", "GPT OSS 120B (openai/gpt-oss-120b) [Recommended — High quota & Fast]")}</option>
+                <option value="openai/gpt-oss-20b">{t("GPT OSS 20B (openai/gpt-oss-20b) [Ultra-rapide]", "GPT OSS 20B (openai/gpt-oss-20b) [Ultra-fast]")}</option>
+                <option value="qwen/qwen3.8-27b">{t("Qwen 2.5 27B (qwen/qwen3.8-27b) [Plafond 1000 OTPM]", "Qwen 2.5 27B (qwen/qwen3.8-27b) [1000 OTPM cap]")}</option>
               </select>
               <p className="text-[11px] text-muted-foreground">
-                Modèle de raisonnement haute vitesse pour la rédaction du CV et de la lettre.
+                {t("Modèle de raisonnement haute vitesse pour la rédaction du CV et de la lettre.", "High-speed reasoning model for writing the CV and the letter.")}
               </p>
             </div>
           </div>
@@ -959,16 +974,16 @@ export default function ProfilePage() {
                 type="button"
                 onClick={async () => {
                   if (!profile?.groq_api_key?.trim()) {
-                    setGroqTestResult({ status: "error", message: "Veuillez d'abord saisir une clé d'API Groq (gsk_...)." });
+                    setGroqTestResult({ status: "error", message: t("Veuillez d'abord saisir une clé d'API Groq (gsk_...).", "Please enter a Groq API key first (gsk_...).") });
                     return;
                   }
                   try {
                     setTestingGroq(true);
                     setGroqTestResult({ status: "idle" });
                     const res = await testGroqKey(profile.groq_api_key, profile.groq_model || undefined);
-                    setGroqTestResult({ status: "success", message: res.message || "Clé Groq validée avec succès !" });
+                    setGroqTestResult({ status: "success", message: localizeServerMessage(res.message) || t("Clé Groq validée avec succès !", "Groq key validated successfully!") });
                   } catch (err: any) {
-                    setGroqTestResult({ status: "error", message: err.message || "Échec de validation de la clé Groq." });
+                    setGroqTestResult({ status: "error", message: err.message || t("Échec de validation de la clé Groq.", "Groq key validation failed.") });
                   } finally {
                     setTestingGroq(false);
                   }
@@ -979,12 +994,12 @@ export default function ProfilePage() {
                 {testingGroq ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Test de connexion en cours...</span>
+                    <span>{t("Test de connexion en cours...", "Testing connection...")}</span>
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-3.5 h-3.5" />
-                    <span>Tester la clé Groq</span>
+                    <span>{t("Tester la clé Groq", "Test the Groq key")}</span>
                   </>
                 )}
               </button>
@@ -1005,7 +1020,7 @@ export default function ProfilePage() {
             </div>
 
             <div className="text-[11px] text-muted-foreground">
-              Cliquez sur « Enregistrer les modifications » en haut pour sauvegarder la clé.
+              {t("Cliquez sur « Enregistrer les modifications » en haut pour sauvegarder la clé.", "Click “Save” at the top to save the key.")}
             </div>
           </div>
         </div>
@@ -1014,58 +1029,58 @@ export default function ProfilePage() {
         <div className="p-6 rounded-xl border border-border bg-card space-y-5">
           <div className="flex items-center gap-3 border-b border-border/50 pb-3">
             <User className="w-5 h-5 text-primary" />
-            <h2 className="text-base font-semibold text-foreground">Identité & Coordonnées</h2>
+            <h2 className="text-base font-semibold text-foreground">{t("Identité & Coordonnées", "Identity & Contact Details")}</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-                Nom complet *
+                {t("Nom complet *", "Full name *")}
               </label>
               <input
                 type="text"
                 value={profile.full_name || ""}
                 onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-                placeholder="ex: Alexandre Dupont"
+                placeholder={t("ex: Alexandre Dupont", "e.g. Alex Johnson")}
                 className="w-full px-3.5 py-2 rounded-md bg-muted/60 border border-border focus:outline-none focus:border-primary text-sm text-foreground placeholder:text-muted-foreground/50 transition-colors"
               />
             </div>
 
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-                Email de contact *
+                {t("Email de contact *", "Contact email *")}
               </label>
               <input
                 type="email"
                 value={profile.email || ""}
                 onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                placeholder="ex: contact@etudiant.fr"
+                placeholder={t("ex: contact@etudiant.fr", "e.g. contact@student.edu")}
                 className="w-full px-3.5 py-2 rounded-md bg-muted/60 border border-border focus:outline-none focus:border-primary text-sm text-foreground placeholder:text-muted-foreground/50 transition-colors"
               />
             </div>
 
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-                Numéro de téléphone
+                {t("Numéro de téléphone", "Phone number")}
               </label>
               <input
                 type="tel"
                 value={profile.phone || ""}
                 onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                placeholder="ex: +33 6 12 34 56 78"
+                placeholder={t("ex: +33 6 12 34 56 78", "e.g. +33 6 12 34 56 78")}
                 className="w-full px-3.5 py-2 rounded-md bg-muted/60 border border-border focus:outline-none focus:border-primary text-sm text-foreground placeholder:text-muted-foreground/50 transition-colors"
               />
             </div>
 
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-                Localisation (Cible PFE) *
+                {t("Localisation (Cible PFE) *", "Location (PFE target) *")}
               </label>
               <input
                 type="text"
                 value={profile.location || ""}
                 onChange={(e) => setProfile({ ...profile, location: e.target.value })}
-                placeholder="ex: Paris, France / Tunis, Tunisie"
+                placeholder={t("ex: Paris, France / Tunis, Tunisie", "e.g. Paris, France / Tunis, Tunisia")}
                 className="w-full px-3.5 py-2 rounded-md bg-muted/60 border border-border focus:outline-none focus:border-primary text-sm text-foreground placeholder:text-muted-foreground/50 transition-colors"
               />
             </div>
@@ -1073,7 +1088,7 @@ export default function ProfilePage() {
             <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
-                  <span>[FR] Titre professionnel / Accroche (Français) *</span>
+                  <span>{t("[FR] Titre professionnel / Accroche (Français) *", "[FR] Professional title / Headline (French) *")}</span>
                 </label>
                 <input
                   type="text"
@@ -1100,7 +1115,7 @@ export default function ProfilePage() {
             <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
-                  <span>[FR] Bio / Synthèse de parcours (Français)</span>
+                  <span>{t("[FR] Bio / Synthèse de parcours (Français)", "[FR] Bio / Background summary (French)")}</span>
                 </label>
                 <textarea
                   rows={3}
@@ -1126,7 +1141,7 @@ export default function ProfilePage() {
 
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-                Lien LinkedIn
+                {t("Lien LinkedIn", "LinkedIn link")}
               </label>
               <input
                 type="url"
@@ -1139,7 +1154,7 @@ export default function ProfilePage() {
 
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-                Lien GitHub
+                {t("Lien GitHub", "GitHub link")}
               </label>
               <input
                 type="url"
@@ -1152,13 +1167,13 @@ export default function ProfilePage() {
 
             <div className="md:col-span-2">
               <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-                Site Web / Portfolio
+                {t("Site Web / Portfolio", "Website / Portfolio")}
               </label>
               <input
                 type="url"
                 value={profile.website_url || ""}
                 onChange={(e) => setProfile({ ...profile, website_url: e.target.value })}
-                placeholder="https://www.monportfolio.com"
+                placeholder={t("https://www.monportfolio.com", "https://www.myportfolio.com")}
                 className="w-full px-3.5 py-2 rounded-md bg-muted/60 border border-border focus:outline-none focus:border-primary text-sm text-foreground placeholder:text-muted-foreground/50 transition-colors"
               />
             </div>
@@ -1170,7 +1185,7 @@ export default function ProfilePage() {
           <div className="flex items-center justify-between border-b border-border/50 pb-3">
             <div className="flex items-center gap-3">
               <GraduationCap className="w-5 h-5 text-primary" />
-              <h2 className="text-base font-semibold text-foreground">Formations Académiques</h2>
+              <h2 className="text-base font-semibold text-foreground">{t("Formations Académiques", "Academic Education")}</h2>
             </div>
             <button
               type="button"
@@ -1178,20 +1193,20 @@ export default function ProfilePage() {
               className="text-xs px-3 py-1.5 rounded-md bg-muted hover:bg-muted/80 text-foreground border border-border flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Ajouter une formation</span>
+              <span>{t("Ajouter une formation", "Add education")}</span>
             </button>
           </div>
 
           {profile.educations.length === 0 ? (
             <p className="text-xs text-muted-foreground italic py-3">
-              Aucune formation enregistrée. Au moins une formation est requise pour valider le profil.
+              {t("Aucune formation enregistrée. Au moins une formation est requise pour valider le profil.", "No education saved. At least one education entry is required to validate the profile.")}
             </p>
           ) : (
             <div className="space-y-4">
               {profile.educations.map((edu, idx) => (
                 <div key={idx} className="p-4 rounded-lg bg-muted/40 border border-border/70 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono font-medium text-primary">Formation #{idx + 1}</span>
+                    <span className="text-xs font-mono font-medium text-primary">{t(`Formation #${idx + 1}`, `Education #${idx + 1}`)}</span>
                     <button
                       type="button"
                       onClick={() => removeEducation(idx)}
@@ -1203,7 +1218,7 @@ export default function ProfilePage() {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <input
                       type="text"
-                      placeholder="Établissement / École *"
+                      placeholder={t("Établissement / École *", "Institution / School *")}
                       value={edu.school}
                       onChange={(e) => {
                         const updated = [...profile.educations];
@@ -1214,7 +1229,7 @@ export default function ProfilePage() {
                     />
                     <input
                       type="text"
-                      placeholder="Année début (ex: 2022)"
+                      placeholder={t("Année début (ex: 2022)", "Start year (e.g. 2022)")}
                       value={edu.start_date}
                       onChange={(e) => {
                         const updated = [...profile.educations];
@@ -1225,7 +1240,7 @@ export default function ProfilePage() {
                     />
                     <input
                       type="text"
-                      placeholder="Année fin (ou prévision 2027)"
+                      placeholder={t("Année fin (ou prévision 2027)", "End year (or expected 2027)")}
                       value={edu.end_date || ""}
                       onChange={(e) => {
                         const updated = [...profile.educations];
@@ -1238,7 +1253,7 @@ export default function ProfilePage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
                     <input
                       type="text"
-                      placeholder="[FR] Diplôme préparé (ex: Diplôme National d'Ingénieur) *"
+                      placeholder={t("[FR] Diplôme préparé (ex: Diplôme National d'Ingénieur) *", "[FR] Degree pursued (e.g. Diplôme National d'Ingénieur) *")}
                       value={edu.degree_fr ?? edu.degree}
                       onChange={(e) => {
                         const updated = [...profile.educations];
@@ -1250,7 +1265,7 @@ export default function ProfilePage() {
                     />
                     <input
                       type="text"
-                      placeholder="[EN] Degree (ex: Master of Science in Software Engineering)"
+                      placeholder={t("[EN] Degree (ex: Master of Science in Software Engineering)", "[EN] Degree (e.g. Master of Science in Software Engineering)")}
                       value={edu.degree_en || ""}
                       onChange={(e) => {
                         const updated = [...profile.educations];
@@ -1261,7 +1276,7 @@ export default function ProfilePage() {
                     />
                     <input
                       type="text"
-                      placeholder="[FR] Filière / Spécialité (ex: Génie Logiciel)"
+                      placeholder={t("[FR] Filière / Spécialité (ex: Génie Logiciel)", "[FR] Track / Major (e.g. Génie Logiciel)")}
                       value={edu.field_of_study_fr ?? edu.field_of_study}
                       onChange={(e) => {
                         const updated = [...profile.educations];
@@ -1273,7 +1288,7 @@ export default function ProfilePage() {
                     />
                     <input
                       type="text"
-                      placeholder="[EN] Field of study (ex: Software Engineering)"
+                      placeholder={t("[EN] Field of study (ex: Software Engineering)", "[EN] Field of study (e.g. Software Engineering)")}
                       value={edu.field_of_study_en || ""}
                       onChange={(e) => {
                         const updated = [...profile.educations];
@@ -1284,7 +1299,7 @@ export default function ProfilePage() {
                     />
                     <textarea
                       rows={2}
-                      placeholder="[FR] Détails académiques (Français)"
+                      placeholder={t("[FR] Détails académiques (Français)", "[FR] Academic details (French)")}
                       value={edu.description_fr ?? edu.description ?? ""}
                       onChange={(e) => {
                         const updated = [...profile.educations];
@@ -1318,8 +1333,8 @@ export default function ProfilePage() {
             <div className="flex items-center gap-3">
               <Briefcase className="w-5 h-5 text-primary" />
               <div>
-                <h2 className="text-base font-semibold text-foreground">Stages & Immersion en Entreprise</h2>
-                <p className="text-xs text-muted-foreground">Stages PFE, stages ingénieur / technicien, ouvrier ou stages d'été.</p>
+                <h2 className="text-base font-semibold text-foreground">{t("Stages & Immersion en Entreprise", "Internships & Company Immersion")}</h2>
+                <p className="text-xs text-muted-foreground">{t("Stages PFE, stages ingénieur / technicien, ouvrier ou stages d'été.", "PFE internships, engineering / technician, worker or summer internships.")}</p>
               </div>
             </div>
             <button
@@ -1328,13 +1343,13 @@ export default function ProfilePage() {
               className="text-xs px-3 py-1.5 rounded-md bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 flex items-center gap-1.5 transition-colors cursor-pointer font-medium"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Ajouter un stage</span>
+              <span>{t("Ajouter un stage", "Add an internship")}</span>
             </button>
           </div>
 
           {stages.length === 0 ? (
             <p className="text-xs text-muted-foreground italic py-3">
-              Aucun stage renseigné. Renseignez vos stages d'ingénieur pour alimenter la section dédiée de votre CV.
+              {t("Aucun stage renseigné. Renseignez vos stages d'ingénieur pour alimenter la section dédiée de votre CV.", "No internships entered. Add your engineering internships to fill the dedicated section of your CV.")}
             </p>
           ) : (
             <div className="space-y-4">
@@ -1343,10 +1358,10 @@ export default function ProfilePage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-primary/15 text-primary border border-primary/20">
-                        Stage #{idx + 1}
+                        {t(`Stage #${idx + 1}`, `Internship #${idx + 1}`)}
                       </span>
                       <span className="text-xs font-medium text-foreground">
-                        {stage.company ? `${stage.role || "Stagiaire"} @ ${stage.company}` : "Nouveau stage"}
+                        {stage.company ? `${stage.role || t("Stagiaire", "Intern")} @ ${stage.company}` : t("Nouveau stage", "New internship")}
                       </span>
                     </div>
                     <button
@@ -1361,34 +1376,34 @@ export default function ProfilePage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                     <input
                       type="text"
-                      placeholder="Entreprise d'accueil *"
+                      placeholder={t("Entreprise d'accueil *", "Host company *")}
                       value={stage.company}
                       onChange={(e) => updateStage(idx, { ...stage, company: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <input
                       type="text"
-                      placeholder="Ville, Pays (ex: Tunis, Tunisie)"
+                      placeholder={t("Ville, Pays (ex: Tunis, Tunisie)", "City, Country (e.g. Tunis, Tunisia)")}
                       value={stage.location || ""}
                       onChange={(e) => updateStage(idx, { ...stage, location: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <StackInput
-                      placeholder="Technologies / Stack (ex: Python, Docker, AWS)"
+                      placeholder={t("Technologies / Stack (ex: Python, Docker, AWS)", "Technologies / Stack (e.g. Python, Docker, AWS)")}
                       value={stage.technologies}
                       onChange={(techs) => updateStage(idx, { ...stage, technologies: techs })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <input
                       type="text"
-                      placeholder="Date début (ex: Juin 2025)"
+                      placeholder={t("Date début (ex: Juin 2025)", "Start date (e.g. June 2025)")}
                       value={stage.start_date}
                       onChange={(e) => updateStage(idx, { ...stage, start_date: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <input
                       type="text"
-                      placeholder="Date fin (ex: Août 2025)"
+                      placeholder={t("Date fin (ex: Août 2025)", "End date (e.g. August 2025)")}
                       value={stage.end_date || ""}
                       onChange={(e) => updateStage(idx, { ...stage, end_date: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
@@ -1398,21 +1413,21 @@ export default function ProfilePage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
                     <input
                       type="text"
-                      placeholder="[FR] Intitulé du stage / Rôle * (ex: Stagiaire Ingénieur DevOps)"
+                      placeholder={t("[FR] Intitulé du stage / Rôle * (ex: Stagiaire Ingénieur DevOps)", "[FR] Internship title / Role * (e.g. Stagiaire Ingénieur DevOps)")}
                       value={stage.role_fr ?? stage.role}
                       onChange={(e) => updateStage(idx, { ...stage, role: e.target.value, role_fr: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <input
                       type="text"
-                      placeholder="[EN] Internship Role (ex: DevOps Engineering Intern)"
+                      placeholder={t("[EN] Internship Role (ex: DevOps Engineering Intern)", "[EN] Internship Role (e.g. DevOps Engineering Intern)")}
                       value={stage.role_en || ""}
                       onChange={(e) => updateStage(idx, { ...stage, role_en: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <textarea
                       rows={2}
-                      placeholder="[FR] Description concrète des missions, livrables et impact *"
+                      placeholder={t("[FR] Description concrète des missions, livrables et impact *", "[FR] Concrete description of assignments, deliverables and impact *")}
                       value={stage.description_fr ?? stage.description}
                       onChange={(e) => updateStage(idx, { ...stage, description: e.target.value, description_fr: e.target.value })}
                       className="w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
@@ -1437,8 +1452,8 @@ export default function ProfilePage() {
             <div className="flex items-center gap-3">
               <Layers className="w-5 h-5 text-primary" />
               <div>
-                <h2 className="text-base font-semibold text-foreground">Expériences Professionnelles (Hors Stages)</h2>
-                <p className="text-xs text-muted-foreground">Emplois CDI, CDD, alternance, freelance et missions professionnelles.</p>
+                <h2 className="text-base font-semibold text-foreground">{t("Expériences Professionnelles (Hors Stages)", "Professional Experience (Excluding Internships)")}</h2>
+                <p className="text-xs text-muted-foreground">{t("Emplois CDI, CDD, alternance, freelance et missions professionnelles.", "Permanent and fixed-term jobs, work-study, freelance and professional assignments.")}</p>
               </div>
             </div>
             <button
@@ -1447,13 +1462,13 @@ export default function ProfilePage() {
               className="text-xs px-3 py-1.5 rounded-md bg-muted hover:bg-muted/80 text-foreground border border-border flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Ajouter une expérience</span>
+              <span>{t("Ajouter une expérience", "Add an experience")}</span>
             </button>
           </div>
 
           {jobs.length === 0 ? (
             <p className="text-xs text-muted-foreground italic py-3">
-              Aucune expérience hors stage enregistrée (facultatif si vous êtes étudiant recherchant un PFE).
+              {t("Aucune expérience hors stage enregistrée (facultatif si vous êtes étudiant recherchant un PFE).", "No non-internship experience saved (optional if you are a student looking for a PFE).")}
             </p>
           ) : (
             <div className="space-y-4">
@@ -1462,10 +1477,10 @@ export default function ProfilePage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-muted text-foreground border border-border">
-                        Expérience #{idx + 1}
+                        {t(`Expérience #${idx + 1}`, `Experience #${idx + 1}`)}
                       </span>
                       <span className="text-xs font-medium text-foreground">
-                        {job.company ? `${job.role || "Poste"} @ ${job.company}` : "Nouvelle expérience"}
+                        {job.company ? `${job.role || t("Poste", "Position")} @ ${job.company}` : t("Nouvelle expérience", "New experience")}
                       </span>
                     </div>
                     <button
@@ -1480,34 +1495,34 @@ export default function ProfilePage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                     <input
                       type="text"
-                      placeholder="Entreprise / Client *"
+                      placeholder={t("Entreprise / Client *", "Company / Client *")}
                       value={job.company}
                       onChange={(e) => updateJob(idx, { ...job, company: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <input
                       type="text"
-                      placeholder="Ville, Pays"
+                      placeholder={t("Ville, Pays", "City, Country")}
                       value={job.location || ""}
                       onChange={(e) => updateJob(idx, { ...job, location: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <StackInput
-                      placeholder="Technologies / Stack (ex: TypeScript, Next.js)"
+                      placeholder={t("Technologies / Stack (ex: TypeScript, Next.js)", "Technologies / Stack (e.g. TypeScript, Next.js)")}
                       value={job.technologies}
                       onChange={(techs) => updateJob(idx, { ...job, technologies: techs })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <input
                       type="text"
-                      placeholder="Date début"
+                      placeholder={t("Date début", "Start date")}
                       value={job.start_date}
                       onChange={(e) => updateJob(idx, { ...job, start_date: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <input
                       type="text"
-                      placeholder="Date fin (ou Présent)"
+                      placeholder={t("Date fin (ou Présent)", "End date (or Present)")}
                       value={job.end_date || ""}
                       onChange={(e) => updateJob(idx, { ...job, end_date: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
@@ -1517,21 +1532,21 @@ export default function ProfilePage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
                     <input
                       type="text"
-                      placeholder="[FR] Intitulé du poste / Rôle * (ex: Développeur Backend Freelance)"
+                      placeholder={t("[FR] Intitulé du poste / Rôle * (ex: Développeur Backend Freelance)", "[FR] Job title / Role * (e.g. Développeur Backend Freelance)")}
                       value={job.role_fr ?? job.role}
                       onChange={(e) => updateJob(idx, { ...job, role: e.target.value, role_fr: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <input
                       type="text"
-                      placeholder="[EN] Position / Role (ex: Freelance Backend Developer)"
+                      placeholder={t("[EN] Position / Role (ex: Freelance Backend Developer)", "[EN] Position / Role (e.g. Freelance Backend Developer)")}
                       value={job.role_en || ""}
                       onChange={(e) => updateJob(idx, { ...job, role_en: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <textarea
                       rows={2}
-                      placeholder="[FR] Description des responsabilités et réalisations *"
+                      placeholder={t("[FR] Description des responsabilités et réalisations *", "[FR] Description of responsibilities and achievements *")}
                       value={job.description_fr ?? job.description}
                       onChange={(e) => updateJob(idx, { ...job, description: e.target.value, description_fr: e.target.value })}
                       className="w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
@@ -1555,7 +1570,7 @@ export default function ProfilePage() {
           <div className="flex items-center justify-between border-b border-border/50 pb-3">
             <div className="flex items-center gap-3">
               <FolderGit2 className="w-5 h-5 text-primary" />
-              <h2 className="text-base font-semibold text-foreground">Projets Techniques Significatifs</h2>
+              <h2 className="text-base font-semibold text-foreground">{t("Projets Techniques Significatifs", "Significant Technical Projects")}</h2>
             </div>
             <button
               type="button"
@@ -1563,20 +1578,20 @@ export default function ProfilePage() {
               className="text-xs px-3 py-1.5 rounded-md bg-muted hover:bg-muted/80 text-foreground border border-border flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Ajouter un projet</span>
+              <span>{t("Ajouter un projet", "Add a project")}</span>
             </button>
           </div>
 
           {profile.projects.length === 0 ? (
             <p className="text-xs text-muted-foreground italic py-3">
-              Aucun projet enregistré. Les projets concrets renforcent fortement la crédibilité technique de votre profil.
+              {t("Aucun projet enregistré. Les projets concrets renforcent fortement la crédibilité technique de votre profil.", "No projects saved. Concrete projects strongly reinforce the technical credibility of your profile.")}
             </p>
           ) : (
             <div className="space-y-4">
               {profile.projects.map((proj, idx) => (
                 <div key={idx} className="p-4 rounded-lg bg-muted/40 border border-border/70 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono font-medium text-primary">Projet #{idx + 1}</span>
+                    <span className="text-xs font-mono font-medium text-primary">{t(`Projet #${idx + 1}`, `Project #${idx + 1}`)}</span>
                     <button
                       type="button"
                       onClick={() => removeProject(idx)}
@@ -1588,7 +1603,7 @@ export default function ProfilePage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <input
                       type="text"
-                      placeholder="Lien / Dépôt (URL)"
+                      placeholder={t("Lien / Dépôt (URL)", "Link / Repository (URL)")}
                       value={proj.url || ""}
                       onChange={(e) => {
                         const updated = [...profile.projects];
@@ -1598,7 +1613,7 @@ export default function ProfilePage() {
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <StackInput
-                      placeholder="Technologies clés / Stack (ex: Docker, Python)"
+                      placeholder={t("Technologies clés / Stack (ex: Docker, Python)", "Key technologies / Stack (e.g. Docker, Python)")}
                       value={proj.technologies}
                       onChange={(techs) => {
                         const updated = [...profile.projects];
@@ -1611,7 +1626,7 @@ export default function ProfilePage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
                     <input
                       type="text"
-                      placeholder="[FR] Titre du projet (ex: Copilote IA Local) *"
+                      placeholder={t("[FR] Titre du projet (ex: Copilote IA Local) *", "[FR] Project title (e.g. Copilote IA Local) *")}
                       value={proj.title_fr ?? proj.title}
                       onChange={(e) => {
                         const updated = [...profile.projects];
@@ -1623,7 +1638,7 @@ export default function ProfilePage() {
                     />
                     <input
                       type="text"
-                      placeholder="[EN] Project Title (ex: Local AI Copilot)"
+                      placeholder={t("[EN] Project Title (ex: Local AI Copilot)", "[EN] Project Title (e.g. Local AI Copilot)")}
                       value={proj.title_en || ""}
                       onChange={(e) => {
                         const updated = [...profile.projects];
@@ -1634,7 +1649,7 @@ export default function ProfilePage() {
                     />
                     <input
                       type="text"
-                      placeholder="[FR] Rôle (ex: Architecte & Lead Dev)"
+                      placeholder={t("[FR] Rôle (ex: Architecte & Lead Dev)", "[FR] Role (e.g. Architecte & Lead Dev)")}
                       value={proj.role_fr ?? proj.role ?? ""}
                       onChange={(e) => {
                         const updated = [...profile.projects];
@@ -1646,7 +1661,7 @@ export default function ProfilePage() {
                     />
                     <input
                       type="text"
-                      placeholder="[EN] Role (ex: Lead Architect & Developer)"
+                      placeholder={t("[EN] Role (ex: Lead Architect & Developer)", "[EN] Role (e.g. Lead Architect & Developer)")}
                       value={proj.role_en || ""}
                       onChange={(e) => {
                         const updated = [...profile.projects];
@@ -1657,7 +1672,7 @@ export default function ProfilePage() {
                     />
                     <textarea
                       rows={2}
-                      placeholder="[FR] Description de l'architecture, problématique et performances *"
+                      placeholder={t("[FR] Description de l'architecture, problématique et performances *", "[FR] Description of the architecture, problem and performance *")}
                       value={proj.description_fr ?? proj.description}
                       onChange={(e) => {
                         const updated = [...profile.projects];
@@ -1691,8 +1706,8 @@ export default function ProfilePage() {
             <div className="flex items-center gap-3">
               <Code2 className="w-5 h-5 text-primary" />
               <div>
-                <h2 className="text-base font-semibold text-foreground">Compétences Techniques par Catégories</h2>
-                <p className="text-xs text-muted-foreground">10 catégories normalisées pour l'analyse ATS et la mise en page du CV (chacune sur sa ligne).</p>
+                <h2 className="text-base font-semibold text-foreground">{t("Compétences Techniques par Catégories", "Technical Skills by Category")}</h2>
+                <p className="text-xs text-muted-foreground">{t("10 catégories normalisées pour l'analyse ATS et la mise en page du CV (chacune sur sa ligne).", "10 standardized categories for ATS analysis and CV layout (each on its own line).")}</p>
               </div>
             </div>
             <button
@@ -1701,7 +1716,7 @@ export default function ProfilePage() {
               className="text-xs px-3 py-1.5 rounded-md bg-muted hover:bg-muted/80 text-foreground border border-border flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Ajouter une compétence</span>
+              <span>{t("Ajouter une compétence", "Add a skill")}</span>
             </button>
           </div>
 
@@ -1719,7 +1734,7 @@ export default function ProfilePage() {
                   className="p-3 rounded-lg border border-border/70 bg-muted/20 hover:bg-muted/40 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-3"
                 >
                   <div className="md:w-64 flex-shrink-0 flex items-center gap-2">
-                    <span className="text-xs font-semibold text-foreground">{category}</span>
+                    <span className="text-xs font-semibold text-foreground">{skillCategoryLabel(category, appLanguage)}</span>
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
                       {categorySkills.length}
                     </span>
@@ -1745,7 +1760,7 @@ export default function ProfilePage() {
                           type="button"
                           onClick={() => removeSkill(originalIndex)}
                           className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
-                          title={`Supprimer ${skill.name}`}
+                          title={t(`Supprimer ${skill.name}`, `Delete ${skill.name}`)}
                         >
                           <X className="w-3 h-3" />
                         </button>
@@ -1770,7 +1785,7 @@ export default function ProfilePage() {
                       <input
                         name={`new-skill-${category}`}
                         type="text"
-                        placeholder="+ Ajouter..."
+                        placeholder={t("+ Ajouter...", "+ Add...")}
                         className="px-2 py-1 rounded bg-muted border border-border text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary w-24 focus:w-32 transition-all"
                       />
                     </form>
@@ -1787,8 +1802,8 @@ export default function ProfilePage() {
             <div className="flex items-center gap-3">
               <Award className="w-5 h-5 text-primary" />
               <div>
-                <h2 className="text-base font-semibold text-foreground">Activités Extra-Professionnelles & Vie Associative</h2>
-                <p className="text-xs text-muted-foreground">Clubs universitaires, associations, hackathons, responsabilités et engagement étudiant.</p>
+                <h2 className="text-base font-semibold text-foreground">{t("Activités Extra-Professionnelles & Vie Associative", "Extracurricular Activities & Student Life")}</h2>
+                <p className="text-xs text-muted-foreground">{t("Clubs universitaires, associations, hackathons, responsabilités et engagement étudiant.", "University clubs, associations, hackathons, responsibilities and student involvement.")}</p>
               </div>
             </div>
             <button
@@ -1797,20 +1812,20 @@ export default function ProfilePage() {
               className="text-xs px-3 py-1.5 rounded-md bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 flex items-center gap-1.5 transition-colors cursor-pointer font-medium"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Ajouter une activité</span>
+              <span>{t("Ajouter une activité", "Add an activity")}</span>
             </button>
           </div>
 
           {(profile.extracurriculars || []).length === 0 ? (
             <p className="text-xs text-muted-foreground italic py-3">
-              Aucune activité extra-professionnelle renseignée. Ajoutez vos engagements en clubs (ex: Enactus, IEEE, Robotique) pour enrichir votre CV.
+              {t("Aucune activité extra-professionnelle renseignée. Ajoutez vos engagements en clubs (ex: Enactus, IEEE, Robotique) pour enrichir votre CV.", "No extracurricular activities entered. Add your club involvement (e.g. Enactus, IEEE, Robotics) to enrich your CV.")}
             </p>
           ) : (
             <div className="space-y-4">
               {(profile.extracurriculars || []).map((extra, idx) => (
                 <div key={idx} className="p-4 rounded-lg bg-muted/40 border border-border/70 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono font-medium text-primary">Activité #{idx + 1}</span>
+                    <span className="text-xs font-mono font-medium text-primary">{t(`Activité #${idx + 1}`, `Activity #${idx + 1}`)}</span>
                     <button
                       type="button"
                       onClick={() => removeExtracurricular(idx)}
@@ -1822,14 +1837,14 @@ export default function ProfilePage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <input
                       type="text"
-                      placeholder="Organisation / Club / Association * (ex: Enactus)"
+                      placeholder={t("Organisation / Club / Association * (ex: Enactus)", "Organization / Club / Association * (e.g. Enactus)")}
                       value={extra.organization}
                       onChange={(e) => updateExtracurricular(idx, { ...extra, organization: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <input
                       type="text"
-                      placeholder="Année / Période (ex: 2023 – 2024)"
+                      placeholder={t("Année / Période (ex: 2023 – 2024)", "Year / Period (e.g. 2023 – 2024)")}
                       value={extra.date}
                       onChange={(e) => updateExtracurricular(idx, { ...extra, date: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
@@ -1838,21 +1853,21 @@ export default function ProfilePage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
                     <input
                       type="text"
-                      placeholder="[FR] Rôle / Responsabilité * (ex: Chef de Projet, Membre Actif)"
+                      placeholder={t("[FR] Rôle / Responsabilité * (ex: Chef de Projet, Membre Actif)", "[FR] Role / Responsibility * (e.g. Chef de Projet, Membre Actif)")}
                       value={extra.role_fr ?? extra.role}
                       onChange={(e) => updateExtracurricular(idx, { ...extra, role: e.target.value, role_fr: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <input
                       type="text"
-                      placeholder="[EN] Role / Responsibility (ex: Project Lead, Active Member)"
+                      placeholder={t("[EN] Role / Responsibility (ex: Project Lead, Active Member)", "[EN] Role / Responsibility (e.g. Project Lead, Active Member)")}
                       value={extra.role_en || ""}
                       onChange={(e) => updateExtracurricular(idx, { ...extra, role_en: e.target.value })}
                       className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                     />
                     <textarea
                       rows={2}
-                      placeholder="[FR] Description des actions, projets menés et réalisations (Français)..."
+                      placeholder={t("[FR] Description des actions, projets menés et réalisations (Français)...", "[FR] Description of actions, projects and achievements (French)...")}
                       value={extra.description_fr ?? extra.description}
                       onChange={(e) => updateExtracurricular(idx, { ...extra, description: e.target.value, description_fr: e.target.value })}
                       className="w-full px-3 py-2 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
@@ -1877,8 +1892,8 @@ export default function ProfilePage() {
             <div className="flex items-center gap-3">
               <Globe2 className="w-5 h-5 text-primary" />
               <div>
-                <h2 className="text-base font-semibold text-foreground">Langues Maîtrisées</h2>
-                <p className="text-xs text-muted-foreground">Niveaux de compétences linguistiques pour vos candidatures internationales et locales.</p>
+                <h2 className="text-base font-semibold text-foreground">{t("Langues Maîtrisées", "Languages Spoken")}</h2>
+                <p className="text-xs text-muted-foreground">{t("Niveaux de compétences linguistiques pour vos candidatures internationales et locales.", "Language proficiency levels for your international and local applications.")}</p>
               </div>
             </div>
             <button
@@ -1887,13 +1902,13 @@ export default function ProfilePage() {
               className="text-xs px-3 py-1.5 rounded-md bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 flex items-center gap-1.5 transition-colors cursor-pointer font-medium"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Ajouter une langue</span>
+              <span>{t("Ajouter une langue", "Add a language")}</span>
             </button>
           </div>
 
           {(profile.languages || []).length === 0 ? (
             <p className="text-xs text-muted-foreground italic py-3">
-              Aucune langue renseignée. Ajoutez vos langues maîtrisées (Français, Anglais, Arabe...) pour votre CV.
+              {t("Aucune langue renseignée. Ajoutez vos langues maîtrisées (Français, Anglais, Arabe...) pour votre CV.", "No languages entered. Add the languages you speak (French, English, Arabic...) for your CV.")}
             </p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -1901,7 +1916,7 @@ export default function ProfilePage() {
                 <div key={idx} className="p-3 rounded-lg bg-muted/40 border border-border/70 flex items-center gap-2">
                   <input
                     type="text"
-                    placeholder="Langue (ex: Anglais) *"
+                    placeholder={t("Langue (ex: Anglais) *", "Language (e.g. English) *")}
                     value={lang.name}
                     onChange={(e) => updateLanguage(idx, { ...lang, name: e.target.value })}
                     className="flex-1 min-w-0 px-2.5 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
@@ -1911,11 +1926,11 @@ export default function ProfilePage() {
                     onChange={(e) => updateLanguage(idx, { ...lang, level: e.target.value })}
                     className="min-w-0 max-w-[50%] px-2 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
                   >
-                    <option value="Langue maternelle">Maternelle</option>
-                    <option value="Courant / Bilingue (C1/C2)">Courant (C1/C2)</option>
-                    <option value="Professionnel / Technique (B2)">Technique (B2)</option>
-                    <option value="Intermédiaire (B1)">Intermédiaire (B1)</option>
-                    <option value="Notions élémentaires (A1/A2)">Notions (A1/A2)</option>
+                    <option value="Langue maternelle">{t("Maternelle", "Native")}</option>
+                    <option value="Courant / Bilingue (C1/C2)">{t("Courant (C1/C2)", "Fluent (C1/C2)")}</option>
+                    <option value="Professionnel / Technique (B2)">{t("Technique (B2)", "Professional (B2)")}</option>
+                    <option value="Intermédiaire (B1)">{t("Intermédiaire (B1)", "Intermediate (B1)")}</option>
+                    <option value="Notions élémentaires (A1/A2)">{t("Notions (A1/A2)", "Basic (A1/A2)")}</option>
                   </select>
                   <button
                     type="button"
@@ -1939,15 +1954,14 @@ export default function ProfilePage() {
               </div>
               <div>
                 <h3 className="text-lg font-bold text-foreground font-display flex items-center gap-2">
-                  <span>Télécharger mon CV Complet (PDF A4 Vectoriel)</span>
+                  <span>{t("Télécharger mon CV Complet (PDF A4 Vectoriel)", "Download my Complete CV (A4 Vector PDF)")}</span>
                   <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60">
-                    100% Souverain
+                    {t("100% Souverain", "100% Sovereign")}
                   </span>
                 </h3>
                 <p className="text-xs text-muted-foreground mt-1 max-w-2xl leading-relaxed">
-                  Générez et téléchargez instantanément votre CV vectoriel A4 officiel compilé par le moteur Playwright.
-                  Ce CV compile l'intégralité de vos informations déjà saisies : 
-                  <span className="font-semibold text-foreground"> Coordonnées, Formations, Stages, Expériences, Projets, Compétences, Activités Extra-Professionnelles et Langues</span>.
+                  {t("Générez et téléchargez instantanément votre CV vectoriel A4 officiel compilé par le moteur Playwright. Ce CV compile l'intégralité de vos informations déjà saisies :", "Instantly generate and download your official A4 vector CV compiled by the Playwright engine. This CV includes all the information you have entered:")} 
+                  <span className="font-semibold text-foreground"> {t("Coordonnées, Formations, Stages, Expériences, Projets, Compétences, Activités Extra-Professionnelles et Langues", "Contact details, Education, Internships, Experience, Projects, Skills, Extracurricular Activities and Languages")}</span>.
                 </p>
               </div>
             </div>
@@ -1964,7 +1978,7 @@ export default function ProfilePage() {
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  Version FR
+                  {t("Version FR", "FR version")}
                 </button>
                 <button
                   type="button"
@@ -1975,7 +1989,7 @@ export default function ProfilePage() {
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  Version EN
+                  {t("Version EN", "EN version")}
                 </button>
               </div>
 
@@ -1988,12 +2002,12 @@ export default function ProfilePage() {
                 {isDownloadingCv ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Compilation PDF...</span>
+                    <span>{t("Compilation PDF...", "Compiling PDF...")}</span>
                   </>
                 ) : (
                   <>
                     <Download className="w-4 h-4" />
-                    <span>Télécharger mon CV (PDF)</span>
+                    <span>{t("Télécharger mon CV (PDF)", "Download my CV (PDF)")}</span>
                   </>
                 )}
               </button>
@@ -2001,9 +2015,9 @@ export default function ProfilePage() {
               <Link
                 href="/cv"
                 className="px-3.5 py-2.5 rounded-xl border border-border/80 bg-card hover:bg-muted text-xs font-medium text-foreground flex items-center gap-1.5 transition-colors"
-                title="Ouvrir le Studio CV pour personnaliser les marges, polices ou sections"
+                title={t("Ouvrir le Studio CV pour personnaliser les marges, polices ou sections", "Open CV Studio to customize margins, fonts or sections")}
               >
-                <span>Studio CV</span>
+                <span>{t("Studio CV", "CV Studio")}</span>
                 <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
               </Link>
             </div>
@@ -2013,19 +2027,29 @@ export default function ProfilePage() {
           <div className="pt-4 border-t border-border/40 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs text-muted-foreground">
             <div className="flex items-center gap-1.5">
               <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>{stages.length} Stage{stages.length > 1 ? "s" : ""}</span>
+              <span>{t(`${stages.length} Stage${stages.length > 1 ? "s" : ""}`, `${stages.length} Internship${stages.length === 1 ? "" : "s"}`)}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>{profile.projects.length} Projet{profile.projects.length > 1 ? "s" : ""}</span>
+              <span>{t(`${profile.projects.length} Projet${profile.projects.length > 1 ? "s" : ""}`, `${profile.projects.length} Project${profile.projects.length === 1 ? "" : "s"}`)}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>{(profile.extracurriculars || []).length} Activité{(profile.extracurriculars || []).length > 1 ? "s" : ""} extra</span>
+              <span>
+                {t(
+                  `${(profile.extracurriculars || []).length} Activité${(profile.extracurriculars || []).length > 1 ? "s" : ""} extra`,
+                  `${(profile.extracurriculars || []).length} Extracurricular${(profile.extracurriculars || []).length === 1 ? "" : "s"}`
+                )}
+              </span>
             </div>
             <div className="flex items-center gap-1.5">
               <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>{(profile.languages || []).length} Langue{(profile.languages || []).length > 1 ? "s" : ""}</span>
+              <span>
+                {t(
+                  `${(profile.languages || []).length} Langue${(profile.languages || []).length > 1 ? "s" : ""}`,
+                  `${(profile.languages || []).length} Language${(profile.languages || []).length === 1 ? "" : "s"}`
+                )}
+              </span>
             </div>
           </div>
         </div>

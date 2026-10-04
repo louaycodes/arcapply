@@ -1,3 +1,5 @@
+import { localizeServerMessage, trStored } from "./i18n";
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_ENGINE_API_URL || "http://localhost:8000";
 
 function getAuthHeaders(): HeadersInit {
@@ -112,6 +114,24 @@ export const SKILL_CATEGORIES = [
   "Sécurité (DevSecOps)",
 ] as const;
 
+// Libellés d'affichage anglais des catégories (la valeur stockée reste la clé française)
+const SKILL_CATEGORY_LABELS_EN: Record<string, string> = {
+  Frameworks: "Frameworks",
+  "Langages & Scripting": "Languages & Scripting",
+  "Bases de données": "Databases",
+  "Versioning & Méthodes": "Versioning & Methods",
+  "Systèmes & Réseaux": "Systems & Networks",
+  "Monitoring & Observabilité": "Monitoring & Observability",
+  "Infrastructure as Code": "Infrastructure as Code",
+  "Cloud & Infrastructure": "Cloud & Infrastructure",
+  "Conteneurisation & Orchestration": "Containerization & Orchestration",
+  "Sécurité (DevSecOps)": "Security (DevSecOps)",
+};
+
+export function skillCategoryLabel(category: string, lang: "fr" | "en"): string {
+  return lang === "en" ? SKILL_CATEGORY_LABELS_EN[category] || category : category;
+}
+
 export interface MasterProfile {
   id: string;
   full_name: string;
@@ -157,7 +177,7 @@ export async function fetchProfile(): Promise<MasterProfile> {
     cache: "no-store",
   });
   if (!res.ok) {
-    throw new Error(`Failed to fetch master profile: ${res.statusText}`);
+    throw new Error(trStored(`Impossible de charger le profil : ${res.statusText}`, `Failed to fetch master profile: ${res.statusText}`));
   }
   return res.json();
 }
@@ -171,7 +191,7 @@ export async function updateProfile(data: Partial<MasterProfile>): Promise<Maste
     body: JSON.stringify(data),
   });
   if (!res.ok) {
-    throw new Error(`Failed to update master profile: ${res.statusText}`);
+    throw new Error(trStored(`Impossible de mettre à jour le profil : ${res.statusText}`, `Failed to update master profile: ${res.statusText}`));
   }
   return res.json();
 }
@@ -181,7 +201,7 @@ export async function fetchProfileStatus(): Promise<ProfileCompletenessStatus> {
     cache: "no-store",
   });
   if (!res.ok) {
-    throw new Error(`Failed to fetch profile status: ${res.statusText}`);
+    throw new Error(trStored(`Impossible de charger le statut du profil : ${res.statusText}`, `Failed to fetch profile status: ${res.statusText}`));
   }
   return res.json();
 }
@@ -197,7 +217,7 @@ export async function verifyGenerationEligibility(): Promise<{
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
-      errorData?.detail?.message || "Vérification d'éligibilité de génération échouée."
+      localizeServerMessage(errorData?.detail?.message) || trStored("Vérification d'éligibilité de génération échouée.", "Generation eligibility check failed.")
     );
   }
   return res.json();
@@ -216,8 +236,8 @@ export async function testGroqKey(
     const errorData = await res.json().catch(() => ({}));
     const message =
       typeof errorData?.detail === "string"
-        ? errorData.detail
-        : errorData?.detail?.message || "Échec de validation de la clé Groq.";
+        ? localizeServerMessage(errorData.detail)
+        : localizeServerMessage(errorData?.detail?.message) || trStored("Échec de validation de la clé Groq.", "Groq key validation failed.");
     throw new Error(message);
   }
   return res.json();
@@ -295,7 +315,7 @@ export async function fetchJobs(params?: {
   const res = await authFetch(url, { cache: "no-store" });
   if (!res.ok) {
 
-    throw new Error(`Failed to fetch jobs: ${res.statusText}`);
+    throw new Error(trStored(`Impossible de charger les offres : ${res.statusText}`, `Failed to fetch jobs: ${res.statusText}`));
   }
   return res.json();
 }
@@ -308,7 +328,7 @@ export async function collectJobs(payload: JobCollectRequest): Promise<JobCollec
   });
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData?.detail?.message || "Échec de la collecte d'offres.");
+    throw new Error(localizeServerMessage(errorData?.detail?.message) || trStored("Échec de la collecte d'offres.", "Offer collection failed."));
   }
   return res.json();
 }
@@ -329,7 +349,7 @@ export interface SourcesRegistryStatus {
 export async function fetchSourcesStatus(): Promise<SourcesRegistryStatus> {
   const res = await authFetch(`${API_BASE_URL}/api/jobs/sources`, { cache: "no-store" });
   if (!res.ok) {
-    throw new Error(`Failed to fetch sources: ${res.statusText}`);
+    throw new Error(trStored(`Impossible de charger les sources : ${res.statusText}`, `Failed to fetch sources: ${res.statusText}`));
   }
   return res.json();
 }
@@ -342,7 +362,7 @@ export async function crawlAllSources(payload?: JobCollectRequest): Promise<JobC
   });
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData?.detail?.message || "Échec de l'ingestion multi-sources.");
+    throw new Error(localizeServerMessage(errorData?.detail?.message) || trStored("Échec de l'ingestion multi-sources.", "Multi-source ingestion failed."));
   }
   return res.json();
 }
@@ -352,7 +372,7 @@ export async function archiveJob(jobId: string): Promise<JobOffer> {
     method: "PATCH",
   });
   if (!res.ok) {
-    throw new Error(`Échec de l'archivage de l'offre: ${res.statusText}`);
+    throw new Error(trStored(`Échec de l'archivage de l'offre : ${res.statusText}`, `Failed to archive the offer: ${res.statusText}`));
   }
   return res.json();
 }
@@ -363,7 +383,7 @@ export async function clearAllJobs(): Promise<{ status: string; message: string 
   });
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData?.detail?.message || "Échec de la suppression des offres.");
+    throw new Error(localizeServerMessage(errorData?.detail?.message) || trStored("Échec de la suppression des offres.", "Failed to delete the offers."));
   }
   return res.json();
 }
@@ -474,7 +494,7 @@ export async function fetchJobATSScore(jobId: string): Promise<ATSMatchResult> {
     cache: "no-store",
   });
   if (!res.ok) {
-    throw new Error(`Failed to fetch ATS score: ${res.statusText}`);
+    throw new Error(trStored(`Impossible de calculer le score ATS : ${res.statusText}`, `Failed to fetch ATS score: ${res.statusText}`));
   }
   return res.json();
 }
@@ -484,7 +504,7 @@ export async function fetchBatchATSScores(): Promise<Record<string, ATSMatchResu
     cache: "no-store",
   });
   if (!res.ok) {
-    throw new Error(`Failed to fetch batch ATS scores: ${res.statusText}`);
+    throw new Error(trStored(`Impossible de calculer les scores ATS : ${res.statusText}`, `Failed to fetch batch ATS scores: ${res.statusText}`));
   }
   return res.json();
 }
@@ -516,8 +536,8 @@ export async function generateTargetedCV(jobId: string, lang: string = "fr"): Pr
     const errorData = await res.json().catch(() => ({}));
     const message =
       typeof errorData?.detail === "string"
-        ? errorData.detail
-        : errorData?.detail?.message || "Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement.";
+        ? localizeServerMessage(errorData.detail)
+        : localizeServerMessage(errorData?.detail?.message) || trStored("Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement.", "The AI model ran into a problem. Please try again later.");
     throw new Error(message);
   }
   return res.json();
@@ -638,7 +658,7 @@ export async function uploadCVFile(
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData?.detail?.message || "Échec de l'analyse du CV.");
+    throw new Error(localizeServerMessage(errorData?.detail?.message) || trStored("Échec de l'analyse du CV.", "CV parsing failed."));
   }
   return res.json();
 }
@@ -652,7 +672,7 @@ export async function renderCustomCV(data: CustomCVData): Promise<string> {
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData?.detail?.message || "Échec du rendu du CV.");
+    throw new Error(localizeServerMessage(errorData?.detail?.message) || trStored("Échec du rendu du CV.", "CV rendering failed."));
   }
   const json = await res.json();
   return json.html_content;
@@ -670,7 +690,7 @@ export async function compileCustomCVPdf(
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData?.detail?.message || "Échec de la compilation PDF vectorielle.");
+    throw new Error(localizeServerMessage(errorData?.detail?.message) || trStored("Échec de la compilation PDF vectorielle.", "Vector PDF compilation failed."));
   }
   return res.blob();
 }
@@ -679,7 +699,7 @@ export async function downloadProfileCVPdf(lang: string = "fr"): Promise<Blob> {
   const res = await authFetch(`${API_BASE_URL}/api/cv/profile-pdf?lang=${lang}`);
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData?.detail?.message || "Erreur lors du téléchargement du CV.");
+    throw new Error(localizeServerMessage(errorData?.detail?.message) || trStored("Erreur lors du téléchargement du CV.", "Error while downloading the CV."));
   }
   return res.blob();
 }
@@ -692,7 +712,7 @@ export async function fetchCVFromProfile(
   });
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData?.detail?.message || "Impossible de charger votre profil.");
+    throw new Error(localizeServerMessage(errorData?.detail?.message) || trStored("Impossible de charger votre profil.", "Unable to load your profile."));
   }
   return res.json();
 }
@@ -705,7 +725,7 @@ export async function saveCVDraft(data: CustomCVData): Promise<{ status: string;
   });
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData?.detail?.message || "Échec de la sauvegarde du brouillon.");
+    throw new Error(localizeServerMessage(errorData?.detail?.message) || trStored("Échec de la sauvegarde du brouillon.", "Failed to save the draft."));
   }
   return res.json();
 }
@@ -721,7 +741,7 @@ export async function fetchCVDraft(): Promise<{
     cache: "no-store",
   });
   if (!res.ok) {
-    throw new Error(`Échec de récupération du brouillon: ${res.statusText}`);
+    throw new Error(trStored(`Échec de récupération du brouillon : ${res.statusText}`, `Failed to fetch the draft: ${res.statusText}`));
   }
   return res.json();
 }
@@ -752,8 +772,8 @@ export async function generateCoverLetter(jobId: string, lang: string = "fr"): P
     const errorData = await res.json().catch(() => ({}));
     const message =
       typeof errorData?.detail === "string"
-        ? errorData.detail
-        : errorData?.detail?.message || "Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement.";
+        ? localizeServerMessage(errorData.detail)
+        : localizeServerMessage(errorData?.detail?.message) || trStored("Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement.", "The AI model ran into a problem. Please try again later.");
     throw new Error(message);
   }
   return res.json();
@@ -764,7 +784,7 @@ export async function fetchCoverLetter(jobId: string, lang: string = "fr"): Prom
     cache: "no-store",
   });
   if (!res.ok) {
-    throw new Error(`Failed to fetch cover letter: ${res.statusText}`);
+    throw new Error(trStored(`Impossible de charger la lettre : ${res.statusText}`, `Failed to fetch cover letter: ${res.statusText}`));
   }
   return res.json();
 }
@@ -783,7 +803,7 @@ export async function updateCoverLetter(
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
-      errorData?.detail?.message || "Échec de la mise à jour de la lettre."
+      localizeServerMessage(errorData?.detail?.message) || trStored("Échec de la mise à jour de la lettre.", "Failed to update the letter.")
     );
   }
   return res.json();
@@ -824,7 +844,7 @@ export async function downloadTargetedCVPdf({
   const response = await authFetch(url);
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData?.detail?.message || "Erreur lors du téléchargement du CV.");
+    throw new Error(localizeServerMessage(errorData?.detail?.message) || trStored("Erreur lors du téléchargement du CV.", "Error while downloading the CV."));
   }
 
   const blob = await response.blob();
@@ -886,13 +906,13 @@ export async function downloadCoverLetterFile({
       `${API_BASE_URL}/api/letter/download/${jobId}?format=${format}&lang=${lang}`
     );
   } else {
-    throw new Error("Impossible de télécharger la lettre sans offre ou contenu.");
+    throw new Error(trStored("Impossible de télécharger la lettre sans offre ou contenu.", "Cannot download the letter without an offer or content."));
   }
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(
-      errorData?.detail?.message || "Erreur lors du téléchargement de la lettre."
+      localizeServerMessage(errorData?.detail?.message) || trStored("Erreur lors du téléchargement de la lettre.", "Error while downloading the letter.")
     );
   }
 
@@ -934,7 +954,7 @@ export async function transitionJobStatus(
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
-      errorData?.detail?.message || "Échec de la transition de statut."
+      localizeServerMessage(errorData?.detail?.message) || trStored("Échec de la transition de statut.", "Status transition failed.")
     );
   }
   return res.json();
@@ -950,7 +970,7 @@ export async function markJobAsApplied(jobId: string): Promise<JobOffer> {
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
-      errorData?.detail?.message || "Échec du marquage de l'offre comme déjà postulée."
+      localizeServerMessage(errorData?.detail?.message) || trStored("Échec du marquage de l'offre comme déjà postulée.", "Failed to mark the offer as already applied.")
     );
   }
   return res.json();
@@ -966,7 +986,7 @@ export async function unmarkJobAsApplied(jobId: string): Promise<JobOffer> {
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(
-      errorData?.detail?.message || "Échec de l'annulation du statut postulé."
+      localizeServerMessage(errorData?.detail?.message) || trStored("Échec de l'annulation du statut postulé.", "Failed to undo the applied status.")
     );
   }
   return res.json();
@@ -990,7 +1010,7 @@ export async function fetchPipelineMetrics(): Promise<PipelineMetrics> {
     cache: "no-store",
   });
   if (!res.ok) {
-    throw new Error(`Failed to fetch pipeline metrics: ${res.statusText}`);
+    throw new Error(trStored(`Impossible de charger les indicateurs : ${res.statusText}`, `Failed to fetch pipeline metrics: ${res.statusText}`));
   }
   return res.json();
 }
@@ -1022,7 +1042,7 @@ export async function fetchRecentEmails(limit = 30): Promise<EmailInteraction[]>
     cache: "no-store",
   });
   if (!res.ok) {
-    throw new Error(`Failed to fetch recent recruiter emails: ${res.statusText}`);
+    throw new Error(trStored(`Impossible de charger les emails recruteurs : ${res.statusText}`, `Failed to fetch recent recruiter emails: ${res.statusText}`));
   }
   return res.json();
 }
@@ -1038,7 +1058,7 @@ export async function simulateIncomingEmail(
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    throw new Error(`Failed to simulate incoming email: ${res.statusText}`);
+    throw new Error(trStored(`Impossible de simuler l'email entrant : ${res.statusText}`, `Failed to simulate incoming email: ${res.statusText}`));
   }
   return res.json();
 }
@@ -1053,7 +1073,7 @@ export async function triggerEmailSync(): Promise<{
     method: "POST",
   });
   if (!res.ok) {
-    throw new Error(`Failed to trigger email sync: ${res.statusText}`);
+    throw new Error(trStored(`Impossible de lancer la synchronisation des emails : ${res.statusText}`, `Failed to trigger email sync: ${res.statusText}`));
   }
   return res.json();
 }
@@ -1082,7 +1102,9 @@ export async function loginUser(username: string, password: string): Promise<Log
   });
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    const message = errorData.detail?.message || errorData.detail || "Nom d'utilisateur ou mot de passe incorrect";
+    const message =
+      localizeServerMessage(errorData.detail?.message || errorData.detail) ||
+      trStored("Nom d'utilisateur ou mot de passe incorrect", "Incorrect username or password");
     throw new Error(message);
   }
   return res.json();
@@ -1098,7 +1120,8 @@ export async function registerUser(email: string, password: string, fullName?: s
   });
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    const message = errorData.detail?.message || errorData.detail || "Échec de l'inscription";
+    const message =
+      localizeServerMessage(errorData.detail?.message || errorData.detail) || trStored("Échec de l'inscription", "Sign-up failed");
     throw new Error(message);
   }
   return res.json();
@@ -1111,7 +1134,7 @@ export async function fetchCurrentUser(token: string): Promise<User> {
     },
   });
   if (!res.ok) {
-    throw new Error("Session invalide ou expirée");
+    throw new Error(trStored("Session invalide ou expirée", "Invalid or expired session"));
   }
   return res.json();
 }
@@ -1161,7 +1184,7 @@ export async function createPlaybookRule(data: {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error("Impossible de créer la directive");
+  if (!res.ok) throw new Error(trStored("Impossible de créer la directive", "Unable to create the directive"));
   return res.json();
 }
 
@@ -1174,7 +1197,7 @@ export async function updatePlaybookRule(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error("Impossible de mettre à jour la directive");
+  if (!res.ok) throw new Error(trStored("Impossible de mettre à jour la directive", "Unable to update the directive"));
   return res.json();
 }
 
@@ -1189,7 +1212,7 @@ export async function restorePlaybookTemplates(): Promise<AgentPlaybookRule[]> {
   const res = await authFetch(`${API_BASE_URL}/api/agent/playbook/restore-templates`, {
     method: "POST",
   });
-  if (!res.ok) throw new Error("Impossible de restaurer les modèles recommandés");
+  if (!res.ok) throw new Error(trStored("Impossible de restaurer les modèles recommandés", "Unable to restore the recommended templates"));
   return res.json();
 }
 
@@ -1231,11 +1254,11 @@ export async function triggerReconInvestigation(jobId: string): Promise<{ status
     method: "POST",
   });
   if (!res.ok) {
-    let detail = "Impossible de déclencher l'enquête Deep Recon";
+    let detail = trStored("Impossible de déclencher l'enquête Deep Recon", "Unable to trigger the Deep Recon investigation");
     try {
       const errData = await res.json();
-      if (errData?.detail?.message) detail = errData.detail.message;
-      else if (typeof errData?.detail === "string") detail = errData.detail;
+      if (errData?.detail?.message) detail = localizeServerMessage(errData.detail.message);
+      else if (typeof errData?.detail === "string") detail = localizeServerMessage(errData.detail);
     } catch (_) {}
     throw new Error(detail);
   }

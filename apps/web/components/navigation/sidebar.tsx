@@ -16,15 +16,16 @@ import {
   X,
 } from "lucide-react";
 import { useAuth } from "@/components/auth/auth-context";
+import { useAppLanguage } from "@/lib/language-context";
 
 const navigationItems = [
-  { name: "Tableau de bord", href: "/", icon: LayoutDashboard },
-  { name: "Offres de Stage PFE", href: "/radar", icon: Radar },
-  { name: "Mon Profil", href: "/profile", icon: UserCheck },
-  { name: "Directives Agent", href: "/playbook", icon: Sparkles },
-  { name: "Éditeur de CV", href: "/cv", icon: FileText },
-  { name: "Suivi Candidatures", href: "/kanban", icon: KanbanSquare },
-  { name: "Paramètres", href: "/settings", icon: Settings },
+  { name: { fr: "Tableau de bord", en: "Dashboard" }, href: "/", icon: LayoutDashboard },
+  { name: { fr: "Offres de Stage PFE", en: "Internship Offers" }, href: "/radar", icon: Radar },
+  { name: { fr: "Mon Profil", en: "My Profile" }, href: "/profile", icon: UserCheck },
+  { name: { fr: "Directives Agent", en: "Agent Directives" }, href: "/playbook", icon: Sparkles },
+  { name: { fr: "Éditeur de CV", en: "CV Editor" }, href: "/cv", icon: FileText },
+  { name: { fr: "Suivi Candidatures", en: "Application Tracker" }, href: "/kanban", icon: KanbanSquare },
+  { name: { fr: "Paramètres", en: "Settings" }, href: "/settings", icon: Settings },
 ];
 
 interface MobileNavContextType {
@@ -79,6 +80,7 @@ export function useMobileNav() {
 function SidebarContent({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { language, t } = useAppLanguage();
 
   return (
     <>
@@ -94,13 +96,13 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
             <h1 className="text-lg font-bold tracking-tight text-stone-900 dark:text-stone-100 font-display">
               ArcApply
             </h1>
-            <p className="text-xs text-stone-500 dark:text-stone-400 font-medium">Assistant Candidatures</p>
+            <p className="text-xs text-stone-500 dark:text-stone-400 font-medium">{t("Assistant Candidatures", "Application Assistant")}</p>
           </div>
           {onClose && (
             <button
               type="button"
               onClick={onClose}
-              aria-label="Fermer le menu"
+              aria-label={t("Fermer le menu", "Close menu")}
               className="p-2 -mr-1 rounded-lg text-stone-500 dark:text-stone-400 hover:bg-stone-200/60 dark:hover:bg-stone-800 cursor-pointer"
             >
               <X className="w-5 h-5" />
@@ -133,7 +135,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
                       isActive ? "text-white" : "text-stone-500 dark:text-stone-400"
                     }`}
                   />
-                  <span>{item.name}</span>
+                  <span>{item.name[language]}</span>
                 </div>
               </Link>
             );
@@ -165,7 +167,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
               className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800/80 hover:bg-red-50 dark:hover:bg-red-950/40 text-stone-600 dark:text-stone-300 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-800 transition-all text-xs font-semibold shadow-xs cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span>Se déconnecter</span>
+              <span>{t("Se déconnecter", "Sign out")}</span>
             </button>
           </>
         ) : (
@@ -174,7 +176,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
             className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-primary hover:bg-orange-700 text-white font-semibold text-xs shadow-sm transition-all"
           >
             <LogIn className="w-4 h-4" />
-            <span>Se connecter</span>
+            <span>{t("Se connecter", "Sign in")}</span>
           </Link>
         )}
       </div>

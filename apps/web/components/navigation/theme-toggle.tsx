@@ -3,15 +3,17 @@
 import React from "react";
 import { useAppTheme } from "@/lib/theme-context";
 import { Sun, Moon } from "lucide-react";
+import { useAppLanguage } from "@/lib/language-context";
 
 export function ThemeToggle({ className = "" }: { className?: string }) {
   const { theme, setTheme } = useAppTheme();
+  const { t } = useAppLanguage();
 
   return (
     <div
       className={`inline-flex items-center gap-1 p-1 bg-stone-100 dark:bg-stone-800/80 rounded-lg border border-stone-200 dark:border-stone-700 text-xs shadow-xs ${className}`}
       role="group"
-      aria-label="Mode d'affichage"
+      aria-label={t("Mode d'affichage", "Display mode")}
     >
       <button
         type="button"
@@ -21,10 +23,10 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
             ? "bg-white text-stone-900 shadow-xs font-bold border border-stone-200/60"
             : "text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
         }`}
-        title="Mode Clair"
+        title={t("Mode Clair", "Light mode")}
       >
         <Sun className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-        <span className="hidden sm:inline">Clair</span>
+        <span className="hidden sm:inline">{t("Clair", "Light")}</span>
       </button>
 
       <button
@@ -35,10 +37,10 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
             ? "bg-stone-900 text-white shadow-xs font-bold border border-stone-700"
             : "text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
         }`}
-        title="Mode Sombre"
+        title={t("Mode Sombre", "Dark mode")}
       >
         <Moon className="w-3.5 h-3.5 text-sky-400" />
-        <span className="hidden sm:inline">Sombre</span>
+        <span className="hidden sm:inline">{t("Sombre", "Dark")}</span>
       </button>
     </div>
   );
