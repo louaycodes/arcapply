@@ -673,16 +673,9 @@ export function MirrorReviewDrawer({
                       {t("Aucune Analyse Profonde effectuée pour cette offre", "No Deep Analysis run for this offer yet")}
                     </p>
                     <p className="text-[11px] text-muted-foreground max-w-xs">
-                      {t("Cliquez ci-dessous pour inspecter l'offre, extraire la stack technique et débloquer les documents personnalisés.", "Click below to inspect the offer, extract the tech stack and unlock the tailored documents.")}
+                      {t("Cliquez sur « Lancer l'analyse » pour inspecter l'offre, extraire la stack technique et débloquer les documents personnalisés.", "Click \u201cStart analysis\u201d to inspect the offer, extract the tech stack and unlock the tailored documents.")}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleTriggerRecon}
-                    className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-all shadow-artisan-button cursor-pointer"
-                  >
-                    {t("Lancer l'Analyse Profonde", "Start the Deep Analysis")}
-                  </button>
                 </div>
               )}
             </div>
@@ -956,16 +949,9 @@ export function MirrorReviewDrawer({
                       {t("Analyse Profonde Requise", "Deep Analysis Required")}
                     </h4>
                     <p className="text-xs text-muted-foreground leading-relaxed">
-                      {t("Pour générer des documents rigoureusement alignés sur l'entreprise (zéro hallucination), l'analyse approfondie de l'offre sur le panneau de gauche doit d'abord être lancée.", "To generate documents rigorously aligned with the company (zero hallucination), the deep analysis of the offer in the left panel must be run first.")}
+                      {t("Pour générer des documents rigoureusement alignés sur l'entreprise (zéro hallucination), lancez d'abord l'analyse approfondie de l'offre via le bouton « Lancer l'analyse ».", "To generate documents rigorously aligned with the company (zero hallucination), first run the deep analysis of the offer with the \u201cStart analysis\u201d button.")}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleTriggerRecon}
-                    className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-all shadow-artisan-button cursor-pointer"
-                  >
-                    {t("Lancer l'Analyse Profonde", "Start the Deep Analysis")}
-                  </button>
                 </div>
               ) : activeTab === "letter" ? (
                 /* SECTION LETTRE DE MOTIVATION */
