@@ -246,3 +246,34 @@ def test_crawl_all_endpoint_deduplication():
     assert res2.status_code == 200
     data2 = res2.json()
     assert data2["duplicate_count"] >= 1
+
+
+def test_normalize_search_terms_helper():
+    from app.ports.connectors import BaseJobConnector
+
+    # Cas 1 : liste avec virgules
+    terms = BaseJobConnector.normalize_search_terms(["PFE, Stage Ingénieur", "Internship"])
+    assert "PFE" in terms
+    assert "Stage Ingénieur" in terms
+    assert "Internship" in terms
+
+    # Cas 2 : vide avec fallback
+    fallback = BaseJobConnector.normalize_search_terms([])
+    assert len(fallback) > 0
+    assert "Stage PFE" in fallback
+
+
+@pytest.mark.asyncio
+async def test_linkedin_connector_multi_location():
+    li = LinkedInJobConnector()
+    # Recherche multi-localisations (France et Tunisie)
+    jobs = await li.search_jobs(
+        keywords=["stage"],
+        locations=["France", "Tunisie"],
+        limit=15,
+    )
+    assert isinstance(jobs, list)
+    assert len(jobs) > 0
+    countries = {j.get("country") for j in jobs}
+    # Doit inclure des résultats pour au moins une localisation ciblée
+    assert any(c in ["France", "Tunisie"] for c in countries)

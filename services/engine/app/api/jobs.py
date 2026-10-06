@@ -268,10 +268,12 @@ async def trigger_full_crawl(
     kw = payload.keywords if payload else None
     loc = payload.locations if payload else None
     plat = payload.platforms if payload else None
+    limit = payload.limit_per_platform if payload and payload.limit_per_platform else 15
     summary = await CrawlerScheduler.run_full_crawl(
         keywords=kw,
         locations=loc,
         platforms=plat,
+        limit_per_platform=limit,
         session=session,
         user_id=username,
     )

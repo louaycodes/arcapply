@@ -41,3 +41,28 @@ class BaseJobConnector(abc.ABC):
         """
         delay = random.uniform(min_seconds, max_seconds)
         await asyncio.sleep(delay)
+
+    @classmethod
+    def normalize_search_terms(
+        cls,
+        keywords: list[str] | None,
+        default_fallback: list[str] | None = None,
+    ) -> list[str]:
+        """
+        Normalise les termes de recherche pour les connecteurs.
+        Évite l'effet d'entonnoir destructeur du ' '.join(keywords) qui crée
+        des requêtes booléennes 'AND' impossibles sur les moteurs externes.
+        """
+        if not keywords:
+            return default_fallback or ["Stage PFE", "Stage Ingénieur", "PFE"]
+
+        terms: list[str] = []
+        for item in keywords:
+            if not item:
+                continue
+            parts = [p.strip() for p in item.split(",") if p.strip()]
+            for p in parts:
+                if p not in terms:
+                    terms.append(p)
+
+        return terms if terms else (default_fallback or ["Stage PFE", "Stage Ingénieur", "PFE"])

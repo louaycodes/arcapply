@@ -23,9 +23,13 @@ class TanitjobsJobConnector(BaseJobConnector):
         locations: list[str],
         limit: int = 10,
     ) -> list[dict[str, Any]]:
-        await self.apply_jitter(min_seconds=0.3, max_seconds=0.6)
+        await self.apply_jitter(min_seconds=0.2, max_seconds=0.5)
 
-        query = " ".join(keywords) if keywords else "stage pfe"
+        search_terms = self.normalize_search_terms(
+            keywords,
+            default_fallback=["stage pfe", "stage", "pfe"],
+        )
+        query = search_terms[0] if search_terms else "stage pfe"
         results: list[dict[str, Any]] = []
 
         try:
