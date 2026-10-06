@@ -1,6 +1,7 @@
 import abc
 import asyncio
 import random
+import re
 from typing import Any
 
 
@@ -43,26 +44,67 @@ class BaseJobConnector(abc.ABC):
         await asyncio.sleep(delay)
 
     @classmethod
+    def expand_pfe_search_terms(
+        cls,
+        raw_terms: list[str],
+    ) -> list[str]:
+        """
+        Développe les termes techniques purs (ex: 'DevOps', 'Cloud', 'Data')
+        en requêtes de stage PFE exhaustives et ciblées.
+        Préserve les termes contenant déjà des qualificatifs de stage.
+        """
+        stage_pattern = re.compile(
+            r"\b(stage|stages|pfe|intern|interns|internship|internships|alternance|apprentissage|apprenti|apprentie|stagiaire|stagiaires|fin d['’\s]?etudes?|fin d['’\s]?études?)\b",
+            re.IGNORECASE,
+        )
+        expanded: list[str] = []
+        for term in raw_terms:
+            t_clean = term.strip()
+            if not t_clean:
+                continue
+            if stage_pattern.search(t_clean):
+                if t_clean not in expanded:
+                    expanded.append(t_clean)
+            else:
+                pfe_variants = [
+                    f"Stage {t_clean}",
+                    f"PFE {t_clean}",
+                    f"Stage PFE {t_clean}",
+                    f"Stage Ingénieur {t_clean}",
+                    f"{t_clean} Intern",
+                ]
+                for v in pfe_variants:
+                    if v not in expanded:
+                        expanded.append(v)
+        return expanded
+
+    @classmethod
     def normalize_search_terms(
         cls,
         keywords: list[str] | None,
         default_fallback: list[str] | None = None,
+        expand_pfe: bool = True,
     ) -> list[str]:
         """
-        Normalise les termes de recherche pour les connecteurs.
-        Évite l'effet d'entonnoir destructeur du ' '.join(keywords) qui crée
-        des requêtes booléennes 'AND' impossibles sur les moteurs externes.
+        Normalise et développe les termes de recherche pour les connecteurs.
+        Évite l'effet d'entonnoir destructeur du ' '.join(keywords) et convertit
+        automatiquement les intitulés métiers (DevOps, Cloud...) en requêtes PFE ciblées.
         """
         if not keywords:
             return default_fallback or ["Stage PFE", "Stage Ingénieur", "PFE"]
 
-        terms: list[str] = []
+        raw_terms: list[str] = []
         for item in keywords:
             if not item:
                 continue
             parts = [p.strip() for p in item.split(",") if p.strip()]
             for p in parts:
-                if p not in terms:
-                    terms.append(p)
+                if p not in raw_terms:
+                    raw_terms.append(p)
 
-        return terms if terms else (default_fallback or ["Stage PFE", "Stage Ingénieur", "PFE"])
+        if not raw_terms:
+            return default_fallback or ["Stage PFE", "Stage Ingénieur", "PFE"]
+
+        if expand_pfe:
+            return cls.expand_pfe_search_terms(raw_terms)
+        return raw_terms

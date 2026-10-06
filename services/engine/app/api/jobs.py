@@ -493,124 +493,23 @@ async def trigger_collection(
     session: Session = Depends(get_session),
 ):
     """
-    Déclenche la collecte multi-plateformes avec déduplication stricte
-    et diffusion temps réel de la progression par SSE.
+    Déclenche la collecte multi-plateformes avec déduplication stricte,
+    enrichissement approfondi et diffusion temps réel de la progression par SSE.
     """
-    total_collected = 0
-    new_jobs_count = 0
-    duplicate_count = 0
-    active_platforms: list[str] = []
-
-    for platform_key in request.platforms:
-        connector_cls = CONNECTORS.get(platform_key.lower())
-        if not connector_cls:
-            continue
-
-        active_platforms.append(platform_key)
-        connector = connector_cls()
-
-        # Émission d'événement SSE de début de scraping pour la plateforme
-        await broadcast_event(
-            "SCRAPE_PROGRESS",
-            {
-                "platform": platform_key,
-                "status": "in_progress",
-                "message": f"Démarrage de la collecte sur {platform_key.capitalize()}...",
-            },
-            target_user=username,
-        )
-
-        raw_jobs = await connector.search_jobs(
-            keywords=request.keywords,
-            locations=request.locations,
-            limit=request.limit_per_platform,
-        )
-
-        for raw in raw_jobs:
-            total_collected += 1
-
-            # Bouclier Anti-Rescrape : Toute offre déjà postulée ou archivée ne sera JAMAIS re-scrappée
-            if is_job_excluded_from_scraping(session, username, raw):
-                duplicate_count += 1
-                continue
-
-            # Vérification de déduplication stricte sur (platform, external_id, user_id)
-            existing = session.exec(
-                select(JobOffer).where(
-                    JobOffer.platform == raw["platform"],
-                    JobOffer.external_id == raw["external_id"],
-                    JobOffer.user_id == username,
-                )
-            ).first()
-
-            if existing:
-                duplicate_count += 1
-                continue
-
-            # Inférence automatique du type d'offre avant persistance
-            inferred_type = infer_offer_type(
-                title=raw["title"],
-                description=raw.get("description_raw", ""),
-            )
-
-            # Création de la nouvelle offre avec offer_type classifié
-            new_job = JobOffer(
-                platform=raw["platform"],
-                external_id=raw["external_id"],
-                title=raw["title"],
-                company=raw["company"],
-                location=raw.get("location", ""),
-                country=raw.get("country", "France"),
-                description_raw=raw.get("description_raw", ""),
-                url=raw.get("url", ""),
-                status="DISCOVERED",
-                offer_type=inferred_type,
-                user_id=username,
-            )
-            session.add(new_job)
-            session.commit()
-            session.refresh(new_job)
-            new_jobs_count += 1
-
-            # Diffusion immédiate de l'offre découverte sur le bus SSE
-            await broadcast_event(
-                "JOB_DISCOVERED",
-                {
-                    "id": new_job.id,
-                    "title": new_job.title,
-                    "company": new_job.company,
-                    "location": new_job.location,
-                    "country": new_job.country,
-                    "platform": new_job.platform,
-                    "status": new_job.status,
-                    "url": new_job.url,
-                    "collected_at": new_job.collected_at.isoformat(),
-                },
-                target_user=username,
-            )
-
-        # Événement SSE de fin de plateforme
-        await broadcast_event(
-            "SCRAPE_PROGRESS",
-            {
-                "platform": platform_key,
-                "status": "completed",
-                "message": f"Collecte achevée sur {platform_key.capitalize()}.",
-            },
-            target_user=username,
-        )
-
-    summary_msg = (
-        f"Collecte terminée : {new_jobs_count} nouvelle(s) offre(s) PFE détectée(s), "
-        f"{duplicate_count} doublon(s) filtré(s)."
+    res = await CrawlerScheduler.run_full_crawl(
+        keywords=request.keywords,
+        locations=request.locations,
+        platforms=request.platforms,
+        limit_per_platform=request.limit_per_platform,
+        session=session,
+        user_id=username,
     )
-
     return JobCollectSummary(
-        collected_count=total_collected,
-        new_count=new_jobs_count,
-        duplicate_count=duplicate_count,
-        platforms=active_platforms,
-        message=summary_msg,
+        collected_count=res.get("collected_count", 0),
+        new_count=res.get("new_count", 0),
+        duplicate_count=res.get("duplicate_count", 0),
+        platforms=res.get("platforms", request.platforms),
+        message=res.get("message", "Collecte multi-sources achevée."),
     )
 
 
