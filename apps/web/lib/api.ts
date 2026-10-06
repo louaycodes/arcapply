@@ -290,6 +290,7 @@ export interface JobCollectSummary {
   new_count: number;
   duplicate_count: number;
   platforms: string[];
+  by_platform?: Record<string, number>;
   message: string;
 }
 
@@ -390,7 +391,7 @@ export async function clearAllJobs(): Promise<{ status: string; message: string 
 
 export function createRadarEventSource(
   onJobDiscovered?: (job: JobOffer) => void,
-  onProgress?: (progress: { platform: string; status: string; message: string }) => void,
+  onProgress?: (progress: { platform: string; status: string; count?: number; message: string }) => void,
   onError?: (err: any) => void,
   onJobStatusChanged?: (payload: { job_id: string; old_status: string; new_status: string }) => void,
   onEmailReceived?: (payload: { id: string; category: string; company?: string; subject: string; snippet?: string }) => void,

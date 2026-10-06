@@ -45,6 +45,8 @@ import {
   ShieldCheck,
   ChevronDown,
   ChevronUp,
+  Loader2,
+  ArrowRight,
 } from "lucide-react";
 
 const AVAILABLE_PLATFORMS: { id: string; label: string; labelEn?: string; country: string }[] = [
@@ -100,10 +102,16 @@ export default function RadarPage() {
   const [showAppliedSection, setShowAppliedSection] = useState(true);
   const [scrapeMessage, setScrapeMessage] = useState<string | null>(null);
   const [showCollectModal, setShowCollectModal] = useState(false);
+  const [isCrawlModalOpen, setIsCrawlModalOpen] = useState(false);
+  const [currentScrapingSource, setCurrentScrapingSource] = useState<string | null>(null);
+  const [crawlPlatformStats, setCrawlPlatformStats] = useState<
+    Record<string, { status: "pending" | "running" | "completed" | "error"; count: number; message?: string }>
+  >({});
+  const [totalPfeDiscoveredInCrawl, setTotalPfeDiscoveredInCrawl] = useState<number>(0);
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   // Formulaire de collecte multi-sources (exclusif PFE)
-  const [keywordsInput, setKeywordsInput] = useState<string>("Stage PFE, Stage Ingénieur, Stage Informatique");
+  const [keywordsInput, setKeywordsInput] = useState<string>("DevOps, Cloud, Software, Data");
   const [selectedPlatformsToCrawl, setSelectedPlatformsToCrawl] = useState<string[]>([
     "top100_enterprises",
     "linkedin",
@@ -113,6 +121,18 @@ export default function RadarPage() {
     "hellowork",
     "indeed",
   ]);
+
+  // Blocage strict de la touche Echap pendant l'exploration
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isCrawlModalOpen && isCollecting && e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isCrawlModalOpen, isCollecting]);
 
   const loadJobs = async () => {
     try {
@@ -153,6 +173,23 @@ export default function RadarPage() {
           return [newJob, ...prev];
         });
         setNewJobIds((prev) => new Set(prev).add(newJob.id));
+        setTotalPfeDiscoveredInCrawl((prev) => prev + 1);
+
+        if (newJob.platform) {
+          const platKey = newJob.platform.toLowerCase();
+          setCrawlPlatformStats((prev) => {
+            const current = prev[platKey] || { status: "running", count: 0 };
+            return {
+              ...prev,
+              [platKey]: {
+                ...current,
+                status: "running",
+                count: current.count + 1,
+              },
+            };
+          });
+        }
+
         fetchJobATSScore(newJob.id)
           .then((score) => {
             setAtsScores((prev) => ({ ...prev, [newJob.id]: score }));
@@ -167,6 +204,24 @@ export default function RadarPage() {
         }, 8000);
       },
       (progress) => {
+        if (progress.platform) {
+          const platKey = progress.platform.toLowerCase();
+          if (progress.status === "running") {
+            setCurrentScrapingSource(platKey);
+          }
+          setCrawlPlatformStats((prev) => {
+            const current = prev[platKey] || { status: "pending", count: 0 };
+            return {
+              ...prev,
+              [platKey]: {
+                status: (progress.status as any) || "running",
+                count: progress.count !== undefined ? progress.count : current.count,
+                message: progress.message,
+              },
+            };
+          });
+        }
+
         setScrapeMessage(
           t(
             `${progress.platform.toUpperCase()} : ${progress.message}`,
@@ -231,9 +286,32 @@ export default function RadarPage() {
 
   const handleLaunchCollect = async () => {
     try {
-      setIsCollecting(true);
       setShowCollectModal(false);
-      setScrapeMessage(t("Lancement de l'exploration multi-sources & plateformes Top 100 IT...", "Starting multi-source exploration & Top 100 IT platforms..."));
+      setIsCollecting(true);
+      setIsCrawlModalOpen(true);
+      setTotalPfeDiscoveredInCrawl(0);
+
+      const targetPlatforms =
+        selectedPlatformsToCrawl.length > 0
+          ? selectedPlatformsToCrawl
+          : AVAILABLE_PLATFORMS.map((p) => p.id);
+
+      const initialStats: Record<
+        string,
+        { status: "pending" | "running" | "completed" | "error"; count: number; message?: string }
+      > = {};
+      targetPlatforms.forEach((p) => {
+        initialStats[p.toLowerCase()] = { status: "pending", count: 0 };
+      });
+      setCrawlPlatformStats(initialStats);
+      setCurrentScrapingSource(targetPlatforms[0]?.toLowerCase() || null);
+
+      setScrapeMessage(
+        t(
+          "Lancement de l'exploration multi-sources 100% PFE...",
+          "Starting 100% PFE multi-source exploration..."
+        )
+      );
 
       const keywords = keywordsInput
         .split(",")
@@ -243,15 +321,31 @@ export default function RadarPage() {
       const summary = await crawlAllSources({
         keywords,
         locations: ["France", "Tunisie"],
-        platforms: selectedPlatformsToCrawl.length > 0 ? selectedPlatformsToCrawl : undefined,
+        platforms: targetPlatforms,
         limit_per_platform: 20,
       });
 
+      const byPlatform = summary.by_platform;
+      if (byPlatform) {
+        setCrawlPlatformStats((prev) => {
+          const updated = { ...prev };
+          Object.entries(byPlatform).forEach(([plat, cnt]) => {
+            const key = plat.toLowerCase();
+            const num = typeof cnt === "number" ? cnt : Number(cnt) || 0;
+            updated[key] = {
+              status: "completed",
+              count: num,
+              message: `${num} offre(s) PFE validée(s)`,
+            };
+          });
+          return updated;
+        });
+      }
+      setTotalPfeDiscoveredInCrawl(summary.new_count ?? 0);
       setNotification({
         type: "success",
         message: summary.message || t("Collecte multi-sources achevée avec succès.", "Multi-source collection completed successfully."),
       });
-      loadJobs();
     } catch (err: any) {
       setNotification({
         type: "error",
@@ -259,8 +353,13 @@ export default function RadarPage() {
       });
     } finally {
       setIsCollecting(false);
-      setTimeout(() => setNotification(null), 6000);
     }
+  };
+
+  const handleFinishCrawl = () => {
+    setIsCrawlModalOpen(false);
+    loadJobs();
+    setTimeout(() => setNotification(null), 4000);
   };
 
   const handleClearAllJobs = async () => {
@@ -873,16 +972,24 @@ export default function RadarPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
-                  {t("Métiers et compétences recherchés", "Target roles and skills")}
+                  {t("Spécialités, métiers ou technologies ciblés", "Target roles, specialties or technologies")}
                 </label>
                 <input
                   type="text"
                   value={keywordsInput}
                   onChange={(e) => setKeywordsInput(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg bg-muted/60 border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                  placeholder={t("ex: PFE, Ingénieur, Cloud, Python, DevOps", "e.g. PFE, Engineer, Cloud, Python, DevOps")}
+                  placeholder={t("ex: DevOps, Cloud, Software, Data, IA, Fullstack", "e.g. DevOps, Cloud, Software, Data, AI, Fullstack")}
                 />
-                <p className="text-[11px] text-muted-foreground mt-1">{t("Séparés par des virgules.", "Comma-separated.")}</p>
+                <div className="mt-2 p-2.5 rounded-lg bg-primary/10 border border-primary/20 text-[11px] text-foreground leading-relaxed flex items-start gap-2">
+                  <ShieldCheck className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                  <span>
+                    {t(
+                      "ArcApply est dédié à 100% aux stages PFE. Entrez simplement votre domaine technique : l'application génère automatiquement les requêtes de stage ciblées et écarte strictement les offres non-PFE.",
+                      "ArcApply is 100% dedicated to PFE internships. Simply enter your technical domain: the app automatically generates targeted internship queries and strictly rejects non-PFE listings."
+                    )}
+                  </span>
+                </div>
               </div>
 
               <div>
@@ -970,8 +1077,221 @@ export default function RadarPage() {
                 className="px-4 py-2 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold flex items-center gap-2 shadow-xs transition-all cursor-pointer"
               >
                 <Play className="w-3.5 h-3.5 fill-current" />
-                <span>{t("Lancer la recherche", "Start the search")}</span>
+                <span>{t("Lancer l'exploration PFE", "Start PFE exploration")}</span>
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. Fenêtre Modale de Scraping Bloquante Multi-Sources */}
+      {isCrawlModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/80 backdrop-blur-md p-4 animate-in fade-in duration-200 select-none">
+          <div className="w-full max-w-xl rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-2xl p-6 space-y-6 animate-in zoom-in-95 duration-150">
+            {/* Header */}
+            <div className="flex items-start justify-between border-b border-stone-200 dark:border-stone-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                  {isCollecting ? (
+                    <Radar className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  )}
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 font-display">
+                    {isCollecting
+                      ? t("Exploration PFE multi-sources en cours", "Multi-source PFE exploration in progress")
+                      : t("Exploration PFE multi-sources terminée", "Multi-source PFE exploration completed")}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {t(
+                      "Extraction et validation déterministe 100% PFE (France & Tunisie).",
+                      "Deterministic 100% PFE extraction and validation (France & Tunisia)."
+                    )}
+                  </p>
+                </div>
+              </div>
+              <div>
+                {isCollecting ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>{t("Scan en cours", "Scanning")}</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>{t("Prêt", "Ready")}</span>
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Active Source Banner */}
+            {isCollecting && currentScrapingSource && (
+              <div className="rounded-xl border border-primary/30 bg-primary/5 p-3.5 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center text-primary">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
+                      {t("Scraping en cours sur :", "Scraping in progress on:")}
+                    </span>
+                    <p className="text-sm font-bold text-foreground font-display">
+                      {AVAILABLE_PLATFORMS.find((p) => p.id === currentScrapingSource)?.label ||
+                        currentScrapingSource.toUpperCase()}
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs font-mono text-primary font-medium animate-pulse">
+                  {t("Collecte active...", "Active crawl...")}
+                </span>
+              </div>
+            )}
+
+            {/* Live Stats KPI Cards */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3.5 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900/60">
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  {t("Sources explorées", "Explored sources")}
+                </p>
+                <p className="text-xl font-bold text-foreground mt-1 font-display">
+                  {
+                    Object.values(crawlPlatformStats).filter(
+                      (s) => s.status === "completed" || s.status === "error"
+                    ).length
+                  }{" "}
+                  / {Object.keys(crawlPlatformStats).length || selectedPlatformsToCrawl.length}
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl border border-emerald-200 dark:border-emerald-800/40 bg-emerald-50/50 dark:bg-emerald-950/20">
+                <p className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider">
+                  {t("Offres PFE réellement trouvées", "PFE offers actually found")}
+                </p>
+                <div className="flex items-center gap-2 mt-1">
+                  <Sparkles className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  <p className="text-xl font-bold text-emerald-900 dark:text-emerald-200 font-display">
+                    {totalPfeDiscoveredInCrawl}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Detailed Platform-by-Platform List */}
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground">
+                {t("Détail par source :", "Breakdown by source:")}
+              </p>
+              <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                {(selectedPlatformsToCrawl.length > 0
+                  ? selectedPlatformsToCrawl
+                  : AVAILABLE_PLATFORMS.map((p) => p.id)
+                ).map((platformId) => {
+                  const platMeta = AVAILABLE_PLATFORMS.find((p) => p.id === platformId);
+                  const platStat = crawlPlatformStats[platformId.toLowerCase()] || {
+                    status: "pending",
+                    count: 0,
+                  };
+                  const isCur = currentScrapingSource === platformId.toLowerCase() && isCollecting;
+
+                  return (
+                    <div
+                      key={platformId}
+                      className={`flex items-center justify-between p-2.5 rounded-xl border text-xs transition-all ${
+                        isCur
+                          ? "border-primary/40 bg-primary/10 shadow-xs"
+                          : platStat.status === "completed"
+                          ? "border-emerald-200 dark:border-emerald-800/50 bg-emerald-50/30 dark:bg-emerald-950/10"
+                          : platStat.status === "error"
+                          ? "border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900/40"
+                          : "border-stone-200 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-900/30 opacity-70"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-stone-900 dark:text-stone-100">
+                          {language === "en" && platMeta?.labelEn ? platMeta.labelEn : platMeta?.label || platformId}
+                        </span>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted/80 text-muted-foreground">
+                          {platMeta?.country === "Tunisie" ? "TN" : platMeta?.country === "France" ? "FR" : "GLOBAL"}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {platStat.status === "running" || isCur ? (
+                          <span className="inline-flex items-center gap-1.5 font-semibold text-primary animate-pulse">
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>{t("Scraping en cours...", "Scraping...")}</span>
+                          </span>
+                        ) : platStat.status === "completed" ? (
+                          <span className="inline-flex items-center gap-1.5 font-bold text-emerald-600 dark:text-emerald-400">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>
+                              {platStat.count}{" "}
+                              {platStat.count > 1
+                                ? t("offres PFE trouvées", "PFE offers found")
+                                : t("offre PFE trouvée", "PFE offer found")}
+                            </span>
+                          </span>
+                        ) : platStat.status === "error" ? (
+                          <span className="inline-flex items-center gap-1 text-muted-foreground">
+                            <AlertCircle className="w-3.5 h-3.5 text-stone-400" />
+                            <span>{t("0 offre trouvée", "0 offers found")}</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-muted-foreground">
+                            <Clock className="w-3.5 h-3.5 text-stone-400" />
+                            <span>{t("En attente", "Pending")}</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Footer Actions (Non dismissible during crawl) */}
+            <div className="pt-2 border-t border-stone-200 dark:border-stone-800">
+              {isCollecting ? (
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    disabled
+                    className="w-full py-3 px-4 rounded-xl bg-stone-100 dark:bg-stone-800 text-stone-400 dark:text-stone-500 font-semibold text-xs flex items-center justify-center gap-2.5 cursor-not-allowed border border-stone-200 dark:border-stone-700/50"
+                  >
+                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                    <span>
+                      {t(
+                        "Scraping en cours... Fermeture bloquée jusqu'à l'achèvement de toutes les sources",
+                        "Scraping in progress... Closing blocked until all sources complete"
+                      )}
+                    </span>
+                  </button>
+                  <p className="text-[11px] text-center text-muted-foreground">
+                    {t(
+                      "Veuillez patienter, aucune action parallèle n'est autorisée pour garantir l'intégrité de la collecte.",
+                      "Please wait, no parallel actions allowed to guarantee collection integrity."
+                    )}
+                  </p>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleFinishCrawl}
+                  className="w-full py-3 px-4 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>
+                    {t(
+                      `Consulter les offres PFE découvertes (${totalPfeDiscoveredInCrawl})`,
+                      `View discovered PFE offers (${totalPfeDiscoveredInCrawl})`
+                    )}
+                  </span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
         </div>
