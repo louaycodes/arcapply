@@ -22,56 +22,67 @@ class HelloWorkJobConnector(BaseJobConnector):
         locations: list[str],
         limit: int = 10,
     ) -> list[dict[str, Any]]:
-        await self.apply_jitter(min_seconds=0.3, max_seconds=0.6)
+        await self.apply_jitter(min_seconds=0.2, max_seconds=0.5)
 
-        query = " ".join(keywords) if keywords else "stage pfe ingenieur"
+        search_terms = self.normalize_search_terms(
+            keywords,
+            default_fallback=["stage pfe", "stage ingenieur", "stage"],
+        )
         results: list[dict[str, Any]] = []
+        seen = set()
+
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+            ),
+            "Accept-Language": "fr-FR,fr;q=0.9",
+        }
 
         try:
-            encoded_query = urllib.parse.quote(query)
-            url = f"https://www.hellowork.com/fr-fr/emploi/recherche.html?k={encoded_query}&l=France"
-            headers = {
-                "User-Agent": (
-                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
-                ),
-                "Accept-Language": "fr-FR,fr;q=0.9",
-            }
-
             async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
-                resp = await client.get(url, headers=headers)
-                if resp.status_code == 200 and resp.text:
-                    soup = BeautifulSoup(resp.text, "html.parser")
-                    links = soup.find_all("a", href=lambda h: h and "/fr-fr/emplois/" in h)
+                for term in search_terms:
+                    if len(results) >= limit:
+                        break
+                    encoded_query = urllib.parse.quote(term)
+                    url = f"https://www.hellowork.com/fr-fr/emploi/recherche.html?k={encoded_query}&l=France"
+                    try:
+                        resp = await client.get(url, headers=headers)
+                        if resp.status_code == 200 and resp.text:
+                            soup = BeautifulSoup(resp.text, "html.parser")
+                            links = soup.find_all("a", href=lambda h: h and "/fr-fr/emplois/" in h)
 
-                    seen = set()
-                    for link in links:
-                        raw_title = link.text.strip()
-                        href = link.get("href", "")
-                        if not raw_title or len(raw_title) < 5 or href in seen:
-                            continue
-                        seen.add(href)
+                            for link in links:
+                                raw_title = link.text.strip()
+                                href = link.get("href", "")
+                                if not raw_title or len(raw_title) < 5 or href in seen:
+                                    continue
+                                seen.add(href)
 
-                        full_url = href if href.startswith("http") else f"https://www.hellowork.com{href}"
-                        id_m = re.search(r"/emplois/(\d+)", href)
-                        ext_id = f"hw-{id_m.group(1)}" if id_m else f"hw-{abs(hash(full_url)) % 1000000}"
+                                full_url = href if href.startswith("http") else f"https://www.hellowork.com{href}"
+                                id_m = re.search(r"/emplois/(\d+)", href)
+                                ext_id = f"hw-{id_m.group(1)}" if id_m else f"hw-{abs(hash(full_url)) % 1000000}"
 
-                        results.append({
-                            "external_id": ext_id,
-                            "platform": "hellowork",
-                            "title": raw_title,
-                            "company": "Entreprise Partenaire HelloWork",
-                            "location": "Paris / Île-de-France, France",
-                            "country": "France",
-                            "description_raw": (
-                                f"Offre de stage ingénieur issue de HelloWork France. Intitulé : {raw_title}. "
-                                "Rendez-vous sur l'annonce officielle pour déposer votre candidature."
-                            ),
-                            "url": full_url,
-                        })
+                                results.append({
+                                    "external_id": ext_id,
+                                    "platform": "hellowork",
+                                    "title": raw_title,
+                                    "company": "Entreprise Partenaire HelloWork",
+                                    "location": "Paris / Île-de-France, France",
+                                    "country": "France",
+                                    "description_raw": (
+                                        f"Offre de stage ingénieur issue de HelloWork France. Intitulé : {raw_title}. "
+                                        "Rendez-vous sur l'annonce officielle pour déposer votre candidature."
+                                    ),
+                                    "url": full_url,
+                                })
 
-                        if len(results) >= limit:
-                            break
+                                if len(results) >= limit:
+                                    break
+                    except Exception as err:
+                        print(f"[HelloWorkConnector] Erreur requête ({term}): {err}")
+                        break
+
         except Exception as e:
             print(f"[HelloWorkConnector] Live scraping error: {e}")
             return []

@@ -103,7 +103,7 @@ export default function RadarPage() {
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   // Formulaire de collecte multi-sources (exclusif PFE)
-  const [keywordsInput, setKeywordsInput] = useState<string>("PFE, Stage Ingénieur, Internship");
+  const [keywordsInput, setKeywordsInput] = useState<string>("Stage PFE, Stage Ingénieur, Stage Informatique");
   const [selectedPlatformsToCrawl, setSelectedPlatformsToCrawl] = useState<string[]>([
     "top100_enterprises",
     "linkedin",
@@ -244,6 +244,7 @@ export default function RadarPage() {
         keywords,
         locations: ["France", "Tunisie"],
         platforms: selectedPlatformsToCrawl.length > 0 ? selectedPlatformsToCrawl : undefined,
+        limit_per_platform: 20,
       });
 
       setNotification({

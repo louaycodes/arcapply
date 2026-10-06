@@ -19,9 +19,13 @@ PFE_KEYWORDS: list[str] = [
     r"\bfin\s*d['’\s]?études?\b",
     r"\bfin\s*d['’\s]?etudes?\b",
     r"\bend[- ]of[- ]studies\b",
+    r"\bend[- ]of[- ]study\b",
     r"\balternance\b",
     r"\bapprentissage\b",
     r"\bapprenti\b",
+    r"\bgraduate\b",
+    r"\btrainee\b",
+    r"\btraineeship\b",
 ]
 
 # ---------------------------------------------------------------------------

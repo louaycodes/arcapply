@@ -34,7 +34,7 @@ from app.api.events import broadcast_event
 from app.adapters.connectors import infer_offer_type, is_pfe_offer
 from app.domain.anti_rescrape import is_job_already_applied, is_job_already_archived, is_job_excluded_from_scraping
 from app.domain.job_extractor import JobDeepExtractor
-from app.domain.models import JobOffer, utc_now
+from app.domain.models import JobOffer, MasterProfile, utc_now
 from app.ports.connectors import BaseJobConnector
 
 ALL_CONNECTORS: dict[str, type[BaseJobConnector]] = {
@@ -103,6 +103,7 @@ class CrawlerScheduler:
         keywords: list[str] | None = None,
         locations: list[str] | None = None,
         platforms: list[str] | None = None,
+        limit_per_platform: int = 15,
         session: Session | None = None,
         user_id: str = "louay",
     ) -> dict[str, Any]:
@@ -129,6 +130,10 @@ class CrawlerScheduler:
         sess = session if session is not None else Session(get_engine())
 
         try:
+            # Récupération du profil et de son mode de recherche
+            user_profile = sess.exec(select(MasterProfile).where(MasterProfile.user_id == target_user)).first()
+            search_mode = getattr(user_profile, "search_mode", "PFE") if user_profile else "PFE"
+
             for platform in target_platforms:
                 connector_cls = ALL_CONNECTORS.get(platform)
                 if not connector_cls:
@@ -145,7 +150,7 @@ class CrawlerScheduler:
                     jobs = await connector.search_jobs(
                         keywords=search_kw,
                         locations=search_loc,
-                        limit=8,
+                        limit=limit_per_platform,
                     )
                 except Exception as err:
                     print(f"[CrawlerScheduler] Erreur connecteur {platform}: {err}")
@@ -156,9 +161,16 @@ class CrawlerScheduler:
                     title = j.get("title", "")
                     desc = j.get("description_raw", "")
 
-                    # Invariant : 100% PFE - Toute offre ne répondant pas aux critères de stage PFE est ignorée
-                    if not is_pfe_offer(title, desc):
-                        continue
+                    # Invariant : validation selon le search_mode du profil
+                    if search_mode == "PFE":
+                        if not is_pfe_offer(title, desc):
+                            continue
+                        current_offer_type = "PFE"
+                    else:
+                        inferred = infer_offer_type(title, desc)
+                        if inferred == "REJECTED":
+                            continue
+                        current_offer_type = inferred
 
                     total_collected += 1
                     ext_id = j.get("external_id")
@@ -183,7 +195,17 @@ class CrawlerScheduler:
                         continue
 
                     j_with_type = dict(j)
-                    j_with_type["offer_type"] = "PFE"
+                    j_with_type["offer_type"] = current_offer_type
+
+                    # Pour toute nouvelle offre, enrichir avec la description intégrale si placeholder ou tronquée
+                    job_url = j.get("url", "")
+                    if job_url and (len(desc) < 220 or "consultez l'annonce" in desc.lower() or "consultez les détails" in desc.lower()):
+                        try:
+                            details = await connector.fetch_job_details(job_url)
+                            if details and details.get("description_raw") and len(details["description_raw"]) > len(desc):
+                                j_with_type["description_raw"] = details["description_raw"]
+                        except Exception:
+                            pass
 
                     # Deep Extraction & Enrichissement sémantique (stack, durée, salaire, date)
                     enriched = JobDeepExtractor.enrich_job_data(j_with_type)
@@ -198,7 +220,7 @@ class CrawlerScheduler:
                         description_raw=enriched.get("description_raw", ""),
                         url=enriched.get("url", ""),
                         status="DISCOVERED",
-                        offer_type="PFE",
+                        offer_type=current_offer_type,
                         published_at=enriched.get("published_at"),
                         skills_required=enriched.get("skills_required", "[]"),
                         contract_duration=enriched.get("contract_duration", ""),
