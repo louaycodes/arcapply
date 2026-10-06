@@ -97,3 +97,18 @@
   - Always use Lucide React icons (e.g. `Building2`, `Sparkles`, `Check`, `Zap`, `X`, `ShieldCheck`) for visual indicators.
   - Use clean text codes (e.g. `FR`, `TN`, `EN`, `[FR]`, `[EN]`) for country or language tags instead of emoji flags.
 
+### Pitfall 6: Scraper Connector Architecture Invariant (Pagination, Multi-Location, Multi-Pass Terms & Real Details)
+- **Symptom:** Scrapers returning only 5-8 jobs on the first run, and 0 new jobs on subsequent runs, while hundreds of fresh job postings exist on the platform. Complete absence of Tunisian offers or missing tech stack descriptions.
+- **Root Causes:**
+  1. *Zero Pagination & Hardcoded Limit:* Querying page 0 only without iterating over offsets (`start=0, 10, 20...` or `page=1, 2...`). After the first run, those few jobs are in DB; anti-rescrape rejects them and zero new jobs are found.
+  2. *Destructive String Join:* Doing `query = " ".join(keywords)` concatenates separate terms like `["PFE", "Stage Ingénieur", "Internship"]` into one giant phrase (`"PFE Stage Ingénieur Internship"`). This triggers an impossible AND intersection on external search engines, wiping out 95%+ of legitimate offers.
+  3. *Dropping Target Locations:* Using `loc = locations[0]` discards `locations[1..N]` (e.g. Tunisie when locations is `["France", "Tunisie"]`).
+  4. *Overly Restrictive Platform Filters:* Hardcoding experience flags like `&f_E=1` on LinkedIn omits unclassified internships and entry-level postings.
+  5. *Card Placeholder Descriptions:* Not fetching full descriptions via `fetch_job_details()` leaves generic fallback snippets in `description_raw`, breaking downstream ATS keyword extraction.
+- **Mandatory Rules for All Current & Future Connectors:**
+  1. *Mandatory Pagination:* Connectors must support and execute pagination up to the requested `limit` / `limit_per_platform`.
+  2. *Discrete Query Normalization:* Always use `cls.normalize_search_terms(keywords)` to treat search terms as distinct query passes rather than space-concatenating them into a single string.
+  3. *Multi-Location Iteration:* Always loop over all entries in `locations` (e.g. France, Tunisie).
+  4. *Deep Description Enrichment:* `CrawlerScheduler` must resolve full offer text for newly discovered jobs via `connector.fetch_job_details()` so ATS matching has real requirements to evaluate.
+  5. *Ethical Jitter:* Always use human-like jitter (`apply_jitter`) between paginated requests to respect platform rate-limits.
+
