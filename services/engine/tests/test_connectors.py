@@ -262,6 +262,15 @@ def test_normalize_search_terms_helper():
     assert len(fallback) > 0
     assert "Stage PFE" in fallback
 
+    # Cas 3 : rôle technique pur (ex: DevOps, Cloud) étendu en requêtes PFE ciblées
+    expanded = BaseJobConnector.normalize_search_terms(["DevOps"])
+    assert "Stage DevOps" in expanded
+    assert "PFE DevOps" in expanded
+    assert "Stage PFE DevOps" in expanded
+    assert "DevOps Intern" in expanded
+    # Vérification que le terme brut seul sans stage n'est pas envoyé
+    assert "DevOps" not in expanded
+
 
 @pytest.mark.asyncio
 async def test_linkedin_connector_multi_location():

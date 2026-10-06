@@ -115,21 +115,21 @@ class CrawlerScheduler:
             return {"status": "already_running", "message": f"Un crawl est déjà en cours d'exécution pour {target_user}."}
 
         cls._running_users.add(target_user)
-        cls._last_crawl_times[target_user] = utc_now()
-
-        target_platforms = platforms if platforms else list(ALL_CONNECTORS.keys())
-        search_kw = keywords if keywords else ["PFE", "Stage Ingénieur"]
-        search_loc = locations if locations else ["France", "Tunisie"]
-
-        total_collected = 0
-        total_new = 0
-        total_duplicates = 0
-        source_counts: dict[str, int] = {}
-
-        owns_session = session is None
-        sess = session if session is not None else Session(get_engine())
-
         try:
+            cls._last_crawl_times[target_user] = utc_now()
+
+            target_platforms = platforms if platforms else list(ALL_CONNECTORS.keys())
+            search_kw = BaseJobConnector.normalize_search_terms(keywords)
+            search_loc = locations if locations else ["France", "Tunisie"]
+
+            total_collected = 0
+            total_new = 0
+            total_duplicates = 0
+            source_counts: dict[str, int] = {}
+
+            owns_session = session is None
+            sess = session if session is not None else Session(get_engine())
+
             # Récupération du profil et de son mode de recherche
             user_profile = sess.exec(select(MasterProfile).where(MasterProfile.user_id == target_user)).first()
             search_mode = getattr(user_profile, "search_mode", "PFE") if user_profile else "PFE"
@@ -141,7 +141,12 @@ class CrawlerScheduler:
 
                 await broadcast_event(
                     "SCRAPE_PROGRESS",
-                    {"platform": platform, "status": "running", "message": f"Scan en cours sur {platform}..."},
+                    {
+                        "platform": platform,
+                        "status": "running",
+                        "count": 0,
+                        "message": f"Scan en cours sur {platform}...",
+                    },
                     target_user=target_user,
                 )
 
@@ -155,6 +160,16 @@ class CrawlerScheduler:
                 except Exception as err:
                     print(f"[CrawlerScheduler] Erreur connecteur {platform}: {err}")
                     jobs = []
+                    await broadcast_event(
+                        "SCRAPE_PROGRESS",
+                        {
+                            "platform": platform,
+                            "status": "error",
+                            "count": 0,
+                            "message": f"Erreur lors du scan de {platform}: {err}",
+                        },
+                        target_user=target_user,
+                    )
 
                 platform_new = 0
                 for j in jobs:
@@ -269,10 +284,26 @@ class CrawlerScheduler:
                     {
                         "platform": platform,
                         "status": "completed",
-                        "message": f"{platform_new} nouvelle(s) opportunité(s) découverte(s).",
+                        "count": platform_new,
+                        "message": f"{platform_new} nouvelle(s) opportunité(s) PFE découverte(s).",
                     },
                     target_user=target_user,
                 )
+
+            # Événement global de fin d'exploration multi-sources
+            await broadcast_event(
+                "SCRAPE_ALL_COMPLETED",
+                {
+                    "status": "completed",
+                    "total_collected": total_collected,
+                    "new_count": total_new,
+                    "duplicate_count": total_duplicates,
+                    "platforms": target_platforms,
+                    "by_platform": source_counts,
+                    "message": f"Collecte multi-sources achevée : {total_new} nouvelles offres PFE intégrées.",
+                },
+                target_user=target_user,
+            )
 
         finally:
             cls._running_users.discard(target_user)
@@ -284,6 +315,7 @@ class CrawlerScheduler:
             "collected_count": total_collected,
             "new_count": total_new,
             "duplicate_count": total_duplicates,
+            "platforms": target_platforms,
             "by_platform": source_counts,
             "message": f"Collecte multi-sources achevée : {total_new} nouvelles offres intégrées.",
         }

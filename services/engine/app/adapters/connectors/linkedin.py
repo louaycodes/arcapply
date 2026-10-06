@@ -109,7 +109,7 @@ class LinkedInJobConnector(BaseJobConnector):
                                 snippet_text = snippet_el.text.strip() if snippet_el else ""
 
                                 base_desc = snippet_text if snippet_text else (
-                                    f"Offre d'ingénierie et de stage chez {company} ({location_str}). "
+                                    f"Offre chez {company} ({location_str}). "
                                     f"Consultez les détails pour découvrir les missions, la stack technique et postuler."
                                 )
 
