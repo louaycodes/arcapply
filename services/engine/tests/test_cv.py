@@ -598,4 +598,80 @@ def test_cv_writer_experiences_projects_order_alignment(monkeypatch):
     assert "full-stack" in parsed.projects[1]["description"]
 
 
+def test_cv_rewrite_headline_and_company_sanitization():
+    from app.domain.cv_agent import _parse_cv_rewrite_response
+
+    raw_response = (
+        "HEADLINE:\nDéveloppeur de chaîne CI/CD\n\n"
+        "SUMMARY:\nIngénieur cloud-devops en formation, prêt à concevoir des pipelines pour les systèmes de contrôle aérien chez sunnyNouveau.\n\n"
+        "---EXPERIENCES---\n"
+        "EXP_1 (pour Dev chez Tech):\nDescription exp 1.\n\n"
+        "---PROJECTS---\n"
+        "PROJ_1 (pour Proj 1):\nDescription proj 1.\n"
+    )
+
+    parsed = _parse_cv_rewrite_response(raw_response, n_exp=1, n_proj=1, company="sunnyNouveau")
+    assert parsed.headline == "Développeur de chaîne CI/CD"
+    assert "sunnyNouveau" not in parsed.summary
+    assert "chez" not in parsed.summary
+    assert "contrôle aérien." in parsed.summary
+
+
+def test_action_noun_role_mapping():
+    from app.domain.cv import clean_target_role
+
+    assert clean_target_role("Développement d’une chaîne CI CD pour l’infrastructure IT", "Thales") == "Développeur de chaîne CI/CD pour l’infrastructure IT"
+    assert clean_target_role("Conception d'une architecture microservices", "Google") == "Ingénieur Concepteur architecture microservices"
+    assert clean_target_role("Automatisation de tests E2E", "Criteo") == "Ingénieur Automatisation tests E2E"
+
+
+def test_put_targeted_cv_in_place_edit():
+    from app.domain.models import JobOffer, MasterProfile
+
+    with Session(engine) as session:
+        job = JobOffer(
+            id="job-edit-inplace",
+            platform="linkedin",
+            external_id="ext-inplace-1",
+            title="Stage PFE Développeur Cloud",
+            company="Thales",
+            description_raw="DevOps et CI/CD.",
+            user_id="louay",
+        )
+        session.add(job)
+
+        profile = session.get(MasterProfile, "default-profile")
+        if not profile:
+            profile = MasterProfile(
+                id="default-profile",
+                user_id="louay",
+                full_name="Louay Zorai",
+                email="louay@test.com",
+            )
+        profile.is_complete = True
+        session.add(profile)
+        session.commit()
+
+    # 1. Générer le CV
+    gen_resp = client.post("/api/cv/generate/job-edit-inplace?lang=fr")
+    assert gen_resp.status_code == 200
+
+    # 2. Modifier sur place via PUT
+    edit_payload = {
+        "headline": "Développeur de chaîne CI/CD",
+        "summary": "Ingénieur DevOps expérimenté en automatisation chez Thales.",
+        "matched_skills": ["Docker", "Kubernetes", "GitLab CI"],
+    }
+    put_resp = client.put("/api/cv/targeted/job-edit-inplace?lang=fr", json=edit_payload)
+    assert put_resp.status_code == 200
+    data = put_resp.json()
+
+    assert data["headline"] == "Développeur de chaîne CI/CD"
+    # Vérification : le nom de l'entreprise est bien nettoyé du résumé
+    assert "Thales" not in data["summary"]
+    assert "Développeur de chaîne CI/CD" in data["html_content"]
+    assert "Docker" in data["matched_skills"]
+
+
+
 

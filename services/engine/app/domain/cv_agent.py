@@ -40,6 +40,7 @@ class CVWriterState(TypedDict):
     selected_experiences: Optional[List[Dict[str, Any]]]
     selected_projects: Optional[List[Dict[str, Any]]]
     ats_match: Optional[Dict[str, Any]]
+    rewritten_headline: Optional[str]
     rewritten_summary: Optional[str]
     rewritten_experiences: Optional[List[Dict[str, str]]]
     rewritten_projects: Optional[List[Dict[str, str]]]
@@ -51,10 +52,12 @@ class CVRewriteResult:
     """Resultat de l'agent redacteur de CV."""
     def __init__(
         self,
+        headline: str = "",
         summary: str = "",
         experiences: Optional[List[Dict[str, str]]] = None,
         projects: Optional[List[Dict[str, str]]] = None,
     ):
+        self.headline = headline
         self.summary = summary
         self.experiences = experiences or []
         self.projects = projects or []
@@ -357,14 +360,19 @@ def node_rewrite_cv_sections(state: CVWriterState) -> dict:
 - Emphasize the aspects of each project/experience that are MOST RELEVANT to this specific role.
 - Be concise and impactful (CV style, not prose).
 - Never copy-paste the original descriptions verbatim.
+- HEADLINE RULE: The internship/job topic title is "{role}". Propose the best professional engineering profile title/headline for the candidate (2 to 5 words, e.g., "CI/CD Pipeline Developer", "Cloud & DevOps Engineer", "Embedded Systems Engineer"). NEVER use action nouns, tasks, or project titles (NEVER write "Development of a CI/CD pipeline...", "Designing...", "Implementation...").
+- SUMMARY RULE (ABSOLUTE): NEVER mention the target company name ("{comp}") or phrases like "at {comp}", "for {comp}" in the SUMMARY. The CV is the candidate's personal resume. Mentioning the target company belongs exclusively in the cover letter, NEVER on the CV.
 
 === YOUR TASK ===
-Rewrite the following CV sections oriented towards the position of {role} at {comp}.
+Rewrite the following CV sections oriented towards the engineering profile required for {role}.
 
 Output in this EXACT format (use --- as separator):
 
+HEADLINE:
+[A concise 2-5 word professional candidate headline, e.g., CI/CD Pipeline Developer]
+
 SUMMARY:
-[Write a 2-3 sentence professional summary that positions the candidate specifically for this {role} role at {comp}. Highlight the most relevant skills and experience angles.]
+[Write a 2-3 sentence professional summary that positions the candidate specifically for this engineering profile. Highlight the most relevant skills and experience angles. NEVER mention "{comp}".]
 
 ---EXPERIENCES---
 {exp_prompt_str}
@@ -396,14 +404,19 @@ SUMMARY:
 - Pertinence ciblee : Mets en avant les aspects de chaque projet/experience les PLUS PERTINENTS pour ce poste specifique.
 - Style CV percutant : Sois concis, technique et percutant (style CV, pas de prose creuse).
 - Pas de copier-coller : Ne JAMAIS copier-coller les descriptions originales mot pour mot.
+- REGLE DU TITRE DU PROFIL (HEADLINE) : Le titre du poste ou sujet de stage PFE cible est "{role}". Propose le meilleur titre de profil d'ingenieur pour le candidat (2 a 5 mots, ex: "Developpeur de chaine CI/CD", "Ingenieur Cloud & DevOps", "Ingenieur DevOps & CI/CD", "Ingenieur Conception Logicielle"). Ce titre DOIT designer un profil professionnel d'ingenieur, JAMAIS un nom d'action, une tache ou un sujet de stage (NE JAMAIS ecrire "Developpement d'une chaine...", "Conception de...", "Mise en place...").
+- REGLE ABSOLUE DU SUMMARY (ZERO NOM D'ENTREPRISE) : Ne mentionne JAMAIS le nom de l'entreprise cible ("{comp}") ni d'expressions comme "chez {comp}", "au sein de {comp}" ou "pour {comp}" dans le SUMMARY. Le CV est un document personnel centre sur le profil et les competences du candidat. La mention de l'entreprise cible est strictement interdite dans le CV (reservee a la lettre de motivation).
 
 === TA MISSION ===
-Reecris les sections suivantes du CV orientees vers le poste de {role} chez {comp}.
+Reecris les sections suivantes du CV orientees vers le profil d'ingenieur correspondant au besoin de "{role}".
 
 Reponds dans ce format EXACT (utilise --- comme separateur) :
 
+HEADLINE:
+[Un intitule de profil professionnel d'ingenieur percutant de 2 a 5 mots, ex: Developpeur de chaine CI/CD]
+
 SUMMARY:
-[Redige une accroche professionnelle de 2-3 phrases qui positionne le candidat specifiquement pour ce poste de {role} chez {comp}. Mets en avant les competences et angles d'experience les plus pertinents.]
+[Redige une accroche professionnelle de 2-3 phrases qui positionne le candidat specifiquement pour ce profil d'ingenieur. Mets en avant les competences et angles d'experience les plus pertinents. NE MENTIONNE JAMAIS "{comp}".]
 
 ---EXPERIENCES---
 {exp_prompt_str}
@@ -427,6 +440,7 @@ SUMMARY:
         if not raw or len(raw) < 100:
             logger.error("Reponse LLM CV trop courte ou vide.")
             return {
+                "rewritten_headline": None,
                 "rewritten_summary": None,
                 "rewritten_experiences": None,
                 "rewritten_projects": None,
@@ -434,8 +448,9 @@ SUMMARY:
             }
 
         # Parse le resultat structure
-        result = _parse_cv_rewrite_response(raw, n_experiences, n_projects)
+        result = _parse_cv_rewrite_response(raw, n_experiences, n_projects, company=comp)
         return {
+            "rewritten_headline": result.headline or None,
             "rewritten_summary": result.summary or None,
             "rewritten_experiences": result.experiences or None,
             "rewritten_projects": result.projects or None,
@@ -444,6 +459,7 @@ SUMMARY:
     except Exception as e:
         logger.error(f"CV rewrite Groq echoue: {e}")
         return {
+            "rewritten_headline": None,
             "rewritten_summary": None,
             "rewritten_experiences": None,
             "rewritten_projects": None,
@@ -451,14 +467,39 @@ SUMMARY:
         }
 
 
-def _parse_cv_rewrite_response(raw: str, n_exp: int, n_proj: int) -> CVRewriteResult:
-    """Parse la reponse structuree du LLM pour extraire summary, experiences et projets reecrits."""
+def _parse_cv_rewrite_response(raw: str, n_exp: int, n_proj: int, company: str = "") -> CVRewriteResult:
+    """Parse la reponse structuree du LLM pour extraire headline, summary, experiences et projets reecrits."""
     result = CVRewriteResult()
 
+    # Extract headline
+    headline_match = re.search(r"HEADLINE:\s*\n?(.*?)(?=SUMMARY:|---EXPERIENCES---|---PROJECTS---|$)", raw, re.DOTALL | re.IGNORECASE)
+    if headline_match:
+        hl = headline_match.group(1).strip().strip('"').strip("'").strip("«»[]")
+        hl = hl.split("\n")[0].strip()
+        if hl and len(hl) < 100:
+            result.headline = hl
+
     # Extract summary
-    summary_match = re.search(r"SUMMARY:\s*\n(.*?)(?=---EXPERIENCES---|$)", raw, re.DOTALL | re.IGNORECASE)
+    summary_match = re.search(r"SUMMARY:\s*\n?(.*?)(?=---EXPERIENCES---|---PROJECTS---|$)", raw, re.DOTALL | re.IGNORECASE)
     if summary_match:
         result.summary = summary_match.group(1).strip()
+
+    # Nettoyage systematique et absolu du nom de l'entreprise dans le summary
+    if result.summary and company:
+        comp_esc = re.escape(company.strip())
+        if comp_esc:
+            # 1. Phrases comme "chez <Entreprise>", "au sein de <Entreprise>", "pour <Entreprise>", "at <Company>"
+            result.summary = re.sub(
+                rf"(?i)\s+(?:chez|au sein de|pour|auprès de|at|with|in)\s+{comp_esc}\b[.]?",
+                ".",
+                result.summary,
+            )
+            # 2. Suppression residuelle du nom de l'entreprise seul
+            result.summary = re.sub(rf"(?i)\b{comp_esc}\b", "", result.summary)
+            # 3. Ponctuation propre
+            result.summary = re.sub(r"\s+([.,;:!?])", r"\1", result.summary)
+            result.summary = re.sub(r"\.\s*\.", ".", result.summary)
+            result.summary = re.sub(r"\s{2,}", " ", result.summary).strip()
 
     # Extract experiences
     exp_section = re.search(r"---EXPERIENCES---\s*\n(.*?)(?=---PROJECTS---|$)", raw, re.DOTALL | re.IGNORECASE)
@@ -538,6 +579,7 @@ def execute_cv_writer_agent(
         "selected_experiences": selected_experiences,
         "selected_projects": selected_projects,
         "ats_match": ats_dict,
+        "rewritten_headline": None,
         "rewritten_summary": None,
         "rewritten_experiences": None,
         "rewritten_projects": None,
@@ -551,6 +593,7 @@ def execute_cv_writer_agent(
         raise RuntimeError(final_state["errors"][0])
 
     return CVRewriteResult(
+        headline=final_state.get("rewritten_headline") or "",
         summary=final_state.get("rewritten_summary") or "",
         experiences=final_state.get("rewritten_experiences") or [],
         projects=final_state.get("rewritten_projects") or [],

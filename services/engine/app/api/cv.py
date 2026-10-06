@@ -10,7 +10,7 @@ from app.adapters.pdf import PDFCompilerService
 from app.adapters.database import get_session
 from app.api.auth import get_current_username
 from app.domain.ats import ATSMatchingEngine
-from app.domain.cv import CVGeneratorService, CVParserService, render_custom_cv_html
+from app.domain.cv import CVGeneratorService, CVParserService, clean_target_role, render_custom_cv_html
 from app.domain.models import (
     CompilePDFRequest,
     CustomCVData,
@@ -19,6 +19,8 @@ from app.domain.models import (
     MasterProfile,
     TargetedCV,
     TargetedCVRead,
+    TargetedCVUpdateRequest,
+    utc_now,
 )
 
 router = APIRouter(prefix="/api/cv", tags=["CV Generation & PDF"])
@@ -222,6 +224,119 @@ def generate_targeted_cv(
         session.commit()
         session.refresh(new_cv)
         cv = new_cv
+
+    return TargetedCVRead(
+        id=cv.id,
+        job_id=cv.job_id,
+        profile_id=cv.profile_id,
+        headline=cv.headline,
+        summary=cv.summary,
+        matched_skills=cv.matched_skills,
+        transferable_skills=cv.transferable_skills,
+        experiences=cv.experiences,
+        projects=cv.projects,
+        educations=cv.educations,
+        html_content=cv.html_content,
+        language=cv.language,
+        created_at=cv.created_at,
+    )
+
+
+@router.put("/targeted/{job_id}", response_model=TargetedCVRead)
+def update_targeted_cv(
+    job_id: str,
+    req: TargetedCVUpdateRequest,
+    lang: str = Query("fr", description="Langue du CV : 'fr' ou 'en'"),
+    username: str = Depends(get_current_username),
+    session: Session = Depends(get_session),
+) -> TargetedCVRead:
+    """
+    Permet à l'utilisateur de modifier directement sur place le CV ciblé généré.
+    Met à jour les sections et recompile instantanément le rendu HTML pour l'aperçu PDF.
+    """
+    normalized_lang = "en" if lang.lower().strip() == "en" else "fr"
+
+    job = session.get(JobOffer, job_id)
+    if not job or job.user_id != username:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error_code": "JOB_NOT_FOUND", "message": f"Offre {job_id} introuvable."},
+        )
+
+    profile = _get_user_profile(session, username)
+    if not profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error_code": "PROFILE_NOT_FOUND", "message": "Master Profile introuvable."},
+        )
+
+    statement = select(TargetedCV).where(
+        TargetedCV.job_id == job_id,
+        TargetedCV.language == normalized_lang,
+        TargetedCV.user_id == username,
+    )
+    cv = session.exec(statement).first()
+    if not cv:
+        cv, _, _ = _get_or_create_cv(session, job_id, lang=normalized_lang, username=username)
+
+    if req.headline is not None:
+        cv.headline = clean_target_role(req.headline, job.company or "", lang=normalized_lang)
+
+    if req.summary is not None:
+        cleaned_summary = req.summary.strip()
+        if job.company:
+            comp_esc = re.escape(job.company.strip())
+            cleaned_summary = re.sub(
+                rf"(?i)\s+(?:chez|au sein de|pour|auprès de|at|with|in)\s+{comp_esc}\b[.]?",
+                ".",
+                cleaned_summary,
+            )
+            cleaned_summary = re.sub(rf"(?i)\b{comp_esc}\b", "", cleaned_summary)
+            cleaned_summary = re.sub(r"\s+([.,;:!?])", r"\1", cleaned_summary)
+            cleaned_summary = re.sub(r"\.\s*\.", ".", cleaned_summary)
+            cleaned_summary = re.sub(r"\s{2,}", " ", cleaned_summary).strip()
+        cv.summary = cleaned_summary
+
+    if req.matched_skills is not None:
+        cv.matched_skills = req.matched_skills
+
+    if req.transferable_skills is not None:
+        cv.transferable_skills = req.transferable_skills
+
+    if req.experiences is not None:
+        cv.experiences = req.experiences
+
+    if req.projects is not None:
+        cv.projects = req.projects
+
+    if req.educations is not None:
+        cv.educations = req.educations
+
+    target_skills_lower = {s.lower() for s in (cv.matched_skills + cv.transferable_skills)}
+    categorized_skills = CVGeneratorService._build_categorized_skills(
+        profile=profile,
+        target_skills_lower=target_skills_lower,
+        lang=normalized_lang,
+    )
+
+    cv.html_content = CVGeneratorService.render_html_template(
+        profile=profile,
+        job=job,
+        headline=cv.headline,
+        summary=cv.summary,
+        matched_skills=cv.matched_skills,
+        transferable_skills=cv.transferable_skills,
+        experiences=cv.experiences,
+        projects=cv.projects,
+        educations=cv.educations,
+        categorized_skills=categorized_skills,
+        language=normalized_lang,
+    )
+
+    cv.updated_at = utc_now()
+    session.add(cv)
+    session.commit()
+    session.refresh(cv)
 
     return TargetedCVRead(
         id=cv.id,

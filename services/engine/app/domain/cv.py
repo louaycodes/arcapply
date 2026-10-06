@@ -225,12 +225,46 @@ def clean_target_role(title: str, company: str = "", lang: str = "fr") -> str:
         cleaned,
     )
 
+    # 3.5 Protéger les acronymes techniques avec slash ou espace comme CI/CD ou TCP/IP
+    cleaned = re.sub(r"(?i)\bci\s*[/ ]\s*cd\b", "__CICD__", cleaned)
+    cleaned = re.sub(r"(?i)\btcp\s*[/ ]\s*ip\b", "__TCPIP__", cleaned)
+    cleaned = re.sub(r"(?i)\bi\s*[/ ]\s*o\b", "__IO__", cleaned)
+
     # 4. Nettoyer la ponctuation résiduelle et séparateurs
     cleaned = re.sub(r"[\(\)\[\]{}—–\-:|/]+", " ", cleaned)
     cleaned = re.sub(r"\s+", " ", cleaned).strip()
 
+    # Rétablir les acronymes protégés
+    cleaned = cleaned.replace("__CICD__", "CI/CD").replace("__TCPIP__", "TCP/IP").replace("__IO__", "I/O")
+
     # 5. Suppression des petits mots de liaison orphelins au début
     cleaned = re.sub(r"^(?:de|d'|d’|pour|en|a|à)\s+", "", cleaned, flags=re.IGNORECASE).strip()
+
+    # 5.5 Conversion déterministe des noms d'action/tâches en vrais intitulés de profil d'ingénieur
+    action_role_mappings = [
+        (r"(?i)^développement\s+(?:d['’]une\s+chaîne\s+|d['’]une\s+chaine\s+)(.*)", r"Développeur de chaîne \1"),
+        (r"(?i)^développement\s+(?:d['’]une\s+|de\s+la\s+|d['’]|de\s+)?(.*)", r"Développeur \1"),
+        (r"(?i)^developpement\s+(?:d['’]une\s+chaîne\s+|d['’]une\s+chaine\s+)(.*)", r"Développeur de chaîne \1"),
+        (r"(?i)^developpement\s+(?:d['’]une\s+|de\s+la\s+|d['’]|de\s+)?(.*)", r"Développeur \1"),
+        (r"(?i)^conception\s+(?:d['’]une\s+|de\s+la\s+|d['’]|de\s+)?(.*)", r"Ingénieur Concepteur \1"),
+        (r"(?i)^mise\s+en\s+(?:place|œuvre|oeuvre)\s+(?:d['’]une\s+|de\s+la\s+|d['’]|de\s+)?(.*)", r"Ingénieur \1"),
+        (r"(?i)^administration\s+(?:d['’]une\s+|de\s+la\s+|d['’]|de\s+)?(.*)", r"Administrateur \1"),
+        (r"(?i)^intégration\s+(?:d['’]une\s+|de\s+la\s+|d['’]|de\s+)?(.*)", r"Ingénieur Intégrateur \1"),
+        (r"(?i)^integration\s+(?:d['’]une\s+|de\s+la\s+|d['’]|de\s+)?(.*)", r"Ingénieur Intégrateur \1"),
+        (r"(?i)^automatisation\s+(?:d['’]une\s+|de\s+la\s+|d['’]|de\s+)?(.*)", r"Ingénieur Automatisation \1"),
+        (r"(?i)^déploiement\s+(?:d['’]une\s+|de\s+la\s+|d['’]|de\s+)?(.*)", r"Ingénieur DevOps \1"),
+        (r"(?i)^deploiement\s+(?:d['’]une\s+|de\s+la\s+|d['’]|de\s+)?(.*)", r"Ingénieur DevOps \1"),
+        (r"(?i)^architecture\s+(?:d['’]une\s+|de\s+la\s+|d['’]|de\s+)?(.*)", r"Architecte \1"),
+        (r"(?i)^support\s+(?:technique\s+)?(.*)", r"Ingénieur Support \1"),
+        (r"(?i)^development\s+of\s+a\s+pipeline\s+(.*)", r"CI/CD Pipeline Developer \1"),
+        (r"(?i)^development\s+of\s+(.*)", r"Developer \1"),
+        (r"(?i)^building\s+(.*)", r"Engineer \1"),
+        (r"(?i)^implementation\s+of\s+(.*)", r"Engineer \1"),
+    ]
+    for pat, repl in action_role_mappings:
+        if re.search(pat, cleaned):
+            cleaned = re.sub(pat, repl, cleaned).strip()
+            break
 
     if len(cleaned) < 2:
         return "Software Engineer" if lang == "en" else "Ingénieur Logiciel"
@@ -416,9 +450,25 @@ class CVGeneratorService:
                 selected_experiences=selected_experiences,
                 selected_projects=selected_projects,
             )
-            # Appliquer le summary reecrit
+            # Appliquer le titre de profil reecrit par le LLM
+            if getattr(cv_rewrite, "headline", None) and cv_rewrite.headline.strip():
+                headline = clean_target_role(cv_rewrite.headline, job.company or "", lang=lang)
+
+            # Appliquer le summary reecrit avec garantie absolue zero nom d'entreprise
             if cv_rewrite.summary:
-                summary = cv_rewrite.summary
+                cleaned_summary = cv_rewrite.summary
+                if job.company:
+                    comp_esc = re.escape(job.company.strip())
+                    cleaned_summary = re.sub(
+                        rf"(?i)\s+(?:chez|au sein de|pour|auprès de|at|with|in)\s+{comp_esc}\b[.]?",
+                        ".",
+                        cleaned_summary,
+                    )
+                    cleaned_summary = re.sub(rf"(?i)\b{comp_esc}\b", "", cleaned_summary)
+                    cleaned_summary = re.sub(r"\s+([.,;:!?])", r"\1", cleaned_summary)
+                    cleaned_summary = re.sub(r"\.\s*\.", ".", cleaned_summary)
+                    cleaned_summary = re.sub(r"\s{2,}", " ", cleaned_summary).strip()
+                summary = cleaned_summary
 
             # Appliquer les descriptions d'experiences reecrites
             if cv_rewrite.experiences:

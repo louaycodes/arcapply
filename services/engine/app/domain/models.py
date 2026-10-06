@@ -502,6 +502,16 @@ class TargetedCVRead(SQLModel):
     created_at: datetime
 
 
+class TargetedCVUpdateRequest(SQLModel):
+    headline: Optional[str] = None
+    summary: Optional[str] = None
+    matched_skills: Optional[list[str]] = None
+    transferable_skills: Optional[list[str]] = None
+    experiences: Optional[list[dict]] = None
+    projects: Optional[list[dict]] = None
+    educations: Optional[list[dict]] = None
+
+
 # ============================================================================
 # Cover Letter (Anti-Cliché & Fact-Based Sober Pitch)
 # ============================================================================
