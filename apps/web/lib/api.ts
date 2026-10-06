@@ -544,6 +544,40 @@ export async function generateTargetedCV(jobId: string, lang: string = "fr"): Pr
   return res.json();
 }
 
+export interface TargetedCVUpdateRequest {
+  headline?: string;
+  summary?: string;
+  matched_skills?: string[];
+  transferable_skills?: string[];
+  experiences?: any[];
+  projects?: any[];
+  educations?: any[];
+}
+
+export async function updateTargetedCV(
+  jobId: string,
+  payload: TargetedCVUpdateRequest,
+  lang: string = "fr"
+): Promise<TargetedCV> {
+  const res = await authFetch(`${API_BASE_URL}/api/cv/targeted/${jobId}?lang=${lang}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const message =
+      typeof errorData?.detail === "string"
+        ? localizeServerMessage(errorData.detail)
+        : localizeServerMessage(errorData?.detail?.message) ||
+          trStored("Erreur lors de la mise à jour du CV.", "Error updating CV.");
+    throw new Error(message);
+  }
+  return res.json();
+}
+
 export function getCVPreviewUrl(jobId: string, lang: string = "fr"): string {
   let authParams = "";
   if (typeof window !== "undefined") {
