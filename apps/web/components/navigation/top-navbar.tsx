@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useMobileNav } from "./sidebar";
 import { useAppLanguage } from "@/lib/language-context";
+import { useAuth } from "@/components/auth/auth-context";
 
 const PAGE_META: Record<string, { title: { fr: string; en: string }; icon: React.ComponentType<{ className?: string }> }> = {
   "/": { title: { fr: "Tableau de bord", en: "Dashboard" }, icon: LayoutDashboard },
@@ -31,8 +32,13 @@ const PAGE_META: Record<string, { title: { fr: string; en: string }; icon: React
 
 export function TopNavbar() {
   const pathname = usePathname();
+  const { user } = useAuth();
   const { open: openMobileNav } = useMobileNav();
   const { language, t } = useAppLanguage();
+
+  if (!user || pathname === "/landing" || pathname === "/login") {
+    return null;
+  }
 
   // Trouver le titre de la page courante
   const currentKey = Object.keys(PAGE_META).find((k) =>

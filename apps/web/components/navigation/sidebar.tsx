@@ -185,7 +185,13 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
 }
 
 export function Sidebar() {
+  const pathname = usePathname();
+  const { user } = useAuth();
   const { isOpen, close } = useMobileNav();
+
+  if (!user || pathname === "/landing" || pathname === "/login") {
+    return null;
+  }
 
   return (
     <>

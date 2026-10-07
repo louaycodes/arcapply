@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, loginUser, registerUser, fetchCurrentUser } from "@/lib/api";
 import { Loader2 } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { LoginForm } from "@/components/auth/login-form";
 import { LanguageSwitcher } from "@/components/navigation/language-switcher";
 import { ThemeToggle } from "@/components/navigation/theme-toggle";
@@ -89,6 +90,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("arcapply_user");
   };
 
+  const pathname = usePathname();
+
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-screen bg-[#FBF9F5] dark:bg-[#12100E]">
@@ -100,7 +103,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // Permettre l'accès aux routes publiques (Landing page sur "/", "/landing" et page de login dédiée)
   if (!user) {
+    const isPublicRoute = pathname === "/" || pathname === "/landing" || pathname === "/login";
+    if (isPublicRoute) {
+      return (
+        <AuthContext.Provider value={{ user, token, isLoading, login, logout, register }}>
+          {children}
+        </AuthContext.Provider>
+      );
+    }
+
+    // Pour les routes protégées du cockpit (/radar, /profile, /settings, /cv, etc.), afficher l'accès sécurisé
     return (
       <AuthContext.Provider value={{ user, token, isLoading, login, logout, register }}>
         <div className="relative min-h-screen w-full flex items-center justify-center bg-[#F7F3EC] dark:bg-[#12100E] p-4 pt-16 font-sans selection:bg-orange-100">
@@ -108,7 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             <LanguageSwitcher />
             <ThemeToggle />
           </div>
-          <LoginForm />
+          <LoginForm redirectTo={pathname} />
         </div>
       </AuthContext.Provider>
     );

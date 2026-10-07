@@ -17,9 +17,17 @@ import {
   Target,
 } from "lucide-react";
 import { useAppLanguage } from "@/lib/language-context";
+import { useAuth } from "@/components/auth/auth-context";
+import { LandingPage } from "@/components/landing/landing-page";
 
 export default function HomePage() {
+  const { user } = useAuth();
   const { t } = useAppLanguage();
+
+  if (!user) {
+    return <LandingPage />;
+  }
+
   return (
     <div className="p-6 sm:p-10 max-w-6xl mx-auto space-y-10">
       {/* ── Hero Welcome ── */}
