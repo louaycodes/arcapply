@@ -389,17 +389,6 @@ export async function clearAllJobs(): Promise<{ status: string; message: string 
   return res.json();
 }
 
-export async function deduplicateJobsApi(): Promise<{ status: string; duplicates_removed: number; message: string }> {
-  const res = await authFetch(`${API_BASE_URL}/api/jobs/deduplicate`, {
-    method: "POST",
-  });
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(localizeServerMessage(errorData?.detail?.message) || trStored("Échec de la déduplication des offres.", "Failed to deduplicate offers."));
-  }
-  return res.json();
-}
-
 export function createRadarEventSource(
   onJobDiscovered?: (job: JobOffer) => void,
   onProgress?: (progress: { platform: string; status: string; count?: number; message: string }) => void,

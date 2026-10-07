@@ -529,21 +529,15 @@ def wipe_user_jobs(
 
 
 @router.post("/deduplicate")
-async def clean_duplicate_jobs(
+def clean_duplicate_jobs(
     username: str = Depends(get_current_username),
     session: Session = Depends(get_session),
 ):
     """
-    Déclenche le nettoyage et la fusion des doublons pour l'utilisateur courant.
+    Nettoyage et fusion des doublons pour l'utilisateur courant (opération silencieuse d'arrière-plan).
     Préserve l'offre la plus avancée et réassigne tous les documents associés.
     """
     removed_count = deduplicate_jobs_for_user(session, username)
-    if removed_count > 0:
-        await broadcast_event(
-            "JOBS_DEDUPLICATED",
-            {"removed_count": removed_count, "user": username},
-            target_user=username,
-        )
     return {
         "status": "success",
         "duplicates_removed": removed_count,
