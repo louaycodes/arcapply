@@ -527,18 +527,6 @@ export default function ProfilePage() {
             {t("Renseignez vos coordonnées, stages, expériences, compétences, activités extra-professionnelles et langues pour générer votre CV complet.", "Enter your contact details, internships, experience, skills, extracurricular activities and languages to generate your complete CV.")}
           </p>
         </div>
-
-        <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto">
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={isSaving}
-            className="px-4 py-2 rounded-xl bg-primary hover:bg-orange-700 text-white text-sm font-semibold flex items-center gap-2 shadow-sm transition-all disabled:opacity-50 cursor-pointer"
-          >
-            <Save className="w-4 h-4" />
-            <span>{isSaving ? t("Sauvegarde...", "Saving...") : t("Sauvegarder", "Save")}</span>
-          </button>
-        </div>
       </div>
 
       {/* Notification Toast */}
