@@ -64,7 +64,7 @@ class JobteaserJobConnector(BaseJobConnector):
                     full_url = f"https://www.jobteaser.com{href}" if href.startswith("/") else href
 
                     id_match = re.search(r"/job-offers/([0-9a-fA-F-]+)", href)
-                    ext_id = f"jt-{id_match.group(1)}" if id_match else f"jt-{abs(hash(full_url)) % 1000000}"
+                    ext_id = f"jt-{id_match.group(1)}" if id_match else self.generate_stable_id("jt", full_url)
 
                     title = raw_text if raw_text and len(raw_text) > 4 else "Stage PFE Jobteaser"
                     company = "Entreprise Partenaire Jobteaser"

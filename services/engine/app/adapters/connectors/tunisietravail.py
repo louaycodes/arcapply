@@ -79,7 +79,7 @@ class TunisieTravailJobConnector(BaseJobConnector):
                                 company = comp_match.group(1).strip() if comp_match else "Entreprise TunisieTravail"
 
                                 id_match = re.search(r"-(\d+)/?$", job_url)
-                                ext_id = f"tt-{id_match.group(1)}" if id_match else f"tt-{abs(hash(job_url)) % 1000000}"
+                                ext_id = f"tt-{id_match.group(1)}" if id_match else self.generate_stable_id("tt", job_url)
 
                                 snippet_el = art.find("div", class_="entry-summary") or art.find("p")
                                 snippet = snippet_el.text.strip() if snippet_el else f"Annonce de stage PFE sur TunisieTravail : {raw_title}"

@@ -65,7 +65,7 @@ class EmploiTunisieJobConnector(BaseJobConnector):
                         company = comp_el.text.strip() if comp_el else "Recruteur Tech EmploiTunisie"
 
                         id_match = re.search(r"/(\d+)", href)
-                        ext_id = f"et-{id_match.group(1)}" if id_match else f"et-{abs(hash(full_url)) % 1000000}"
+                        ext_id = f"et-{id_match.group(1)}" if id_match else self.generate_stable_id("et", full_url)
 
                         results.append({
                             "external_id": ext_id,

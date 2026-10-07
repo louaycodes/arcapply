@@ -272,7 +272,7 @@ class Top100EnterprisesJobConnector(BaseJobConnector):
                         seen_urls.add(href)
                         full_url = href if href.startswith("http") else urllib.parse.urljoin(careers_url, href)
                         c_val = company.get("country", "France")
-                        ext_id = f"dir-{company['id']}-{abs(hash(full_url + text_content)) % 10000000}"
+                        ext_id = self.generate_stable_id(f"dir-{company['id']}", full_url + text_content)
 
                         job_entry = {
                             "external_id": ext_id,

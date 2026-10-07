@@ -61,7 +61,7 @@ class HelloWorkJobConnector(BaseJobConnector):
 
                                 full_url = href if href.startswith("http") else f"https://www.hellowork.com{href}"
                                 id_m = re.search(r"/emplois/(\d+)", href)
-                                ext_id = f"hw-{id_m.group(1)}" if id_m else f"hw-{abs(hash(full_url)) % 1000000}"
+                                ext_id = f"hw-{id_m.group(1)}" if id_m else self.generate_stable_id("hw", full_url)
 
                                 results.append({
                                     "external_id": ext_id,

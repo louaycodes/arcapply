@@ -59,7 +59,7 @@ class StageTunisieJobConnector(BaseJobConnector):
                         comp_el = item.find("div", class_=lambda c: c and "company" in c)
                         company = comp_el.text.strip() if comp_el else "Entreprise PFE Tunisie"
 
-                        ext_id = f"st-{abs(hash(full_url)) % 1000000}"
+                        ext_id = self.generate_stable_id("st", full_url)
 
                         results.append({
                             "external_id": ext_id,

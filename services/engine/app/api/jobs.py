@@ -31,6 +31,7 @@ from app.domain.anti_rescrape import (
 )
 from app.ports.connectors import BaseJobConnector
 from app.api.auth import get_current_username
+from app.domain.deduplication import deduplicate_jobs_for_user
 
 class JobTransitionRequest(SQLModel):
     new_status: str
@@ -525,4 +526,22 @@ def wipe_user_jobs(
         session.delete(j)
     session.commit()
     return {"status": "ok", "deleted_count": count, "user": username}
+
+
+@router.post("/deduplicate")
+def clean_duplicate_jobs(
+    username: str = Depends(get_current_username),
+    session: Session = Depends(get_session),
+):
+    """
+    Nettoyage et fusion des doublons pour l'utilisateur courant (opération silencieuse d'arrière-plan).
+    Préserve l'offre la plus avancée et réassigne tous les documents associés.
+    """
+    removed_count = deduplicate_jobs_for_user(session, username)
+    return {
+        "status": "success",
+        "duplicates_removed": removed_count,
+        "message": f"{removed_count} offre(s) en doublon nettoyée(s) pour {username}.",
+    }
+
 

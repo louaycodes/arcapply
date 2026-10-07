@@ -73,7 +73,7 @@ class ApecJobConnector(BaseJobConnector):
                     full_url = f"https://www.apec.fr{clean_path}" if clean_path.startswith("/") else clean_path
 
                     id_match = re.search(r"detail-offre/([0-9A-Za-z]+)", clean_path)
-                    ext_id = f"apec-{id_match.group(1)}" if id_match else f"apec-{abs(hash(full_url)) % 1000000}"
+                    ext_id = f"apec-{id_match.group(1)}" if id_match else self.generate_stable_id("apec", full_url)
 
                     # Séparer entreprise et titre si présents dans le texte du lien
                     title = raw_text
