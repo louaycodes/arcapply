@@ -308,6 +308,9 @@ def _call_groq_resilient(
             last_error = e
             continue
 
+    err_str = str(last_error).lower() if last_error else ""
+    if any(w in err_str for w in ["429", "rate_limit", "rate limit", "quota", "tokens"]):
+        raise RuntimeError("Quota de tokens Groq atteint (Rate limit / Quota journalier épuisé). Veuillez patienter quelques instants ou renseigner votre propre clé Groq dans les Paramètres.")
     raise last_error or RuntimeError("Tous les modèles LLM ont échoué.")
 
 

@@ -191,7 +191,16 @@ def generate_targeted_cv(
             detail={"error_code": "PROFILE_INCOMPLETE", "message": str(e)},
         )
     except Exception as e:
+        err_msg = str(e)
         logger.error(f"Erreur lors de la génération du CV: {e}")
+        if any(w in err_msg.lower() for w in ["quota", "token", "429", "rate_limit", "rate limit"]):
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail={
+                    "error_code": "TOKEN_QUOTA_EXCEEDED",
+                    "message": "Quota de tokens Groq atteint (Rate limit / Quota journalier épuisé). Veuillez patienter quelques instants ou renseigner votre propre clé Groq dans les Paramètres.",
+                },
+            )
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail={"error_code": "MODEL_ERROR", "message": "Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement."},

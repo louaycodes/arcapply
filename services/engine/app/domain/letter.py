@@ -641,6 +641,9 @@ RÈGLES IMPÉRATIVES DE RÉDACTION :
                     thinking_plan_result = agent_res.thinking_plan
             except Exception as e:
                 logger.error(f"Exécution Agent Rédacteur LangGraph échouée: {e}")
+                err_str = str(e).lower()
+                if any(w in err_str for w in ["quota", "token", "429", "rate_limit", "rate limit"]):
+                    raise RuntimeError("Quota de tokens Groq atteint (Rate limit / Quota journalier épuisé). Veuillez patienter quelques instants ou renseigner votre propre clé Groq dans les Paramètres.") from e
                 raise RuntimeError("Le modèle IA rencontre un problème. Veuillez réessayer ultérieurement.") from e
 
         if not raw_letter:

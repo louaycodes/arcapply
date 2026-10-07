@@ -527,14 +527,40 @@ export interface TargetedCV {
 }
 
 export async function generateTargetedCV(jobId: string, lang: string = "fr"): Promise<TargetedCV> {
-  const res = await authFetch(`${API_BASE_URL}/api/cv/generate/${jobId}?lang=${lang}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+  let res: Response;
+  try {
+    res = await authFetch(`${API_BASE_URL}/api/cv/generate/${jobId}?lang=${lang}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+  } catch (err: any) {
+    throw new Error(
+      trStored(
+        "Impossible de contacter le moteur de génération IA. Vérifiez votre connexion ou vos quotas d'API.",
+        "Unable to reach the AI generation engine. Please check your connection or API quotas."
+      )
+    );
+  }
+
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
+    if (
+      res.status === 429 ||
+      errorData?.detail?.error_code === "TOKEN_QUOTA_EXCEEDED" ||
+      (typeof errorData?.detail?.message === "string" &&
+        (errorData.detail.message.toLowerCase().includes("quota") ||
+          errorData.detail.message.toLowerCase().includes("token") ||
+          errorData.detail.message.toLowerCase().includes("rate limit")))
+    ) {
+      throw new Error(
+        trStored(
+          "Quota de tokens Groq atteint (Rate limit / Quota journalier épuisé). Veuillez patienter quelques instants ou renseigner votre propre clé Groq dans les Paramètres.",
+          "Groq token quota reached (Rate limit / Daily quota exhausted). Please wait a moment or configure your own Groq key in Settings."
+        )
+      );
+    }
     const message =
       typeof errorData?.detail === "string"
         ? localizeServerMessage(errorData.detail)
@@ -797,14 +823,40 @@ export interface CoverLetter {
 }
 
 export async function generateCoverLetter(jobId: string, lang: string = "fr"): Promise<CoverLetter> {
-  const res = await authFetch(`${API_BASE_URL}/api/letter/generate/${jobId}?lang=${lang}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+  let res: Response;
+  try {
+    res = await authFetch(`${API_BASE_URL}/api/letter/generate/${jobId}?lang=${lang}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+  } catch (err: any) {
+    throw new Error(
+      trStored(
+        "Impossible de contacter le moteur de génération IA. Vérifiez votre connexion ou vos quotas d'API.",
+        "Unable to reach the AI generation engine. Please check your connection or API quotas."
+      )
+    );
+  }
+
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
+    if (
+      res.status === 429 ||
+      errorData?.detail?.error_code === "TOKEN_QUOTA_EXCEEDED" ||
+      (typeof errorData?.detail?.message === "string" &&
+        (errorData.detail.message.toLowerCase().includes("quota") ||
+          errorData.detail.message.toLowerCase().includes("token") ||
+          errorData.detail.message.toLowerCase().includes("rate limit")))
+    ) {
+      throw new Error(
+        trStored(
+          "Quota de tokens Groq atteint (Rate limit / Quota journalier épuisé). Veuillez patienter quelques instants ou renseigner votre propre clé Groq dans les Paramètres.",
+          "Groq token quota reached (Rate limit / Daily quota exhausted). Please wait a moment or configure your own Groq key in Settings."
+        )
+      );
+    }
     const message =
       typeof errorData?.detail === "string"
         ? localizeServerMessage(errorData.detail)

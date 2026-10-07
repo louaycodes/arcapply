@@ -57,6 +57,7 @@ const MIN_ZOOM = 0.3;
 export default function StudioCVPage() {
   const { t } = useAppLanguage();
   const [cvData, setCvData] = useState<CustomCVData | null>(null);
+  const [cvLang, setCvLang] = useState<"fr" | "en">("fr");
   const [htmlContent, setHtmlContent] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isCompiling, setIsCompiling] = useState<boolean>(false);
@@ -189,6 +190,34 @@ export default function StudioCVPage() {
   useEffect(() => {
     loadInitialData();
   }, []);
+
+  // Switch CV Language between FR and EN
+  const handleLanguageSwitch = async (lang: "fr" | "en") => {
+    if (cvLang === lang) return;
+    setCvLang(lang);
+    try {
+      setIsLoading(true);
+      const profRes = await fetchCVFromProfile(lang);
+      setCvData(profRes.data);
+      setHtmlContent(profRes.html_content);
+      currentHtmlRef.current = profRes.html_content;
+      if (profRes.data) {
+        setFontSizePt(profRes.data.font_size_pt || 9.0);
+        setLineHeight(profRes.data.line_height || 1.35);
+        setMarginMm(profRes.data.margin_top_mm || 8.0);
+      }
+      showNotification(
+        "success",
+        lang === "fr"
+          ? t("CV basculé en Français.", "CV switched to French.")
+          : t("CV basculé en Anglais.", "CV switched to English.")
+      );
+    } catch (err: any) {
+      showNotification("error", err.message || t("Erreur lors du basculement de langue.", "Error switching language."));
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // 2. Setup direct in-place editable behavior on iframe
   const setupIframeEditable = useCallback(() => {
@@ -760,101 +789,87 @@ export default function StudioCVPage() {
         className="hidden"
       />
 
-      {/* Top Cockpit Header: Identity & Global Actions */}
-      <header className="px-3 sm:px-5 py-2.5 border-b border-stone-200/80 dark:border-stone-800 bg-white/85 dark:bg-stone-900/90 backdrop-blur-xl flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-xs z-20">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-orange-100 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-900/60 flex items-center justify-center text-primary dark:text-orange-400 shadow-sm">
-            <FileText className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100 tracking-tight font-display flex items-center gap-2">
-                {t("Éditeur Visuel de CV", "Visual CV Editor")}
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
-                  {t("Édition Directe", "Direct Editing")}
-                </span>
-              </h1>
-              {hasUnsavedEdits && (
-                <span className="text-[10px] text-amber-900 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded border border-amber-300 dark:border-amber-800/60 font-semibold">
-                  {t("Modifications non enregistrées", "Unsaved changes")}
-                </span>
-              )}
-            </div>
-            <p className="text-[11px] text-stone-600 dark:text-stone-400 line-clamp-1">
-              {t("Cliquez directement sur n'importe quel texte du CV pour le modifier en temps réel.", "Click any text on the CV to edit it in real time.")}
-            </p>
-          </div>
+      {/* Sleek Minimalist CV Toolbar */}
+      <header className="sticky top-0 z-20 px-3 sm:px-6 py-2.5 border-b border-stone-200/80 dark:border-stone-800 bg-white/90 dark:bg-stone-900/90 backdrop-blur-xl flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-xs">
+        {/* Left: Insertion Actions Only */}
+        <div className="flex items-center flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={insertExperienceBlock}
+            className="px-2.5 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold flex items-center gap-1.5 transition-colors border border-primary/20"
+            title={t("Insérer un stage / expérience", "Insert internship / experience")}
+          >
+            <Briefcase className="w-3.5 h-3.5" />
+            <span>{t("+ Stage", "+ Internship")}</span>
+          </button>
+          <button
+            type="button"
+            onClick={insertEducationBlock}
+            className="px-2.5 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold flex items-center gap-1.5 transition-colors border border-primary/20"
+            title={t("Insérer une formation", "Insert education")}
+          >
+            <GraduationCap className="w-3.5 h-3.5" />
+            <span>{t("+ Formation", "+ Education")}</span>
+          </button>
+          <button
+            type="button"
+            onClick={insertProjectBlock}
+            className="px-2.5 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold flex items-center gap-1.5 transition-colors border border-primary/20"
+            title={t("Insérer un projet", "Insert project")}
+          >
+            <FolderGit2 className="w-3.5 h-3.5" />
+            <span>{t("+ Projet", "+ Project")}</span>
+          </button>
+          <button
+            type="button"
+            onClick={insertSkillCategory}
+            className="px-2.5 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold flex items-center gap-1.5 transition-colors border border-primary/20"
+            title={t("Insérer des compétences", "Insert skills")}
+          >
+            <Code2 className="w-3.5 h-3.5" />
+            <span>{t("+ Compétences", "+ Skills")}</span>
+          </button>
         </div>
 
-        {/* Global Toolbar Buttons */}
-        <div className="flex items-center flex-wrap gap-2">
-          {/* Fullscreen Toggle */}
-          <button
-            type="button"
-            onClick={() => setIsFullscreen((prev) => !prev)}
-            className={`px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm ${
-              isFullscreen
-                ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20"
-                : "border-border/80 bg-muted/40 hover:bg-muted text-foreground"
-            }`}
-            title={isFullscreen ? t("Quitter le mode plein écran (Échap)", "Exit full screen (Esc)") : t("Agrandir en plein écran pour un visuel maximal", "Expand to full screen for maximum visibility")}
-          >
-            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-            <span className="hidden sm:inline">{isFullscreen ? t("Fenêtre normale", "Normal window") : t("Plein Écran", "Full Screen")}</span>
-          </button>
+        {/* Right: Language Toggle & Download Button */}
+        <div className="flex items-center gap-2.5">
+          {/* FR / EN Language Switch */}
+          <div className="inline-flex items-center rounded-lg border border-stone-200 dark:border-stone-800 bg-stone-100/80 dark:bg-stone-800/80 p-0.5 text-xs font-semibold">
+            <button
+              type="button"
+              onClick={() => handleLanguageSwitch("fr")}
+              disabled={isLoading || isCompiling}
+              className={`px-2.5 py-1 rounded-md transition-all ${
+                cvLang === "fr"
+                  ? "bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 shadow-xs font-bold"
+                  : "text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
+              }`}
+            >
+              FR
+            </button>
+            <button
+              type="button"
+              onClick={() => handleLanguageSwitch("en")}
+              disabled={isLoading || isCompiling}
+              className={`px-2.5 py-1 rounded-md transition-all ${
+                cvLang === "en"
+                  ? "bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 shadow-xs font-bold"
+                  : "text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
+              }`}
+            >
+              EN
+            </button>
+          </div>
 
-          {/* Upload Button */}
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-            className="px-3 py-1.5 rounded-lg border border-border/80 bg-muted/40 hover:bg-muted text-xs font-semibold text-foreground flex items-center gap-1.5 transition-all shadow-sm disabled:opacity-50"
-          >
-            <Upload className={`w-3.5 h-3.5 ${isUploading ? "animate-bounce" : ""}`} />
-            <span>{isUploading ? t("Lecture...", "Reading...") : t("Importer CV (PDF/TXT)", "Import CV (PDF/TXT)")}</span>
-          </button>
-
-          {/* Reset from Profile */}
-          <button
-            type="button"
-            onClick={handleResetMasterProfile}
-            className="px-3 py-1.5 rounded-lg border border-border/80 bg-muted/40 hover:bg-muted text-xs font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-all shadow-sm"
-            title={t("Recharger les données de mon profil", "Reload my profile data")}
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">{t("Mon Profil", "My Profile")}</span>
-          </button>
-
-          {/* Save Draft */}
-          <button
-            type="button"
-            onClick={handleSaveDraft}
-            disabled={isSaving}
-            className="px-3 py-1.5 rounded-lg border border-border/80 bg-muted/40 hover:bg-muted text-xs font-semibold text-foreground flex items-center gap-1.5 transition-all shadow-sm"
-          >
-            <Save className={`w-3.5 h-3.5 ${isSaving ? "animate-spin" : ""}`} />
-            <span>{t("Sauvegarder", "Save")}</span>
-          </button>
-
-          {/* Native Print */}
-          <button
-            type="button"
-            onClick={handlePrint}
-            className="p-1.5 rounded-lg border border-border/80 bg-muted/40 hover:bg-muted text-foreground transition-all"
-            title={t("Imprimer directement", "Print directly")}
-          >
-            <Printer className="w-4 h-4" />
-          </button>
-
-          {/* Hero Action: Download Vector PDF */}
+          {/* Simple Download Button */}
           <button
             type="button"
             onClick={handleDownloadPdf}
             disabled={isCompiling}
-            className="px-3.5 py-1.5 rounded-lg bg-primary hover:bg-primary/90 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-primary/25 transition-all disabled:opacity-50"
+            className="px-3.5 py-1.5 rounded-lg bg-primary hover:bg-primary/90 text-white text-xs font-bold flex items-center gap-2 shadow-sm transition-all disabled:opacity-50"
           >
-            <Download className={`w-4 h-4 ${isCompiling ? "animate-spin" : ""}`} />
-            <span>{isCompiling ? t("Compilation...", "Compiling...") : t("Télécharger PDF (Identique)", "Download PDF (Identical)")}</span>
+            <Download className={`w-3.5 h-3.5 ${isCompiling ? "animate-spin" : ""}`} />
+            <span>{isCompiling ? t("Téléchargement...", "Downloading...") : t("Télécharger PDF", "Download PDF")}</span>
           </button>
         </div>
       </header>
@@ -889,184 +904,6 @@ export default function StudioCVPage() {
           </button>
         </div>
       )}
-
-      {/* Floating Canvas Formatting Toolbar (Like Google Docs / Acrobat / Sejda) */}
-      <div className={`sticky ${isFullscreen ? "top-0" : "top-14"} z-20 px-3 sm:px-5 py-2 border-b border-stone-200/80 dark:border-stone-800 bg-white/80 dark:bg-stone-900/90 backdrop-blur-xl flex flex-wrap items-center justify-between gap-3 shrink-0 text-xs shadow-xs`}>
-        {/* Left: Text Formatting Controls */}
-        <div className="flex items-center flex-wrap gap-1">
-          <span className="text-[11px] font-semibold text-muted-foreground mr-1 hidden sm:inline">{t("Mise en forme :", "Formatting:")}</span>
-          <button
-            type="button"
-            onClick={() => executeDocCommand("bold")}
-            className="p-1.5 rounded hover:bg-muted/70 text-foreground transition-colors font-bold"
-            title={t("Gras (Ctrl+B)", "Bold (Ctrl+B)")}
-          >
-            <Bold className="w-3.5 h-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => executeDocCommand("italic")}
-            className="p-1.5 rounded hover:bg-muted/70 text-foreground transition-colors italic"
-            title={t("Italique (Ctrl+I)", "Italic (Ctrl+I)")}
-          >
-            <Italic className="w-3.5 h-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => executeDocCommand("underline")}
-            className="p-1.5 rounded hover:bg-muted/70 text-foreground transition-colors underline"
-            title={t("Souligné (Ctrl+U)", "Underline (Ctrl+U)")}
-          >
-            <Underline className="w-3.5 h-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => executeDocCommand("insertUnorderedList")}
-            className="p-1.5 rounded hover:bg-muted/70 text-foreground transition-colors"
-            title={t("Liste à puces", "Bulleted list")}
-          >
-            <List className="w-3.5 h-3.5" />
-          </button>
-
-          <div className="h-4 w-px bg-border/80 mx-1.5" />
-
-          {/* Direct Document Inserters */}
-          <span className="text-[11px] font-semibold text-muted-foreground mr-1 hidden md:inline">{t("Insérer sur le CV :", "Insert on the CV:")}</span>
-          <button
-            type="button"
-            onClick={insertExperienceBlock}
-            className="px-2 py-1 rounded bg-primary/15 hover:bg-primary/25 text-primary text-[11px] font-bold flex items-center gap-1 transition-colors"
-            title={t("Insérer un nouveau bloc stage / expérience", "Insert a new internship / experience block")}
-          >
-            <Briefcase className="w-3 h-3" />
-            <span>{t("+ Stage", "+ Internship")}</span>
-          </button>
-          <button
-            type="button"
-            onClick={insertEducationBlock}
-            className="px-2 py-1 rounded bg-primary/15 hover:bg-primary/25 text-primary text-[11px] font-bold flex items-center gap-1 transition-colors"
-            title={t("Insérer une formation", "Insert an education entry")}
-          >
-            <GraduationCap className="w-3 h-3" />
-            <span>{t("+ Formation", "+ Education")}</span>
-          </button>
-          <button
-            type="button"
-            onClick={insertProjectBlock}
-            className="px-2 py-1 rounded bg-primary/15 hover:bg-primary/25 text-primary text-[11px] font-bold flex items-center gap-1 transition-colors"
-            title={t("Insérer un projet", "Insert a project")}
-          >
-            <FolderGit2 className="w-3 h-3" />
-            <span>{t("+ Projet", "+ Project")}</span>
-          </button>
-          <button
-            type="button"
-            onClick={insertSkillCategory}
-            className="px-2 py-1 rounded bg-primary/15 hover:bg-primary/25 text-primary text-[11px] font-bold flex items-center gap-1 transition-colors"
-            title={t("Insérer une catégorie de compétences", "Insert a skills category")}
-          >
-            <Code2 className="w-3 h-3" />
-            <span>{t("+ Compétences", "+ Skills")}</span>
-          </button>
-          <button
-            type="button"
-            onClick={insertExtracurricularBlock}
-            className="px-2 py-1 rounded bg-primary/15 hover:bg-primary/25 text-primary text-[11px] font-bold flex items-center gap-1 transition-colors"
-            title={t("Insérer une activité extra-professionnelle (club, association, hackathon)", "Insert an extracurricular activity (club, association, hackathon)")}
-          >
-            <Award className="w-3 h-3" />
-            <span>+ Extra-pro</span>
-          </button>
-          <button
-            type="button"
-            onClick={deleteCurrentItem}
-            className="p-1 rounded text-stone-500 hover:text-rose-700 hover:bg-rose-50 dark:text-stone-400 dark:hover:text-rose-400 dark:hover:bg-rose-950/40 transition-colors ml-1"
-            title={t("Supprimer le bloc sous le curseur", "Delete the block under the cursor")}
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {/* Right: Typography Calibration & Zoom */}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          {/* Font Size slider */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-[11px] text-muted-foreground">{t("Taille :", "Size:")}</span>
-            <input
-              type="range"
-              min={8.0}
-              max={10.5}
-              step={0.1}
-              value={fontSizePt}
-              onChange={(e) => handleFontSizeChange(parseFloat(e.target.value))}
-              className="w-16 accent-primary cursor-pointer"
-            />
-            <span className="text-[10px] font-mono text-foreground w-8">{fontSizePt}pt</span>
-          </div>
-
-          <div className="h-4 w-px bg-border/80" />
-
-          {/* Margins */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-[11px] text-muted-foreground">{t("Marges :", "Margins:")}</span>
-            <select
-              value={marginMm}
-              onChange={(e) => handleMarginChange(parseFloat(e.target.value))}
-              className="bg-background border border-border/80 text-foreground text-[11px] rounded px-1.5 py-0.5 outline-none cursor-pointer"
-            >
-              <option value={6}>{t("6 mm (Compact)", "6 mm (Compact)")}</option>
-              <option value={8}>{t("8 mm (Standard)", "8 mm (Standard)")}</option>
-              <option value={10}>{t("10 mm (Aéré)", "10 mm (Airy)")}</option>
-              <option value={12}>{t("12 mm (Large)", "12 mm (Wide)")}</option>
-            </select>
-          </div>
-
-          <div className="h-4 w-px bg-border/80" />
-
-          {/* Zoom scale */}
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setZoomScale((z) => Math.max(MIN_ZOOM, Number((z - 0.1).toFixed(2))))}
-              className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
-              title="Zoom -"
-            >
-              <ZoomOut className="w-3.5 h-3.5" />
-            </button>
-            <span className="font-mono text-[11px] text-muted-foreground w-10 text-center font-bold">
-              {Math.round(zoomScale * 100)}%
-            </span>
-            <button
-              type="button"
-              onClick={() => setZoomScale((z) => Math.min(1.6, Number((z + 0.1).toFixed(2))))}
-              className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
-              title="Zoom +"
-            >
-              <ZoomIn className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setZoomScale(1.0)}
-              className={`text-[10px] font-mono px-2 py-0.5 rounded border transition-colors ${
-                zoomScale === 1.0
-                  ? "bg-primary/20 text-primary border-primary/40 font-bold"
-                  : "border-border/60 hover:bg-muted text-muted-foreground hover:text-foreground"
-              }`}
-              title={t("Taille réelle A4 (100%)", "Actual A4 size (100%)")}
-            >
-              100%
-            </button>
-            <button
-              type="button"
-              onClick={fitWidth}
-              className="text-[10px] font-mono px-2 py-0.5 rounded border border-border/60 hover:bg-primary/15 hover:text-primary hover:border-primary/30 text-muted-foreground transition-colors"
-              title={t("Ajuster à la largeur de votre écran pour un visuel agrandi et clair", "Fit to your screen width for a larger, clearer view")}
-            >
-              {t("Ajuster Largeur", "Fit Width")}
-            </button>
-          </div>
-        </div>
-      </div>
 
       {/* Main Full-Focus Visual Canvas (Desk / Page Environment) */}
       <div

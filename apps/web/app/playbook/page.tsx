@@ -11,8 +11,6 @@ import {
   Lightbulb,
   AlertCircle,
   Loader2,
-  Sliders,
-  Compass,
   ArrowRight,
   X,
 } from "lucide-react";
@@ -139,43 +137,15 @@ export default function PlaybookPage() {
       </div>
 
       {/* Metrics Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl p-4 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-medium text-stone-500 dark:text-stone-400">{t("Directives Actives", "Active Directives")}</p>
-            <p className="text-2xl font-bold text-stone-900 dark:text-stone-100 font-display mt-1">
-              {activeCount} <span className="text-xs font-normal text-stone-500 dark:text-stone-400">/ {rules.length}</span>
-            </p>
-          </div>
-          <div className="w-10 h-10 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-            <CheckCircle2 className="w-5 h-5" />
-          </div>
+      <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl p-4 shadow-sm flex items-center justify-between">
+        <div>
+          <p className="text-xs font-medium text-stone-500 dark:text-stone-400">{t("Directives Actives", "Active Directives")}</p>
+          <p className="text-2xl font-bold text-stone-900 dark:text-stone-100 font-display mt-1">
+            {activeCount} <span className="text-xs font-normal text-stone-500 dark:text-stone-400">/ {rules.length}</span>
+          </p>
         </div>
-
-        <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl p-4 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-medium text-stone-500 dark:text-stone-400">{t("Moteur de Décision", "Decision Engine")}</p>
-            <p className="text-sm font-bold text-stone-900 dark:text-stone-100 font-display mt-1">
-              LangGraph + Groq 70B
-            </p>
-            <p className="text-[11px] text-stone-400">Thinking &gt; Drafting</p>
-          </div>
-          <div className="w-10 h-10 rounded-lg bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 flex items-center justify-center">
-            <Sliders className="w-5 h-5" />
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl p-4 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-medium text-stone-500 dark:text-stone-400">{t("Invariant Garanti", "Guaranteed Invariant")}</p>
-            <p className="text-sm font-bold text-stone-900 dark:text-stone-100 font-display mt-1">
-              {t("Zéro Hallucination", "Zero Hallucination")}
-            </p>
-            <p className="text-[11px] text-stone-400">{t("100% Master Profile réel", "100% real Master Profile")}</p>
-          </div>
-          <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-            <Compass className="w-5 h-5" />
-          </div>
+        <div className="w-10 h-10 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+          <CheckCircle2 className="w-5 h-5" />
         </div>
       </div>
 
@@ -201,19 +171,10 @@ export default function PlaybookPage() {
         ) : rules.length === 0 ? (
           <div className="p-8 text-center bg-white dark:bg-stone-900 border border-dashed border-stone-300 dark:border-stone-700 rounded-2xl space-y-3">
             <Lightbulb className="w-8 h-8 text-amber-500 mx-auto" />
-            <h3 className="text-base font-semibold text-stone-800 dark:text-stone-200">{t("Aucune directive enregistree", "No directives saved")}</h3>
+            <h3 className="text-base font-semibold text-stone-800 dark:text-stone-200">{t("Aucune directive enregistrée", "No directives saved")}</h3>
             <p className="text-xs text-stone-500 max-w-md mx-auto">
-              {t("Toutes les directives ont ete supprimees. Vous pouvez en creer une personnalisee.", "All directives have been deleted. You can create a custom one.")}
+              {t("Toutes les directives ont été supprimées. Utilisez le bouton ci-dessus pour en créer une.", "All directives have been deleted. Use the button above to create one.")}
             </p>
-            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-xs font-semibold rounded-lg hover:bg-orange-600 transition-all"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                {t("Ajouter une directive", "Add a directive")}
-              </button>
-            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
