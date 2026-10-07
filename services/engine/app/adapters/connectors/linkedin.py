@@ -93,7 +93,7 @@ class LinkedInJobConnector(BaseJobConnector):
 
                                 # Extraction ID externe
                                 ext_id_match = re.search(r"-([0-9]{8,12})", job_url) or re.search(r"view/([0-9]+)", job_url)
-                                ext_id = f"li-{ext_id_match.group(1)}" if ext_id_match else f"li-{abs(hash(title + company)) % 10000000}"
+                                ext_id = f"li-{ext_id_match.group(1)}" if ext_id_match else self.generate_stable_id("li", f"{title}:{company}:{job_url}")
 
                                 if ext_id in seen_ids:
                                     continue

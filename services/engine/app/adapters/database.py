@@ -335,6 +335,14 @@ def _migrate_db(engine) -> None:
         except Exception:
             pass
 
+    # Déduplication et nettoyage idempotent des offres pour prod et dev
+    try:
+        from app.domain.deduplication import deduplicate_all_jobs_in_db
+        deduplicate_all_jobs_in_db(engine)
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).warning(f"[_migrate_db] Erreur déduplication automatique : {exc}")
+
 
 def seed_initial_users(engine) -> None:
     from app.domain.models import User

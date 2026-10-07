@@ -54,7 +54,7 @@ class LEtudiantJobConnector(BaseJobConnector):
                         seen.add(href)
 
                         full_url = f"https://jobs-stages.letudiant.fr{href}" if href.startswith("/") else href
-                        ext_id = f"let-{abs(hash(full_url)) % 1000000}"
+                        ext_id = self.generate_stable_id("let", full_url)
 
                         results.append({
                             "external_id": ext_id,

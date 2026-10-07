@@ -63,7 +63,7 @@ class TanitjobsJobConnector(BaseJobConnector):
                         job_url = link["href"]
                         if not job_url.startswith("http"):
                             job_url = f"https://www.tanitjobs.com{job_url}"
-                        ext_id = f"tanit-{abs(hash(job_url)) % 1000000}"
+                        ext_id = self.generate_stable_id("tanit", job_url)
 
                         results.append({
                             "external_id": ext_id,

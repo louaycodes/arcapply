@@ -33,6 +33,7 @@ from app.adapters.database import get_engine
 from app.api.events import broadcast_event
 from app.adapters.connectors import infer_offer_type, is_pfe_offer
 from app.domain.anti_rescrape import is_job_already_applied, is_job_already_archived, is_job_excluded_from_scraping
+from app.domain.deduplication import JobDeduplicationIndex
 from app.domain.job_extractor import JobDeepExtractor
 from app.domain.models import JobOffer, MasterProfile, utc_now
 from app.ports.connectors import BaseJobConnector
@@ -134,6 +135,10 @@ class CrawlerScheduler:
             user_profile = sess.exec(select(MasterProfile).where(MasterProfile.user_id == target_user)).first()
             search_mode = getattr(user_profile, "search_mode", "PFE") if user_profile else "PFE"
 
+            # Indexation sémantique et cross-plateformes pour déduplication stricte
+            existing_user_jobs = sess.exec(select(JobOffer).where(JobOffer.user_id == target_user)).all()
+            dedup_index = JobDeduplicationIndex(existing_user_jobs)
+
             for platform in target_platforms:
                 connector_cls = ALL_CONNECTORS.get(platform)
                 if not connector_cls:
@@ -196,16 +201,9 @@ class CrawlerScheduler:
                         total_duplicates += 1
                         continue
 
-                    # Déduplication stricte (platform, external_id, user_id)
-                    existing = sess.exec(
-                        select(JobOffer).where(
-                            JobOffer.platform == plat,
-                            JobOffer.external_id == ext_id,
-                            JobOffer.user_id == target_user,
-                        )
-                    ).first()
-
-                    if existing:
+                    # Déduplication globale sémantique & cross-plateforme (ID externe, URL normalisée, Entreprise + Titre)
+                    is_dup, dup_reason = dedup_index.is_duplicate(j)
+                    if is_dup:
                         total_duplicates += 1
                         continue
 
@@ -248,6 +246,7 @@ class CrawlerScheduler:
                     sess.add(new_job)
                     sess.commit()
                     sess.refresh(new_job)
+                    dedup_index.add(new_job)
 
                     total_new += 1
                     platform_new += 1

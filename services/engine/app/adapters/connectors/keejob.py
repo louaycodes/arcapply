@@ -76,7 +76,7 @@ class KeejobJobConnector(BaseJobConnector):
                                 seen_urls.add(href)
 
                                 id_match = re.search(r"/(\d+)/", href)
-                                ext_id = f"kee-{id_match.group(1)}" if id_match else f"kee-{abs(hash(raw_title)) % 1000000}"
+                                ext_id = f"kee-{id_match.group(1)}" if id_match else self.generate_stable_id("kee", href or raw_title)
                                 full_url = href if href.startswith("http") else f"https://www.keejob.com{href}"
 
                                 parent_card = link.find_parent("div")

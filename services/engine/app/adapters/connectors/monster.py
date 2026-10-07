@@ -49,7 +49,7 @@ class MonsterJobConnector(BaseJobConnector):
                         title = l.text.strip()
                         full_url = f"https://www.monster.com{href}" if href.startswith("/") else href
                         results.append({
-                            "external_id": f"mon-{abs(hash(full_url)) % 1000000}",
+                            "external_id": self.generate_stable_id("mon", full_url),
                             "platform": "monster",
                             "title": title or "Offre Monster",
                             "company": "Entreprise Partenaire Monster",

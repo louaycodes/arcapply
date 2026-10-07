@@ -64,7 +64,7 @@ class OptionCarriereJobConnector(BaseJobConnector):
                         comp_p = art.find("p", class_=lambda c: c and "company" in c)
                         company = comp_p.text.strip() if comp_p else "Entreprise Partenaire OptionCarriere"
 
-                        ext_id = f"oc-{abs(hash(full_url)) % 1000000}"
+                        ext_id = self.generate_stable_id("oc", full_url)
 
                         results.append({
                             "external_id": ext_id,

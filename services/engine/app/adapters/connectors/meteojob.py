@@ -63,7 +63,7 @@ class MeteojobJobConnector(BaseJobConnector):
                                 seen_urls.add(href)
 
                                 id_match = re.search(r"/jobs/(\d+)", href)
-                                ext_id = f"met-{id_match.group(1)}" if id_match else f"met-{abs(hash(full_url)) % 1000000}"
+                                ext_id = f"met-{id_match.group(1)}" if id_match else self.generate_stable_id("met", full_url)
 
                                 # Parent card lookup for company
                                 parent = link.find_parent("article") or link.find_parent("div")

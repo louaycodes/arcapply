@@ -49,7 +49,7 @@ class MoovijobJobConnector(BaseJobConnector):
                         title = l.text.strip()
                         full_url = f"https://www.moovijob.com{href}" if href.startswith("/") else href
                         results.append({
-                            "external_id": f"moov-{abs(hash(full_url)) % 1000000}",
+                            "external_id": self.generate_stable_id("moov", full_url),
                             "platform": "moovijob",
                             "title": title or "Offre Moovijob",
                             "company": "Entreprise Partenaire Moovijob",

@@ -44,6 +44,16 @@ class BaseJobConnector(abc.ABC):
         await asyncio.sleep(delay)
 
     @classmethod
+    def generate_stable_id(cls, prefix: str, raw_key: str, length: int = 10) -> str:
+        """
+        Génère un identifiant déterministe et pérenne basé sur un hash MD5.
+        Remplace le built-in hash() non déterministe entre redémarrages de processus Python.
+        """
+        import hashlib
+        digest = hashlib.md5((raw_key or "").encode("utf-8")).hexdigest()[:length]
+        return f"{prefix}-{digest}"
+
+    @classmethod
     def expand_pfe_search_terms(
         cls,
         raw_terms: list[str],
