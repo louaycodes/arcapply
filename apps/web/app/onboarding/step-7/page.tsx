@@ -31,6 +31,7 @@ function Step7Content() {
       if (typeof window !== "undefined") {
         localStorage.setItem("arcapply_walkthrough_done", "true");
         localStorage.removeItem("arcapply_just_registered");
+        localStorage.removeItem("arcapply_onboarding_skipped");
         // Update stored user if present
         const savedUser = localStorage.getItem("arcapply_user");
         if (savedUser) {

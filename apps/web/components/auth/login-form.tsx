@@ -56,11 +56,24 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
         await register(emailInput, passwordInput, fullNameInput);
         if (typeof window !== "undefined") {
           localStorage.setItem("arcapply_just_registered", "true");
+          localStorage.removeItem("arcapply_onboarding_skipped");
         }
         router.push("/onboarding/step-1");
       } else {
         await login(emailInput, passwordInput);
-        router.push(redirectTo);
+        const hasSkipped = typeof window !== "undefined" && localStorage.getItem("arcapply_onboarding_skipped") === "true";
+        const savedUserStr = typeof window !== "undefined" ? localStorage.getItem("arcapply_user") : null;
+        let isCompleted = false;
+        if (savedUserStr) {
+          try {
+            isCompleted = !!JSON.parse(savedUserStr).onboarding_completed;
+          } catch (_) {}
+        }
+        if (!isCompleted && !hasSkipped && (!redirectTo || redirectTo === "/" || redirectTo === "/login")) {
+          router.push("/onboarding/step-1");
+        } else {
+          router.push(redirectTo);
+        }
       }
     } catch (err: any) {
       setError(err.message || (isRegisterMode ? t("Échec de l'inscription", "Sign-up failed") : t("Échec de connexion", "Sign-in failed")));

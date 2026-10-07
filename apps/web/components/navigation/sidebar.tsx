@@ -189,7 +189,7 @@ export function Sidebar() {
   const { user } = useAuth();
   const { isOpen, close } = useMobileNav();
 
-  if (!user || pathname === "/landing" || pathname === "/login") {
+  if (!user || pathname === "/landing" || pathname === "/login" || pathname.startsWith("/onboarding")) {
     return null;
   }
 

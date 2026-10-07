@@ -36,7 +36,7 @@ export function TopNavbar() {
   const { open: openMobileNav } = useMobileNav();
   const { language, t } = useAppLanguage();
 
-  if (!user || pathname === "/landing" || pathname === "/login") {
+  if (!user || pathname === "/landing" || pathname === "/login" || pathname.startsWith("/onboarding")) {
     return null;
   }
 
