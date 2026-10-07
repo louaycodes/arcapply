@@ -6,9 +6,7 @@ import {
   fetchProfile,
   updateProfile,
   fetchProfileStatus,
-  verifyGenerationEligibility,
   downloadProfileCVPdf,
-  testGroqKey,
   MasterProfile,
   ProfileCompletenessStatus,
   Education,
@@ -23,7 +21,6 @@ import {
 import { useAppLanguage } from "@/lib/language-context";
 import { localizeServerMessage } from "@/lib/i18n";
 import {
-  ShieldAlert,
   ShieldCheck,
   GraduationCap,
   Briefcase,
@@ -33,23 +30,17 @@ import {
   Plus,
   Trash2,
   Save,
-  Sparkles,
   CheckCircle2,
-  AlertTriangle,
-  ArrowRight,
   Download,
   FileDown,
   Globe2,
   Award,
   Layers,
-  ExternalLink,
   Check,
   X,
-  Compass,
-  Key,
   Loader2,
-  Eye,
-  EyeOff,
+  AlertTriangle,
+  ExternalLink,
 } from "lucide-react";
 
 function StackInput({
@@ -116,16 +107,10 @@ export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDownloadingCv, setIsDownloadingCv] = useState(false);
   const [cvDownloadLang, setCvDownloadLang] = useState<"fr" | "en">(appLanguage);
-  const [testingGroq, setTestingGroq] = useState(false);
-  const [groqTestResult, setGroqTestResult] = useState<{ status: "idle" | "success" | "error"; message?: string }>({ status: "idle" });
-  const [showGroqKey, setShowGroqKey] = useState(false);
   const [notification, setNotification] = useState<{
     type: "success" | "error" | "info";
     message: string;
   } | null>(null);
-
-  const [testGenResult, setTestGenResult] = useState<string | null>(null);
-  const [testGenKind, setTestGenKind] = useState<"pending" | "success" | "blocked">("pending");
 
   useEffect(() => {
     setCvDownloadLang(appLanguage);
@@ -200,23 +185,6 @@ export default function ProfilePage() {
     }
   };
 
-  const handleTestGeneration = async () => {
-    try {
-      setTestGenKind("pending");
-      setTestGenResult(t("Vérification en cours...", "Checking..."));
-      const result = await verifyGenerationEligibility();
-      setTestGenKind("success");
-      setTestGenResult(
-        t(
-          `Succès : ${result.message} (${result.completion_percentage}%)`,
-          `Success: ${localizeServerMessage(result.message)} (${result.completion_percentage}%)`
-        )
-      );
-    } catch (err: any) {
-      setTestGenKind("blocked");
-      setTestGenResult(t(`Bloqué (CAP-1) : ${err.message}`, `Blocked (CAP-1): ${err.message}`));
-    }
-  };
 
   const handleDownloadCV = async () => {
     if (!profile) return;
@@ -256,171 +224,6 @@ export default function ProfilePage() {
     }
   };
 
-  const populateDemoProfile = () => {
-    if (!profile) return;
-    const demo: MasterProfile = {
-      ...profile,
-      search_mode: "PFE",
-      full_name: "Yassine Ben Salem",
-      email: "yassine.bensalem@insat.u-carthage.tn",
-      phone: "+33 6 42 18 90 12",
-      location: "Paris, France / Tunis, Tunisie",
-      headline: "Élève-Ingénieur Systèmes Distribués & Cloud | Recherche PFE Janvier 2027",
-      headline_fr: "Élève-Ingénieur Systèmes Distribués & Cloud | Recherche PFE Janvier 2027",
-      headline_en: "Distributed Systems & Cloud Engineering Student | Seeking Final Internship Jan 2027",
-      bio: "Futur ingénieur diplômé passionné par la scalabilité, les architectures hexagonales et le DevOps moderne. Expérience concrète sur FastAPI, Go, Docker et Kubernetes.",
-      bio_fr: "Futur ingénieur diplômé passionné par la scalabilité, les architectures hexagonales et le DevOps moderne. Expérience concrète sur FastAPI, Go, Docker et Kubernetes.",
-      bio_en: "Graduating software engineer passionate about distributed scalability, hexagonal architecture, and modern DevOps. Hands-on experience with FastAPI, Go, Docker, and Kubernetes.",
-      linkedin_url: "https://linkedin.com/in/yassine-bensalem",
-      github_url: "https://github.com/yassine-bs",
-      website_url: "https://yassine.dev",
-      educations: [
-        {
-          school: "INSAT (Institut National des Sciences Appliquées et de Technologie)",
-          degree: "Diplôme National d'Ingénieur",
-          degree_fr: "Diplôme National d'Ingénieur",
-          degree_en: "Master of Science in Software Engineering",
-          field_of_study: "Génie Logiciel & Informatique",
-          field_of_study_fr: "Génie Logiciel & Informatique",
-          field_of_study_en: "Software Engineering & Computer Science",
-          start_date: "Septembre 2022",
-          end_date: "Juin 2027",
-          description: "Formation d'excellence en génie logiciel, réseaux, bases de données avancées et systèmes distribués.",
-          description_fr: "Formation d'excellence en génie logiciel, réseaux, bases de données avancées et systèmes distribués.",
-          description_en: "Elite engineering curriculum focusing on software architecture, computer networks, advanced databases, and distributed systems.",
-        },
-      ],
-      experiences: [
-        {
-          company: "CloudScale Technologies",
-          role: "Stagiaire Ingénieur Backend & Cloud",
-          role_fr: "Stagiaire Ingénieur Backend & Cloud",
-          role_en: "Backend & Cloud Engineering Intern",
-          location: "Tunis / Hybride",
-          start_date: "Juin 2025",
-          end_date: "Août 2025",
-          description: "Développement de microservices de traitement asynchrone d'événements à haut débit. Optimisation du temps de réponse de 35%.",
-          description_fr: "Développement de microservices de traitement asynchrone d'événements à haut débit. Optimisation du temps de réponse de 35%.",
-          description_en: "Built asynchronous event processing microservices handling high throughput. Improved average response latency by 35%.",
-          technologies: ["Python", "FastAPI", "PostgreSQL", "Redis", "Docker"],
-          experience_type: "stage",
-        },
-        {
-          company: "FinTech Innovation Lab",
-          role: "Stagiaire Développeur Outils & DevOps",
-          role_fr: "Stagiaire Développeur Outils & DevOps",
-          role_en: "DevOps & Tools Engineering Intern",
-          location: "Tunis, Tunisie",
-          start_date: "Juin 2024",
-          end_date: "Août 2024",
-          description: "Automatisation des pipelines CI/CD sous Jenkins et conteneurisation des services financiers internes avec Docker.",
-          description_fr: "Automatisation des pipelines CI/CD sous Jenkins et conteneurisation des services financiers internes avec Docker.",
-          description_en: "Automated Jenkins CI/CD release pipelines and containerized internal financial services with Docker.",
-          technologies: ["Docker", "Linux", "Bash", "Jenkins", "GitLab CI"],
-          experience_type: "stage",
-        },
-        {
-          company: "TechConsulting Freelance",
-          role: "Développeur Backend & Automatisation",
-          role_fr: "Développeur Backend & Automatisation",
-          role_en: "Backend & Automation Engineer",
-          location: "Télétravail / France & Tunisie",
-          start_date: "Septembre 2024",
-          end_date: "Présent",
-          description: "Conception d'APIs REST modulaires et dashboards de monitoring pour des PME européennes.",
-          description_fr: "Conception d'APIs REST modulaires et dashboards de monitoring pour des PME européennes.",
-          description_en: "Architected modular REST APIs and automated observability dashboards for European scale-ups.",
-          technologies: ["FastAPI", "TypeScript", "Next.js", "Docker"],
-          experience_type: "job",
-        },
-      ],
-      projects: [
-        {
-          title: "ArcApply Local Copilot",
-          title_fr: "ArcApply Copilote Local",
-          title_en: "ArcApply Local Copilot",
-          role: "Architecte & Développeur Principal",
-          role_fr: "Architecte & Développeur Principal",
-          role_en: "Lead Architect & Developer",
-          description: "Copilote de candidature haute performance avec matching d'offres déterministe et adaptation de CV sans hallucination.",
-          description_fr: "Copilote de candidature haute performance avec matching d'offres déterministe et adaptation de CV sans hallucination.",
-          description_en: "High-performance job application copilot featuring deterministic ATS matching and zero-hallucination CV tailoring.",
-          url: "https://github.com/yassine-bs/arcapply",
-          technologies: ["FastAPI", "SQLModel", "Next.js", "Tailwind CSS"],
-        },
-        {
-          title: "Autonomous FinOps Agent",
-          title_fr: "Agent FinOps Autonome",
-          title_en: "Autonomous FinOps Agent",
-          role: "Lead Developer",
-          role_fr: "Lead Développeur",
-          role_en: "Lead Developer",
-          description: "Plateforme multi-agents pour la détection d'anomalies de coûts AWS et l'optimisation continue des ressources cloud.",
-          description_fr: "Plateforme multi-agents pour la détection d'anomalies de coûts AWS et l'optimisation continue des ressources cloud.",
-          description_en: "Multi-agent engine detecting AWS cost anomalies and dynamically optimizing cloud resources.",
-          url: "https://github.com/yassine-bs/finops-agent",
-          technologies: ["Python", "LangGraph", "Groq LLM", "ChromaDB"],
-        },
-      ],
-      skills: [
-        { name: "FastAPI", category: "Frameworks", level: "Avancé" },
-        { name: "React / Next.js", category: "Frameworks", level: "Avancé" },
-        { name: "Python", category: "Langages & Scripting", level: "Avancé" },
-        { name: "TypeScript", category: "Langages & Scripting", level: "Intermédiaire" },
-        { name: "Bash", category: "Langages & Scripting", level: "Avancé" },
-        { name: "PostgreSQL", category: "Bases de données", level: "Avancé" },
-        { name: "Redis", category: "Bases de données", level: "Intermédiaire" },
-        { name: "Git", category: "Versioning & Méthodes", level: "Avancé" },
-        { name: "Scrum / Agile", category: "Versioning & Méthodes", level: "Avancé" },
-        { name: "Linux (Debian/Ubuntu)", category: "Systèmes & Réseaux", level: "Avancé" },
-        { name: "TCP/IP & DNS", category: "Systèmes & Réseaux", level: "Intermédiaire" },
-        { name: "Prometheus", category: "Monitoring & Observabilité", level: "Intermédiaire" },
-        { name: "Grafana", category: "Monitoring & Observabilité", level: "Intermédiaire" },
-        { name: "Terraform", category: "Infrastructure as Code", level: "Intermédiaire" },
-        { name: "Ansible", category: "Infrastructure as Code", level: "Intermédiaire" },
-        { name: "AWS (EC2, S3, RDS)", category: "Cloud & Infrastructure", level: "Intermédiaire" },
-        { name: "Docker & Compose", category: "Conteneurisation & Orchestration", level: "Avancé" },
-        { name: "Kubernetes", category: "Conteneurisation & Orchestration", level: "Intermédiaire" },
-        { name: "OWASP Top 10", category: "Sécurité (DevSecOps)", level: "Intermédiaire" },
-        { name: "Trivy / SonarQube", category: "Sécurité (DevSecOps)", level: "Intermédiaire" },
-      ],
-      extracurriculars: [
-        {
-          organization: "Club Robotique & IA INSAT",
-          role: "Responsable Technique & Formateur",
-          role_fr: "Responsable Technique & Formateur",
-          role_en: "Technical Lead & Instructor",
-          date: "2023 – 2024",
-          description: "Animation d'ateliers d'initiation à Python et aux systèmes embarqués pour 60+ étudiants ; finaliste TuniRobots 2024.",
-          description_fr: "Animation d'ateliers d'initiation à Python et aux systèmes embarqués pour 60+ étudiants ; finaliste TuniRobots 2024.",
-          description_en: "Conducted hands-on robotics and Python workshops for 60+ engineering students; finalist at TuniRobots 2024.",
-        },
-        {
-          organization: "Junior Entreprise INSAT",
-          role: "Chef de Projet Digital",
-          role_fr: "Chef de Projet Digital",
-          role_en: "Digital Project Manager",
-          date: "2022 – 2023",
-          description: "Coordination d'une équipe de 5 développeurs pour la digitalisation de processus opérationnels d'entreprises partenaires.",
-          description_fr: "Coordination d'une équipe de 5 développeurs pour la digitalisation de processus opérationnels d'entreprises partenaires.",
-          description_en: "Managed a team of 5 student developers building digital tools and process automations for corporate partners.",
-        },
-      ],
-      languages: [
-        { name: "Français", level: "Courant / Bilingue (C2)" },
-        { name: "Anglais", level: "Professionnel / Technique (C1 - TOEIC 945)" },
-        { name: "Arabe", level: "Langue maternelle" },
-      ],
-    };
-    setProfile(demo);
-    setNotification({
-      type: "info",
-      message: t(
-        "Modèle de profil complet et bilingue injecté ! Cliquez sur 'Sauvegarder' pour valider.",
-        "Complete bilingual sample profile filled in! Click 'Save' to confirm."
-      ),
-    });
-  };
 
   // Education Helpers
   const addEducation = () => {
@@ -717,44 +520,20 @@ export default function ProfilePage() {
       {/* Top Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-border/60 pb-6">
         <div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground font-display">
-              {t("Mon Profil Professionnel", "My Professional Profile")}
-            </h1>
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-orange-100 dark:bg-orange-900/40 text-orange-900 dark:text-orange-300 border border-orange-200 dark:border-orange-800/60">
-              {t("Certifié", "Verified")}
-            </span>
-          </div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground font-display">
+            {t("Mon Profil Professionnel", "My Professional Profile")}
+          </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {t("Renseignez vos coordonnées, stages, expériences, compétences, activités extra-professionnelles et langues pour générer votre CV complet.", "Enter your contact details, internships, experience, skills, extracurricular activities and languages to generate your complete CV.")}
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto">
-          <Link
-            href="/onboarding/step-1"
-            className="px-3.5 py-2 rounded-md border border-orange-200 dark:border-orange-800/60 bg-orange-50 dark:bg-orange-950/40 hover:bg-orange-100 text-xs font-semibold text-primary flex items-center gap-1.5 transition-colors shadow-xs"
-            title={t("Lancer le walkthrough guidé étape par étape", "Start the step-by-step guided walkthrough")}
-          >
-            <Compass className="w-3.5 h-3.5 text-primary" />
-            <span>{t("Guide pas-à-pas", "Step-by-step guide")}</span>
-          </Link>
-
-          <button
-            type="button"
-            onClick={populateDemoProfile}
-            className="px-3.5 py-2 rounded-md border border-border/80 bg-card hover:bg-muted text-xs font-medium text-foreground flex items-center gap-2 transition-colors cursor-pointer"
-            title={t("Remplir avec des données d'ingénieur réalistes (stages, projets, langues, activités)", "Fill with realistic engineering data (internships, projects, languages, activities)")}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-accent" />
-            <span>{t("Exemple PFE", "PFE Example")}</span>
-          </button>
-
+        <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto">
           <button
             type="button"
             onClick={handleSave}
             disabled={isSaving}
-            className="px-4 py-2 rounded-md bg-primary hover:bg-primary-hover text-white text-sm font-semibold flex items-center gap-2 shadow-lg shadow-primary/20 transition-all disabled:opacity-50 cursor-pointer"
+            className="px-4 py-2 rounded-xl bg-primary hover:bg-orange-700 text-white text-sm font-semibold flex items-center gap-2 shadow-sm transition-all disabled:opacity-50 cursor-pointer"
           >
             <Save className="w-4 h-4" />
             <span>{isSaving ? t("Sauvegarde...", "Saving...") : t("Sauvegarder", "Save")}</span>
@@ -782,250 +561,87 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* Guard Status Banner (CAP-1 Complétude) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 p-6 rounded-xl border border-border bg-card/80 backdrop-blur-sm space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {isComplete ? (
-                <div className="w-10 h-10 rounded-lg bg-success/20 border border-success/40 flex items-center justify-center text-success">
-                  <ShieldCheck className="w-6 h-6" />
-                </div>
-              ) : (
-                <div className="w-10 h-10 rounded-lg bg-warning/20 border border-warning/40 flex items-center justify-center text-warning">
-                  <ShieldAlert className="w-6 h-6" />
-                </div>
-              )}
-              <div>
-                <h3 className="text-base font-semibold text-foreground">
-                  {isComplete ? t("Profil Complet & Vérifié", "Complete & Verified Profile") : t("Profil Incomplet", "Incomplete Profile")}
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  {isComplete
-                    ? t("Toutes les conditions requises sont remplies pour générer des candidatures ciblées.", "All requirements are met to generate targeted applications.")
-                    : t("Renseignez les champs manquants pour débloquer la génération automatique de CV et lettres.", "Fill in the missing fields to unlock automatic CV and letter generation.")}
-                </p>
-              </div>
-            </div>
-            <span className="text-sm font-bold font-mono text-primary">
+      {/* Profile Completeness Pie Chart Card */}
+      <div className="p-5 sm:p-6 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-artisan flex flex-col sm:flex-row items-center gap-5 sm:gap-6">
+        <div className="relative w-20 h-20 shrink-0 flex items-center justify-center">
+          <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 36 36">
+            <path
+              className="text-stone-100 dark:text-stone-800"
+              strokeWidth="3.5"
+              stroke="currentColor"
+              fill="none"
+              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+            />
+            <path
+              className={`transition-all duration-700 ease-out ${
+                percentage === 100
+                  ? "text-emerald-500"
+                  : percentage >= 50
+                  ? "text-amber-500"
+                  : "text-rose-500"
+              }`}
+              strokeDasharray={`${percentage}, 100`}
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              stroke="currentColor"
+              fill="none"
+              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+            />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="font-bold text-sm text-stone-900 dark:text-stone-100 font-mono leading-none">
               {percentage}%
             </span>
           </div>
-
-          {/* Progress Bar */}
-          <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
-            <div
-              className={`h-full transition-all duration-500 rounded-full ${
-                percentage === 100
-                  ? "bg-emerald-600"
-                  : percentage > 50
-                  ? "bg-amber-600"
-                  : "bg-rose-600"
-              }`}
-              style={{ width: `${percentage}%` }}
-            />
-          </div>
-
-          {/* Missing fields list */}
-          {!isComplete && status && status.missing_fields.length > 0 && (
-            <div className="pt-2">
-              <p className="text-xs font-semibold text-stone-700 dark:text-stone-300 mb-2">
-                {t("Éléments recommandés pour optimiser votre profil :", "Recommended items to optimize your profile:")}
-              </p>
-              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                {status.missing_fields.map((field, idx) => (
-                  <li
-                    key={idx}
-                    className="flex items-center gap-2 text-amber-950 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800/60 font-medium shadow-xs"
-                  >
-                    <ArrowRight className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400 flex-shrink-0" />
-                    <span>{localizeServerMessage(field)}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
         </div>
 
-        {/* Quality Check Card */}
-        <div className="p-6 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-artisan flex flex-col justify-between space-y-4">
-          <div>
-            <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 font-display flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-primary" />
-              <span>{t("Garantie de qualité", "Quality guarantee")}</span>
-            </h4>
-            <p className="text-xs text-stone-600 dark:text-stone-400 mt-1.5 leading-relaxed">
-              {t("Pour assurer l'impact de vos candidatures auprès des recruteurs, ArcApply vérifie que vos coordonnées, formations, expériences et compétences sont bien prêtes.", "To make sure your applications have impact with recruiters, ArcApply checks that your contact details, education, experience and skills are ready.")}
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            <button
-              type="button"
-              onClick={handleTestGeneration}
-              className="w-full py-2 px-3 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 hover:bg-stone-100 dark:hover:bg-stone-700 text-xs font-semibold text-stone-800 dark:text-stone-200 transition-colors shadow-xs cursor-pointer"
+        <div className="flex-1 min-w-0 text-center sm:text-left space-y-1.5">
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+            <h2 className="text-base font-bold text-stone-900 dark:text-stone-100 font-display">
+              {percentage === 100
+                ? t("Master Profile Complet & Validé", "Master Profile Complete & Validated")
+                : t("Niveau de Complétude du Compte", "Account Completeness Level")}
+            </h2>
+            <span
+              className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                percentage === 100
+                  ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60"
+                  : "bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border-amber-200 dark:border-amber-800/60"
+              }`}
             >
-              {t("Vérifier l'éligibilité de mon profil", "Check my profile eligibility")}
-            </button>
-
-            {testGenResult && (
-              <div
-                className={`p-2.5 rounded-lg text-xs font-medium border ${
-                  testGenKind === "success"
-                    ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-950 dark:text-emerald-300"
-                    : testGenKind === "blocked"
-                    ? "bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800 text-rose-950 dark:text-rose-300"
-                    : "bg-stone-50 dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-800 dark:text-stone-200"
-                }`}
-              >
-                {testGenResult}
-              </div>
-            )}
+              {percentage === 100 ? t("100% Prêt à postuler", "100% Ready to apply") : `${percentage}%`}
+            </span>
           </div>
+
+          <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed">
+            {percentage === 100
+              ? t(
+                  "Toutes les sections indispensables (formations, expériences, compétences) sont renseignées pour garantir un ciblage déterministe.",
+                  "All essential sections (education, experiences, skills) are filled to ensure deterministic matching."
+                )
+              : t(
+                  "Remplissez les informations ci-dessous pour optimiser vos scores de correspondance ATS et vos candidatures.",
+                  "Fill in the information below to optimize your ATS matching scores and applications."
+                )}
+          </p>
+
+          {!isComplete && status && status.missing_fields && status.missing_fields.length > 0 && (
+            <div className="pt-1 flex flex-wrap items-center justify-center sm:justify-start gap-1.5">
+              {status.missing_fields.map((field, idx) => (
+                <span
+                  key={idx}
+                  className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 border border-stone-200 dark:border-stone-700"
+                >
+                  {localizeServerMessage(field)}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
       {/* Profile Form Sections */}
       <div className="space-y-8">
-        {/* Section BYOK: Moteur IA & Clé d'API Groq Personnelle */}
-        <div className="p-6 rounded-xl border border-primary/25 bg-primary/5 dark:bg-primary/10 shadow-xs space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-primary/15 pb-3">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-primary/15 border border-primary/25 flex items-center justify-center text-primary shadow-xs">
-                <Key className="w-4 h-4" />
-              </div>
-              <div>
-                <h2 className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2">
-                  <span>{t("Clé d'API Groq Personnelle (BYOK)", "Personal Groq API Key (BYOK)")}</span>
-                  <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-primary/20 text-primary font-semibold">
-                    {t("Multi-Tenant Isolé", "Isolated Multi-Tenant")}
-                  </span>
-                </h2>
-                <p className="text-xs text-muted-foreground">
-                  {t("Chaque utilisateur peut renseigner sa propre clé Groq pour disposer de son quota journalier dédié (200 000 tokens/jour) sans dépendre du serveur.", "Each user can enter their own Groq key to get a dedicated daily quota (200,000 tokens/day) without depending on the server.")}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
-            <div className="md:col-span-2 space-y-1.5">
-              <label className="block text-xs font-semibold text-foreground flex items-center justify-between">
-                <span>{t("Clé d'API Groq (gsk_...)", "Groq API key (gsk_...)")}</span>
-                <a
-                  href="https://console.groq.com/keys"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-primary hover:underline flex items-center gap-1 font-normal"
-                >
-                  <span>{t("Obtenir une clé gratuite sur console.groq.com", "Get a free key at console.groq.com")}</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </label>
-              <div className="relative flex items-center">
-                <input
-                  type={showGroqKey ? "text" : "password"}
-                  value={profile?.groq_api_key || ""}
-                  onChange={(e) => {
-                    if (profile) setProfile({ ...profile, groq_api_key: e.target.value });
-                    setGroqTestResult({ status: "idle" });
-                  }}
-                  placeholder="gsk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                  className="w-full pr-12 pl-3.5 py-2.5 rounded-lg bg-background border border-border focus:outline-none focus:ring-1 focus:ring-primary font-mono text-xs text-foreground placeholder:text-muted-foreground/40 shadow-xs"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowGroqKey(!showGroqKey)}
-                  className="absolute right-2 p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                  title={showGroqKey ? t("Masquer la clé", "Hide key") : t("Afficher la clé", "Show key")}
-                >
-                  {showGroqKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              <p className="text-[11px] text-muted-foreground">
-                {t("Si laissé vide, le serveur utilise la clé par défaut de la plateforme. Vos clés sont strictement privées à votre session.", "If left empty, the server uses the platform's default key. Your keys are strictly private to your session.")}
-              </p>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-foreground">
-                {t("Modèle LLM Groq", "Groq LLM model")}
-              </label>
-              <select
-                value={profile?.groq_model || "openai/gpt-oss-120b"}
-                onChange={(e) => {
-                  if (profile) setProfile({ ...profile, groq_model: e.target.value });
-                }}
-                className="w-full px-3.5 py-2.5 rounded-lg bg-background border border-border focus:outline-none focus:ring-1 focus:ring-primary text-xs text-foreground shadow-xs cursor-pointer"
-              >
-                <option value="openai/gpt-oss-120b">{t("GPT OSS 120B (openai/gpt-oss-120b) [Recommandé — Quota élevé & Rapide]", "GPT OSS 120B (openai/gpt-oss-120b) [Recommended — High quota & Fast]")}</option>
-                <option value="openai/gpt-oss-20b">{t("GPT OSS 20B (openai/gpt-oss-20b) [Ultra-rapide]", "GPT OSS 20B (openai/gpt-oss-20b) [Ultra-fast]")}</option>
-                <option value="qwen/qwen3.8-27b">{t("Qwen 2.5 27B (qwen/qwen3.8-27b) [Plafond 1000 OTPM]", "Qwen 2.5 27B (qwen/qwen3.8-27b) [1000 OTPM cap]")}</option>
-              </select>
-              <p className="text-[11px] text-muted-foreground">
-                {t("Modèle de raisonnement haute vitesse pour la rédaction du CV et de la lettre.", "High-speed reasoning model for writing the CV and the letter.")}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2 border-t border-primary/10">
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!profile?.groq_api_key?.trim()) {
-                    setGroqTestResult({ status: "error", message: t("Veuillez d'abord saisir une clé d'API Groq (gsk_...).", "Please enter a Groq API key first (gsk_...).") });
-                    return;
-                  }
-                  try {
-                    setTestingGroq(true);
-                    setGroqTestResult({ status: "idle" });
-                    const res = await testGroqKey(profile.groq_api_key, profile.groq_model || undefined);
-                    setGroqTestResult({ status: "success", message: localizeServerMessage(res.message) || t("Clé Groq validée avec succès !", "Groq key validated successfully!") });
-                  } catch (err: any) {
-                    setGroqTestResult({ status: "error", message: err.message || t("Échec de validation de la clé Groq.", "Groq key validation failed.") });
-                  } finally {
-                    setTestingGroq(false);
-                  }
-                }}
-                disabled={testingGroq || !profile?.groq_api_key?.trim()}
-                className="px-3.5 py-1.5 rounded-lg border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold flex items-center gap-2 transition-colors disabled:opacity-40 cursor-pointer"
-              >
-                {testingGroq ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>{t("Test de connexion en cours...", "Testing connection...")}</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>{t("Tester la clé Groq", "Test the Groq key")}</span>
-                  </>
-                )}
-              </button>
-
-              {groqTestResult.status === "success" && (
-                <span className="text-xs font-medium text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 px-2.5 py-1 rounded-md flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  <span>{groqTestResult.message}</span>
-                </span>
-              )}
-
-              {groqTestResult.status === "error" && (
-                <span className="text-xs font-medium text-rose-800 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 px-2.5 py-1 rounded-md flex items-center gap-1.5">
-                  <AlertTriangle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
-                  <span>{groqTestResult.message}</span>
-                </span>
-              )}
-            </div>
-
-            <div className="text-[11px] text-muted-foreground">
-              {t("Cliquez sur « Enregistrer les modifications » en haut pour sauvegarder la clé.", "Click “Save” at the top to save the key.")}
-            </div>
-          </div>
-        </div>
-
-        {/* Section 1: Identité & Coordonnées */}
         <div className="p-6 rounded-xl border border-border bg-card space-y-5">
           <div className="flex items-center gap-3 border-b border-border/50 pb-3">
             <User className="w-5 h-5 text-primary" />
@@ -2053,6 +1669,29 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Floating Save Button Dock */}
+      <div className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-40">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={isSaving}
+          className="px-5 py-3 rounded-2xl bg-primary hover:bg-orange-700 text-white font-semibold text-sm shadow-xl shadow-orange-600/30 flex items-center gap-2.5 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 cursor-pointer border border-orange-400/30 backdrop-blur-md"
+          title={t("Sauvegarder les modifications du profil", "Save profile modifications")}
+        >
+          {isSaving ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>{t("Sauvegarde...", "Saving...")}</span>
+            </>
+          ) : (
+            <>
+              <Save className="w-4 h-4" />
+              <span>{t("Sauvegarder", "Save")}</span>
+            </>
+          )}
+        </button>
       </div>
     </div>
   );
