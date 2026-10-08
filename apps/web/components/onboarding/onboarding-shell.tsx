@@ -14,6 +14,8 @@ import {
 } from "@/lib/api";
 import { useAuth } from "@/components/auth/auth-context";
 import { useAppLanguage } from "@/lib/language-context";
+import { LanguageSwitcher } from "@/components/navigation/language-switcher";
+import { ThemeToggle } from "@/components/navigation/theme-toggle";
 import {
   User,
   Compass,
@@ -29,6 +31,7 @@ import {
   Check,
   ShieldCheck,
   Zap,
+  LogOut,
 } from "lucide-react";
 
 export const ONBOARDING_STEPS = [
@@ -205,8 +208,15 @@ export function OnboardingShell({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { t, language } = useAppLanguage();
+
+  const handleSkip = () => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("arcapply_onboarding_skipped", "true");
+    }
+    router.push("/");
+  };
   const [profile, setProfile] = useState<MasterProfile | null>(null);
   const [status, setStatus] = useState<ProfileCompletenessStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -340,44 +350,78 @@ export function OnboardingShell({
     >
       <div className="min-h-screen bg-[#FBF9F5] dark:bg-[#12100E] flex flex-col font-sans selection:bg-orange-100 selection:text-orange-900 pb-16">
         {/* Top Header */}
-        <header className="border-b border-stone-200 dark:border-stone-800 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md sm:sticky sm:top-14 z-20 shadow-xs">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between gap-3">
+        <header className="border-b border-stone-200 dark:border-stone-800 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md sticky top-0 z-20 shadow-xs">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between gap-3">
+            {/* Brand Logo & Context */}
             <div className="flex items-center gap-3 min-w-0">
-              <div className="hidden sm:flex w-9 h-9 shrink-0 rounded-xl bg-gradient-to-br from-primary to-orange-700 items-center justify-center text-white shadow-md shadow-orange-600/20">
-                <Compass className="w-5 h-5" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <h1 className="text-sm font-bold text-stone-900 dark:text-stone-100 font-display">
-                    {t("Walkthrough de Configuration Initiale", "Initial Setup Walkthrough")}
-                  </h1>
-                  <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-950/40 text-orange-900 dark:text-orange-300 border border-orange-200 dark:border-orange-800/60">
-                    {t(`Étape ${stepNumber} sur ${ONBOARDING_STEPS.length}`, `Step ${stepNumber} of ${ONBOARDING_STEPS.length}`)}
+              <Link href="/" className="flex items-center gap-2.5 shrink-0 hover:opacity-90 transition-opacity">
+                <img
+                  src="/logo.png"
+                  alt="ArcApply Logo"
+                  className="w-8 h-8 object-contain drop-shadow-xs"
+                />
+                <div className="hidden sm:block">
+                  <span className="text-base font-bold tracking-tight text-stone-900 dark:text-stone-100 font-display block leading-none">
+                    ArcApply
+                  </span>
+                  <span className="text-[10px] text-stone-500 dark:text-stone-400 font-medium tracking-wide">
+                    {t("Assistant Candidatures", "Application Assistant")}
                   </span>
                 </div>
-                <p className="hidden sm:block text-xs text-stone-500 dark:text-stone-400">
-                  {t("Complétez votre profil étape par étape pour maximiser votre impact auprès des recruteurs", "Complete your profile step by step to maximize your impact with recruiters")}
-                </p>
+              </Link>
+
+              <div className="h-5 w-px bg-stone-200 dark:bg-stone-700 hidden sm:block mx-1" />
+
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-xs font-bold text-stone-900 dark:text-stone-100 font-display truncate">
+                  {t("Configuration Initiale", "Initial Setup")}
+                </span>
+                <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-950/60 text-orange-900 dark:text-orange-300 border border-orange-200 dark:border-orange-800/60 shrink-0">
+                  {t(`Étape ${stepNumber}/${ONBOARDING_STEPS.length}`, `Step ${stepNumber}/${ONBOARDING_STEPS.length}`)}
+                </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2.5 shrink-0">
+            {/* Right Controls */}
+            <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+              {/* Fill Demo Data (desktop) */}
               <button
                 type="button"
                 onClick={() => fillDemoData(stepNumber)}
-                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-orange-200 dark:border-orange-800/60 bg-orange-50/80 dark:bg-orange-950/40 hover:bg-orange-100 dark:hover:bg-orange-900/40 text-orange-800 dark:text-orange-300 text-xs font-semibold transition-all shadow-xs"
+                className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-orange-200 dark:border-orange-800/60 bg-orange-50/80 dark:bg-orange-950/40 hover:bg-orange-100 dark:hover:bg-orange-900/40 text-orange-800 dark:text-orange-300 text-xs font-semibold transition-all shadow-xs cursor-pointer"
                 title={t("Injecter un exemple d'étudiant ingénieur pour cette étape", "Fill in a sample engineering student for this step")}
               >
                 <Sparkles className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" />
-                <span>{t("Exemple Ingénieur PFE", "PFE Engineer Example")}</span>
+                <span>{t("Exemple PFE", "PFE Example")}</span>
               </button>
-              <Link
-                href="/profile"
-                className="text-xs text-right text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 px-2 py-1 transition-colors max-w-[7rem] sm:max-w-none"
-                title={t("Quitter le guide et aller directement sur le profil complet", "Leave the guide and go straight to the full profile")}
+
+              {/* Language Switcher */}
+              <LanguageSwitcher />
+
+              {/* Theme Toggle */}
+              <ThemeToggle />
+
+              {/* Skip and explore platform button */}
+              <button
+                type="button"
+                onClick={handleSkip}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 hover:bg-stone-100 dark:hover:bg-stone-700/80 text-stone-700 dark:text-stone-200 text-xs font-semibold shadow-xs transition-all cursor-pointer"
+                title={t("Ignorer l'onboarding et accéder directement au cockpit", "Skip onboarding and access the cockpit directly")}
               >
-                {t("Passer au profil libre", "Skip to the full profile")}
-              </Link>
+                <span className="hidden sm:inline">{t("Ignorer et explorer la plateforme", "Skip and explore the platform")}</span>
+                <span className="sm:hidden">{t("Ignorer", "Skip")}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+
+              {/* Logout button */}
+              <button
+                type="button"
+                onClick={logout}
+                className="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors cursor-pointer"
+                title={t("Déconnexion", "Sign out")}
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
             </div>
           </div>
 
@@ -392,7 +436,7 @@ export function OnboardingShell({
 
         {/* Stepper Pipeline Navigation Bar */}
         <div className="bg-white dark:bg-stone-900 border-b border-stone-200/80 dark:border-stone-800 shadow-xs">
-          <div ref={stepperRef} className="relative max-w-5xl mx-auto px-4 sm:px-6 py-2.5 overflow-x-auto scrollbar-none">
+          <div ref={stepperRef} className="relative max-w-6xl mx-auto px-4 sm:px-6 py-2.5 overflow-x-auto scrollbar-none">
             <nav className="flex items-center gap-2 min-w-max">
               {ONBOARDING_STEPS.map((s, idx) => {
                 const Icon = s.icon;

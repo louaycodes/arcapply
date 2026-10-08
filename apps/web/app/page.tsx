@@ -30,6 +30,35 @@ export default function HomePage() {
 
   return (
     <div className="p-6 sm:p-10 max-w-6xl mx-auto space-y-10">
+      {/* ── Onboarding Incomplete Reminder Banner ── */}
+      {!user.onboarding_completed && (
+        <div className="rounded-2xl border border-orange-200 dark:border-orange-900/60 bg-orange-50/80 dark:bg-orange-950/30 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center text-primary shrink-0">
+              <Compass className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100">
+                {t("Finalisez votre profil étape par étape", "Complete your step-by-step profile")}
+              </h3>
+              <p className="text-xs text-stone-600 dark:text-stone-400 mt-0.5">
+                {t(
+                  "Votre configuration d'onboarding n'est pas encore terminée. Complétez vos informations pour débloquer 100% de la puissance de ciblage ATS.",
+                  "Your onboarding setup is not yet complete. Fill in your details to unlock the full power of ATS targeting."
+                )}
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/onboarding/step-1"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-primary hover:bg-orange-700 text-white text-xs font-semibold shrink-0 shadow-xs transition-all"
+          >
+            <span>{t("Reprendre la configuration", "Resume setup")}</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      )}
+
       {/* ── Hero Welcome ── */}
       <div className="relative overflow-hidden rounded-3xl border border-[#EADBCC] dark:border-stone-800 bg-gradient-to-br from-[#FFFDF9] via-[#FFF7ED] to-[#F7EFE4] dark:from-stone-900 dark:via-stone-900/90 dark:to-stone-950 p-8 sm:p-12 shadow-artisan-card">
         <div className="relative z-10 max-w-2xl space-y-5">
