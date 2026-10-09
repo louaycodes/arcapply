@@ -157,17 +157,14 @@ export function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
           {/* Logo & Brand */}
           <Link href="/" className="flex items-center gap-2.5 group shrink-0">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-orange-700 flex items-center justify-center text-white shadow-md shadow-orange-600/20 group-hover:scale-105 transition-transform">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="font-display font-extrabold text-lg sm:text-xl tracking-tight text-stone-900 dark:text-white">
-                ArcApply
-              </span>
-              <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-950/60 text-orange-900 dark:text-orange-300 border border-orange-200 dark:border-orange-800/60">
-                PFE 2027
-              </span>
-            </div>
+            <img
+              src="/logo.png"
+              alt="ArcApply Logo"
+              className="w-9 h-9 object-contain transition-transform group-hover:scale-105 drop-shadow-xs"
+            />
+            <span className="font-display font-extrabold text-lg sm:text-xl tracking-tight text-stone-900 dark:text-white">
+              ArcApply
+            </span>
           </Link>
 
           {/* Navigation Links (Desktop main_list) */}
@@ -295,16 +292,6 @@ export function LandingPage() {
       <section className="relative overflow-hidden pt-12 pb-20 sm:pt-20 sm:pb-28">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto space-y-6">
-            {/* Tag Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-100/90 dark:bg-orange-950/60 border border-orange-200 dark:border-orange-800 text-orange-900 dark:text-orange-300 text-xs font-semibold shadow-xs">
-              <Sparkles className="w-3.5 h-3.5 text-primary" />
-              <span>
-                {t(
-                  "France & Tunisie &bull; Stages PFE & Premier Emploi Ingénieur",
-                  "France & Tunisia &bull; PFE Internships & Junior Engineering Jobs"
-                )}
-              </span>
-            </div>
 
             {/* Main Headline */}
             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black font-display tracking-tight text-stone-900 dark:text-white leading-[1.12]">
@@ -948,9 +935,11 @@ export function LandingPage() {
       <footer className="py-10 bg-white dark:bg-stone-950 border-t border-stone-200 dark:border-stone-800 text-xs text-stone-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-primary flex items-center justify-center text-white">
-              <ShieldCheck className="w-3.5 h-3.5" />
-            </div>
+            <img
+              src="/logo.png"
+              alt="ArcApply Logo"
+              className="w-6 h-6 object-contain"
+            />
             <span className="font-bold text-stone-900 dark:text-stone-100 font-display">ArcApply</span>
             <span>&bull; {t("Copilote d'application ingénieur", "Engineering application copilot")}</span>
           </div>
