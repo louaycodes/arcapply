@@ -184,7 +184,7 @@ export function LandingPage() {
           {/* Navigation Links (Desktop main_list) */}
           <div className="hidden md:flex items-center gap-6 text-xs font-semibold text-stone-600 dark:text-stone-300">
             <a href="#features" className="hover:text-primary transition-colors">
-              {t("Que offre la plateforme ?", "What We Offer")}
+              {t("Services Proposés", "Our Services")}
             </a>
             <a href="#how-it-works" className="hover:text-primary transition-colors">
               {t("Comment ça marche", "How It Works")}
@@ -245,7 +245,7 @@ export function LandingPage() {
                 onClick={() => setMobileMenuOpen(false)}
                 className="py-1.5 hover:text-primary transition-colors"
               >
-                {t("Que offre la plateforme ?", "What We Offer")}
+                {t("Services Proposés", "Our Services")}
               </a>
               <a
                 href="#how-it-works"
@@ -463,140 +463,228 @@ export function LandingPage() {
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-orange-500/10 dark:bg-orange-500/5 blur-[120px] rounded-full pointer-events-none" />
       </section>
 
-      {/* ── Section: Que offre la plateforme ? ── */}
-      <section id="features" className="py-20 bg-stone-100/70 dark:bg-stone-900/40 border-y border-stone-200/80 dark:border-stone-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-14">
+      {/* ── Section: Services Proposés par la Plateforme (inspiré de Frontend-Cluverse) ── */}
+      <section id="features" className="py-24 bg-stone-100/70 dark:bg-stone-900/40 border-y border-stone-200/80 dark:border-stone-800 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
+          {/* Section Header Cluverse Style */}
           <div className="text-center max-w-2xl mx-auto space-y-3">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold border border-primary/20 shadow-xs">
               <Zap className="w-3.5 h-3.5" />
-              <span>{t("Architecture & Fonctionnalités", "Architecture & Features")}</span>
+              <span>{t("Services & Capacités Clés", "Services & Core Capabilities")}</span>
             </div>
-            <h2 className="text-2xl sm:text-4xl font-extrabold font-display tracking-tight text-stone-900 dark:text-white">
-              {t("Que offre la plateforme ArcApply ?", "What Does ArcApply Offer?")}
+            <h2 className="text-3xl sm:text-5xl font-black font-display tracking-tight text-stone-900 dark:text-white">
+              {t("Services Proposés par la Plateforme", "Services Offered by Our Platform")}
             </h2>
-            <p className="text-sm text-stone-600 dark:text-stone-300">
+            <div className="w-16 h-1 bg-primary rounded-full mx-auto mt-3" />
+            <p className="text-sm text-stone-600 dark:text-stone-400 max-w-xl mx-auto mt-2">
               {t(
-                "Un écosystème complet conçu par des ingénieurs pour des ingénieurs, axé sur la précision, la personnalisation réelle et le gain de temps.",
-                "A complete suite engineered for engineers, focused on high precision, authentic customization, and maximum efficiency."
+                "Un écosystème d'ingénierie complet conçu pour les étudiants : précision déterministe, scoring ATS en direct et aucun spam générique.",
+                "A complete engineering ecosystem built for students: deterministic accuracy, live ATS match scoring, and zero generic spam."
               )}
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Feature 1: Radar */}
-            <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-6 space-y-4 shadow-sm hover:border-orange-300 dark:hover:border-orange-600 transition-all">
-              <div className="w-12 h-12 rounded-xl bg-orange-100 dark:bg-orange-950/60 text-primary flex items-center justify-center">
-                <Radar className="w-6 h-6" />
+          {/* Service Cards Grid (Cluverse Card Style with Corner Arrow Badges) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
+            {/* Service 1: Radar */}
+            <div className="relative p-7 sm:p-8 rounded-3xl bg-white dark:bg-[#181513] border border-stone-200/90 dark:border-stone-800 shadow-sm hover:shadow-2xl hover:border-primary/50 hover:-translate-y-1.5 transition-all duration-300 group overflow-hidden flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="w-14 h-14 rounded-2xl bg-orange-500/10 border border-orange-500/20 text-primary flex items-center justify-center group-hover:scale-105 group-hover:bg-primary group-hover:text-white transition-all duration-300">
+                    <Radar className="w-7 h-7" />
+                  </div>
+                  <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-orange-100 dark:bg-orange-950/60 text-primary border border-orange-200 dark:border-orange-800/60">
+                    {t("Multi-Plateformes", "Multi-Board")}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold font-display text-stone-900 dark:text-stone-100 group-hover:text-primary transition-colors">
+                    {t("Radar des Offres Intelligent", "Intelligent Offer Radar")}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 leading-relaxed mt-2.5">
+                    {t(
+                      "Veille continue sur LinkedIn, Welcome to the Jungle, HelloWork et Tanitjobs. Déduplication d'offres par fingerprint sémantique, pagination continue et filtres multi-villes France & Tunisie.",
+                      "Continuous tracking across LinkedIn, Welcome to the Jungle, HelloWork, and Tanitjobs with semantic deduplication and multi-location filters."
+                    )}
+                  </p>
+                </div>
               </div>
-              <h3 className="text-base font-bold font-display text-stone-900 dark:text-stone-100">
-                {t("Radar Multi-Plateformes Intelligent", "Smart Multi-Board Job Radar")}
-              </h3>
-              <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
-                {t(
-                  "Scrutateur automatique sur LinkedIn, Welcome to the Jungle, HelloWork et Tanitjobs. Déduplication d'offres par fingerprint sémantique, pagination continue et filtres multi-villes France & Tunisie.",
-                  "Automated radar across LinkedIn, Welcome to the Jungle, HelloWork, and Tanitjobs. Deduplication by semantic fingerprint, continuous pagination, and multi-location filters."
-                )}
-              </p>
+              <div className="pt-6">
+                <div className="w-10 h-10 rounded-tl-2xl rounded-br-2xl bg-stone-100 dark:bg-stone-800/80 text-stone-400 group-hover:bg-primary group-hover:text-white flex items-center justify-center transition-all duration-300 ml-auto -mr-7 -mb-7">
+                  <ArrowRight className="w-4 h-4 -rotate-45 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                </div>
+              </div>
             </div>
 
-            {/* Feature 2: ATS Engine */}
-            <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-6 space-y-4 shadow-sm hover:border-orange-300 dark:hover:border-orange-600 transition-all">
-              <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center">
-                <Target className="w-6 h-6" />
+            {/* Service 2: ATS Engine */}
+            <div className="relative p-7 sm:p-8 rounded-3xl bg-white dark:bg-[#181513] border border-stone-200/90 dark:border-stone-800 shadow-sm hover:shadow-2xl hover:border-emerald-500/50 hover:-translate-y-1.5 transition-all duration-300 group overflow-hidden flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 flex items-center justify-center group-hover:scale-105 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300">
+                    <Target className="w-7 h-7" />
+                  </div>
+                  <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
+                    {t("Déterministe", "Deterministic")}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold font-display text-stone-900 dark:text-stone-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                    {t("Scoring ATS en Temps Réel", "Real-Time ATS Scoring")}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 leading-relaxed mt-2.5">
+                    {t(
+                      "Algorithme comparant les prérequis réels de chaque poste à votre Master Profile vérifié. Identifiez votre pourcentage d'adéquation et comblez les compétences prioritaires.",
+                      "Accurate algorithm weighing job requirements against your certified profile. View your exact match percentage and fill priority keywords."
+                    )}
+                  </p>
+                </div>
               </div>
-              <h3 className="text-base font-bold font-display text-stone-900 dark:text-stone-100">
-                {t("Scoring ATS Déterministe", "Deterministic ATS Match Scoring")}
-              </h3>
-              <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
-                {t(
-                  "Algorithme précis comparant les prérequis de l'offre à vos compétences attestées. Visualisez votre pourcentage d'adéquation avant de postuler et comblez les mots-clés prioritaires.",
-                  "Accurate comparison engine weighing job requirements against your certified competencies. View your match score before applying and cover priority keywords."
-                )}
-              </p>
+              <div className="pt-6">
+                <div className="w-10 h-10 rounded-tl-2xl rounded-br-2xl bg-stone-100 dark:bg-stone-800/80 text-stone-400 group-hover:bg-emerald-600 group-hover:text-white flex items-center justify-center transition-all duration-300 ml-auto -mr-7 -mb-7">
+                  <ArrowRight className="w-4 h-4 -rotate-45 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                </div>
+              </div>
             </div>
 
-            {/* Feature 3: Studio CV */}
-            <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-6 space-y-4 shadow-sm hover:border-orange-300 dark:hover:border-orange-600 transition-all">
-              <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 flex items-center justify-center">
-                <FileText className="w-6 h-6" />
+            {/* Service 3: CV Studio */}
+            <div className="relative p-7 sm:p-8 rounded-3xl bg-white dark:bg-[#181513] border border-stone-200/90 dark:border-stone-800 shadow-sm hover:shadow-2xl hover:border-blue-500/50 hover:-translate-y-1.5 transition-all duration-300 group overflow-hidden flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-600 flex items-center justify-center group-hover:scale-105 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
+                    <FileText className="w-7 h-7" />
+                  </div>
+                  <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">
+                    {t("Feuille A4", "A4 Sheet")}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold font-display text-stone-900 dark:text-stone-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                    {t("Studio CV Vectoriel A4", "Vector A4 CV Studio")}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 leading-relaxed mt-2.5">
+                    {t(
+                      "Édition directement sur la feuille A4 avec mise en page calibrée. Insertion de blocs structurés, bascule instantanée FR/EN et compilation PDF vectorielle fidèle à 100%.",
+                      "Direct editing on calibrated A4 sheet. Modular section building, instant FR/EN language toggle, and 100% faithful vector PDF export."
+                    )}
+                  </p>
+                </div>
               </div>
-              <h3 className="text-base font-bold font-display text-stone-900 dark:text-stone-100">
-                {t("Studio CV Vectoriel A4 Direct", "Direct Vector A4 CV Studio")}
-              </h3>
-              <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
-                {t(
-                  "Édition directe au format A4 sur une feuille dynamique. Insertion de blocs (+ Stage, + Formation, + Projet, + Compétences), bascule instantanée FR/EN et compilation PDF vectorielle.",
-                  "In-place editing directly on a calibrated A4 sheet. Single-click insertion of stages, education, projects, skills, instant FR/EN language toggle, and identical PDF download."
-                )}
-              </p>
+              <div className="pt-6">
+                <div className="w-10 h-10 rounded-tl-2xl rounded-br-2xl bg-stone-100 dark:bg-stone-800/80 text-stone-400 group-hover:bg-blue-600 group-hover:text-white flex items-center justify-center transition-all duration-300 ml-auto -mr-7 -mb-7">
+                  <ArrowRight className="w-4 h-4 -rotate-45 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                </div>
+              </div>
             </div>
 
-            {/* Feature 4: Cover Letter */}
-            <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-6 space-y-4 shadow-sm hover:border-orange-300 dark:hover:border-orange-600 transition-all">
-              <div className="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-950/60 text-purple-600 flex items-center justify-center">
-                <Sparkles className="w-6 h-6" />
+            {/* Service 4: Cover Letter */}
+            <div className="relative p-7 sm:p-8 rounded-3xl bg-white dark:bg-[#181513] border border-stone-200/90 dark:border-stone-800 shadow-sm hover:shadow-2xl hover:border-purple-500/50 hover:-translate-y-1.5 transition-all duration-300 group overflow-hidden flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="w-14 h-14 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-600 flex items-center justify-center group-hover:scale-105 group-hover:bg-purple-600 group-hover:text-white transition-all duration-300">
+                    <Sparkles className="w-7 h-7" />
+                  </div>
+                  <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
+                    {t("Zéro Hallucination", "Zero Fluff")}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold font-display text-stone-900 dark:text-stone-100 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                    {t("Lettres de Motivation Chirurgicales", "Surgical Cover Letters")}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 leading-relaxed mt-2.5">
+                    {t(
+                      "Fini les lettres génériques impersonnelles. Synthèse sobre et ciblée qui met en valeur vos réalisations prouvées, vos stacks réelles et vos projets d'école certifiés.",
+                      "No more generic bulk emails. Clean, targeted letters highlighting your actual verified projects, technologies, and technical achievements."
+                    )}
+                  </p>
+                </div>
               </div>
-              <h3 className="text-base font-bold font-display text-stone-900 dark:text-stone-100">
-                {t("Rédacteur Sobre Zéro-Hallucination", "Zero-Hallucination Letter Synthesis")}
-              </h3>
-              <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
-                {t(
-                  "Fini les lettres génériques qui débutent par « Passionné depuis mon plus jeune âge ». Des lettres sobres, percutantes, qui citent vos vraies réalisations et vos projets techniques.",
-                  "No more fluff starting with cliches. Clean, professional letters that specifically quote your actual projects, real technical stack, and problem-solving experience."
-                )}
-              </p>
+              <div className="pt-6">
+                <div className="w-10 h-10 rounded-tl-2xl rounded-br-2xl bg-stone-100 dark:bg-stone-800/80 text-stone-400 group-hover:bg-purple-600 group-hover:text-white flex items-center justify-center transition-all duration-300 ml-auto -mr-7 -mb-7">
+                  <ArrowRight className="w-4 h-4 -rotate-45 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                </div>
+              </div>
             </div>
 
-            {/* Feature 5: Kanban Pipeline */}
-            <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-6 space-y-4 shadow-sm hover:border-orange-300 dark:hover:border-orange-600 transition-all">
-              <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center">
-                <KanbanSquare className="w-6 h-6" />
+            {/* Service 5: Kanban Pipeline */}
+            <div className="relative p-7 sm:p-8 rounded-3xl bg-white dark:bg-[#181513] border border-stone-200/90 dark:border-stone-800 shadow-sm hover:shadow-2xl hover:border-amber-500/50 hover:-translate-y-1.5 transition-all duration-300 group overflow-hidden flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 flex items-center justify-center group-hover:scale-105 group-hover:bg-amber-600 group-hover:text-white transition-all duration-300">
+                    <KanbanSquare className="w-7 h-7" />
+                  </div>
+                  <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
+                    {t("Pipeline Kanban", "Pipeline")}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold font-display text-stone-900 dark:text-stone-100 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                    {t("Suivi Kanban & Relances J+7", "Kanban Tracker & Day+7 Follow-ups")}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 leading-relaxed mt-2.5">
+                    {t(
+                      "Pipeline visuel de vos candidatures (À postuler, Postulé, En attente, Entretien, Offre). Rappels automatiques quand une relance par email est recommandée à J+7.",
+                      "Visual hiring pipeline across every stage with automated reminders when a follow-up email is optimal after 7 days."
+                    )}
+                  </p>
+                </div>
               </div>
-              <h3 className="text-base font-bold font-display text-stone-900 dark:text-stone-100">
-                {t("Pipeline Kanban & Relances J+7", "Kanban Pipeline & Day+7 Follow-ups")}
-              </h3>
-              <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
-                {t(
-                  "Suivi d'avancement de toutes vos candidatures (À postuler, Postulé, En attente, Entretien, Offre). Alertes discrètes lorsqu'une relance opportune est conseillée à 7 jours.",
-                  "Stage-by-stage pipeline tracking (To Apply, Applied, Pending, Interview, Offer). Subtle reminders when a well-timed follow-up email is recommended after 7 days."
-                )}
-              </p>
+              <div className="pt-6">
+                <div className="w-10 h-10 rounded-tl-2xl rounded-br-2xl bg-stone-100 dark:bg-stone-800/80 text-stone-400 group-hover:bg-amber-600 group-hover:text-white flex items-center justify-center transition-all duration-300 ml-auto -mr-7 -mb-7">
+                  <ArrowRight className="w-4 h-4 -rotate-45 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                </div>
+              </div>
             </div>
 
-            {/* Feature 6: BYOK & Isolation */}
-            <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-6 space-y-4 shadow-sm hover:border-orange-300 dark:hover:border-orange-600 transition-all">
-              <div className="w-12 h-12 rounded-xl bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 flex items-center justify-center">
-                <KeyRound className="w-6 h-6" />
+            {/* Service 6: BYOK & Isolation */}
+            <div className="relative p-7 sm:p-8 rounded-3xl bg-white dark:bg-[#181513] border border-stone-200/90 dark:border-stone-800 shadow-sm hover:shadow-2xl hover:border-orange-500/50 hover:-translate-y-1.5 transition-all duration-300 group overflow-hidden flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="w-14 h-14 rounded-2xl bg-stone-500/10 border border-stone-500/20 text-stone-700 dark:text-stone-300 flex items-center justify-center group-hover:scale-105 group-hover:bg-primary group-hover:text-white transition-all duration-300">
+                    <KeyRound className="w-7 h-7" />
+                  </div>
+                  <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700">
+                    {t("BYOK Privé", "Private BYOK")}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold font-display text-stone-900 dark:text-stone-100 group-hover:text-primary transition-colors">
+                    {t("Mode BYOK Groq & Confidentialité", "BYOK Groq Mode & Data Privacy")}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 leading-relaxed mt-2.5">
+                    {t(
+                      "Multi-tenant étanche : connectez votre propre clé API Groq gratuite pour profiter de 200 000 tokens/jour dédiés. Vos données et vos CVs restent strictement confidentiels.",
+                      "Isolated multi-tenancy: connect your own free Groq API key for 200,000 dedicated tokens/day. Complete private ownership of your data."
+                    )}
+                  </p>
+                </div>
               </div>
-              <h3 className="text-base font-bold font-display text-stone-900 dark:text-stone-100">
-                {t("BYOK Groq Gratuit & Confidentialité", "Free BYOK Groq & Complete Privacy")}
-              </h3>
-              <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
-                {t(
-                  "Multi-tenant étanche : renseignez votre propre clé Groq gratuite pour obtenir 200 000 tokens/jour dédiés. Vos données de profil et vos candidatures restent strictement privées.",
-                  "Isolated multi-tenancy: attach your personal free Groq key for 200,000 private tokens/day. Your profile data and application history remain 100% confidential."
-                )}
-              </p>
+              <div className="pt-6">
+                <div className="w-10 h-10 rounded-tl-2xl rounded-br-2xl bg-stone-100 dark:bg-stone-800/80 text-stone-400 group-hover:bg-primary group-hover:text-white flex items-center justify-center transition-all duration-300 ml-auto -mr-7 -mb-7">
+                  <ArrowRight className="w-4 h-4 -rotate-45 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* ── Section: Comment ça marche (Workflow en 3 étapes) ── */}
-      <section id="how-it-works" className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-14">
+      <section id="how-it-works" className="py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
           <div className="text-center max-w-2xl mx-auto space-y-3">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-xs font-bold">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-xs font-bold border border-emerald-200 dark:border-emerald-800 shadow-xs">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
               <span>{t("Parcours Fluide & Simple", "Fluid & Seamless Journey")}</span>
             </div>
-            <h2 className="text-2xl sm:text-4xl font-extrabold font-display tracking-tight text-stone-900 dark:text-white">
+            <h2 className="text-3xl sm:text-5xl font-black font-display tracking-tight text-stone-900 dark:text-white">
               {t("Comment ça marche en 3 étapes ?", "How Does It Work in 3 Steps?")}
             </h2>
-            <p className="text-sm text-stone-600 dark:text-stone-300">
+            <div className="w-16 h-1 bg-emerald-600 rounded-full mx-auto mt-3" />
+            <p className="text-sm text-stone-600 dark:text-stone-400 max-w-xl mx-auto mt-2">
               {t(
-                "De la création de votre compte jusqu'à l'entretien, en moins de 10 minutes.",
-                "From initial account setup to recruiter interviews in under 10 minutes."
+                "De la configuration de votre profil à vos premiers entretiens, en moins de 10 minutes.",
+                "From initial profile setup to recruiter interviews in under 10 minutes."
               )}
             </p>
           </div>
@@ -654,13 +742,18 @@ export function LandingPage() {
       </section>
 
       {/* ── Section: Comparatif Spam vs ArcApply ── */}
-      <section id="comparison" className="py-20 bg-stone-100/70 dark:bg-stone-900/40 border-y border-stone-200/80 dark:border-stone-800">
+      <section id="comparison" className="py-24 bg-stone-100/70 dark:bg-stone-900/40 border-y border-stone-200/80 dark:border-stone-800">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           <div className="text-center max-w-2xl mx-auto space-y-3">
-            <h2 className="text-2xl sm:text-4xl font-extrabold font-display tracking-tight text-stone-900 dark:text-white">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-xs font-bold border border-amber-200 dark:border-amber-800 shadow-xs">
+              <Target className="w-3.5 h-3.5 text-amber-600" />
+              <span>{t("Comparatif Élite", "Elite Comparison")}</span>
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-black font-display tracking-tight text-stone-900 dark:text-white">
               {t("Pourquoi choisir ArcApply ?", "Why Choose ArcApply?")}
             </h2>
-            <p className="text-sm text-stone-600 dark:text-stone-300">
+            <div className="w-16 h-1 bg-amber-600 rounded-full mx-auto mt-3" />
+            <p className="text-sm text-stone-600 dark:text-stone-400 max-w-xl mx-auto mt-2">
               {t(
                 "La différence entre le mass-spam IA rejeté par les recruteurs et une candidature d'ingénieur d'élite.",
                 "The difference between bulk AI spam rejected by recruiters and an elite engineering submission."
@@ -746,41 +839,55 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ── Section: FAQ ── */}
-      <section id="faq" className="py-20">
+      {/* ── Section: FAQ (inspiré de Frontend-Cluverse) ── */}
+      <section id="faq" className="py-24 relative overflow-hidden">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+          {/* Section Header Cluverse Style */}
           <div className="text-center max-w-2xl mx-auto space-y-3">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-950/60 text-primary text-xs font-bold">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold border border-primary/20 shadow-xs">
               <HelpCircle className="w-3.5 h-3.5" />
               <span>{t("Foire Aux Questions", "Frequently Asked Questions")}</span>
             </div>
-            <h2 className="text-2xl sm:text-4xl font-extrabold font-display tracking-tight text-stone-900 dark:text-white">
-              {t("Questions Fréquemment Posées", "Got Questions? We Have Answers.")}
+            <h2 className="text-3xl sm:text-5xl font-black font-display tracking-tight text-stone-900 dark:text-white">
+              {t("Questions Fréquemment Posées", "Frequently Asked Questions")}
             </h2>
+            <div className="w-16 h-1 bg-primary rounded-full mx-auto mt-3" />
+            <p className="text-sm text-stone-600 dark:text-stone-400 max-w-xl mx-auto mt-2">
+              {t(
+                "Tout ce que vous devez savoir sur le fonctionnement déterministe d'ArcApply et la garantie zéro hallucination.",
+                "Everything you need to know about ArcApply's deterministic application engine and zero hallucination guarantee."
+              )}
+            </p>
           </div>
 
-          <div className="space-y-3">
+          {/* Accordion Cards Grid with Cluverse Number Badges */}
+          <div className="max-w-3xl mx-auto space-y-3.5">
             {faqItems.map((item, index) => {
               const isOpen = activeFaqIndex === index;
               return (
                 <div
                   key={index}
-                  className="rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 overflow-hidden transition-all shadow-xs"
+                  className="rounded-2xl border border-stone-200/90 dark:border-stone-800/80 bg-white dark:bg-[#181513] overflow-hidden transition-all duration-300 shadow-xs hover:border-primary/40 hover:shadow-md"
                 >
                   <button
                     type="button"
                     onClick={() => setActiveFaqIndex(isOpen ? null : index)}
-                    className="w-full p-4 sm:p-5 text-left flex items-center justify-between gap-4 font-bold text-sm sm:text-base text-stone-900 dark:text-stone-100 font-display hover:text-primary transition-colors cursor-pointer"
+                    className="w-full p-4 sm:p-5 text-left flex items-center justify-between gap-4 font-bold text-sm sm:text-base text-stone-900 dark:text-stone-100 font-display transition-all duration-300 hover:pl-6 hover:bg-primary/5 cursor-pointer"
                   >
-                    <span>{item.q}</span>
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <span className="w-7 h-7 rounded-full bg-primary/15 text-primary text-xs font-black flex items-center justify-center shrink-0 border border-primary/25">
+                        {index + 1}
+                      </span>
+                      <span className="truncate sm:whitespace-normal">{item.q}</span>
+                    </div>
                     <ChevronDown
-                      className={`w-4 h-4 text-stone-400 transition-transform shrink-0 ${
+                      className={`w-4 h-4 text-stone-400 transition-transform duration-300 shrink-0 ${
                         isOpen ? "rotate-180 text-primary" : ""
                       }`}
                     />
                   </button>
                   {isOpen && (
-                    <div className="px-4 pb-5 sm:px-5 sm:pb-5 text-xs sm:text-sm text-stone-600 dark:text-stone-300 leading-relaxed border-t border-stone-100 dark:border-stone-800/60 pt-3">
+                    <div className="px-5 pb-5 sm:px-6 sm:pb-5 text-xs sm:text-sm text-stone-600 dark:text-stone-300 leading-relaxed border-t border-dashed border-stone-200 dark:border-stone-800/80 pt-4 bg-stone-50/50 dark:bg-[#141210]/50 animate-in fade-in duration-200">
                       {item.a}
                     </div>
                   )}
@@ -792,17 +899,18 @@ export function LandingPage() {
       </section>
 
       {/* ── Section: Contact & Support ── */}
-      <section id="contact" className="py-20 bg-stone-100/70 dark:bg-stone-900/40 border-t border-stone-200/80 dark:border-stone-800">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+      <section id="contact" className="py-24 bg-stone-100/70 dark:bg-stone-900/40 border-t border-stone-200/80 dark:border-stone-800">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
           <div className="text-center max-w-2xl mx-auto space-y-3">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 text-xs font-bold">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 text-xs font-bold border border-blue-200 dark:border-blue-800 shadow-xs">
               <Mail className="w-3.5 h-3.5" />
               <span>{t("Contact & Échange", "Contact & Inquiries")}</span>
             </div>
-            <h2 className="text-2xl sm:text-4xl font-extrabold font-display tracking-tight text-stone-900 dark:text-white">
+            <h2 className="text-3xl sm:text-5xl font-black font-display tracking-tight text-stone-900 dark:text-white">
               {t("Une question ? Écrivez-nous", "Have a Question? Reach Out")}
             </h2>
-            <p className="text-sm text-stone-600 dark:text-stone-300">
+            <div className="w-16 h-1 bg-blue-600 rounded-full mx-auto mt-3" />
+            <p className="text-sm text-stone-600 dark:text-stone-400 max-w-xl mx-auto mt-2">
               {t(
                 "Partenariat école, suggestion de fonctionnalité ou assistance : nous répondons sous 24h.",
                 "University partnership, feature feedback or support: we reply within 24h."
@@ -1070,7 +1178,7 @@ export function LandingPage() {
                   </li>
                   <li>
                     <a href="#features" className="text-stone-400 hover:text-primary transition-colors">
-                      {t("Fonctionnalités", "Features")}
+                      {t("Services Proposés", "Our Services")}
                     </a>
                   </li>
                   <li>

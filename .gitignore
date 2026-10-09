@@ -16,6 +16,9 @@ dist/
 *.tsbuildinfo
 next-env.d.ts
 
+# Cloned reference repos
+Frontend-Cluverse/
+
 # Python / uv / venv
 __pycache__/
 *.py[cod]
