@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ShieldCheck,
@@ -42,6 +42,17 @@ export function LandingPage() {
   const { t, language } = useAppLanguage();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [activeFaqIndex, setActiveFaqIndex] = useState<number | null>(0);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Contact form state
   const [contactName, setContactName] = useState("");
@@ -135,11 +146,17 @@ export function LandingPage() {
 
   return (
     <div className="min-h-screen bg-[#FBF9F5] dark:bg-[#12100E] text-stone-900 dark:text-stone-100 font-sans selection:bg-orange-100 selection:text-orange-950 dark:selection:bg-orange-950 dark:selection:text-orange-200">
-      {/* ── Top Floating Navigation ── */}
-      <nav className="sticky top-0 z-40 bg-[#FBF9F5]/85 dark:bg-[#12100E]/85 backdrop-blur-xl border-b border-stone-200/80 dark:border-stone-800 transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      {/* ── Top Floating Navigation (affix scroll & animated navTrigger inspiré de test.html) ── */}
+      <nav
+        className={`sticky top-0 z-40 transition-all duration-300 ease-in-out ${
+          isScrolled
+            ? "py-2.5 bg-[#FBF9F5]/95 dark:bg-[#12100E]/95 backdrop-blur-xl border-b border-stone-200/80 dark:border-stone-800 shadow-sm shadow-stone-900/5"
+            : "py-4 bg-[#FBF9F5]/85 dark:bg-[#12100E]/85 backdrop-blur-md border-b border-stone-200/40 dark:border-stone-800/40"
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
           {/* Logo & Brand */}
-          <Link href="/" className="flex items-center gap-2.5 group">
+          <Link href="/" className="flex items-center gap-2.5 group shrink-0">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-orange-700 flex items-center justify-center text-white shadow-md shadow-orange-600/20 group-hover:scale-105 transition-transform">
               <ShieldCheck className="w-5 h-5" />
             </div>
@@ -153,7 +170,7 @@ export function LandingPage() {
             </div>
           </Link>
 
-          {/* Navigation Links */}
+          {/* Navigation Links (Desktop main_list) */}
           <div className="hidden md:flex items-center gap-6 text-xs font-semibold text-stone-600 dark:text-stone-300">
             <a href="#features" className="hover:text-primary transition-colors">
               {t("Que offre la plateforme ?", "What We Offer")}
@@ -172,8 +189,8 @@ export function LandingPage() {
             </a>
           </div>
 
-          {/* Actions & Controls */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          {/* Actions & Controls (Desktop) */}
+          <div className="hidden md:flex items-center gap-2 sm:gap-3">
             <LanguageSwitcher />
             <ThemeToggle />
             <button
@@ -190,7 +207,88 @@ export function LandingPage() {
               <span>{t("Créer un compte", "Get Started")}</span>
             </button>
           </div>
+
+          {/* Controls & NavTrigger on Mobile (Right side) */}
+          <div className="flex md:hidden items-center gap-3">
+            <LanguageSwitcher />
+            <ThemeToggle />
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className={`nav-trigger text-stone-800 dark:text-stone-100 ${mobileMenuOpen ? "active" : ""}`}
+              aria-label={t("Menu de navigation", "Navigation menu")}
+            >
+              <i />
+              <i />
+              <i />
+            </button>
+          </div>
         </div>
+
+        {/* Mobile Dropdown Menu (show_list) */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-stone-200/80 dark:border-stone-800 bg-[#FBF9F5]/98 dark:bg-[#12100E]/98 backdrop-blur-2xl px-6 py-6 space-y-4 animate-in slide-in-from-top-2 duration-200 shadow-xl">
+            <div className="flex flex-col space-y-3 font-semibold text-sm text-stone-700 dark:text-stone-200">
+              <a
+                href="#features"
+                onClick={() => setMobileMenuOpen(false)}
+                className="py-1.5 hover:text-primary transition-colors"
+              >
+                {t("Que offre la plateforme ?", "What We Offer")}
+              </a>
+              <a
+                href="#how-it-works"
+                onClick={() => setMobileMenuOpen(false)}
+                className="py-1.5 hover:text-primary transition-colors"
+              >
+                {t("Comment ça marche", "How It Works")}
+              </a>
+              <a
+                href="#comparison"
+                onClick={() => setMobileMenuOpen(false)}
+                className="py-1.5 hover:text-primary transition-colors"
+              >
+                {t("Comparatif", "Comparison")}
+              </a>
+              <a
+                href="#faq"
+                onClick={() => setMobileMenuOpen(false)}
+                className="py-1.5 hover:text-primary transition-colors"
+              >
+                {t("FAQ", "FAQ")}
+              </a>
+              <a
+                href="#contact"
+                onClick={() => setMobileMenuOpen(false)}
+                className="py-1.5 hover:text-primary transition-colors"
+              >
+                {t("Contact", "Contact")}
+              </a>
+            </div>
+
+            <div className="pt-3 border-t border-stone-200 dark:border-stone-800 flex flex-col gap-2.5">
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setAuthModalOpen(true);
+                }}
+                className="w-full py-2.5 rounded-xl text-center text-xs font-semibold text-stone-800 dark:text-stone-200 border border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
+              >
+                {t("Se connecter", "Sign In")}
+              </button>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setAuthModalOpen(true);
+                }}
+                className="w-full py-2.5 rounded-xl bg-primary hover:bg-orange-600 text-white text-xs font-bold shadow-md shadow-orange-600/20 transition-all flex items-center justify-center gap-1.5"
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                <span>{t("Créer un compte", "Get Started")}</span>
+              </button>
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* ── Hero Section ── */}
