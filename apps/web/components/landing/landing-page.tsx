@@ -32,6 +32,10 @@ import {
   MessageSquare,
   Bot,
   ExternalLink,
+  MapPin,
+  Phone,
+  Linkedin,
+  Github,
 } from "lucide-react";
 import { useAppLanguage } from "@/lib/language-context";
 import { LanguageSwitcher } from "@/components/navigation/language-switcher";
@@ -61,6 +65,16 @@ export function LandingPage() {
   const [contactMessage, setContactMessage] = useState("");
   const [contactSubmitted, setContactSubmitted] = useState(false);
   const [contactSubmitting, setContactSubmitting] = useState(false);
+
+  // Footer newsletter state
+  const [footerEmail, setFooterEmail] = useState("");
+  const [footerSubscribed, setFooterSubscribed] = useState(false);
+
+  const handleFooterSubscribe = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!footerEmail.trim()) return;
+    setFooterSubscribed(true);
+  };
 
   const handleContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -304,7 +318,7 @@ export function LandingPage() {
             {/* Subtitle */}
             <p className="text-base sm:text-lg text-stone-600 dark:text-stone-300 max-w-2xl mx-auto leading-relaxed">
               {t(
-                "Le premier copilote d'application déterministe : il scrute les meilleures opportunités, aligne vos compétences réelles avec chaque offre et génère des CV vectoriels A4 et lettres chirurgicales.",
+                "Le premier copilote d'application déterministe : il scrute les meilleures opportunités, aligne vos compétences réelles avec chaque offre et génère des CVs et lettres chirurgicales.",
                 "The first deterministic application copilot: it monitors top opportunities, aligns your verified skills with each role, and crafts ATS-compliant vector CVs and surgical cover letters."
               )}
             </p>
@@ -931,26 +945,244 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ── Footer ── */}
-      <footer className="py-10 bg-white dark:bg-stone-950 border-t border-stone-200 dark:border-stone-800 text-xs text-stone-500">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
-          <div className="flex items-center gap-2">
-            <img
-              src="/logo.png"
-              alt="ArcApply Logo"
-              className="w-6 h-6 object-contain"
-            />
-            <span className="font-bold text-stone-900 dark:text-stone-100 font-display">ArcApply</span>
-            <span>&bull; {t("Copilote d'application ingénieur", "Engineering application copilot")}</span>
+      {/* ── Rich Footer (inspiré de test.html) ── */}
+      <footer className="bg-[#141210] dark:bg-[#0c0a09] text-stone-400 text-xs relative overflow-hidden border-t border-stone-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Top CTA Row */}
+          <div className="py-8 sm:py-10 border-b border-stone-800/80">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+              {/* Single CTA 1: Location */}
+              <div className="flex items-center gap-4 group">
+                <div className="w-12 h-12 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-primary shrink-0 group-hover:scale-105 transition-transform">
+                  <MapPin className="w-6 h-6" />
+                </div>
+                <div className="min-w-0">
+                  <h4 className="text-white font-bold text-sm sm:text-base font-display">
+                    {t("France & Tunisie", "France & Tunisia")}
+                  </h4>
+                  <p className="text-stone-400 text-xs mt-0.5">
+                    {t("Hub de recrutement stages PFE & 1er emploi", "PFE internships & entry-level engineering hub")}
+                  </p>
+                </div>
+              </div>
+
+              {/* Single CTA 2: Availability */}
+              <div className="flex items-center gap-4 group">
+                <div className="w-12 h-12 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-primary shrink-0 group-hover:scale-105 transition-transform">
+                  <Phone className="w-6 h-6" />
+                </div>
+                <div className="min-w-0">
+                  <h4 className="text-white font-bold text-sm sm:text-base font-display">
+                    {t("Copilote Intelligent", "Smart Copilot")}
+                  </h4>
+                  <p className="text-stone-400 text-xs mt-0.5">
+                    {t("Assistance et ciblage disponible 24/7", "Targeting & copilot available 24/7")}
+                  </p>
+                </div>
+              </div>
+
+              {/* Single CTA 3: Email */}
+              <div className="flex items-center gap-4 group">
+                <div className="w-12 h-12 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-primary shrink-0 group-hover:scale-105 transition-transform">
+                  <Mail className="w-6 h-6" />
+                </div>
+                <div className="min-w-0">
+                  <h4 className="text-white font-bold text-sm sm:text-base font-display">
+                    {t("Contact Direct", "Direct Email")}
+                  </h4>
+                  <a
+                    href="mailto:contact@arcapply.com"
+                    className="text-stone-400 hover:text-primary transition-colors text-xs mt-0.5 block truncate"
+                  >
+                    contact@arcapply.com
+                  </a>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-4 text-stone-600 dark:text-stone-400">
-            <a href="#features" className="hover:text-primary transition-colors">{t("Fonctionnalités", "Features")}</a>
-            <a href="#faq" className="hover:text-primary transition-colors">{t("FAQ", "FAQ")}</a>
-            <a href="#contact" className="hover:text-primary transition-colors">{t("Contact", "Contact")}</a>
+
+          {/* Main Footer Content */}
+          <div className="py-12 sm:py-16">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 lg:gap-12">
+              {/* Col 1: Brand & Bio & Socials (lg: 5 cols) */}
+              <div className="lg:col-span-5 space-y-5">
+                <Link href="/" className="inline-flex items-center gap-2.5 group">
+                  <img
+                    src="/logo.png"
+                    alt="ArcApply Logo"
+                    className="w-9 h-9 object-contain transition-transform group-hover:scale-105"
+                  />
+                  <span className="font-extrabold text-xl tracking-tight text-white font-display">
+                    ArcApply
+                  </span>
+                </Link>
+                <p className="text-stone-400 text-xs sm:text-sm leading-relaxed max-w-sm">
+                  {t(
+                    "Le premier copilote d'application déterministe pour étudiants ingénieurs. Zéro hallucination, adaptation chirurgicale de CV et ciblage précis des meilleures firmes technologiques.",
+                    "The first deterministic application copilot for engineering students. Zero hallucinations, surgical CV tailoring, and precise matching with top tech firms."
+                  )}
+                </p>
+                <div className="pt-1 flex items-center gap-3">
+                  <span className="text-xs font-semibold text-white mr-1">
+                    {t("Suivez-nous :", "Follow us:")}
+                  </span>
+                  <a
+                    href="https://linkedin.com"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="LinkedIn"
+                    className="w-9 h-9 rounded-full bg-[#1e1b18] border border-stone-800 hover:border-primary flex items-center justify-center text-stone-300 hover:text-white hover:bg-[#3B5998]/40 transition-all hover:scale-110"
+                  >
+                    <Linkedin className="w-4 h-4" />
+                  </a>
+                  <a
+                    href="https://github.com"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="GitHub"
+                    className="w-9 h-9 rounded-full bg-[#1e1b18] border border-stone-800 hover:border-primary flex items-center justify-center text-stone-300 hover:text-white hover:bg-stone-800 transition-all hover:scale-110"
+                  >
+                    <Github className="w-4 h-4" />
+                  </a>
+                  <a
+                    href="/"
+                    aria-label="Website"
+                    className="w-9 h-9 rounded-full bg-[#1e1b18] border border-stone-800 hover:border-primary flex items-center justify-center text-stone-300 hover:text-white hover:bg-orange-600/30 transition-all hover:scale-110"
+                  >
+                    <Globe className="w-4 h-4" />
+                  </a>
+                </div>
+              </div>
+
+              {/* Col 2: Useful Links (lg: 4 cols) */}
+              <div className="lg:col-span-4 space-y-5">
+                <div>
+                  <h3 className="text-white font-bold text-sm sm:text-base font-display relative pb-3 inline-block">
+                    {t("Navigation Rapide", "Useful Links")}
+                    <span className="absolute bottom-0 left-0 w-10 h-0.5 bg-primary rounded-full" />
+                  </h3>
+                </div>
+                <ul className="grid grid-cols-2 gap-y-2.5 gap-x-4 text-xs font-medium">
+                  <li>
+                    <a href="#" className="text-stone-400 hover:text-primary transition-colors">
+                      {t("Accueil", "Home")}
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#features" className="text-stone-400 hover:text-primary transition-colors">
+                      {t("Fonctionnalités", "Features")}
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#how-it-works" className="text-stone-400 hover:text-primary transition-colors">
+                      {t("Comment ça marche", "How It Works")}
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#comparison" className="text-stone-400 hover:text-primary transition-colors">
+                      {t("Comparatif", "Comparison")}
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#faq" className="text-stone-400 hover:text-primary transition-colors">
+                      {t("FAQ", "FAQ")}
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#contact" className="text-stone-400 hover:text-primary transition-colors">
+                      {t("Contact", "Contact")}
+                    </a>
+                  </li>
+                  <li>
+                    <Link href="/radar" className="text-stone-400 hover:text-primary transition-colors">
+                      {t("Radar Offres", "Radar Offers")}
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/cv" className="text-stone-400 hover:text-primary transition-colors">
+                      {t("Éditeur de CV", "CV Editor")}
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/kanban" className="text-stone-400 hover:text-primary transition-colors">
+                      {t("Suivi Candidatures", "Kanban Tracker")}
+                    </Link>
+                  </li>
+                  <li>
+                    <button
+                      onClick={() => setAuthModalOpen(true)}
+                      className="text-stone-400 hover:text-primary transition-colors text-left cursor-pointer"
+                    >
+                      {t("Créer un compte", "Get Started")}
+                    </button>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Col 3: Subscribe / Veille (lg: 3 cols) */}
+              <div className="lg:col-span-3 space-y-5">
+                <div>
+                  <h3 className="text-white font-bold text-sm sm:text-base font-display relative pb-3 inline-block">
+                    {t("Veille Recrutement", "Subscribe")}
+                    <span className="absolute bottom-0 left-0 w-10 h-0.5 bg-primary rounded-full" />
+                  </h3>
+                </div>
+                <p className="text-stone-400 text-xs leading-relaxed">
+                  {t(
+                    "Recevez les nouvelles offres de stages PFE d'ingénieur et les alertes du Radar directement.",
+                    "Never miss fresh engineering internship postings and radar notifications."
+                  )}
+                </p>
+                {footerSubscribed ? (
+                  <div className="p-3 rounded-xl bg-emerald-950/60 border border-emerald-800 text-emerald-300 text-xs flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>{t("Inscription confirmée avec succès !", "Subscribed successfully!")}</span>
+                  </div>
+                ) : (
+                  <form onSubmit={handleFooterSubscribe} className="relative flex items-center">
+                    <input
+                      type="email"
+                      required
+                      value={footerEmail}
+                      onChange={(e) => setFooterEmail(e.target.value)}
+                      placeholder={t("Votre adresse email", "Your email address")}
+                      className="w-full py-3 pl-3.5 pr-12 rounded-xl bg-[#221f1d] border border-stone-800 text-white placeholder-stone-500 text-xs focus:outline-none focus:border-primary transition-colors"
+                    />
+                    <button
+                      type="submit"
+                      aria-label={t("S'abonner", "Subscribe")}
+                      className="absolute right-1 top-1 bottom-1 px-3 bg-primary hover:bg-orange-600 text-white rounded-lg flex items-center justify-center transition-colors cursor-pointer"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                    </button>
+                  </form>
+                )}
+              </div>
+            </div>
           </div>
-          <p className="text-[11px] text-stone-400">
-            &copy; {new Date().getFullYear()} ArcApply. {t("Tous droits réservés.", "All rights reserved.")}
-          </p>
+        </div>
+
+        {/* Bottom Copyright Area */}
+        <div className="bg-[#0b0a09] border-t border-stone-900 py-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+            <p className="text-stone-500 text-xs">
+              &copy; {new Date().getFullYear()} ArcApply. {t("Tous droits réservés.", "All rights reserved.")}
+            </p>
+            <div className="flex items-center gap-5 text-xs text-stone-500">
+              <a href="#" className="hover:text-primary transition-colors">
+                {t("Mentions Légales", "Terms")}
+              </a>
+              <a href="#" className="hover:text-primary transition-colors">
+                {t("Confidentialité", "Privacy")}
+              </a>
+              <a href="#" className="hover:text-primary transition-colors">
+                {t("Politique Données", "Policy")}
+              </a>
+              <a href="#contact" className="hover:text-primary transition-colors">
+                {t("Contact", "Contact")}
+              </a>
+            </div>
+          </div>
         </div>
       </footer>
 
