@@ -17,46 +17,63 @@ function Step8Content() {
   const experiences = profile.experiences || [];
 
   const addExperience = () => {
-    const newExp: Experience = {
-      company: "",
-      role: "",
-      role_fr: "",
-      role_en: "",
-      location: "",
-      start_date: "",
-      end_date: "",
-      description: "",
-      description_fr: "",
-      description_en: "",
-      technologies: [],
-      experience_type: "stage",
-    };
-    setProfile({
-      ...profile,
-      experiences: [...experiences, newExp],
+    setProfile((prev) => {
+      if (!prev) return prev;
+      const newExp: Experience = {
+        company: "",
+        role: "",
+        role_fr: "",
+        role_en: "",
+        location: "",
+        start_date: "",
+        end_date: "",
+        description: "",
+        description_fr: "",
+        description_en: "",
+        technologies: [],
+        experience_type: "stage",
+      };
+      return {
+        ...prev,
+        experiences: [...(prev.experiences || []), newExp],
+      };
     });
   };
 
   const removeExperience = (index: number) => {
-    setProfile({
-      ...profile,
-      experiences: experiences.filter((_, i) => i !== index),
+    setProfile((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        experiences: (prev.experiences || []).filter((_, i) => i !== index),
+      };
     });
   };
 
-  const updateExperience = (index: number, field: keyof Experience, value: any) => {
-    const updated = experiences.map((exp, i) => {
-      if (i === index) {
-        return { ...exp, [field]: value };
-      }
-      return exp;
+  const updateExperience = (index: number, patch: Partial<Experience>) => {
+    setProfile((prev) => {
+      if (!prev) return prev;
+      const current = prev.experiences || [];
+      const updated = current.map((exp, i) => (i === index ? { ...exp, ...patch } : exp));
+      return { ...prev, experiences: updated };
     });
-    setProfile({ ...profile, experiences: updated });
   };
 
   const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = await saveCurrentStep();
+    const current = profile.experiences || [];
+    const valid = current
+      .map((exp) => ({
+        ...exp,
+        company: (exp.company || "").trim(),
+        role: (exp.role || exp.role_fr || "").trim(),
+        role_fr: (exp.role_fr || exp.role || "").trim(),
+        description: (exp.description || exp.description_fr || "").trim(),
+        description_fr: (exp.description_fr || exp.description || "").trim(),
+      }))
+      .filter((exp) => exp.company.length > 0 || exp.role.length > 0);
+
+    const success = await saveCurrentStep({ experiences: valid });
     if (success) {
       router.push("/onboarding/step-9");
     }
@@ -131,8 +148,8 @@ function Step8Content() {
                     <input
                       type="text"
                       required
-                      value={exp.company}
-                      onChange={(e) => updateExperience(idx, "company", e.target.value)}
+                      value={exp.company || ""}
+                      onChange={(e) => updateExperience(idx, { company: e.target.value })}
                       placeholder={t("Ex. Entreprise ou organisation", "e.g. Company or organization")}
                       className="w-full px-3 py-2 text-xs bg-white border border-[#DDD2C3] rounded-lg focus:border-[#EA580C] focus:outline-none text-stone-900"
                     />
@@ -145,10 +162,10 @@ function Step8Content() {
                     <input
                       type="text"
                       required
-                      value={exp.role_fr ?? exp.role}
+                      value={exp.role_fr || exp.role || ""}
                       onChange={(e) => {
-                        updateExperience(idx, "role", e.target.value);
-                        updateExperience(idx, "role_fr", e.target.value);
+                        const val = e.target.value;
+                        updateExperience(idx, { role: val, role_fr: val });
                       }}
                       placeholder={t("Ex. Stagiaire Ingénieur Backend", "e.g. Backend Engineering Intern")}
                       className="w-full px-3 py-2 text-xs bg-white border border-[#DDD2C3] rounded-lg focus:border-[#EA580C] focus:outline-none text-stone-900"
@@ -163,7 +180,7 @@ function Step8Content() {
                       <input
                         type="text"
                         value={exp.start_date || ""}
-                        onChange={(e) => updateExperience(idx, "start_date", e.target.value)}
+                        onChange={(e) => updateExperience(idx, { start_date: e.target.value })}
                         placeholder={t("Ex. Juin 2024", "e.g. June 2024")}
                         className="w-full px-3 py-2 text-xs bg-white border border-[#DDD2C3] rounded-lg focus:border-[#EA580C] focus:outline-none text-stone-900"
                       />
@@ -175,7 +192,7 @@ function Step8Content() {
                       <input
                         type="text"
                         value={exp.end_date || ""}
-                        onChange={(e) => updateExperience(idx, "end_date", e.target.value)}
+                        onChange={(e) => updateExperience(idx, { end_date: e.target.value })}
                         placeholder={t("Ex. Août 2024", "e.g. August 2024")}
                         className="w-full px-3 py-2 text-xs bg-white border border-[#DDD2C3] rounded-lg focus:border-[#EA580C] focus:outline-none text-stone-900"
                       />
@@ -190,14 +207,12 @@ function Step8Content() {
                       type="text"
                       value={(exp.technologies || []).join(", ")}
                       onChange={(e) =>
-                        updateExperience(
-                          idx,
-                          "technologies",
-                          e.target.value
+                        updateExperience(idx, {
+                          technologies: e.target.value
                             .split(",")
                             .map((s) => s.trim())
-                            .filter(Boolean)
-                        )
+                            .filter(Boolean),
+                        })
                       }
                       placeholder={t("Ex. Python, Docker, PostgreSQL", "e.g. Python, Docker, PostgreSQL")}
                       className="w-full px-3 py-2 text-xs bg-white border border-[#DDD2C3] rounded-lg focus:border-[#EA580C] focus:outline-none text-stone-900"
@@ -210,10 +225,10 @@ function Step8Content() {
                     </label>
                     <textarea
                       rows={2}
-                      value={exp.description_fr ?? exp.description ?? ""}
+                      value={exp.description_fr || exp.description || ""}
                       onChange={(e) => {
-                        updateExperience(idx, "description", e.target.value);
-                        updateExperience(idx, "description_fr", e.target.value);
+                        const val = e.target.value;
+                        updateExperience(idx, { description: val, description_fr: val });
                       }}
                       placeholder={t("Ex. Développement de microservices et intégration continue...", "e.g. Built microservices and continuous integration...")}
                       className="w-full p-2 text-xs bg-white border border-[#DDD2C3] rounded-lg focus:border-[#EA580C] focus:outline-none text-stone-900 leading-relaxed"

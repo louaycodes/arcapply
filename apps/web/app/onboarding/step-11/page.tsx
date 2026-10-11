@@ -18,36 +18,51 @@ function Step11Content() {
   const languages = profile.languages || [];
 
   const addLanguage = () => {
-    const newL: Language = {
-      name: "",
-      level: "Courant",
-    };
-    setProfile({
-      ...profile,
-      languages: [...languages, newL],
+    setProfile((prev) => {
+      if (!prev) return prev;
+      const newL: Language = {
+        name: "",
+        level: "Courant",
+      };
+      return {
+        ...prev,
+        languages: [...(prev.languages || []), newL],
+      };
     });
   };
 
   const removeLanguage = (index: number) => {
-    setProfile({
-      ...profile,
-      languages: languages.filter((_, i) => i !== index),
+    setProfile((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        languages: (prev.languages || []).filter((_, i) => i !== index),
+      };
     });
   };
 
-  const updateLanguage = (index: number, field: keyof Language, value: string) => {
-    const updated = languages.map((lang, i) => {
-      if (i === index) return { ...lang, [field]: value };
-      return lang;
+  const updateLanguage = (index: number, patch: Partial<Language>) => {
+    setProfile((prev) => {
+      if (!prev) return prev;
+      const current = prev.languages || [];
+      const updated = current.map((lang, i) => (i === index ? { ...lang, ...patch } : lang));
+      return { ...prev, languages: updated };
     });
-    setProfile({ ...profile, languages: updated });
   };
 
   const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    const success = await saveCurrentStep();
+    const current = profile.languages || [];
+    const valid = current
+      .map((lang) => ({
+        name: (lang.name || "").trim(),
+        level: (lang.level || "").trim(),
+      }))
+      .filter((lang) => lang.name.length > 0);
+
+    const success = await saveCurrentStep({ languages: valid });
     if (success) {
       router.push("/onboarding/step-12");
     }
@@ -100,8 +115,8 @@ function Step11Content() {
                 <div className="flex-1">
                   <input
                     type="text"
-                    value={lang.name}
-                    onChange={(e) => updateLanguage(idx, "name", e.target.value)}
+                    value={lang.name || ""}
+                    onChange={(e) => updateLanguage(idx, { name: e.target.value })}
                     placeholder={t("Ex. Français, Anglais...", "e.g. French, English...")}
                     className="w-full px-3 py-1.5 text-xs bg-white border border-[#DDD2C3] rounded-lg focus:border-[#EA580C] focus:outline-none text-stone-900"
                   />
@@ -109,8 +124,8 @@ function Step11Content() {
                 <div className="flex-1">
                   <input
                     type="text"
-                    value={lang.level}
-                    onChange={(e) => updateLanguage(idx, "level", e.target.value)}
+                    value={lang.level || ""}
+                    onChange={(e) => updateLanguage(idx, { level: e.target.value })}
                     placeholder={t("Ex. Langue maternelle, Courant (C1)...", "e.g. Native, Fluent (C1)...")}
                     className="w-full px-3 py-1.5 text-xs bg-white border border-[#DDD2C3] rounded-lg focus:border-[#EA580C] focus:outline-none text-stone-900"
                   />

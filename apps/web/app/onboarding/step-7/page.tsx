@@ -18,59 +18,75 @@ function Step7Content() {
   const educations = profile.educations || [];
 
   const addEducation = () => {
-    const newEdu: Education = {
-      school: "",
-      degree: "",
-      degree_fr: "",
-      degree_en: "",
-      field_of_study: "",
-      field_of_study_fr: "",
-      field_of_study_en: "",
-      start_date: "",
-      end_date: "",
-      description: "",
-      description_fr: "",
-      description_en: "",
-    };
-    setProfile({
-      ...profile,
-      educations: [...educations, newEdu],
+    setProfile((prev) => {
+      if (!prev) return prev;
+      const newEdu: Education = {
+        school: "",
+        degree: "",
+        degree_fr: "",
+        degree_en: "",
+        field_of_study: "",
+        field_of_study_fr: "",
+        field_of_study_en: "",
+        start_date: "",
+        end_date: "",
+        description: "",
+        description_fr: "",
+        description_en: "",
+      };
+      return {
+        ...prev,
+        educations: [...(prev.educations || []), newEdu],
+      };
     });
   };
 
   const removeEducation = (index: number) => {
-    setProfile({
-      ...profile,
-      educations: educations.filter((_, i) => i !== index),
+    setProfile((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        educations: (prev.educations || []).filter((_, i) => i !== index),
+      };
     });
   };
 
-  const updateEducation = (index: number, field: keyof Education, value: any) => {
-    const updated = educations.map((edu, i) => {
-      if (i === index) {
-        return { ...edu, [field]: value };
-      }
-      return edu;
+  const updateEducation = (index: number, patch: Partial<Education>) => {
+    setProfile((prev) => {
+      if (!prev) return prev;
+      const current = prev.educations || [];
+      const updated = current.map((edu, i) => (i === index ? { ...edu, ...patch } : edu));
+      return { ...prev, educations: updated };
     });
-    setProfile({ ...profile, educations: updated });
   };
 
   const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (educations.length === 0) {
+    const currentEdus = profile.educations || [];
+    if (currentEdus.length === 0) {
       setError(t("Veuillez renseigner au moins une formation.", "Please add at least one education program."));
       return;
     }
 
-    const first = educations[0];
-    if (!first.school?.trim() || !first.degree?.trim()) {
+    const validEdus = currentEdus
+      .map((edu) => ({
+        ...edu,
+        school: (edu.school || "").trim(),
+        degree: (edu.degree || edu.degree_fr || "").trim(),
+        degree_fr: (edu.degree_fr || edu.degree || "").trim(),
+        field_of_study: (edu.field_of_study || edu.field_of_study_fr || "").trim(),
+        field_of_study_fr: (edu.field_of_study_fr || edu.field_of_study || "").trim(),
+      }))
+      .filter((edu) => edu.school.length > 0 || edu.degree.length > 0);
+
+    if (validEdus.length === 0 || !validEdus[0].school || !validEdus[0].degree) {
       setError(t("Veuillez préciser le nom de l'école et le diplôme préparé.", "Please specify the school name and the degree."));
       return;
     }
 
-    const success = await saveCurrentStep();
+    const success = await saveCurrentStep({ educations: validEdus });
     if (success) {
       router.push("/onboarding/step-8");
     }
@@ -142,8 +158,8 @@ function Step7Content() {
                     <input
                       type="text"
                       required
-                      value={edu.school}
-                      onChange={(e) => updateEducation(idx, "school", e.target.value)}
+                      value={edu.school || ""}
+                      onChange={(e) => updateEducation(idx, { school: e.target.value })}
                       placeholder={t("Ex. Polytech, INSAT, Télécom Paris...", "e.g. Polytech, INSAT, Telecom Paris...")}
                       className="w-full px-3 py-2 text-xs bg-white border border-[#DDD2C3] rounded-lg focus:border-[#EA580C] focus:outline-none text-stone-900"
                     />
@@ -156,10 +172,10 @@ function Step7Content() {
                     <input
                       type="text"
                       required
-                      value={edu.degree_fr ?? edu.degree}
+                      value={edu.degree_fr || edu.degree || ""}
                       onChange={(e) => {
-                        updateEducation(idx, "degree", e.target.value);
-                        updateEducation(idx, "degree_fr", e.target.value);
+                        const val = e.target.value;
+                        updateEducation(idx, { degree: val, degree_fr: val });
                       }}
                       placeholder={t("Ex. Diplôme d'Ingénieur", "e.g. Master of Engineering")}
                       className="w-full px-3 py-2 text-xs bg-white border border-[#DDD2C3] rounded-lg focus:border-[#EA580C] focus:outline-none text-stone-900"
@@ -172,10 +188,10 @@ function Step7Content() {
                     </label>
                     <input
                       type="text"
-                      value={edu.field_of_study_fr ?? edu.field_of_study ?? ""}
+                      value={edu.field_of_study_fr || edu.field_of_study || ""}
                       onChange={(e) => {
-                        updateEducation(idx, "field_of_study", e.target.value);
-                        updateEducation(idx, "field_of_study_fr", e.target.value);
+                        const val = e.target.value;
+                        updateEducation(idx, { field_of_study: val, field_of_study_fr: val });
                       }}
                       placeholder={t("Ex. Génie Logiciel & Cloud", "e.g. Software & Cloud Engineering")}
                       className="w-full px-3 py-2 text-xs bg-white border border-[#DDD2C3] rounded-lg focus:border-[#EA580C] focus:outline-none text-stone-900"
@@ -190,7 +206,7 @@ function Step7Content() {
                       <input
                         type="text"
                         value={edu.start_date || ""}
-                        onChange={(e) => updateEducation(idx, "start_date", e.target.value)}
+                        onChange={(e) => updateEducation(idx, { start_date: e.target.value })}
                         placeholder={t("Ex. Sept 2022", "e.g. Sept 2022")}
                         className="w-full px-3 py-2 text-xs bg-white border border-[#DDD2C3] rounded-lg focus:border-[#EA580C] focus:outline-none text-stone-900"
                       />
@@ -202,7 +218,7 @@ function Step7Content() {
                       <input
                         type="text"
                         value={edu.end_date || ""}
-                        onChange={(e) => updateEducation(idx, "end_date", e.target.value)}
+                        onChange={(e) => updateEducation(idx, { end_date: e.target.value })}
                         placeholder={t("Ex. Juin 2027", "e.g. June 2027")}
                         className="w-full px-3 py-2 text-xs bg-white border border-[#DDD2C3] rounded-lg focus:border-[#EA580C] focus:outline-none text-stone-900"
                       />

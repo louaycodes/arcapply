@@ -17,45 +17,63 @@ function Step9Content() {
   const projects = profile.projects || [];
 
   const addProject = () => {
-    const newProj: Project = {
-      title: "",
-      title_fr: "",
-      title_en: "",
-      role: "",
-      role_fr: "",
-      role_en: "",
-      description: "",
-      description_fr: "",
-      description_en: "",
-      url: "",
-      technologies: [],
-    };
-    setProfile({
-      ...profile,
-      projects: [...projects, newProj],
+    setProfile((prev) => {
+      if (!prev) return prev;
+      const newProj: Project = {
+        title: "",
+        title_fr: "",
+        title_en: "",
+        role: "",
+        role_fr: "",
+        role_en: "",
+        description: "",
+        description_fr: "",
+        description_en: "",
+        url: "",
+        technologies: [],
+      };
+      return {
+        ...prev,
+        projects: [...(prev.projects || []), newProj],
+      };
     });
   };
 
   const removeProject = (index: number) => {
-    setProfile({
-      ...profile,
-      projects: projects.filter((_, i) => i !== index),
+    setProfile((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        projects: (prev.projects || []).filter((_, i) => i !== index),
+      };
     });
   };
 
-  const updateProject = (index: number, field: keyof Project, value: any) => {
-    const updated = projects.map((proj, i) => {
-      if (i === index) {
-        return { ...proj, [field]: value };
-      }
-      return proj;
+  const updateProject = (index: number, patch: Partial<Project>) => {
+    setProfile((prev) => {
+      if (!prev) return prev;
+      const current = prev.projects || [];
+      const updated = current.map((proj, i) => (i === index ? { ...proj, ...patch } : proj));
+      return { ...prev, projects: updated };
     });
-    setProfile({ ...profile, projects: updated });
   };
 
   const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = await saveCurrentStep();
+    const current = profile.projects || [];
+    const valid = current
+      .map((proj) => ({
+        ...proj,
+        title: (proj.title || proj.title_fr || "").trim(),
+        title_fr: (proj.title_fr || proj.title || "").trim(),
+        role: (proj.role || proj.role_fr || "").trim(),
+        role_fr: (proj.role_fr || proj.role || "").trim(),
+        description: (proj.description || proj.description_fr || "").trim(),
+        description_fr: (proj.description_fr || proj.description || "").trim(),
+      }))
+      .filter((proj) => proj.title.length > 0);
+
+    const success = await saveCurrentStep({ projects: valid });
     if (success) {
       router.push("/onboarding/step-10");
     }
@@ -130,10 +148,10 @@ function Step9Content() {
                     <input
                       type="text"
                       required
-                      value={proj.title_fr ?? proj.title}
+                      value={proj.title_fr || proj.title || ""}
                       onChange={(e) => {
-                        updateProject(idx, "title", e.target.value);
-                        updateProject(idx, "title_fr", e.target.value);
+                        const val = e.target.value;
+                        updateProject(idx, { title: val, title_fr: val });
                       }}
                       placeholder={t("Ex. Plateforme de prédiction, API temps réel...", "e.g. Prediction platform, Real-time API...")}
                       className="w-full px-3 py-2 text-xs bg-white border border-[#DDD2C3] rounded-lg focus:border-[#EA580C] focus:outline-none text-stone-900"
@@ -146,10 +164,10 @@ function Step9Content() {
                     </label>
                     <input
                       type="text"
-                      value={proj.role_fr ?? proj.role ?? ""}
+                      value={proj.role_fr || proj.role || ""}
                       onChange={(e) => {
-                        updateProject(idx, "role", e.target.value);
-                        updateProject(idx, "role_fr", e.target.value);
+                        const val = e.target.value;
+                        updateProject(idx, { role: val, role_fr: val });
                       }}
                       placeholder={t("Ex. Développeur Full Stack, Concepteur", "e.g. Full Stack Developer, Designer")}
                       className="w-full px-3 py-2 text-xs bg-white border border-[#DDD2C3] rounded-lg focus:border-[#EA580C] focus:outline-none text-stone-900"
@@ -163,7 +181,7 @@ function Step9Content() {
                     <input
                       type="url"
                       value={proj.url || ""}
-                      onChange={(e) => updateProject(idx, "url", e.target.value)}
+                      onChange={(e) => updateProject(idx, { url: e.target.value })}
                       placeholder="https://github.com/..."
                       className="w-full px-3 py-2 text-xs bg-white border border-[#DDD2C3] rounded-lg focus:border-[#EA580C] focus:outline-none text-stone-900"
                     />
@@ -177,14 +195,12 @@ function Step9Content() {
                       type="text"
                       value={(proj.technologies || []).join(", ")}
                       onChange={(e) =>
-                        updateProject(
-                          idx,
-                          "technologies",
-                          e.target.value
+                        updateProject(idx, {
+                          technologies: e.target.value
                             .split(",")
                             .map((s) => s.trim())
-                            .filter(Boolean)
-                        )
+                            .filter(Boolean),
+                        })
                       }
                       placeholder={t("Ex. Next.js, FastAPI, PostgreSQL", "e.g. Next.js, FastAPI, PostgreSQL")}
                       className="w-full px-3 py-2 text-xs bg-white border border-[#DDD2C3] rounded-lg focus:border-[#EA580C] focus:outline-none text-stone-900"
@@ -197,10 +213,10 @@ function Step9Content() {
                     </label>
                     <textarea
                       rows={2}
-                      value={proj.description_fr ?? proj.description ?? ""}
+                      value={proj.description_fr || proj.description || ""}
                       onChange={(e) => {
-                        updateProject(idx, "description", e.target.value);
-                        updateProject(idx, "description_fr", e.target.value);
+                        const val = e.target.value;
+                        updateProject(idx, { description: val, description_fr: val });
                       }}
                       placeholder={t("Ex. Conception de l'architecture et déploiement du conteneur...", "e.g. Designed architecture and deployed container...")}
                       className="w-full p-2 text-xs bg-white border border-[#DDD2C3] rounded-lg focus:border-[#EA580C] focus:outline-none text-stone-900 leading-relaxed"
