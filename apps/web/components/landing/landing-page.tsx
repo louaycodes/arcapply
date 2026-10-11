@@ -58,13 +58,6 @@ export function LandingPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Contact form state
-  const [contactName, setContactName] = useState("");
-  const [contactEmail, setContactEmail] = useState("");
-  const [contactSubject, setContactSubject] = useState("question");
-  const [contactMessage, setContactMessage] = useState("");
-  const [contactSubmitted, setContactSubmitted] = useState(false);
-  const [contactSubmitting, setContactSubmitting] = useState(false);
 
   // Footer newsletter state
   const [footerEmail, setFooterEmail] = useState("");
@@ -76,14 +69,6 @@ export function LandingPage() {
     setFooterSubscribed(true);
   };
 
-  const handleContactSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setContactSubmitting(true);
-    setTimeout(() => {
-      setContactSubmitting(false);
-      setContactSubmitted(true);
-    }, 800);
-  };
 
   const faqItems = [
     {
@@ -195,7 +180,7 @@ export function LandingPage() {
             <a href="#faq" className="hover:text-primary transition-colors">
               {t("FAQ", "FAQ")}
             </a>
-            <a href="#contact" className="hover:text-primary transition-colors">
+            <a href="mailto:contact@arcapply.com" className="hover:text-primary transition-colors">
               {t("Contact", "Contact")}
             </a>
           </div>
@@ -269,7 +254,7 @@ export function LandingPage() {
                 {t("FAQ", "FAQ")}
               </a>
               <a
-                href="#contact"
+                href="mailto:contact@arcapply.com"
                 onClick={() => setMobileMenuOpen(false)}
                 className="py-1.5 hover:text-primary transition-colors"
               >
@@ -898,133 +883,6 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ── Section: Contact & Support ── */}
-      <section id="contact" className="py-24 bg-stone-100/70 dark:bg-stone-900/40 border-t border-stone-200/80 dark:border-stone-800">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
-          <div className="text-center max-w-2xl mx-auto space-y-3">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 text-xs font-bold border border-blue-200 dark:border-blue-800 shadow-xs">
-              <Mail className="w-3.5 h-3.5" />
-              <span>{t("Contact & Échange", "Contact & Inquiries")}</span>
-            </div>
-            <h2 className="text-3xl sm:text-5xl font-black font-display tracking-tight text-stone-900 dark:text-white">
-              {t("Une question ? Écrivez-nous", "Have a Question? Reach Out")}
-            </h2>
-            <div className="w-16 h-1 bg-blue-600 rounded-full mx-auto mt-3" />
-            <p className="text-sm text-stone-600 dark:text-stone-400 max-w-xl mx-auto mt-2">
-              {t(
-                "Partenariat école, suggestion de fonctionnalité ou assistance : nous répondons sous 24h.",
-                "University partnership, feature feedback or support: we reply within 24h."
-              )}
-            </p>
-          </div>
-
-          <div className="bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 p-6 sm:p-10 shadow-sm max-w-2xl mx-auto">
-            {contactSubmitted ? (
-              <div className="py-8 text-center space-y-3">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center mx-auto">
-                  <CheckCircle2 className="w-6 h-6" />
-                </div>
-                <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 font-display">
-                  {t("Message transmis avec succès !", "Message sent successfully!")}
-                </h3>
-                <p className="text-xs text-stone-500 max-w-md mx-auto">
-                  {t(
-                    "Merci de nous avoir contactés. Notre équipe d'ingénierie reviendra vers vous très rapidement.",
-                    "Thank you for contacting us. Our engineering team will get back to you shortly."
-                  )}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setContactSubmitted(false);
-                    setContactMessage("");
-                  }}
-                  className="px-4 py-2 rounded-lg text-xs font-semibold text-primary hover:bg-orange-50 dark:hover:bg-orange-950/40 transition-colors"
-                >
-                  {t("Envoyer un autre message", "Send another message")}
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleContactSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
-                      {t("Votre Nom", "Your Name")}
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={contactName}
-                      onChange={(e) => setContactName(e.target.value)}
-                      placeholder={t("Ex. Louay Zorai", "e.g. Louay Zorai")}
-                      className="w-full px-3.5 py-2.5 text-xs bg-stone-50 dark:bg-stone-800/80 border border-stone-300 dark:border-stone-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-stone-900 dark:text-stone-100"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
-                      {t("Votre Email", "Your Email")}
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={contactEmail}
-                      onChange={(e) => setContactEmail(e.target.value)}
-                      placeholder="nom@universite.tn"
-                      className="w-full px-3.5 py-2.5 text-xs bg-stone-50 dark:bg-stone-800/80 border border-stone-300 dark:border-stone-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-stone-900 dark:text-stone-100"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
-                    {t("Sujet", "Subject")}
-                  </label>
-                  <select
-                    value={contactSubject}
-                    onChange={(e) => setContactSubject(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs bg-stone-50 dark:bg-stone-800/80 border border-stone-300 dark:border-stone-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-stone-900 dark:text-stone-100 cursor-pointer"
-                  >
-                    <option value="question">{t("Question générale sur ArcApply", "General question about ArcApply")}</option>
-                    <option value="pfe">{t("Accompagnement Stage PFE France / TN", "PFE Internship support France / TN")}</option>
-                    <option value="partnership">{t("Partenariat École / Université", "University / School Partnership")}</option>
-                    <option value="feature">{t("Suggestion d'amélioration", "Feature feedback")}</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1">
-                    {t("Message", "Message")}
-                  </label>
-                  <textarea
-                    required
-                    rows={4}
-                    value={contactMessage}
-                    onChange={(e) => setContactMessage(e.target.value)}
-                    placeholder={t(
-                      "Expliquez-nous votre besoin ou posez votre question en détail...",
-                      "Explain your request or share your question..."
-                    )}
-                    className="w-full px-3.5 py-2.5 text-xs bg-stone-50 dark:bg-stone-800/80 border border-stone-300 dark:border-stone-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-stone-900 dark:text-stone-100 resize-none"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={contactSubmitting}
-                  className="w-full py-3 rounded-xl bg-primary hover:bg-orange-600 text-white font-bold text-xs shadow-md shadow-orange-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>
-                    {contactSubmitting
-                      ? t("Envoi en cours...", "Sending...")
-                      : t("Envoyer mon message", "Send Message")}
-                  </span>
-                </button>
-              </form>
-            )}
-          </div>
-        </div>
-      </section>
 
       {/* ── Bottom Call To Action Banner ── */}
       <section className="py-16 bg-gradient-to-r from-stone-900 via-stone-800 to-orange-950 text-white">
@@ -1197,7 +1055,7 @@ export function LandingPage() {
                     </a>
                   </li>
                   <li>
-                    <a href="#contact" className="text-stone-400 hover:text-primary transition-colors">
+                    <a href="mailto:contact@arcapply.com" className="text-stone-400 hover:text-primary transition-colors">
                       {t("Contact", "Contact")}
                     </a>
                   </li>
@@ -1286,7 +1144,7 @@ export function LandingPage() {
               <a href="#" className="hover:text-primary transition-colors">
                 {t("Politique Données", "Policy")}
               </a>
-              <a href="#contact" className="hover:text-primary transition-colors">
+              <a href="mailto:contact@arcapply.com" className="hover:text-primary transition-colors">
                 {t("Contact", "Contact")}
               </a>
             </div>
