@@ -112,3 +112,9 @@
   4. *Deep Description Enrichment:* `CrawlerScheduler` must resolve full offer text for newly discovered jobs via `connector.fetch_job_details()` so ATS matching has real requirements to evaluate.
   5. *Ethical Jitter:* Always use human-like jitter (`apply_jitter`) between paginated requests to respect platform rate-limits.
 
+### Pitfall 7: Strict Prohibition of Screaming Hero Badges & Pill Banner Noise
+- **Symptom:** Cluttered, amateurish hero headers with screaming uppercase pill badges (e.g. `[ZÉRO HALLUCINATION] · COPILOTE D'INGÉNIEUR PFE & EMPLOI`, dotted tags, or trust-pill checklists below CTAs) that degrade visual prestige and mimic low-tier generic AI templates.
+- **Mandatory Rule:**
+  - NEVER use screaming uppercase pill badges, bracketed tags (`[TEXT] · SUBTEXT`), or redundant trust-pill checklist rows below hero CTAs.
+  - Maintain an elite, high-prestige engineering aesthetic inspired by Linear, Stripe, and Vercel: clean typography, powerful headlines, generous breathing room, and direct value demonstration without marketing fluff.
+
