@@ -245,13 +245,10 @@ export function LandingPage() {
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
             </a>
             <a href="#features" className="hover:text-primary transition-colors">
-              {t("Services Proposés", "Services")}
-            </a>
-            <a href="#demo" className="hover:text-primary transition-colors">
-              {t("Aperçu Cockpit", "Cockpit Demo")}
+              {t("Capacités Clés", "Capabilities")}
             </a>
             <a href="#how-it-works" className="hover:text-primary transition-colors">
-              {t("Comment ça marche", "How It Works")}
+              {t("Protocole 3 Étapes", "3-Step Protocol")}
             </a>
             <a href="#comparison" className="hover:text-primary transition-colors">
               {t("Comparatif", "Comparison")}
@@ -314,21 +311,14 @@ export function LandingPage() {
                 onClick={() => setMobileMenuOpen(false)}
                 className="py-1.5 hover:text-primary transition-colors"
               >
-                {t("Services Proposés", "Services")}
-              </a>
-              <a
-                href="#demo"
-                onClick={() => setMobileMenuOpen(false)}
-                className="py-1.5 hover:text-primary transition-colors"
-              >
-                {t("Aperçu Cockpit Interactif", "Interactive Cockpit")}
+                {t("Capacités Clés", "Capabilities")}
               </a>
               <a
                 href="#how-it-works"
                 onClick={() => setMobileMenuOpen(false)}
                 className="py-1.5 hover:text-primary transition-colors"
               >
-                {t("Comment ça marche", "How It Works")}
+                {t("Protocole 3 Étapes", "3-Step Protocol")}
               </a>
               <a
                 href="#comparison"
@@ -372,15 +362,9 @@ export function LandingPage() {
       </nav>
 
       {/* ── Hero Section : "L'Arc Ascendant" ── */}
-      <section className="relative overflow-hidden pt-12 pb-20 sm:pt-20 sm:pb-28">
+      <section className="relative overflow-hidden pt-16 pb-20 sm:pt-24 sm:pb-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto space-y-6">
-
-            {/* Pill Badge */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-500/10 dark:bg-orange-500/15 border border-orange-500/20 text-primary text-xs font-bold tracking-wide shadow-xs">
-              <ShieldCheck className="w-4 h-4 text-primary" />
-              <span>{t("ZÉRO HALLUCINATION · COPILOTE D'INGÉNIEUR PFE & EMPLOI", "ZERO HALLUCINATION · PFE & ENGINEERING COPILOT")}</span>
-            </div>
+          <div className="text-center max-w-4xl mx-auto space-y-7">
 
             {/* Main Headline */}
             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black font-display tracking-tight text-stone-900 dark:text-white leading-[1.12]">
@@ -399,7 +383,7 @@ export function LandingPage() {
             </p>
 
             {/* Hero CTAs */}
-            <div className="pt-4 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+            <div className="pt-2 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
               <button
                 onClick={() => setAuthModalOpen(true)}
                 className="px-7 py-3.5 rounded-xl bg-primary hover:bg-[#C2410C] text-white text-sm font-bold shadow-lg shadow-orange-600/25 transition-all flex items-center gap-2 tactile-button cursor-pointer"
@@ -412,28 +396,8 @@ export function LandingPage() {
                 className="px-6 py-3.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-white/80 dark:bg-stone-900/80 hover:bg-white dark:hover:bg-stone-800 text-sm font-semibold text-stone-800 dark:text-stone-200 shadow-sm transition-all flex items-center gap-2"
               >
                 <Radar className="w-4 h-4 text-primary" />
-                <span>{t("Découvrir les 27 sources", "Explore 27 Sources")}</span>
+                <span>{t("Explorer les 27 sources", "Explore 27 Sources")}</span>
               </a>
-            </div>
-
-            {/* Trust Proof Pills */}
-            <div className="pt-8 flex flex-wrap items-center justify-center gap-6 text-xs text-stone-500 dark:text-stone-400 font-medium">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>{t("Zéro Hallucination garanti", "Zero Hallucination Guarantee")}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>{t("27 Sources officielles FR & TN", "27 Official FR & TN Boards")}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>{t("Clé Groq dédiée (BYOK 200k/j)", "Dedicated Groq Key (BYOK)")}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>{t("100% Gratuit pour étudiants", "100% Free for Students")}</span>
-              </div>
             </div>
           </div>
         </div>
