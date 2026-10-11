@@ -4,181 +4,246 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { OnboardingShell, useOnboarding } from "@/components/onboarding/onboarding-shell";
 import { useAppLanguage } from "@/lib/language-context";
-import { completeOnboarding, syncProfileMirror } from "@/lib/api";
-import {
-  ShieldCheck,
-  Radar,
-  FileText,
-  KanbanSquare,
-  Sparkles,
-  ArrowRight,
-  CheckCircle2,
-  Loader2,
-  Check,
-  Compass,
-} from "lucide-react";
+import { Education } from "@/lib/api";
+import { ArrowRight, ArrowLeft, Loader2, Plus, Trash2 } from "lucide-react";
 
 function Step7Content() {
   const router = useRouter();
-  const { profile, status } = useOnboarding();
+  const { profile, setProfile, saveCurrentStep, isSaving } = useOnboarding();
   const { t } = useAppLanguage();
-  const [isFinishing, setIsFinishing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleFinish = async () => {
-    try {
-      setIsFinishing(true);
-      await completeOnboarding();
-      // Trigger mirror profile sync in the background so EN mirror data is ready for instant applications
-      syncProfileMirror().catch((e) => console.warn("Background mirror sync non-fatal warning:", e));
-      if (typeof window !== "undefined") {
-        localStorage.setItem("arcapply_walkthrough_done", "true");
-        localStorage.removeItem("arcapply_just_registered");
-        localStorage.removeItem("arcapply_onboarding_skipped");
-        // Update stored user if present
-        const savedUser = localStorage.getItem("arcapply_user");
-        if (savedUser) {
-          try {
-            const u = JSON.parse(savedUser);
-            u.onboarding_completed = true;
-            localStorage.setItem("arcapply_user", JSON.stringify(u));
-          } catch (_) {}
-        }
+  if (!profile) return null;
+
+  const educations = profile.educations || [];
+
+  const addEducation = () => {
+    const newEdu: Education = {
+      school: "",
+      degree: "",
+      degree_fr: "",
+      degree_en: "",
+      field_of_study: "",
+      field_of_study_fr: "",
+      field_of_study_en: "",
+      start_date: "",
+      end_date: "",
+      description: "",
+      description_fr: "",
+      description_en: "",
+    };
+    setProfile({
+      ...profile,
+      educations: [...educations, newEdu],
+    });
+  };
+
+  const removeEducation = (index: number) => {
+    setProfile({
+      ...profile,
+      educations: educations.filter((_, i) => i !== index),
+    });
+  };
+
+  const updateEducation = (index: number, field: keyof Education, value: any) => {
+    const updated = educations.map((edu, i) => {
+      if (i === index) {
+        return { ...edu, [field]: value };
       }
-      router.push("/radar");
-    } catch (err: any) {
-      console.error("Failed to complete onboarding:", err);
-      router.push("/radar");
-    } finally {
-      setIsFinishing(false);
+      return edu;
+    });
+    setProfile({ ...profile, educations: updated });
+  };
+
+  const handleNext = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (educations.length === 0) {
+      setError(t("Veuillez renseigner au moins une formation.", "Please add at least one education program."));
+      return;
+    }
+
+    const first = educations[0];
+    if (!first.school?.trim() || !first.degree?.trim()) {
+      setError(t("Veuillez préciser le nom de l'école et le diplôme préparé.", "Please specify the school name and the degree."));
+      return;
+    }
+
+    const success = await saveCurrentStep();
+    if (success) {
+      router.push("/onboarding/step-8");
     }
   };
 
-  const score = status?.completion_percentage ?? 85;
-
   return (
-    <div className="space-y-6">
-      {/* Celebration Banner */}
-      <div className="bg-gradient-to-br from-emerald-600 to-teal-800 rounded-3xl p-6 sm:p-10 text-white shadow-xl shadow-emerald-900/20 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6 text-center sm:text-left">
-          <div className="space-y-2 max-w-xl">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-emerald-100 text-xs font-semibold mb-1">
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span>{t("Configuration Initiale Réussie", "Initial Setup Complete")}</span>
-            </div>
-            <h3 className="text-2xl sm:text-3xl font-bold font-display text-white">
-              {t(
-                `Félicitations ${profile?.full_name?.split(" ")[0] || ""} ! Votre profil est prêt.`,
-                `Congratulations ${profile?.full_name?.split(" ")[0] || ""}! Your profile is ready.`
-              )}
-            </h3>
-            <p className="text-sm text-emerald-100/90 leading-relaxed">
-              {t("Vos informations ont été enregistrées avec succès dans votre Master Profile. Le moteur déterministe ArcApply peut maintenant générer des candidatures ultra-ciblées sans aucune hallucination.", "Your information has been saved to your Master Profile. ArcApply's deterministic engine can now generate highly targeted applications with zero hallucination.")}
-            </p>
-          </div>
-
-          <div className="p-5 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 text-center shrink-0">
-            <span className="block text-4xl font-extrabold font-mono text-white tracking-tight">
-              {score}%
-            </span>
-            <span className="text-[11px] font-semibold text-emerald-100 uppercase tracking-wider block mt-1">
-              {t("Score de Complétude", "Completeness Score")}
-            </span>
-          </div>
+    <form onSubmit={handleNext} className="space-y-6">
+      {error && (
+        <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs">
+          {error}
         </div>
+      )}
+
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold text-stone-700">
+            {t(`Formations enregistrées (${educations.length})`, `Recorded degrees (${educations.length})`)}
+          </span>
+          <button
+            type="button"
+            onClick={addEducation}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#EFE9DF] hover:bg-[#E5DACD] text-stone-800 text-xs font-semibold transition-colors cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>{t("Ajouter une formation", "Add education")}</span>
+          </button>
+        </div>
+
+        {educations.length === 0 ? (
+          <div className="py-8 border border-dashed border-[#DDD2C3] rounded-xl text-center space-y-2 bg-[#F6EFE6]/50">
+            <p className="text-xs text-stone-600">
+              {t("Aucune formation ajoutée pour le moment.", "No education added yet.")}
+            </p>
+            <button
+              type="button"
+              onClick={addEducation}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#EA580C] hover:bg-[#C2410C] text-white text-xs font-semibold transition-colors cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>{t("Ajouter ma formation", "Add my education")}</span>
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {educations.map((edu, idx) => (
+              <div
+                key={idx}
+                className="p-4 rounded-xl border border-[#DDD2C3] bg-[#F6EFE6] space-y-3 relative"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-stone-700">
+                    {t(`Formation ${idx + 1}`, `Education ${idx + 1}`)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeEducation(idx)}
+                    className="p-1 rounded text-stone-400 hover:text-red-600 transition-colors cursor-pointer"
+                    title={t("Supprimer", "Delete")}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-stone-700 mb-1">
+                      {t("Établissement / École *", "School / University *")}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={edu.school}
+                      onChange={(e) => updateEducation(idx, "school", e.target.value)}
+                      placeholder={t("Ex. Polytech, INSAT, Télécom Paris...", "e.g. Polytech, INSAT, Telecom Paris...")}
+                      className="w-full px-3 py-2 text-xs bg-white border border-[#DDD2C3] rounded-lg focus:border-[#EA580C] focus:outline-none text-stone-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-stone-700 mb-1">
+                      {t("Diplôme préparé *", "Degree pursued *")}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={edu.degree_fr ?? edu.degree}
+                      onChange={(e) => {
+                        updateEducation(idx, "degree", e.target.value);
+                        updateEducation(idx, "degree_fr", e.target.value);
+                      }}
+                      placeholder={t("Ex. Diplôme d'Ingénieur", "e.g. Master of Engineering")}
+                      className="w-full px-3 py-2 text-xs bg-white border border-[#DDD2C3] rounded-lg focus:border-[#EA580C] focus:outline-none text-stone-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-stone-700 mb-1">
+                      {t("Spécialité / Filière", "Major / Track")}
+                    </label>
+                    <input
+                      type="text"
+                      value={edu.field_of_study_fr ?? edu.field_of_study ?? ""}
+                      onChange={(e) => {
+                        updateEducation(idx, "field_of_study", e.target.value);
+                        updateEducation(idx, "field_of_study_fr", e.target.value);
+                      }}
+                      placeholder={t("Ex. Génie Logiciel & Cloud", "e.g. Software & Cloud Engineering")}
+                      className="w-full px-3 py-2 text-xs bg-white border border-[#DDD2C3] rounded-lg focus:border-[#EA580C] focus:outline-none text-stone-900"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-stone-700 mb-1">
+                        {t("Date de début", "Start date")}
+                      </label>
+                      <input
+                        type="text"
+                        value={edu.start_date || ""}
+                        onChange={(e) => updateEducation(idx, "start_date", e.target.value)}
+                        placeholder={t("Ex. Sept 2022", "e.g. Sept 2022")}
+                        className="w-full px-3 py-2 text-xs bg-white border border-[#DDD2C3] rounded-lg focus:border-[#EA580C] focus:outline-none text-stone-900"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-stone-700 mb-1">
+                        {t("Date de fin prévue", "Expected graduation")}
+                      </label>
+                      <input
+                        type="text"
+                        value={edu.end_date || ""}
+                        onChange={(e) => updateEducation(idx, "end_date", e.target.value)}
+                        placeholder={t("Ex. Juin 2027", "e.g. June 2027")}
+                        className="w-full px-3 py-2 text-xs bg-white border border-[#DDD2C3] rounded-lg focus:border-[#EA580C] focus:outline-none text-stone-900"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* 3 Pillars of ArcApply */}
-      <div className="space-y-3">
-        <h4 className="text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider">
-          {t("Découvrez vos 3 super-pouvoirs de candidature :", "Discover your 3 application superpowers:")}
-        </h4>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Card 1: Radar */}
-          <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200/90 dark:border-stone-800 p-5 shadow-artisan space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/40 text-primary flex items-center justify-center">
-              <Radar className="w-5 h-5" />
-            </div>
-            <div>
-              <h5 className="text-sm font-bold text-stone-900 dark:text-stone-100">
-                {t("1. Radar des Offres PFE", "1. PFE Offer Radar")}
-              </h5>
-              <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed">
-                {t("Collecte automatisée multi-plateformes (LinkedIn, JobTeaser, Apec, etc.). Grâce au bouclier anti-rescrape, les offres déjà postulées et archivées ne réapparaissent jamais.", "Automated multi-platform collection (LinkedIn, JobTeaser, Apec, etc.). Thanks to the anti-rescrape shield, offers you already applied to or archived never reappear.")}
-              </p>
-            </div>
-          </div>
-
-          {/* Card 2: CV */}
-          <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200/90 dark:border-stone-800 p-5 shadow-artisan space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center">
-              <FileText className="w-5 h-5" />
-            </div>
-            <div>
-              <h5 className="text-sm font-bold text-stone-900 dark:text-stone-100">
-                {t("2. CV & Lettre 100% Déterministes", "2. 100% Deterministic CV & Letter")}
-              </h5>
-              <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed">
-                {t("Chaque candidature est ajustée aux mots-clés exacts de l'offre en exploitant uniquement vos vraies expériences, sans aucune compétence inventée.", "Each application is tailored to the offer's exact keywords using only your real experience, with no invented skills.")}
-              </p>
-            </div>
-          </div>
-
-          {/* Card 3: Kanban */}
-          <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200/90 dark:border-stone-800 p-5 shadow-artisan space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 flex items-center justify-center">
-              <KanbanSquare className="w-5 h-5" />
-            </div>
-            <div>
-              <h5 className="text-sm font-bold text-stone-900 dark:text-stone-100">
-                {t("3. Suivi Kanban Transparent", "3. Transparent Kanban Tracking")}
-              </h5>
-              <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed">
-                {t("Suivez en temps réel le statut de chacune de vos candidatures, des entretiens jusqu'à l'offre finale de stage PFE.", "Track the status of each application in real time, from interviews to the final PFE internship offer.")}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Launch CTA */}
-      <div className="p-6 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-artisan flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-center">
-            <CheckCircle2 className="w-6 h-6" />
-          </div>
-          <div>
-            <h5 className="text-sm font-bold text-stone-900 dark:text-stone-100">
-              {t("Prêt à trouver votre stage de rêve ?", "Ready to find your dream internship?")}
-            </h5>
-            <p className="text-xs text-stone-500">
-              {t("Lancez le Radar pour scanner les meilleures offres de stage PFE adaptées à votre profil.", "Launch the Radar to scan the best PFE internship offers matching your profile.")}
-            </p>
-          </div>
-        </div>
-
+      <div className="flex items-center justify-between pt-4 border-t border-[#EADFCE]">
         <button
           type="button"
-          onClick={handleFinish}
-          disabled={isFinishing}
-          className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-7 py-3 rounded-xl bg-primary hover:bg-orange-700 text-white font-bold text-sm transition-all shadow-md shadow-orange-600/30 cursor-pointer disabled:opacity-50"
+          onClick={() => router.push("/onboarding/step-6")}
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#EFE9DF] hover:bg-[#E5DACD] text-stone-800 text-xs font-semibold transition-colors cursor-pointer"
         >
-          {isFinishing ? (
+          <ArrowLeft className="w-4 h-4" />
+          <span>{t("Précédent", "Back")}</span>
+        </button>
+
+        <button
+          type="submit"
+          disabled={isSaving}
+          className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#EA580C] hover:bg-[#C2410C] text-white font-semibold text-sm transition-colors cursor-pointer disabled:opacity-50"
+        >
+          {isSaving ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              <span>{t("Ouverture du Radar...", "Opening the Radar...")}</span>
+              <span>{t("Enregistrement...", "Saving...")}</span>
             </>
           ) : (
             <>
-              <span>{t("Découvrir mes premières offres sur le Radar", "Discover my first offers on the Radar")}</span>
+              <span>{t("Continuer", "Continue")}</span>
               <ArrowRight className="w-4 h-4" />
             </>
           )}
         </button>
       </div>
-    </div>
+    </form>
   );
 }
 
