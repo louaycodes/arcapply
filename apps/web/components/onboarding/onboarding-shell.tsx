@@ -212,11 +212,11 @@ export function OnboardingShell({
           <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
             <Link href="/" className="flex items-center gap-2.5 shrink-0 hover:opacity-90 transition-opacity">
               <img
-                src="/logo.png"
+                src="/brand/arcapply-symbol-white.svg"
                 alt="ArcApply Logo"
-                className="w-7 h-7 object-contain brightness-0 invert"
+                className="w-7 h-7 object-contain"
               />
-              <span className="text-base font-bold tracking-tight text-white font-display">
+              <span className="text-base font-extrabold tracking-tight text-white font-display">
                 ArcApply
               </span>
             </Link>

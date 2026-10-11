@@ -12,12 +12,14 @@ export const metadata: Metadata = {
     "Préparez, adaptez et suivez vos candidatures de stage PFE et premier emploi d'ingénieur en France et en Tunisie avec un score de compatibilité en temps réel.",
   icons: {
     icon: [
+      { url: "/brand/favicon.svg", type: "image/svg+xml" },
       { url: "/favicon.ico", sizes: "any" },
-      { url: "/logo.png", type: "image/png" },
+      { url: "/brand/arcapply-symbol-favicon.svg", type: "image/svg+xml" },
     ],
     shortcut: "/favicon.ico",
-    apple: "/logo.png",
+    apple: "/brand/apple-touch-icon.png",
   },
+  manifest: "/brand/site.webmanifest",
 };
 
 export default function RootLayout({
@@ -28,9 +30,10 @@ export default function RootLayout({
   return (
     <html lang="fr" suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" type="image/png" href="/logo.png" />
-        <link rel="apple-touch-icon" href="/logo.png" />
+        <link rel="icon" type="image/svg+xml" href="/brand/favicon.svg" />
+        <link rel="alternate icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />
+        <link rel="manifest" href="/brand/site.webmanifest" />
         <script
           dangerouslySetInnerHTML={{
             __html: `

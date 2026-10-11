@@ -1,6 +1,6 @@
 <div align="center">
 
-  <img src="apps/web/public/logo.png" alt="ArcApply Logo" width="130" height="130" />
+  <img src="apps/web/public/brand/arcapply-stacked.svg" alt="ArcApply Logo" width="160" height="160" />
 
   # ArcApply
   ### Intelligent, High-Efficiency Personal Application Copilot for Student Engineers

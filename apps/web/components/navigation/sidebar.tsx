@@ -87,17 +87,22 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
       <div>
         {/* Brand / Logo */}
         <div className="flex items-center gap-3 px-2 py-3 mb-6 border-b border-border/80 dark:border-stone-800">
-          <img
-            src="/logo.png"
-            alt="ArcApply Logo"
-            className="w-14 h-14 shrink-0 object-contain drop-shadow-sm"
-          />
-          <div className="min-w-0 flex-1">
-            <h1 className="text-lg font-bold tracking-tight text-stone-900 dark:text-stone-100 font-display">
-              ArcApply
-            </h1>
-            <p className="text-xs text-stone-500 dark:text-stone-400 font-medium">{t("Assistant Candidatures", "Application Assistant")}</p>
-          </div>
+          <Link href="/" className="flex items-center gap-2.5 group min-w-0 flex-1">
+            <img
+              src="/brand/arcapply-symbol.svg"
+              alt="ArcApply Symbol"
+              className="w-9 h-9 shrink-0 object-contain transition-transform group-hover:scale-105"
+            />
+            <div className="min-w-0 flex-1">
+              <h1 className="text-lg font-black tracking-tight text-stone-900 dark:text-white font-display flex items-center">
+                <span>Arc</span>
+                <span className="text-[#EA580C]">Apply</span>
+              </h1>
+              <p className="text-[11px] text-stone-500 dark:text-stone-400 font-medium truncate">
+                {t("Copilote Candidatures", "Application Copilot")}
+              </p>
+            </div>
+          </Link>
           {onClose && (
             <button
               type="button"
