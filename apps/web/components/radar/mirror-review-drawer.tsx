@@ -185,10 +185,6 @@ export function MirrorReviewDrawer({
   const [reconScanning, setReconScanning] = useState(false);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    setCvLanguage(appLanguage);
-  }, [appLanguage]);
-
   const isAnalysisReady = Boolean(
     reconDossier &&
       (reconDossier.status === "COMPLETED" ||
@@ -200,6 +196,8 @@ export function MirrorReviewDrawer({
   // Initialisation à l'ouverture pour une offre
   useEffect(() => {
     if (job && isOpen) {
+      const targetLang: "fr" | "en" = job.language?.toLowerCase() === "en" ? "en" : "fr";
+      setCvLanguage(targetLang);
       setStatus(job.status);
       setErrorMsg(null);
       setActiveTab("letter");
@@ -218,7 +216,7 @@ export function MirrorReviewDrawer({
           );
           if (ready) {
             // Charger la lettre si déjà existante
-            fetchCoverLetter(job.id, cvLanguage)
+            fetchCoverLetter(job.id, targetLang)
               .then((existing) => {
                 setLetter(existing);
                 setLetterContent(existing.content_markdown);

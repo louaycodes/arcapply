@@ -58,8 +58,10 @@ export function CVPreviewModal({ job, isOpen, onClose }: CVPreviewModalProps) {
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
-    setLanguage(appLanguage);
-  }, [appLanguage]);
+    if (job) {
+      setLanguage(job.language?.toLowerCase() === "en" ? "en" : "fr");
+    }
+  }, [job?.id, job?.language]);
 
   useEffect(() => {
     if (cv) {

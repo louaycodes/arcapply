@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   fetchProfile,
   updateProfile,
+  syncProfileMirror,
   fetchProfileStatus,
   downloadProfileCVPdf,
   MasterProfile,
@@ -41,6 +42,8 @@ import {
   Loader2,
   AlertTriangle,
   ExternalLink,
+  Sparkles,
+  RefreshCw,
 } from "lucide-react";
 
 function StackInput({
@@ -185,6 +188,45 @@ export default function ProfilePage() {
     }
   };
 
+  const [activeLangTab, setActiveLangTab] = useState<"fr" | "en">("fr");
+  const [isSyncingMirror, setIsSyncingMirror] = useState(false);
+
+  const handleSyncMirror = async () => {
+    if (!profile) return;
+    try {
+      setIsSyncingMirror(true);
+      setNotification(null);
+      await updateProfile(profile);
+      const synced = await syncProfileMirror();
+      setProfile({
+        ...synced,
+        languages: synced.languages || [],
+        extracurriculars: synced.extracurriculars || [],
+        experiences: synced.experiences || [],
+        educations: synced.educations || [],
+        projects: synced.projects || [],
+        skills: synced.skills || [],
+      });
+      const newStatus = await fetchProfileStatus();
+      setStatus(newStatus);
+      setNotification({
+        type: "success",
+        message: t(
+          "Synchronisation miroir réussie ! Les équivalents en anglais ont été traduits et enregistrés.",
+          "Mirror synchronization complete! English fields have been translated and saved."
+        ),
+      });
+      setActiveLangTab("en");
+    } catch (err: any) {
+      setNotification({
+        type: "error",
+        message: err.message || t("Échec de la synchronisation miroir.", "Mirror synchronization failed."),
+      });
+    } finally {
+      setIsSyncingMirror(false);
+      setTimeout(() => setNotification(null), 6000);
+    }
+  };
 
   const handleDownloadCV = async () => {
     if (!profile) return;
@@ -628,6 +670,69 @@ export default function ProfilePage() {
         </div>
       </div>
 
+      {/* Language & Mirror Synchronization Bar */}
+      <div className="p-4 sm:p-5 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-artisan flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-orange-50 dark:bg-orange-950/40 border border-orange-200/60 dark:border-orange-800/60 flex items-center justify-center text-primary font-bold">
+            <Globe2 className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-stone-900 dark:text-stone-100 uppercase tracking-wider font-mono">
+                {t("Langue d'édition", "Editing Language")}
+              </span>
+              <div className="inline-flex rounded-lg bg-stone-100 dark:bg-stone-800 p-0.5 border border-stone-200 dark:border-stone-700">
+                <button
+                  type="button"
+                  onClick={() => setActiveLangTab("fr")}
+                  className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                    activeLangTab === "fr"
+                      ? "bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 shadow-xs"
+                      : "text-stone-500 hover:text-stone-900 dark:hover:text-stone-100"
+                  }`}
+                >
+                  [FR] Français
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveLangTab("en")}
+                  className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                    activeLangTab === "en"
+                      ? "bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 shadow-xs"
+                      : "text-stone-500 hover:text-stone-900 dark:hover:text-stone-100"
+                  }`}
+                >
+                  [EN] English (Miroir)
+                </button>
+              </div>
+            </div>
+            <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5">
+              {activeLangTab === "fr"
+                ? t("Vous éditez votre profil en français. Une seule saisie suffit.", "Editing your profile in French. Single input is all you need.")
+                : t("Aperçu et retouche de la version anglaise auto-synchronisée.", "Preview and refinement of the auto-synchronized English version.")}
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleSyncMirror}
+          disabled={isSyncingMirror || isSaving}
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-orange-50 hover:bg-orange-100 dark:bg-orange-950/40 dark:hover:bg-orange-900/60 border border-orange-200 dark:border-orange-800/60 text-primary text-xs font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50"
+          title={t(
+            "Traduit et synchronise automatiquement toutes les sections vers l'autre langue via l'IA.",
+            "Automatically translates and synchronizes all sections to the other language via AI."
+          )}
+        >
+          {isSyncingMirror ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Sparkles className="w-3.5 h-3.5" />
+          )}
+          <span>{isSyncingMirror ? t("Synchronisation...", "Synchronizing...") : t("Synchroniser le Miroir (IA)", "Sync Mirror Profile (AI)")}</span>
+        </button>
+      </div>
+
       {/* Profile Form Sections */}
       <div className="space-y-8">
         <div className="p-6 rounded-xl border border-border bg-card space-y-5">
@@ -689,50 +794,56 @@ export default function ProfilePage() {
               />
             </div>
 
-            <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
-                  <span>{t("[FR] Titre professionnel / Accroche (Français) *", "[FR] Professional title / Headline (French) *")}</span>
-                </label>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5 flex items-center justify-between">
+                <span>
+                  {activeLangTab === "fr"
+                    ? t("Titre professionnel / Accroche (Français) *", "Professional Title / Headline (French) *")
+                    : t("Professional Headline / Tagline (English) *", "Professional Headline / Tagline (English) *")}
+                </span>
+                <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                  {activeLangTab.toUpperCase()}
+                </span>
+              </label>
+              {activeLangTab === "fr" ? (
                 <input
                   type="text"
                   value={profile.headline_fr ?? profile.headline ?? ""}
                   onChange={(e) => setProfile({ ...profile, headline: e.target.value, headline_fr: e.target.value })}
-                  placeholder="ex: Élève-ingénieur Systèmes Distribués & Cloud | Recherche Stage PFE 2027"
+                  placeholder={t("ex: Élève-ingénieur Systèmes Distribués & Cloud | Recherche Stage PFE 2027", "e.g. Distributed Systems & Cloud Student | Final Internship 2027")}
                   className="w-full px-3.5 py-2 rounded-md bg-muted/60 border border-border focus:outline-none focus:border-primary text-sm text-foreground placeholder:text-muted-foreground/50 transition-colors"
                 />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
-                  <span>[EN] Professional Headline / Tagline (English)</span>
-                </label>
+              ) : (
                 <input
                   type="text"
                   value={profile.headline_en ?? ""}
                   onChange={(e) => setProfile({ ...profile, headline_en: e.target.value })}
-                  placeholder="ex: Distributed Systems & Cloud Engineering Student | Seeking Final Internship 2027"
+                  placeholder="e.g. Distributed Systems & Cloud Engineering Student | Seeking Final Internship 2027"
                   className="w-full px-3.5 py-2 rounded-md bg-muted/60 border border-border focus:outline-none focus:border-primary text-sm text-foreground placeholder:text-muted-foreground/50 transition-colors"
                 />
-              </div>
+              )}
             </div>
 
-            <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
-                  <span>{t("[FR] Bio / Synthèse de parcours (Français)", "[FR] Bio / Background summary (French)")}</span>
-                </label>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5 flex items-center justify-between">
+                <span>
+                  {activeLangTab === "fr"
+                    ? t("Bio / Synthèse de parcours (Français)", "Bio / Background summary (French)")
+                    : t("Bio / Summary (English)", "Bio / Summary (English)")}
+                </span>
+                <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                  {activeLangTab.toUpperCase()}
+                </span>
+              </label>
+              {activeLangTab === "fr" ? (
                 <textarea
                   rows={3}
                   value={profile.bio_fr ?? profile.bio ?? ""}
                   onChange={(e) => setProfile({ ...profile, bio: e.target.value, bio_fr: e.target.value })}
-                  placeholder="Présentation synthétique et factuelle de vos objectifs d'ingénierie..."
+                  placeholder={t("Présentation synthétique et factuelle de vos objectifs d'ingénierie...", "Factual presentation of your engineering background...")}
                   className="w-full px-3.5 py-2 rounded-md bg-muted/60 border border-border focus:outline-none focus:border-primary text-sm text-foreground placeholder:text-muted-foreground/50 transition-colors"
                 />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
-                  <span>[EN] Bio / Summary (English)</span>
-                </label>
+              ) : (
                 <textarea
                   rows={3}
                   value={profile.bio_en ?? ""}
@@ -740,7 +851,7 @@ export default function ProfilePage() {
                   placeholder="Concise and factual overview of your engineering background and goals..."
                   className="w-full px-3.5 py-2 rounded-md bg-muted/60 border border-border focus:outline-none focus:border-primary text-sm text-foreground placeholder:text-muted-foreground/50 transition-colors"
                 />
-              </div>
+              )}
             </div>
 
             <div>
@@ -855,75 +966,82 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-                    <input
-                      type="text"
-                      placeholder={t("[FR] Diplôme préparé (ex: Diplôme National d'Ingénieur) *", "[FR] Degree pursued (e.g. Diplôme National d'Ingénieur) *")}
-                      value={edu.degree_fr ?? edu.degree}
-                      onChange={(e) => {
-                        const updated = [...profile.educations];
-                        updated[idx].degree = e.target.value;
-                        updated[idx].degree_fr = e.target.value;
-                        setProfile({ ...profile, educations: updated });
-                      }}
-                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
-                    <input
-                      type="text"
-                      placeholder={t("[EN] Degree (ex: Master of Science in Software Engineering)", "[EN] Degree (e.g. Master of Science in Software Engineering)")}
-                      value={edu.degree_en || ""}
-                      onChange={(e) => {
-                        const updated = [...profile.educations];
-                        updated[idx].degree_en = e.target.value;
-                        setProfile({ ...profile, educations: updated });
-                      }}
-                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
-                    <input
-                      type="text"
-                      placeholder={t("[FR] Filière / Spécialité (ex: Génie Logiciel)", "[FR] Track / Major (e.g. Génie Logiciel)")}
-                      value={edu.field_of_study_fr ?? edu.field_of_study}
-                      onChange={(e) => {
-                        const updated = [...profile.educations];
-                        updated[idx].field_of_study = e.target.value;
-                        updated[idx].field_of_study_fr = e.target.value;
-                        setProfile({ ...profile, educations: updated });
-                      }}
-                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
-                    <input
-                      type="text"
-                      placeholder={t("[EN] Field of study (ex: Software Engineering)", "[EN] Field of study (e.g. Software Engineering)")}
-                      value={edu.field_of_study_en || ""}
-                      onChange={(e) => {
-                        const updated = [...profile.educations];
-                        updated[idx].field_of_study_en = e.target.value;
-                        setProfile({ ...profile, educations: updated });
-                      }}
-                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
-                    <textarea
-                      rows={2}
-                      placeholder={t("[FR] Détails académiques (Français)", "[FR] Academic details (French)")}
-                      value={edu.description_fr ?? edu.description ?? ""}
-                      onChange={(e) => {
-                        const updated = [...profile.educations];
-                        updated[idx].description = e.target.value;
-                        updated[idx].description_fr = e.target.value;
-                        setProfile({ ...profile, educations: updated });
-                      }}
-                      className="w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
-                    <textarea
-                      rows={2}
-                      placeholder="[EN] Academic details (English)"
-                      value={edu.description_en || ""}
-                      onChange={(e) => {
-                        const updated = [...profile.educations];
-                        updated[idx].description_en = e.target.value;
-                        setProfile({ ...profile, educations: updated });
-                      }}
-                      className="w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
+                    {activeLangTab === "fr" ? (
+                      <>
+                        <input
+                          type="text"
+                          placeholder={t("Diplôme préparé (ex: Diplôme National d'Ingénieur) *", "Degree pursued (e.g. Diplôme National d'Ingénieur) *")}
+                          value={edu.degree_fr ?? edu.degree}
+                          onChange={(e) => {
+                            const updated = [...profile.educations];
+                            updated[idx].degree = e.target.value;
+                            updated[idx].degree_fr = e.target.value;
+                            setProfile({ ...profile, educations: updated });
+                          }}
+                          className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                        />
+                        <input
+                          type="text"
+                          placeholder={t("Filière / Spécialité (ex: Génie Logiciel)", "Track / Major (e.g. Génie Logiciel)")}
+                          value={edu.field_of_study_fr ?? edu.field_of_study}
+                          onChange={(e) => {
+                            const updated = [...profile.educations];
+                            updated[idx].field_of_study = e.target.value;
+                            updated[idx].field_of_study_fr = e.target.value;
+                            setProfile({ ...profile, educations: updated });
+                          }}
+                          className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                        />
+                        <textarea
+                          rows={2}
+                          placeholder={t("Détails académiques (ex: Projets d'études, modules clés...)", "Academic details (e.g. Study projects, key modules...)")}
+                          value={edu.description_fr ?? edu.description ?? ""}
+                          onChange={(e) => {
+                            const updated = [...profile.educations];
+                            updated[idx].description = e.target.value;
+                            updated[idx].description_fr = e.target.value;
+                            setProfile({ ...profile, educations: updated });
+                          }}
+                          className="md:col-span-2 w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <input
+                          type="text"
+                          placeholder="Degree pursued (e.g. National Engineering Degree) *"
+                          value={edu.degree_en || ""}
+                          onChange={(e) => {
+                            const updated = [...profile.educations];
+                            updated[idx].degree_en = e.target.value;
+                            setProfile({ ...profile, educations: updated });
+                          }}
+                          className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Track / Major (e.g. Software Engineering)"
+                          value={edu.field_of_study_en || ""}
+                          onChange={(e) => {
+                            const updated = [...profile.educations];
+                            updated[idx].field_of_study_en = e.target.value;
+                            setProfile({ ...profile, educations: updated });
+                          }}
+                          className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                        />
+                        <textarea
+                          rows={2}
+                          placeholder="Academic details (English - Auto-synchronized)"
+                          value={edu.description_en || ""}
+                          onChange={(e) => {
+                            const updated = [...profile.educations];
+                            updated[idx].description_en = e.target.value;
+                            setProfile({ ...profile, educations: updated });
+                          }}
+                          className="md:col-span-2 w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                        />
+                      </>
+                    )}
                   </div>
                 </div>
               ))}
@@ -1015,34 +1133,41 @@ export default function ProfilePage() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-                    <input
-                      type="text"
-                      placeholder={t("[FR] Intitulé du stage / Rôle * (ex: Stagiaire Ingénieur DevOps)", "[FR] Internship title / Role * (e.g. Stagiaire Ingénieur DevOps)")}
-                      value={stage.role_fr ?? stage.role}
-                      onChange={(e) => updateStage(idx, { ...stage, role: e.target.value, role_fr: e.target.value })}
-                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
-                    <input
-                      type="text"
-                      placeholder={t("[EN] Internship Role (ex: DevOps Engineering Intern)", "[EN] Internship Role (e.g. DevOps Engineering Intern)")}
-                      value={stage.role_en || ""}
-                      onChange={(e) => updateStage(idx, { ...stage, role_en: e.target.value })}
-                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
-                    <textarea
-                      rows={2}
-                      placeholder={t("[FR] Description concrète des missions, livrables et impact *", "[FR] Concrete description of assignments, deliverables and impact *")}
-                      value={stage.description_fr ?? stage.description}
-                      onChange={(e) => updateStage(idx, { ...stage, description: e.target.value, description_fr: e.target.value })}
-                      className="w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
-                    <textarea
-                      rows={2}
-                      placeholder="[EN] Concrete description of missions, deliverables and impact"
-                      value={stage.description_en || ""}
-                      onChange={(e) => updateStage(idx, { ...stage, description_en: e.target.value })}
-                      className="w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
+                    {activeLangTab === "fr" ? (
+                      <>
+                        <input
+                          type="text"
+                          placeholder={t("Intitulé du stage / Rôle * (ex: Stagiaire Ingénieur DevOps)", "Internship title / Role * (e.g. Stagiaire Ingénieur DevOps)")}
+                          value={stage.role_fr ?? stage.role}
+                          onChange={(e) => updateStage(idx, { ...stage, role: e.target.value, role_fr: e.target.value })}
+                          className="md:col-span-2 px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                        />
+                        <textarea
+                          rows={2}
+                          placeholder={t("Description concrète des missions, livrables et impact *", "Concrete description of assignments, deliverables and impact *")}
+                          value={stage.description_fr ?? stage.description}
+                          onChange={(e) => updateStage(idx, { ...stage, description: e.target.value, description_fr: e.target.value })}
+                          className="md:col-span-2 w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <input
+                          type="text"
+                          placeholder="Internship Role (e.g. DevOps Engineering Intern) *"
+                          value={stage.role_en || ""}
+                          onChange={(e) => updateStage(idx, { ...stage, role_en: e.target.value })}
+                          className="md:col-span-2 px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                        />
+                        <textarea
+                          rows={2}
+                          placeholder="Concrete description of missions, deliverables and impact (English - Auto-synchronized)"
+                          value={stage.description_en || ""}
+                          onChange={(e) => updateStage(idx, { ...stage, description_en: e.target.value })}
+                          className="md:col-span-2 w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                        />
+                      </>
+                    )}
                   </div>
                 </div>
               ))}
@@ -1134,34 +1259,41 @@ export default function ProfilePage() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-                    <input
-                      type="text"
-                      placeholder={t("[FR] Intitulé du poste / Rôle * (ex: Développeur Backend Freelance)", "[FR] Job title / Role * (e.g. Développeur Backend Freelance)")}
-                      value={job.role_fr ?? job.role}
-                      onChange={(e) => updateJob(idx, { ...job, role: e.target.value, role_fr: e.target.value })}
-                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
-                    <input
-                      type="text"
-                      placeholder={t("[EN] Position / Role (ex: Freelance Backend Developer)", "[EN] Position / Role (e.g. Freelance Backend Developer)")}
-                      value={job.role_en || ""}
-                      onChange={(e) => updateJob(idx, { ...job, role_en: e.target.value })}
-                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
-                    <textarea
-                      rows={2}
-                      placeholder={t("[FR] Description des responsabilités et réalisations *", "[FR] Description of responsibilities and achievements *")}
-                      value={job.description_fr ?? job.description}
-                      onChange={(e) => updateJob(idx, { ...job, description: e.target.value, description_fr: e.target.value })}
-                      className="w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
-                    <textarea
-                      rows={2}
-                      placeholder="[EN] Description of responsibilities and achievements"
-                      value={job.description_en || ""}
-                      onChange={(e) => updateJob(idx, { ...job, description_en: e.target.value })}
-                      className="w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
+                    {activeLangTab === "fr" ? (
+                      <>
+                        <input
+                          type="text"
+                          placeholder={t("Intitulé du poste / Rôle * (ex: Développeur Backend Freelance)", "Job title / Role * (e.g. Développeur Backend Freelance)")}
+                          value={job.role_fr ?? job.role}
+                          onChange={(e) => updateJob(idx, { ...job, role: e.target.value, role_fr: e.target.value })}
+                          className="md:col-span-2 px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                        />
+                        <textarea
+                          rows={2}
+                          placeholder={t("Description des responsabilités et réalisations *", "Description of responsibilities and achievements *")}
+                          value={job.description_fr ?? job.description}
+                          onChange={(e) => updateJob(idx, { ...job, description: e.target.value, description_fr: e.target.value })}
+                          className="md:col-span-2 w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <input
+                          type="text"
+                          placeholder="Position / Role (e.g. Freelance Backend Developer) *"
+                          value={job.role_en || ""}
+                          onChange={(e) => updateJob(idx, { ...job, role_en: e.target.value })}
+                          className="md:col-span-2 px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                        />
+                        <textarea
+                          rows={2}
+                          placeholder="Description of responsibilities and achievements (English - Auto-synchronized)"
+                          value={job.description_en || ""}
+                          onChange={(e) => updateJob(idx, { ...job, description_en: e.target.value })}
+                          className="md:col-span-2 w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                        />
+                      </>
+                    )}
                   </div>
                 </div>
               ))}
@@ -1228,75 +1360,82 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-                    <input
-                      type="text"
-                      placeholder={t("[FR] Titre du projet (ex: Copilote IA Local) *", "[FR] Project title (e.g. Copilote IA Local) *")}
-                      value={proj.title_fr ?? proj.title}
-                      onChange={(e) => {
-                        const updated = [...profile.projects];
-                        updated[idx].title = e.target.value;
-                        updated[idx].title_fr = e.target.value;
-                        setProfile({ ...profile, projects: updated });
-                      }}
-                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
-                    <input
-                      type="text"
-                      placeholder={t("[EN] Project Title (ex: Local AI Copilot)", "[EN] Project Title (e.g. Local AI Copilot)")}
-                      value={proj.title_en || ""}
-                      onChange={(e) => {
-                        const updated = [...profile.projects];
-                        updated[idx].title_en = e.target.value;
-                        setProfile({ ...profile, projects: updated });
-                      }}
-                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
-                    <input
-                      type="text"
-                      placeholder={t("[FR] Rôle (ex: Architecte & Lead Dev)", "[FR] Role (e.g. Architecte & Lead Dev)")}
-                      value={proj.role_fr ?? proj.role ?? ""}
-                      onChange={(e) => {
-                        const updated = [...profile.projects];
-                        updated[idx].role = e.target.value;
-                        updated[idx].role_fr = e.target.value;
-                        setProfile({ ...profile, projects: updated });
-                      }}
-                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
-                    <input
-                      type="text"
-                      placeholder={t("[EN] Role (ex: Lead Architect & Developer)", "[EN] Role (e.g. Lead Architect & Developer)")}
-                      value={proj.role_en || ""}
-                      onChange={(e) => {
-                        const updated = [...profile.projects];
-                        updated[idx].role_en = e.target.value;
-                        setProfile({ ...profile, projects: updated });
-                      }}
-                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
-                    <textarea
-                      rows={2}
-                      placeholder={t("[FR] Description de l'architecture, problématique et performances *", "[FR] Description of the architecture, problem and performance *")}
-                      value={proj.description_fr ?? proj.description}
-                      onChange={(e) => {
-                        const updated = [...profile.projects];
-                        updated[idx].description = e.target.value;
-                        updated[idx].description_fr = e.target.value;
-                        setProfile({ ...profile, projects: updated });
-                      }}
-                      className="w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
-                    <textarea
-                      rows={2}
-                      placeholder="[EN] Architecture, technical challenge and performance achievements"
-                      value={proj.description_en || ""}
-                      onChange={(e) => {
-                        const updated = [...profile.projects];
-                        updated[idx].description_en = e.target.value;
-                        setProfile({ ...profile, projects: updated });
-                      }}
-                      className="w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
+                    {activeLangTab === "fr" ? (
+                      <>
+                        <input
+                          type="text"
+                          placeholder={t("Titre du projet * (ex: Copilote IA Local)", "Project title * (e.g. Copilote IA Local)")}
+                          value={proj.title_fr ?? proj.title}
+                          onChange={(e) => {
+                            const updated = [...profile.projects];
+                            updated[idx].title = e.target.value;
+                            updated[idx].title_fr = e.target.value;
+                            setProfile({ ...profile, projects: updated });
+                          }}
+                          className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                        />
+                        <input
+                          type="text"
+                          placeholder={t("Rôle (ex: Architecte & Lead Dev)", "Role (e.g. Architecte & Lead Dev)")}
+                          value={proj.role_fr ?? proj.role ?? ""}
+                          onChange={(e) => {
+                            const updated = [...profile.projects];
+                            updated[idx].role = e.target.value;
+                            updated[idx].role_fr = e.target.value;
+                            setProfile({ ...profile, projects: updated });
+                          }}
+                          className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                        />
+                        <textarea
+                          rows={2}
+                          placeholder={t("Description de l'architecture, problématique et performances *", "Description of the architecture, problem and performance *")}
+                          value={proj.description_fr ?? proj.description}
+                          onChange={(e) => {
+                            const updated = [...profile.projects];
+                            updated[idx].description = e.target.value;
+                            updated[idx].description_fr = e.target.value;
+                            setProfile({ ...profile, projects: updated });
+                          }}
+                          className="md:col-span-2 w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <input
+                          type="text"
+                          placeholder="Project Title * (e.g. Local AI Copilot)"
+                          value={proj.title_en || ""}
+                          onChange={(e) => {
+                            const updated = [...profile.projects];
+                            updated[idx].title_en = e.target.value;
+                            setProfile({ ...profile, projects: updated });
+                          }}
+                          className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Role (e.g. Lead Architect & Developer)"
+                          value={proj.role_en || ""}
+                          onChange={(e) => {
+                            const updated = [...profile.projects];
+                            updated[idx].role_en = e.target.value;
+                            setProfile({ ...profile, projects: updated });
+                          }}
+                          className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                        />
+                        <textarea
+                          rows={2}
+                          placeholder="Architecture, technical challenges and performance achievements (English - Auto-synchronized)"
+                          value={proj.description_en || ""}
+                          onChange={(e) => {
+                            const updated = [...profile.projects];
+                            updated[idx].description_en = e.target.value;
+                            setProfile({ ...profile, projects: updated });
+                          }}
+                          className="md:col-span-2 w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                        />
+                      </>
+                    )}
                   </div>
                 </div>
               ))}
@@ -1455,34 +1594,41 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-                    <input
-                      type="text"
-                      placeholder={t("[FR] Rôle / Responsabilité * (ex: Chef de Projet, Membre Actif)", "[FR] Role / Responsibility * (e.g. Chef de Projet, Membre Actif)")}
-                      value={extra.role_fr ?? extra.role}
-                      onChange={(e) => updateExtracurricular(idx, { ...extra, role: e.target.value, role_fr: e.target.value })}
-                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
-                    <input
-                      type="text"
-                      placeholder={t("[EN] Role / Responsibility (ex: Project Lead, Active Member)", "[EN] Role / Responsibility (e.g. Project Lead, Active Member)")}
-                      value={extra.role_en || ""}
-                      onChange={(e) => updateExtracurricular(idx, { ...extra, role_en: e.target.value })}
-                      className="px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
-                    <textarea
-                      rows={2}
-                      placeholder={t("[FR] Description des actions, projets menés et réalisations (Français)...", "[FR] Description of actions, projects and achievements (French)...")}
-                      value={extra.description_fr ?? extra.description}
-                      onChange={(e) => updateExtracurricular(idx, { ...extra, description: e.target.value, description_fr: e.target.value })}
-                      className="w-full px-3 py-2 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
-                    <textarea
-                      rows={2}
-                      placeholder="[EN] Description of actions, projects and achievements (English)..."
-                      value={extra.description_en || ""}
-                      onChange={(e) => updateExtracurricular(idx, { ...extra, description_en: e.target.value })}
-                      className="w-full px-3 py-2 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                    />
+                    {activeLangTab === "fr" ? (
+                      <>
+                        <input
+                          type="text"
+                          placeholder={t("Rôle / Responsabilité * (ex: Chef de Projet, Membre Actif)", "Role / Responsibility * (e.g. Chef de Projet, Membre Actif)")}
+                          value={extra.role_fr ?? extra.role}
+                          onChange={(e) => updateExtracurricular(idx, { ...extra, role: e.target.value, role_fr: e.target.value })}
+                          className="md:col-span-2 px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                        />
+                        <textarea
+                          rows={2}
+                          placeholder={t("Description des actions, projets menés et réalisations *", "Description of actions, projects and achievements *")}
+                          value={extra.description_fr ?? extra.description}
+                          onChange={(e) => updateExtracurricular(idx, { ...extra, description: e.target.value, description_fr: e.target.value })}
+                          className="md:col-span-2 w-full px-3 py-2 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <input
+                          type="text"
+                          placeholder="Role / Responsibility * (e.g. Project Lead, Active Member)"
+                          value={extra.role_en || ""}
+                          onChange={(e) => updateExtracurricular(idx, { ...extra, role_en: e.target.value })}
+                          className="md:col-span-2 px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                        />
+                        <textarea
+                          rows={2}
+                          placeholder="Description of actions, projects and achievements (English - Auto-synchronized)"
+                          value={extra.description_en || ""}
+                          onChange={(e) => updateExtracurricular(idx, { ...extra, description_en: e.target.value })}
+                          className="md:col-span-2 w-full px-3 py-2 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                        />
+                      </>
+                    )}
                   </div>
                 </div>
               ))}

@@ -244,9 +244,21 @@ export function JobCard({
               </span>
             )}
 
-            {/* 2. Pays : France / Tunisie une seule fois */}
+            {/* 2. Pays : France / Tunisie */}
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700">
               {countryLabel}
+            </span>
+
+            {/* 2bis. Langue de l'offre (FR ou EN) */}
+            <span
+              className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border ${
+                job.language?.toLowerCase() === "en"
+                  ? "bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800/60"
+                  : "bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-700"
+              }`}
+              title={job.language?.toLowerCase() === "en" ? t("Offre en Anglais", "Job offer in English") : t("Offre en Français", "Job offer in French")}
+            >
+              {job.language?.toLowerCase() === "en" ? "EN" : "FR"}
             </span>
 
             {/* 3. Stage ou Job une seule fois */}

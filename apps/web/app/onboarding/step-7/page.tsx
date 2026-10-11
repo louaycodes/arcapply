@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { OnboardingShell, useOnboarding } from "@/components/onboarding/onboarding-shell";
 import { useAppLanguage } from "@/lib/language-context";
-import { completeOnboarding } from "@/lib/api";
+import { completeOnboarding, syncProfileMirror } from "@/lib/api";
 import {
   ShieldCheck,
   Radar,
@@ -28,6 +28,8 @@ function Step7Content() {
     try {
       setIsFinishing(true);
       await completeOnboarding();
+      // Trigger mirror profile sync in the background so EN mirror data is ready for instant applications
+      syncProfileMirror().catch((e) => console.warn("Background mirror sync non-fatal warning:", e));
       if (typeof window !== "undefined") {
         localStorage.setItem("arcapply_walkthrough_done", "true");
         localStorage.removeItem("arcapply_just_registered");

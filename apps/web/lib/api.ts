@@ -243,6 +243,25 @@ export async function testGroqKey(
   return res.json();
 }
 
+export async function syncProfileMirror(targetLang?: "fr" | "en"): Promise<MasterProfile> {
+  const url = targetLang
+    ? `${API_BASE_URL}/api/profile/mirror-sync?target_lang=${targetLang}`
+    : `${API_BASE_URL}/api/profile/mirror-sync`;
+  const res = await authFetch(url, {
+    method: "POST",
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const message =
+      typeof errorData?.detail === "string"
+        ? localizeServerMessage(errorData.detail)
+        : localizeServerMessage(errorData?.detail?.message) ||
+          trStored("Échec de la synchronisation linguistique du profil.", "Failed to synchronize profile language.");
+    throw new Error(message);
+  }
+  return res.json();
+}
+
 export async function checkEngineHealth(): Promise<boolean> {
   try {
     const res = await authFetch(`${API_BASE_URL}/health`, { cache: "no-store" });
@@ -263,6 +282,7 @@ export interface JobOffer {
   description_raw: string;
   url: string;
   status: string;
+  language?: "fr" | "en" | string;
   offer_type?: "PFE" | "STAGE" | "JOB" | string;
   is_applied?: boolean;
   applied_at?: string | null;
