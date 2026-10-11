@@ -340,6 +340,7 @@ class JobOfferBase(SQLModel):
     department: str = Field(default="")
     is_direct_career_site: bool = Field(default=False, index=True)
     apply_url: str = Field(default="")
+    language: str = Field(default="fr", index=True)
     user_id: str = Field(default="louay", index=True)
 
 

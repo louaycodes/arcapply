@@ -177,6 +177,7 @@ def _migrate_db(engine) -> None:
             ("projects", "description_fr", "TEXT DEFAULT ''"),
             ("projects", "description_en", "TEXT DEFAULT ''"),
             ("cover_letters", "language", "VARCHAR DEFAULT 'fr'"),
+            ("job_offers", "language", "VARCHAR DEFAULT 'fr'"),
         ]
         for tbl_name, col_name, col_type in bilingual_columns:
             try:
@@ -187,6 +188,7 @@ def _migrate_db(engine) -> None:
 
         try:
             conn.execute(text("CREATE INDEX IF NOT EXISTS ix_cover_letters_language ON cover_letters (language)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_job_offers_language ON job_offers (language)"))
             conn.commit()
         except Exception:
             pass

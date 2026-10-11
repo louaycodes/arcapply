@@ -35,6 +35,7 @@ from app.adapters.connectors import infer_offer_type, is_pfe_offer
 from app.domain.anti_rescrape import is_job_already_applied, is_job_already_archived, is_job_excluded_from_scraping
 from app.domain.deduplication import JobDeduplicationIndex
 from app.domain.job_extractor import JobDeepExtractor
+from app.domain.language_detector import detect_job_language
 from app.domain.models import JobOffer, MasterProfile, utc_now
 from app.ports.connectors import BaseJobConnector
 
@@ -222,6 +223,11 @@ class CrawlerScheduler:
 
                     # Deep Extraction & Enrichissement sémantique (stack, durée, salaire, date)
                     enriched = JobDeepExtractor.enrich_job_data(j_with_type)
+                    detected_lang = detect_job_language(
+                        title=enriched.get("title", ""),
+                        description=enriched.get("description_raw", ""),
+                        country=enriched.get("country", "France"),
+                    )
 
                     new_job = JobOffer(
                         platform=plat,
@@ -241,6 +247,7 @@ class CrawlerScheduler:
                         department=enriched.get("department", ""),
                         is_direct_career_site=enriched.get("is_direct_career_site", False),
                         apply_url=enriched.get("apply_url", ""),
+                        language=detected_lang,
                         user_id=target_user,
                     )
                     sess.add(new_job)
