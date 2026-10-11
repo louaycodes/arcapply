@@ -1,0 +1,28 @@
+<svg fill="#ffffff" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="t-symbol-color"><title>ArcApply</title>
+  <title id="t-symbol-color">ArcApply - Symbol</title>
+  <g id="symbol">
+    <path fill="#ffffff" fill-rule="evenodd" d="
+      M 128 36
+      L 165 100.1
+      L 194 71
+      L 180 57
+      L 226 51
+      L 220 97
+      L 206 83
+      L 182 107
+      L 206 148.57
+      L 172 216
+      L 132 216
+      L 148 188
+      L 108 188
+      L 92 216
+      L 44 216
+      L 128 36
+      Z
+      M 128 90
+      L 109.2 160
+      L 146.8 160
+      Z
+    "/>
+  </g>
+</svg>

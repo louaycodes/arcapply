@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="t-symbol-dualtone">
+  <title id="t-symbol-dualtone">ArcApply - Symbol Dual-tone</title>
+  <g id="symbol">
+    <!-- Left Stanchion / Foundation Leg in Slate/Obsidian -->
+    <polygon fill="#0F172A" points="128,36 160,96 114,96 74,176 106,176 128,132 144,132 100,220 44,220"/>
+    <!-- Ascending Trajectory Vector in Arc Orange -->
+    <path fill="#EA580C" d="
+      M 78 152
+      L 136 152
+      L 194 94
+      L 180 80
+      L 228 74
+      L 222 122
+      L 208 108
+      L 154 162
+      L 168 190
+      L 184 220
+      L 140 220
+      L 132 204
+      L 130 174
+      L 78 174
+      Z
+    "/>
+  </g>
+</svg>
