@@ -1,6 +1,6 @@
 import logging
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session, select, SQLModel
 from app.adapters.database import get_session
 from app.config import settings
@@ -17,6 +17,7 @@ from app.domain.models import (
     utc_now,
 )
 from app.domain.validation import evaluate_profile_completeness
+from app.domain.profile_mirror import ProfileMirrorService
 from app.api.auth import get_current_username
 
 logger = logging.getLogger(__name__)
@@ -287,4 +288,39 @@ def test_groq_key(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Échec de validation de la clé Groq : {str(e)}",
         )
+
+
+@router.post("/mirror-sync", response_model=MasterProfileRead)
+def sync_profile_mirror(
+    target_lang: Optional[str] = Query(None, description="Langue cible (en ou fr)"),
+    username: str = Depends(get_current_username),
+    session: Session = Depends(get_session),
+):
+    """Synchronise et traduit automatiquement le Master Profile vers la langue miroir (FR <-> EN)."""
+    profile = _get_or_create_profile(session, username)
+    try:
+        updated = ProfileMirrorService.sync_mirror_translations(
+            profile=profile,
+            session=session,
+            target_lang=target_lang,
+        )
+        return updated
+    except RuntimeError as e:
+        err_msg = str(e)
+        if any(w in err_msg.lower() for w in ["quota", "429", "rate limit"]):
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail={"error_code": "RATE_LIMIT", "message": err_msg},
+            )
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={"error_code": "MODEL_ERROR", "message": err_msg},
+        )
+    except Exception as e:
+        logger.error(f"Erreur sync_profile_mirror: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={"error_code": "MODEL_ERROR", "message": f"Erreur lors de la synchronisation : {str(e)}"},
+        )
+
 
