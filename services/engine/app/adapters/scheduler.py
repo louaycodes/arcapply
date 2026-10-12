@@ -33,6 +33,78 @@ from app.adapters.connectors.nav_norway import NAVNorwayJobConnector
 from app.adapters.connectors.finn_no import FinnNoJobConnector
 from app.adapters.connectors.jobtech_sweden import JobTechSwedenJobConnector
 from app.adapters.connectors.jobs_ch import JobsChJobConnector
+
+# Connecteurs Européens Communs & Institutionnels
+from app.adapters.connectors.european_common import (
+    EuresJobConnector, ErasmusInternJobConnector, EUCareersJobConnector,
+    BlueBookJobConnector, EuropeanJobDaysJobConnector, GlassdoorJobConnector,
+    JoobleJobConnector, AdzunaJobConnector, EuroJobsJobConnector,
+    IAgoraJobConnector, StudentJobConnector, EuroBrusselsJobConnector,
+    EuractivJobConnector, PiktalentJobConnector, EuroplacementJobConnector,
+)
+
+# Connecteurs Régionaux Nordiques
+from app.adapters.connectors.nordic_connectors import (
+    TheHubJobConnector, JobbnorgeJobConnector, WorkInDenmarkJobConnector,
+    JobindexJobConnector, JobnetJobConnector, GraduatelandJobConnector,
+    JobMarketFinlandJobConnector, DuunitoriJobConnector, JoblyFinlandJobConnector,
+    AcademicPositionsJobConnector, AcademicWorkJobConnector, JobbsafariJobConnector,
+)
+
+# Connecteurs Régionaux Benelux
+from app.adapters.connectors.benelux_connectors import (
+    StudentBeJobConnector, VDABJobConnector, ActirisJobConnector,
+    LeForemJobConnector, JobatJobConnector, StepStoneBeJobConnector,
+    TravaillerPourBeJobConnector, MonPremierJobJobConnector, MagnetMeJobConnector,
+    StageNlJobConnector, YoungCapitalJobConnector, NationaleVacaturebankJobConnector,
+    IntermediairJobConnector, AcademicTransferJobConnector, IamExpatJobConnector,
+    JobsLuJobConnector, JobfinderLuJobConnector, AdemJobConnector, IctjobLuJobConnector,
+)
+
+# Connecteurs Régionaux DACH (Allemagne & Suisse)
+from app.adapters.connectors.dach_connectors import (
+    PraktikumInfoJobConnector, MeinPraktikumJobConnector, PraktikaDeJobConnector,
+    ArbeitsagenturJobConnector, MakeItInGermanyJobConnector, StepStoneDeJobConnector,
+    XingJobsJobConnector, JobScout24JobConnector, JobupJobConnector,
+    SwissDevJobsConnector, IctjobsChJobConnector, EthZurichJobConnector, EpflJobConnector,
+)
+
+# Connecteurs Régionaux UK & Irlande
+from app.adapters.connectors.uk_ireland_connectors import (
+    GradcrackerJobConnector, RateMyPlacementJobConnector, BrightNetworkJobConnector,
+    ProspectsJobConnector, StudentCircusJobConnector, MyJobScotlandJobConnector,
+    S1jobsJobConnector, GovUkJobConnector, GradIrelandJobConnector,
+    IrishJobsJobConnector, JobsIeJobConnector, JobsIrelandJobConnector,
+)
+
+# Connecteurs Régionaux Europe du Sud
+from app.adapters.connectors.southern_europe_connectors import (
+    AlmaLaureaJobConnector, CliclavoroJobConnector, InfoJobsItJobConnector, MonsterItJobConnector,
+    InfoJobsEsJobConnector, PrimerEmpleoJobConnector, StudentJobEsJobConnector,
+    TecnoempleoJobConnector, EmpleateJobConnector, KarieraGrJobConnector,
+    SkywalkerGrJobConnector, JobfindGrJobConnector, WorkathlonJobConnector,
+    ServeiOcupacioAndorraJobConnector, FeinaActivaJobConnector,
+    MonacoEmploiJobConnector, JobsMcJobConnector,
+)
+
+# Connecteurs Régionaux Europe Centrale & Orientale
+from app.adapters.connectors.eastern_central_europe_connectors import (
+    NoFluffJobsJobConnector, JustJoinItJobConnector, PracujPlJobConnector,
+    RocketJobsJobConnector, AbsolventJobConnector, GoWorkPlJobConnector,
+    EJobsRoJobConnector, BestJobsJobConnector, HipoJobConnector,
+    StagiiPeBuneJobConnector, UndelucramJobConnector, OlxRoJobConnector,
+    ProfessionHuJobConnector, ZynternJobConnector, DreamJobsJobConnector,
+    CvOnlineHuJobConnector, WorkInLithuaniaJobConnector, CvBankasJobConnector,
+    CvOnlineLtJobConnector, CvMarketLtJobConnector, CvLvJobConnector,
+    CvMarketLvJobConnector, VisidarbiJobConnector, WorkingDayJobConnector,
+    MojPosaoJobConnector, PosaoHrJobConnector, PickJobsJobConnector,
+    InfostudJobConnector, HelloWorldRsJobConnector, StartujJobConnector,
+    JobertyJobConnector, DuapuneJobConnector, NjoftimeJobConnector,
+    JobsBgJobConnector, JobTigerJobConnector, DevBgJobConnector, ZaplataBgJobConnector,
+    WorkUaJobConnector, RobotaUaJobConnector, DjinniJobConnector,
+    DouUaJobConnector, HappyMondayJobConnector,
+)
+
 from app.adapters.database import get_engine
 from app.api.events import broadcast_event
 from app.adapters.connectors import infer_offer_type, is_pfe_offer
@@ -53,10 +125,159 @@ ALL_CONNECTORS: dict[str, type[BaseJobConnector]] = {
     # Norvège & Nordics
     "nav_norway": NAVNorwayJobConnector,
     "finn_no": FinnNoJobConnector,
+    "thehub": TheHubJobConnector,
+    "jobbnorge": JobbnorgeJobConnector,
     # Suède
     "jobtech_sweden": JobTechSwedenJobConnector,
+    "academic_work": AcademicWorkJobConnector,
+    "jobbsafari": JobbsafariJobConnector,
+    # Danemark
+    "workindenmark": WorkInDenmarkJobConnector,
+    "jobindex": JobindexJobConnector,
+    "jobnet": JobnetJobConnector,
+    "graduateland": GraduatelandJobConnector,
+    # Finlande
+    "jobmarket_finland": JobMarketFinlandJobConnector,
+    "duunitori": DuunitoriJobConnector,
+    "jobly_finland": JoblyFinlandJobConnector,
+    "academic_positions": AcademicPositionsJobConnector,
     # Suisse
     "jobs_ch": JobsChJobConnector,
+    "jobscout24_ch": JobScout24JobConnector,
+    "jobup_ch": JobupJobConnector,
+    "swissdevjobs": SwissDevJobsConnector,
+    "ictjobs_ch": IctjobsChJobConnector,
+    "ethz_jobs": EthZurichJobConnector,
+    "epfl_jobs": EpflJobConnector,
+    # Allemagne
+    "praktikum_info": PraktikumInfoJobConnector,
+    "meinpraktikum": MeinPraktikumJobConnector,
+    "praktika_de": PraktikaDeJobConnector,
+    "arbeitsagentur": ArbeitsagenturJobConnector,
+    "make_it_in_germany": MakeItInGermanyJobConnector,
+    "stepstone_de": StepStoneDeJobConnector,
+    "xing_jobs": XingJobsJobConnector,
+    # Belgique
+    "student_be": StudentBeJobConnector,
+    "vdab": VDABJobConnector,
+    "actiris": ActirisJobConnector,
+    "leforem": LeForemJobConnector,
+    "jobat": JobatJobConnector,
+    "stepstone_be": StepStoneBeJobConnector,
+    "travaillerpour_be": TravaillerPourBeJobConnector,
+    "monpremierjob": MonPremierJobJobConnector,
+    # Pays-Bas
+    "magnet_me": MagnetMeJobConnector,
+    "stage_nl": StageNlJobConnector,
+    "youngcapital": YoungCapitalJobConnector,
+    "nationalevacaturebank": NationaleVacaturebankJobConnector,
+    "intermediair": IntermediairJobConnector,
+    "academic_transfer": AcademicTransferJobConnector,
+    "iamexpat_nl": IamExpatJobConnector,
+    # Luxembourg
+    "jobs_lu": JobsLuJobConnector,
+    "jobfinder_lu": JobfinderLuJobConnector,
+    "adem": AdemJobConnector,
+    "ictjob_lu": IctjobLuJobConnector,
+    # Royaume-Uni & Écosse
+    "gradcracker": GradcrackerJobConnector,
+    "ratemyplacement": RateMyPlacementJobConnector,
+    "bright_network": BrightNetworkJobConnector,
+    "prospects": ProspectsJobConnector,
+    "student_circus": StudentCircusJobConnector,
+    "myjobscotland": MyJobScotlandJobConnector,
+    "s1jobs": S1jobsJobConnector,
+    "gov_uk": GovUkJobConnector,
+    # Irlande
+    "gradireland": GradIrelandJobConnector,
+    "irishjobs": IrishJobsJobConnector,
+    "jobs_ie": JobsIeJobConnector,
+    "jobsireland": JobsIrelandJobConnector,
+    # Italie
+    "almalaurea": AlmaLaureaJobConnector,
+    "cliclavoro": CliclavoroJobConnector,
+    "infojobs_it": InfoJobsItJobConnector,
+    "monster_it": MonsterItJobConnector,
+    # Espagne
+    "infojobs_es": InfoJobsEsJobConnector,
+    "primerempleo": PrimerEmpleoJobConnector,
+    "studentjob_es": StudentJobEsJobConnector,
+    "tecnoempleo": TecnoempleoJobConnector,
+    "empleate": EmpleateJobConnector,
+    # Grèce
+    "kariera_gr": KarieraGrJobConnector,
+    "skywalker_gr": SkywalkerGrJobConnector,
+    "jobfind_gr": JobfindGrJobConnector,
+    "workathlon": WorkathlonJobConnector,
+    # Andorre & Monaco
+    "treball_ad": ServeiOcupacioAndorraJobConnector,
+    "feinaactiva": FeinaActivaJobConnector,
+    "monaco_emploi": MonacoEmploiJobConnector,
+    "jobs_mc": JobsMcJobConnector,
+    # Pologne
+    "nofluffjobs": NoFluffJobsJobConnector,
+    "justjoin_it": JustJoinItJobConnector,
+    "pracuj_pl": PracujPlJobConnector,
+    "rocketjobs": RocketJobsJobConnector,
+    "absolvent": AbsolventJobConnector,
+    "gowork_pl": GoWorkPlJobConnector,
+    # Roumanie
+    "ejobs_ro": EJobsRoJobConnector,
+    "bestjobs_eu": BestJobsJobConnector,
+    "hipo": HipoJobConnector,
+    "stagiipebune": StagiiPeBuneJobConnector,
+    "undelucram": UndelucramJobConnector,
+    "olx_ro": OlxRoJobConnector,
+    # Hongrie
+    "profession_hu": ProfessionHuJobConnector,
+    "zyntern": ZynternJobConnector,
+    "dreamjobs_hu": DreamJobsJobConnector,
+    "cvonline_hu": CvOnlineHuJobConnector,
+    # Pays Baltes (Lituanie & Lettonie)
+    "workinlithuania": WorkInLithuaniaJobConnector,
+    "cvbankas": CvBankasJobConnector,
+    "cvonline_lt": CvOnlineLtJobConnector,
+    "cvmarket_lt": CvMarketLtJobConnector,
+    "cv_lv": CvLvJobConnector,
+    "cvmarket_lv": CvMarketLvJobConnector,
+    "visidarbi": VisidarbiJobConnector,
+    "workingday": WorkingDayJobConnector,
+    # Balkans & Europe du Sud-Est
+    "mojposao": MojPosaoJobConnector,
+    "posao_hr": PosaoHrJobConnector,
+    "pickjobs": PickJobsJobConnector,
+    "infostud": InfostudJobConnector,
+    "helloworld_rs": HelloWorldRsJobConnector,
+    "startuj": StartujJobConnector,
+    "joberty": JobertyJobConnector,
+    "duapune": DuapuneJobConnector,
+    "njoftime": NjoftimeJobConnector,
+    "jobs_bg": JobsBgJobConnector,
+    "jobtiger_bg": JobTigerJobConnector,
+    "dev_bg": DevBgJobConnector,
+    "zaplata_bg": ZaplataBgJobConnector,
+    # Ukraine
+    "work_ua": WorkUaJobConnector,
+    "robota_ua": RobotaUaJobConnector,
+    "djinni": DjinniJobConnector,
+    "dou_ua": DouUaJobConnector,
+    "happymonday": HappyMondayJobConnector,
+    # Portails Communs Européens & Institutionnels
+    "eures": EuresJobConnector,
+    "erasmusintern": ErasmusInternJobConnector,
+    "eu_careers": EUCareersJobConnector,
+    "blue_book": BlueBookJobConnector,
+    "european_job_days": EuropeanJobDaysJobConnector,
+    "glassdoor": GlassdoorJobConnector,
+    "jooble": JoobleJobConnector,
+    "adzuna": AdzunaJobConnector,
+    "eurojobs": EuroJobsJobConnector,
+    "iagora": IAgoraJobConnector,
+    "studentjob": StudentJobConnector,
+    "eurobrussels": EuroBrusselsJobConnector,
+    "euractiv": EuractivJobConnector,
+    "piktalent": PiktalentJobConnector,
+    "europlacement": EuroplacementJobConnector,
     # Tunisie
     "keejob": KeejobJobConnector,
     "tunisietravail": TunisieTravailJobConnector,
