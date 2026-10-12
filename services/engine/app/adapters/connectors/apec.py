@@ -43,7 +43,7 @@ class ApecJobConnector(BaseJobConnector):
                         "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
                     )
                 )
-                await page.goto(url, timeout=10000, wait_until="domcontentloaded")
+                await page.goto(url, timeout=25000, wait_until="domcontentloaded")
                 try:
                     cookie_btn = await page.query_selector("#onetrust-accept-btn-handler")
                     if cookie_btn:
@@ -52,7 +52,7 @@ class ApecJobConnector(BaseJobConnector):
                     pass
 
                 try:
-                    await page.wait_for_selector('a[href*="detail-offre"]', timeout=3000)
+                    await page.wait_for_selector('a[href*="detail-offre"]', timeout=8000)
                 except Exception:
                     pass
 

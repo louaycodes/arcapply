@@ -30,7 +30,7 @@ class NumeumJobConnector(BaseJobConnector):
                     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
                 ),
             }
-            async with httpx.AsyncClient(timeout=6.0, follow_redirects=True) as client:
+            async with httpx.AsyncClient(timeout=12.0, follow_redirects=True) as client:
                 resp = await client.get(url, headers=headers)
                 if resp.status_code != 200:
                     print(f"[NumeumConnector] Source indisponible : code HTTP {resp.status_code}")

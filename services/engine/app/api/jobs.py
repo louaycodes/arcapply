@@ -1,3 +1,4 @@
+import asyncio
 from datetime import timedelta, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status as http_status
@@ -263,14 +264,36 @@ def get_sources_status(username: str = Depends(get_current_username)):
 @router.post("/crawl-all")
 async def trigger_full_crawl(
     payload: Optional[JobCollectRequest] = None,
+    background: bool = Query(False, description="Exécuter en tâche de fond pour supprimer tout timeout HTTP/Nginx"),
     username: str = Depends(get_current_username),
     session: Session = Depends(get_session),
 ):
-    """Déclenche l'ingestion multi-sources en temps réel avec diffusion SSE pour l'utilisateur."""
+    """
+    Déclenche l'ingestion multi-sources en temps réel avec diffusion SSE pour l'utilisateur.
+    Si background=True, la tâche est lancée en tâche de fond sans aucun blocage HTTP.
+    """
     kw = payload.keywords if payload else None
     loc = payload.locations if payload else None
     plat = payload.platforms if payload else None
     limit = payload.limit_per_platform if payload and payload.limit_per_platform else 15
+
+    if background:
+        # Lancement asynchrone non-bloquant en tâche de fond avec session DB dédiée
+        asyncio.create_task(
+            CrawlerScheduler.run_full_crawl(
+                keywords=kw,
+                locations=loc,
+                platforms=plat,
+                limit_per_platform=limit,
+                session=None,
+                user_id=username,
+            )
+        )
+        return {
+            "status": "started",
+            "message": "Exploration multi-sources démarrée en tâche de fond. Progression transmise en temps réel par SSE.",
+        }
+
     summary = await CrawlerScheduler.run_full_crawl(
         keywords=kw,
         locations=loc,

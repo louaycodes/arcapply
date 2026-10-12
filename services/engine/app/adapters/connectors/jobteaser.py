@@ -42,9 +42,9 @@ class JobteaserJobConnector(BaseJobConnector):
                         "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
                     )
                 )
-                await page.goto(url, timeout=10000, wait_until="domcontentloaded")
+                await page.goto(url, timeout=25000, wait_until="domcontentloaded")
                 try:
-                    await page.wait_for_selector('a[href*="/job-offers/"]', timeout=3000)
+                    await page.wait_for_selector('a[href*="/job-offers/"]', timeout=8000)
                 except Exception:
                     pass
 

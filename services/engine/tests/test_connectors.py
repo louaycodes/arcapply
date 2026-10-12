@@ -248,6 +248,19 @@ def test_crawl_all_endpoint_deduplication():
     assert data2["duplicate_count"] >= 1
 
 
+def test_crawl_all_endpoint_background_mode():
+    payload = {
+        "keywords": ["PFE"],
+        "locations": ["France"],
+        "platforms": ["keejob"],
+    }
+    res = client.post("/api/jobs/crawl-all?background=true", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "started"
+    assert "tâche de fond" in data["message"]
+
+
 def test_normalize_search_terms_helper():
     from app.ports.connectors import BaseJobConnector
 

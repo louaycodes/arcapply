@@ -45,7 +45,7 @@ class Top100EnterprisesJobConnector(BaseJobConnector):
             "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8",
         }
 
-        async with httpx.AsyncClient(timeout=2.5, follow_redirects=True, headers=headers) as client:
+        async with httpx.AsyncClient(timeout=12.0, follow_redirects=True, headers=headers) as client:
             sem = asyncio.Semaphore(10)
 
             async def crawl_single(co: dict[str, Any]) -> list[dict[str, Any]]:
@@ -254,7 +254,7 @@ class Top100EnterprisesJobConnector(BaseJobConnector):
 
         found = []
         try:
-            resp = await client.get(careers_url, timeout=5.0)
+            resp = await client.get(careers_url, timeout=12.0)
             if resp.status_code == 200 and resp.text:
                 soup = BeautifulSoup(resp.text, "html.parser")
                 # Recherche des liens ou cartes d'offres contenant des mots-clés
@@ -310,7 +310,7 @@ class Top100EnterprisesJobConnector(BaseJobConnector):
             ),
         }
         try:
-            async with httpx.AsyncClient(timeout=6.0, follow_redirects=True, headers=headers) as client:
+            async with httpx.AsyncClient(timeout=12.0, follow_redirects=True, headers=headers) as client:
                 resp = await client.get(job_url)
                 if resp.status_code == 200 and resp.text:
                     soup = BeautifulSoup(resp.text, "html.parser")

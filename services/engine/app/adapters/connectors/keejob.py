@@ -40,7 +40,7 @@ class KeejobJobConnector(BaseJobConnector):
         }
 
         try:
-            async with httpx.AsyncClient(timeout=4.5, follow_redirects=True) as client:
+            async with httpx.AsyncClient(timeout=12.0, follow_redirects=True) as client:
                 for term in search_terms[:2]:
                     if len(results) >= limit:
                         break
@@ -130,7 +130,7 @@ class KeejobJobConnector(BaseJobConnector):
             "Accept-Language": "fr-FR,fr;q=0.9",
         }
         try:
-            async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
+            async with httpx.AsyncClient(timeout=12.0, follow_redirects=True) as client:
                 resp = await client.get(job_url, headers=headers)
                 if resp.status_code == 200 and resp.text:
                     soup = BeautifulSoup(resp.text, "html.parser")

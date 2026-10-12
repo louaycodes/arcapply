@@ -422,8 +422,6 @@ class CrawlerScheduler:
             )
 
             sem = asyncio.Semaphore(15)
-            per_connector_timeout = 10.0
-            global_crawl_timeout = 35.0
 
             async def fetch_and_process_platform(p_name: str) -> None:
                 nonlocal total_collected, total_new, total_duplicates
@@ -448,16 +446,11 @@ class CrawlerScheduler:
                 async with sem:
                     try:
                         conn_inst = c_cls()
-                        fetched = await asyncio.wait_for(
-                            conn_inst.search_jobs(
-                                keywords=search_kw,
-                                locations=search_loc,
-                                limit=limit_per_platform,
-                            ),
-                            timeout=per_connector_timeout,
+                        fetched = await conn_inst.search_jobs(
+                            keywords=search_kw,
+                            locations=search_loc,
+                            limit=limit_per_platform,
                         )
-                    except asyncio.TimeoutError:
-                        print(f"[CrawlerScheduler] Timeout connecteur {p_name} (> {per_connector_timeout}s)")
                     except Exception as err:
                         print(f"[CrawlerScheduler] Erreur connecteur {p_name}: {err}")
 
@@ -507,7 +500,7 @@ class CrawlerScheduler:
                         job_url = j.get("url", "")
                         if job_url and platform_enrich_count < 2 and (len(desc) < 220 or "consultez l'annonce" in desc.lower() or "consultez les détails" in desc.lower()):
                             try:
-                                details = await asyncio.wait_for(conn_inst.fetch_job_details(job_url), timeout=1.8)
+                                details = await asyncio.wait_for(conn_inst.fetch_job_details(job_url), timeout=10.0)
                                 if details and details.get("description_raw") and len(details["description_raw"]) > len(desc):
                                     j_with_type["description_raw"] = details["description_raw"]
                                     platform_enrich_count += 1
@@ -591,15 +584,9 @@ class CrawlerScheduler:
                     target_user=target_user,
                 )
 
-            # Lancement concurrent avec ingestion en continu
+            # Lancement concurrent avec ingestion en continu sans aucune limite de temps
             tasks = [asyncio.create_task(fetch_and_process_platform(p)) for p in sorted_platforms]
-            try:
-                await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=global_crawl_timeout)
-            except asyncio.TimeoutError:
-                print(f"[CrawlerScheduler] Limite de temps globale atteinte ({global_crawl_timeout}s). Annulation des tâches restantes.")
-                for t in tasks:
-                    if not t.done():
-                        t.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
 
             # Événement global de fin d'exploration multi-sources
             await broadcast_event(
