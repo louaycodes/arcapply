@@ -19,11 +19,13 @@ import {
   CheckCircle2,
   XCircle,
   HelpCircle,
+  Globe,
 } from "lucide-react";
 import { useAppLanguage } from "@/lib/language-context";
 import { useAuth } from "@/components/auth/auth-context";
 import { LandingPage } from "@/components/landing/landing-page";
 import { fetchJobs, fetchPipelineMetrics, JobOffer, PipelineMetrics } from "@/lib/api";
+import { ALL_RADAR_COUNTRIES, getCountryBadge } from "@/lib/countries";
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -121,6 +123,59 @@ export default function HomePage() {
     });
     return { fr, tn };
   }, [appliedJobs]);
+
+  // Distribution géographique consolidée des offres du vivier
+  const geographicKPIs = useMemo(() => {
+    const total = jobs.length;
+    const countryCounts: Record<string, number> = {};
+
+    jobs.forEach((j) => {
+      const jc = (j.country || "").trim().toLowerCase();
+      const matched = ALL_RADAR_COUNTRIES.find(
+        (c) => c.id !== "all" && c.aliases.some((a) => jc === a || jc.includes(a))
+      );
+      const key = matched ? matched.id : (j.country || "Autre");
+      countryCounts[key] = (countryCounts[key] || 0) + 1;
+    });
+
+    const franceCount = countryCounts["France"] || 0;
+    const tunisieCount = countryCounts["Tunisie"] || 0;
+
+    let internationalCount = 0;
+    const breakdown: { id: string; label: string; count: number; badge: string }[] = [];
+
+    Object.entries(countryCounts).forEach(([cId, count]) => {
+      if (cId !== "France" && cId !== "Tunisie" && count > 0) {
+        internationalCount += count;
+        const cfg = ALL_RADAR_COUNTRIES.find((c) => c.id.toLowerCase() === cId.toLowerCase());
+        breakdown.push({
+          id: cId,
+          label: cfg ? cfg.label : cId,
+          count,
+          badge: cfg?.badge || getCountryBadge(cId),
+        });
+      }
+    });
+
+    breakdown.sort((a, b) => b.count - a.count);
+
+    return {
+      total,
+      france: {
+        count: franceCount,
+        percentage: total > 0 ? Math.round((franceCount / total) * 100) : 0,
+      },
+      tunisie: {
+        count: tunisieCount,
+        percentage: total > 0 ? Math.round((tunisieCount / total) * 100) : 0,
+      },
+      international: {
+        count: internationalCount,
+        percentage: total > 0 ? Math.round((internationalCount / total) * 100) : 0,
+        breakdown,
+      },
+    };
+  }, [jobs]);
 
   if (!user) {
     return <LandingPage />;
@@ -269,6 +324,142 @@ export default function HomePage() {
                 : t("En cours d'obtention", "In progress")}
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* ── Répartition Géographique du Vivier PFE (Radar Stats) ── */}
+      <div className="space-y-3.5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h2 className="text-base font-bold text-stone-900 dark:text-stone-100 font-display flex items-center gap-2">
+              <Globe className="w-4 h-4 text-primary" />
+              <span>{t("Répartition Géographique du Vivier", "Geographic Pool Distribution")}</span>
+            </h2>
+            <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
+              {t(
+                "Distribution des opportunités consolidées selon les marchés cibles.",
+                "Distribution of consolidated opportunities across target markets."
+              )}
+            </p>
+          </div>
+          <Link
+            href="/radar"
+            className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 self-start sm:self-auto"
+          >
+            <span>{t("Consulter dans le Radar", "View in Radar")}</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+          {/* Total Radar */}
+          <Link
+            href="/radar"
+            className="p-5 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-primary/40 shadow-xs transition-all group block cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-stone-600 dark:text-stone-400">
+                {t("Total Vivier Radar", "Total Radar Pool")}
+              </span>
+              <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-mono text-[11px] font-bold">
+                ALL
+              </div>
+            </div>
+            <div className="mt-2.5">
+              <span className="text-3xl sm:text-4xl font-black font-display text-stone-900 dark:text-white tracking-tight">
+                {isLoading ? "—" : geographicKPIs.total}
+              </span>
+              <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1">
+                {t("100% · Vivier consolidé", "100% · Consolidated pool")}
+              </p>
+            </div>
+          </Link>
+
+          {/* France */}
+          <Link
+            href="/radar"
+            className="p-5 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-blue-500/40 shadow-xs transition-all group block cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-stone-600 dark:text-stone-400">
+                {t("France", "France")}
+              </span>
+              <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400 font-mono text-[11px] font-bold">
+                FR
+              </div>
+            </div>
+            <div className="mt-2.5">
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl sm:text-4xl font-black font-display text-blue-600 dark:text-blue-400 tracking-tight">
+                  {isLoading ? "—" : geographicKPIs.france.count}
+                </span>
+                <span className="text-xs font-semibold text-stone-500 dark:text-stone-400">
+                  ({geographicKPIs.france.percentage}%)
+                </span>
+              </div>
+              <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1 truncate">
+                {t("Île-de-France & Régions", "Paris Region & Provinces")}
+              </p>
+            </div>
+          </Link>
+
+          {/* Tunisie */}
+          <Link
+            href="/radar"
+            className="p-5 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-emerald-500/40 shadow-xs transition-all group block cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-stone-600 dark:text-stone-400">
+                {t("Tunisie", "Tunisia")}
+              </span>
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-mono text-[11px] font-bold">
+                TN
+              </div>
+            </div>
+            <div className="mt-2.5">
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl sm:text-4xl font-black font-display text-emerald-600 dark:text-emerald-400 tracking-tight">
+                  {isLoading ? "—" : geographicKPIs.tunisie.count}
+                </span>
+                <span className="text-xs font-semibold text-stone-500 dark:text-stone-400">
+                  ({geographicKPIs.tunisie.percentage}%)
+                </span>
+              </div>
+              <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1 truncate">
+                {t("Grand Tunis & Pôles Tech", "Tunis & Tech Hubs")}
+              </p>
+            </div>
+          </Link>
+
+          {/* Europe & International */}
+          <Link
+            href="/radar"
+            className="p-5 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-purple-500/40 shadow-xs transition-all group block cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-stone-600 dark:text-stone-400">
+                {t("Europe & International", "Europe & International")}
+              </span>
+              <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-600 dark:text-purple-400 font-mono text-[11px] font-bold">
+                EU+
+              </div>
+            </div>
+            <div className="mt-2.5">
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl sm:text-4xl font-black font-display text-purple-600 dark:text-purple-400 tracking-tight">
+                  {isLoading ? "—" : geographicKPIs.international.count}
+                </span>
+                <span className="text-xs font-semibold text-stone-500 dark:text-stone-400">
+                  ({geographicKPIs.international.percentage}%)
+                </span>
+              </div>
+              <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1 truncate">
+                {geographicKPIs.international.breakdown.length > 0
+                  ? geographicKPIs.international.breakdown.slice(0, 3).map((item) => `${item.badge} ${item.count}`).join(" • ")
+                  : t("Allemagne, Suisse, UK, Nordics...", "Germany, Switzerland, UK, Nordics...")}
+              </p>
+            </div>
+          </Link>
         </div>
       </div>
 

@@ -752,178 +752,7 @@ export default function RadarPage() {
         </div>
       )}
 
-      {/* Cartes KPI - Distribution Géographique & Volume Vivier */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
-        {/* KPI 1 : Total Radar */}
-        <button
-          type="button"
-          onClick={() => setSelectedCountry("all")}
-          className={`p-4 sm:p-5 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden group ${
-            selectedCountry === "all"
-              ? "bg-gradient-to-br from-white via-primary/5 to-primary/10 dark:from-stone-900 dark:via-stone-900 dark:to-primary/20 border-primary/50 shadow-sm ring-1 ring-primary/30"
-              : "bg-white/80 dark:bg-stone-900/80 hover:bg-white dark:hover:bg-stone-900 border-stone-200/80 dark:border-stone-800 shadow-xs hover:border-stone-300 dark:hover:border-stone-700"
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-stone-600 dark:text-stone-400">
-              {t("Total Radar PFE", "Total PFE Radar")}
-            </span>
-            <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-mono text-[11px] font-bold">
-              ALL
-            </div>
-          </div>
-          <div className="mt-2.5">
-            <span className="text-2xl sm:text-3xl font-black font-display text-stone-900 dark:text-white tracking-tight">
-              {isLoading ? "—" : geographicKPIs.total}
-            </span>
-            <div className="flex items-center justify-between mt-1.5">
-              <span className="text-[11px] text-stone-500 dark:text-stone-400">
-                {t("100% · Vivier consolidé", "100% · Consolidated pool")}
-              </span>
-              {selectedCountry === "all" && (
-                <span className="text-[10px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
-                  {t("Actif", "Active")}
-                </span>
-              )}
-            </div>
-          </div>
-        </button>
 
-        {/* KPI 2 : France */}
-        <button
-          type="button"
-          onClick={() => setSelectedCountry(selectedCountry.toLowerCase() === "france" ? "all" : "France")}
-          className={`p-4 sm:p-5 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden group ${
-            selectedCountry.toLowerCase() === "france"
-              ? "bg-gradient-to-br from-white via-blue-50/20 to-blue-100/30 dark:from-stone-900 dark:via-stone-900 dark:to-blue-950/20 border-blue-500/50 shadow-sm ring-1 ring-blue-500/30"
-              : "bg-white/80 dark:bg-stone-900/80 hover:bg-white dark:hover:bg-stone-900 border-stone-200/80 dark:border-stone-800 shadow-xs hover:border-stone-300 dark:hover:border-stone-700"
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-stone-600 dark:text-stone-400">
-              {t("France", "France")}
-            </span>
-            <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400 font-mono text-[11px] font-bold">
-              FR
-            </div>
-          </div>
-          <div className="mt-2.5">
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl sm:text-3xl font-black font-display text-blue-600 dark:text-blue-400 tracking-tight">
-                {isLoading ? "—" : geographicKPIs.france.count}
-              </span>
-              <span className="text-xs font-semibold text-stone-500 dark:text-stone-400">
-                ({geographicKPIs.france.percentage}%)
-              </span>
-            </div>
-            <div className="flex items-center justify-between mt-1.5">
-              <span className="text-[11px] text-stone-500 dark:text-stone-400 truncate">
-                {t("Île-de-France & Régions", "Paris Region & Provinces")}
-              </span>
-              {selectedCountry.toLowerCase() === "france" && (
-                <span className="text-[10px] font-semibold text-blue-600 bg-blue-500/10 px-1.5 py-0.5 rounded">
-                  {t("Actif", "Active")}
-                </span>
-              )}
-            </div>
-          </div>
-        </button>
-
-        {/* KPI 3 : Tunisie */}
-        <button
-          type="button"
-          onClick={() => setSelectedCountry(selectedCountry.toLowerCase() === "tunisie" ? "all" : "Tunisie")}
-          className={`p-4 sm:p-5 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden group ${
-            selectedCountry.toLowerCase() === "tunisie"
-              ? "bg-gradient-to-br from-white via-emerald-50/20 to-emerald-100/30 dark:from-stone-900 dark:via-stone-900 dark:to-emerald-950/20 border-emerald-500/50 shadow-sm ring-1 ring-emerald-500/30"
-              : "bg-white/80 dark:bg-stone-900/80 hover:bg-white dark:hover:bg-stone-900 border-stone-200/80 dark:border-stone-800 shadow-xs hover:border-stone-300 dark:hover:border-stone-700"
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-stone-600 dark:text-stone-400">
-              {t("Tunisie", "Tunisia")}
-            </span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-mono text-[11px] font-bold">
-              TN
-            </div>
-          </div>
-          <div className="mt-2.5">
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl sm:text-3xl font-black font-display text-emerald-600 dark:text-emerald-400 tracking-tight">
-                {isLoading ? "—" : geographicKPIs.tunisie.count}
-              </span>
-              <span className="text-xs font-semibold text-stone-500 dark:text-stone-400">
-                ({geographicKPIs.tunisie.percentage}%)
-              </span>
-            </div>
-            <div className="flex items-center justify-between mt-1.5">
-              <span className="text-[11px] text-stone-500 dark:text-stone-400 truncate">
-                {t("Grand Tunis & Pôles Tech", "Tunis & Tech Hubs")}
-              </span>
-              {selectedCountry.toLowerCase() === "tunisie" && (
-                <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded">
-                  {t("Actif", "Active")}
-                </span>
-              )}
-            </div>
-          </div>
-        </button>
-
-        {/* KPI 4 : International & Europe */}
-        <button
-          type="button"
-          onClick={() => setSelectedCountry(selectedCountry === "international" ? "all" : "international")}
-          className={`p-4 sm:p-5 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden group ${
-            selectedCountry === "international" || (!["all", "france", "tunisie"].includes(selectedCountry.toLowerCase()))
-              ? "bg-gradient-to-br from-white via-purple-50/20 to-purple-100/30 dark:from-stone-900 dark:via-stone-900 dark:to-purple-950/20 border-purple-500/50 shadow-sm ring-1 ring-purple-500/30"
-              : "bg-white/80 dark:bg-stone-900/80 hover:bg-white dark:hover:bg-stone-900 border-stone-200/80 dark:border-stone-800 shadow-xs hover:border-stone-300 dark:hover:border-stone-700"
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-stone-600 dark:text-stone-400">
-              {t("Europe & International", "Europe & International")}
-            </span>
-            <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-600 dark:text-purple-400 font-mono text-[11px] font-bold">
-              EU+
-            </div>
-          </div>
-          <div className="mt-2.5">
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl sm:text-3xl font-black font-display text-purple-600 dark:text-purple-400 tracking-tight">
-                {isLoading ? "—" : geographicKPIs.international.count}
-              </span>
-              <span className="text-xs font-semibold text-stone-500 dark:text-stone-400">
-                ({geographicKPIs.international.percentage}%)
-              </span>
-            </div>
-            <div className="flex items-center justify-between mt-1.5">
-              <div className="flex items-center gap-1 overflow-hidden">
-                {geographicKPIs.international.breakdown.length > 0 ? (
-                  <div className="flex items-center gap-1 truncate">
-                    {geographicKPIs.international.breakdown.slice(0, 3).map((item) => (
-                      <span key={item.id} className="text-[10px] font-mono px-1 py-0.2 rounded bg-muted text-muted-foreground font-semibold">
-                        {item.badge} {item.count}
-                      </span>
-                    ))}
-                    {geographicKPIs.international.breakdown.length > 3 && (
-                      <span className="text-[10px] text-muted-foreground">+{geographicKPIs.international.breakdown.length - 3}</span>
-                    )}
-                  </div>
-                ) : (
-                  <span className="text-[11px] text-stone-500 dark:text-stone-400 truncate">
-                    {t("DE, UK, CH, Nordics...", "DE, UK, CH, Nordics...")}
-                  </span>
-                )}
-              </div>
-              {(selectedCountry === "international" || (!["all", "france", "tunisie"].includes(selectedCountry.toLowerCase()))) && (
-                <span className="text-[10px] font-semibold text-purple-600 bg-purple-500/10 px-1.5 py-0.5 rounded shrink-0">
-                  {t("Actif", "Active")}
-                </span>
-              )}
-            </div>
-          </div>
-        </button>
-      </div>
 
       {/* 1. Barre Temporelle Intelligente & Métriques de Vélocité */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-2.5 bg-white/70 dark:bg-stone-900/80 backdrop-blur-xl rounded-2xl border border-stone-200/80 dark:border-stone-800 shadow-xs">
@@ -1028,186 +857,66 @@ export default function RadarPage() {
       {/* 2. Barre de Filtres Secondaires & Recherche Avancée */}
       <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 p-3.5 rounded-xl border border-border bg-card">
         <div className="flex flex-wrap items-center gap-2">
-          {/* Filtre Pays Enrichi : Tous les pays */}
-          <div className="flex flex-wrap items-center bg-muted/60 p-1 rounded-xl border border-border/50 gap-1">
-            {/* Quick Button: Tous les pays */}
-            <button
-              type="button"
-              onClick={() => setSelectedCountry("all")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
-                selectedCountry === "all"
-                  ? "bg-background text-foreground font-semibold shadow-xs border border-border/60"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
+          {/* Sélecteur Pays Unique par Liste Déroulante */}
+          <div className="relative flex items-center">
+            <MapPin className="w-4 h-4 text-primary absolute left-3 pointer-events-none" />
+            <select
+              id="country-filter-select"
+              value={selectedCountry}
+              onChange={(e) => setSelectedCountry(e.target.value)}
+              className="pl-9 pr-9 py-2 rounded-xl text-xs font-semibold bg-muted/60 hover:bg-muted border border-border text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all cursor-pointer appearance-none shadow-2xs"
             >
-              <span>{t("Tous les pays", "All countries")}</span>
-              <span
-                className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                  selectedCountry === "all"
-                    ? "bg-primary/15 text-primary font-bold"
-                    : "bg-muted text-muted-foreground"
-                }`}
-              >
-                {jobs.length}
-              </span>
-            </button>
-
-            {/* Quick Button: France */}
-            <button
-              type="button"
-              onClick={() => setSelectedCountry("France")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
-                selectedCountry.toLowerCase() === "france"
-                  ? "bg-background text-foreground font-semibold shadow-xs border border-border/60"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <span className="font-mono text-[10px] font-bold text-blue-600 dark:text-blue-400">FR</span>
-              <span>France</span>
-              {(countryCounts["France"] || 0) > 0 && (
-                <span
-                  className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                    selectedCountry.toLowerCase() === "france"
-                      ? "bg-blue-500/15 text-blue-600 dark:text-blue-400 font-bold"
-                      : "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  {countryCounts["France"] || 0}
-                </span>
-              )}
-            </button>
-
-            {/* Quick Button: Tunisie */}
-            <button
-              type="button"
-              onClick={() => setSelectedCountry("Tunisie")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
-                selectedCountry.toLowerCase() === "tunisie"
-                  ? "bg-background text-foreground font-semibold shadow-xs border border-border/60"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <span className="font-mono text-[10px] font-bold text-emerald-600 dark:text-emerald-400">TN</span>
-              <span>Tunisie</span>
-              {(countryCounts["Tunisie"] || 0) > 0 && (
-                <span
-                  className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                    selectedCountry.toLowerCase() === "tunisie"
-                      ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold"
-                      : "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  {countryCounts["Tunisie"] || 0}
-                </span>
-              )}
-            </button>
-
-            {/* Quick Button: International (si > 0 offres) */}
-            {geographicKPIs.international.count > 0 && (
-              <button
-                type="button"
-                onClick={() => setSelectedCountry("international")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
-                  selectedCountry === "international"
-                    ? "bg-background text-foreground font-semibold shadow-xs border border-border/60"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <span className="font-mono text-[10px] font-bold text-purple-600 dark:text-purple-400">EU+</span>
-                <span>{t("International", "International")}</span>
-                <span
-                  className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                    selectedCountry === "international"
-                      ? "bg-purple-500/15 text-purple-600 dark:text-purple-400 font-bold"
-                      : "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  {geographicKPIs.international.count}
-                </span>
-              </button>
-            )}
-
-            {/* Boutons rapides pour les pays spécifiques ayant des offres (> 0) */}
-            {ALL_RADAR_COUNTRIES.filter(
-              (c) => !["all", "france", "tunisie"].includes(c.id.toLowerCase()) && (countryCounts[c.id] || 0) > 0
-            ).map((c) => {
-              const isSelected = selectedCountry.toLowerCase() === c.id.toLowerCase();
-              const count = countryCounts[c.id] || 0;
-              return (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => setSelectedCountry(c.id)}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
-                    isSelected
-                      ? "bg-background text-foreground font-semibold shadow-xs border border-border/60"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <span className="font-mono text-[10px] font-bold opacity-70">{c.badge}</span>
-                  <span>{language === "en" ? c.labelEn : c.label}</span>
-                  <span
-                    className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                      isSelected
-                        ? "bg-primary/15 text-primary font-bold"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-
-            {/* Sélecteur déroulant complet de tous les pays (18+) */}
-            <div className="relative flex items-center pl-1 border-l border-border/60 my-0.5">
-              <MapPin className="w-3.5 h-3.5 text-muted-foreground absolute left-2 pointer-events-none" />
-              <select
-                value={
-                  ["all", "international"].includes(selectedCountry)
-                    ? ""
-                    : selectedCountry
-                }
-                onChange={(e) => {
-                  if (e.target.value) setSelectedCountry(e.target.value);
-                }}
-                className="pl-7 pr-4 py-1.5 rounded-lg text-xs font-medium bg-transparent border-0 text-muted-foreground hover:text-foreground focus:outline-none cursor-pointer"
-              >
-                <option value="" disabled className="bg-popover text-foreground">
-                  {t("Tous les pays (18+)...", "All countries (18+)...")}
+              <option value="all">
+                {t("Tous les pays", "All countries")} ({jobs.length} {jobs.length <= 1 ? t("offre", "offer") : t("offres", "offers")})
+              </option>
+              <option value="France">
+                [FR] France ({(countryCounts["France"] || 0)} {countryCounts["France"] === 1 ? t("offre", "offer") : t("offres", "offers")})
+              </option>
+              <option value="Tunisie">
+                [TN] Tunisie ({(countryCounts["Tunisie"] || 0)} {countryCounts["Tunisie"] === 1 ? t("offre", "offer") : t("offres", "offers")})
+              </option>
+              {geographicKPIs.international.count > 0 && (
+                <option value="international">
+                  [EU+] {t("Europe & International", "Europe & International")} ({geographicKPIs.international.count} {t("offres", "offers")})
                 </option>
-                {ALL_RADAR_COUNTRIES.filter((c) => c.id !== "all").map((c) => {
-                  const count = countryCounts[c.id] || 0;
+              )}
+              {ALL_RADAR_COUNTRIES.filter(
+                (c) => !["all", "france", "tunisie"].includes(c.id.toLowerCase())
+              ).map((c) => {
+                const count = countryCounts[c.id] || 0;
+                return (
+                  <option key={c.id} value={c.id}>
+                    [{c.badge}] {language === "en" ? c.labelEn : c.label} ({count} {count <= 1 ? t("offre", "offer") : t("offres", "offers")})
+                  </option>
+                );
+              })}
+              {uniqueCountriesInJobs
+                .filter(
+                  (c) => !ALL_RADAR_COUNTRIES.some((rc) => rc.id.toLowerCase() === c.toLowerCase())
+                )
+                .map((c) => {
+                  const count = countryCounts[c] || 0;
                   return (
-                    <option key={c.id} value={c.id} className="bg-popover text-foreground">
-                      [{c.badge}] {language === "en" ? c.labelEn : c.label} ({count} {count === 1 ? "offre" : "offres"})
+                    <option key={c} value={c}>
+                      {c} ({count} {count <= 1 ? t("offre", "offer") : t("offres", "offers")})
                     </option>
                   );
                 })}
-                {/* Tout autre pays découvert hors de la liste officielle */}
-                {uniqueCountriesInJobs
-                  .filter((c) => !ALL_RADAR_COUNTRIES.some((rc) => rc.id.toLowerCase() === c.toLowerCase()))
-                  .map((c) => (
-                    <option key={c} value={c} className="bg-popover text-foreground">
-                      {c} ({countryCounts[c] || 0} offres)
-                    </option>
-                  ))}
-              </select>
-            </div>
-
-            {/* Badge de réinitialisation si filtre actif */}
-            {selectedCountry !== "all" && (
-              <button
-                type="button"
-                onClick={() => setSelectedCountry("all")}
-                className="ml-1 px-2 py-1 rounded-md text-[11px] font-medium bg-primary/10 hover:bg-primary/20 text-primary flex items-center gap-1 transition-colors cursor-pointer"
-                title={t("Réinitialiser le filtre pays", "Reset country filter")}
-              >
-                <span>{getCanonicalCountryLabel(selectedCountry, language)}</span>
-                <X className="w-3 h-3" />
-              </button>
-            )}
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-3 pointer-events-none" />
           </div>
+
+          {selectedCountry !== "all" && (
+            <button
+              type="button"
+              onClick={() => setSelectedCountry("all")}
+              className="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-primary/10 hover:bg-primary/20 text-primary flex items-center gap-1.5 transition-colors cursor-pointer"
+              title={t("Réinitialiser le filtre pays", "Reset country filter")}
+            >
+              <span>{getCanonicalCountryLabel(selectedCountry, language)}</span>
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
 
         </div>
 
