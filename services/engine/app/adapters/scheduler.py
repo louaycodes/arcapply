@@ -357,6 +357,32 @@ class CrawlerScheduler:
             search_kw = BaseJobConnector.normalize_search_terms(keywords)
             search_loc = locations if locations else ["France", "Tunisie"]
 
+            # Si des localisations spécifiques sont demandées sans forcer platforms, cibler intelligemment les connecteurs
+            if not platforms and locations and not any(l.lower() in ["all", "europe", "tous"] for l in locations):
+                resolved_platforms = []
+                norm_locs = {l.strip().lower() for l in locations}
+                for p_slug, p_cls in ALL_CONNECTORS.items():
+                    # Connecteurs globaux & multi-pays
+                    if p_slug in ["top100_enterprises", "linkedin", "indeed", "eures", "eurojobs", "erasmusintern", "glassdoor", "jooble", "adzuna"]:
+                        resolved_platforms.append(p_slug)
+                        continue
+                    # Attribut default_country
+                    conn_country = getattr(p_cls, "default_country", "").strip().lower()
+                    if conn_country and any(loc in conn_country or conn_country in loc for loc in norm_locs):
+                        resolved_platforms.append(p_slug)
+                        continue
+                    # Connecteurs dédiés France
+                    if any(l in ["france", "fr"] for l in norm_locs) and p_slug in ["wttj", "jobteaser", "hellowork", "apec", "meteojob", "letudiant", "cadremploi", "1jeune1solution", "stagiaires_fr", "monster"]:
+                        resolved_platforms.append(p_slug)
+                        continue
+                    # Connecteurs dédiés Tunisie
+                    if any(l in ["tunisie", "tunisia", "tn"] for l in norm_locs) and p_slug in ["keejob", "tunisietravail", "tanitjobs", "emploitunisie", "stagetunisie", "optioncarriere", "aneti", "offre_emploi_tn"]:
+                        resolved_platforms.append(p_slug)
+                        continue
+                if resolved_platforms:
+                    target_platforms = resolved_platforms
+
+
             total_collected = 0
             total_new = 0
             total_duplicates = 0

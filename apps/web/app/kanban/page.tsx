@@ -28,10 +28,21 @@ import {
   Mail,
   Briefcase,
   CheckCircle2,
+  MapPin,
 } from "lucide-react";
 
+const PRIMARY_FILTER_COUNTRIES = [
+  { id: "all", label: "Tous", labelEn: "All", badge: "ALL" },
+  { id: "France", label: "France", labelEn: "France", badge: "FR" },
+  { id: "Tunisie", label: "Tunisie", labelEn: "Tunisia", badge: "TN" },
+  { id: "Germany", label: "Allemagne", labelEn: "Germany", badge: "DE" },
+  { id: "Switzerland", label: "Suisse", labelEn: "Switzerland", badge: "CH" },
+  { id: "Norway", label: "Norvège", labelEn: "Norway", badge: "NO" },
+  { id: "Sweden", label: "Suède", labelEn: "Sweden", badge: "SE" },
+];
+
 export default function KanbanPage() {
-  const { t } = useAppLanguage();
+  const { t, language } = useAppLanguage();
   const [jobs, setJobs] = useState<JobOffer[]>([]);
   const [metrics, setMetrics] = useState<PipelineMetrics | null>(null);
   const [atsScores, setAtsScores] = useState<Record<string, ATSMatchResult>>({});
@@ -41,8 +52,10 @@ export default function KanbanPage() {
   const [selectedJobForMirror, setSelectedJobForMirror] = useState<JobOffer | null>(null);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState<string>("all");
   const [errorNotification, setErrorNotification] = useState<string | null>(null);
   const [emailToast, setEmailToast] = useState<string | null>(null);
+
 
   const loadData = async () => {
     try {
@@ -120,16 +133,63 @@ export default function KanbanPage() {
     }
   };
 
+  const { uniqueCountriesInJobs, countryCounts } = useMemo(() => {
+    const counts: Record<string, number> = {};
+    const countries = new Set<string>();
+
+    jobs.forEach((j) => {
+      let c = j.country;
+      if (!c && j.location) {
+        const loc = j.location.toLowerCase();
+        if (loc.includes("france") || loc.includes("paris")) c = "France";
+        else if (loc.includes("tunisie") || loc.includes("tunis")) c = "Tunisie";
+        else if (loc.includes("germany") || loc.includes("allemagne") || loc.includes("berlin") || loc.includes("munich")) c = "Germany";
+        else if (loc.includes("switzerland") || loc.includes("suisse") || loc.includes("zurich") || loc.includes("geneva")) c = "Switzerland";
+        else if (loc.includes("norway") || loc.includes("norvège") || loc.includes("oslo")) c = "Norway";
+        else if (loc.includes("sweden") || loc.includes("suède") || loc.includes("stockholm")) c = "Sweden";
+        else if (loc.includes("united kingdom") || loc.includes("london") || loc.includes("uk")) c = "UK";
+      }
+      if (c) {
+        const clean = c.trim();
+        countries.add(clean);
+        counts[clean] = (counts[clean] || 0) + 1;
+      }
+    });
+
+    return {
+      uniqueCountriesInJobs: Array.from(countries).sort(),
+      countryCounts: counts,
+    };
+  }, [jobs]);
+
   const filteredJobs = useMemo(() => {
-    if (!searchQuery) return jobs;
-    const query = searchQuery.toLowerCase();
-    return jobs.filter(
-      (job) =>
-        job.title.toLowerCase().includes(query) ||
-        job.company.toLowerCase().includes(query) ||
-        (job.location && job.location.toLowerCase().includes(query))
-    );
-  }, [jobs, searchQuery]);
+    let result = jobs;
+
+    if (selectedCountry && selectedCountry !== "all") {
+      const target = selectedCountry.toLowerCase();
+      result = result.filter((j) => {
+        const country = (j.country || "").toLowerCase();
+        const loc = (j.location || "").toLowerCase();
+        return (
+          country.includes(target) ||
+          loc.includes(target) ||
+          (target === "france" && loc.includes("paris")) ||
+          (target === "tunisie" && (loc.includes("tunis") || loc.includes("ariana") || loc.includes("sousse")))
+        );
+      });
+    }
+
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(
+        (job) =>
+          job.title.toLowerCase().includes(query) ||
+          job.company.toLowerCase().includes(query) ||
+          (job.location && job.location.toLowerCase().includes(query))
+      );
+    }
+    return result;
+  }, [jobs, searchQuery, selectedCountry]);
 
   // Définition stricte des 4 colonnes Kanban : Offres, Candidatures envoyées, Retenue, Non retenue
   const COLUMNS = [
@@ -385,6 +445,92 @@ export default function KanbanPage() {
           <div className="hidden sm:flex w-10 h-10 rounded-xl bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 items-center justify-center shrink-0 text-stone-500 dark:text-stone-400 shadow-xs">
             <XCircle className="w-5 h-5" />
           </div>
+        </div>
+      </div>
+
+      {/* Filtres par Pays */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl bg-card border border-border shadow-2xs">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+          <span className="text-xs text-muted-foreground font-semibold flex items-center gap-1 mr-1.5 shrink-0">
+            <MapPin className="w-3.5 h-3.5 text-primary" />
+            <span>{t("Pays :", "Country:")}</span>
+          </span>
+          {PRIMARY_FILTER_COUNTRIES.map((c) => {
+            const isSelected = selectedCountry.toLowerCase() === c.id.toLowerCase();
+            const count = c.id === "all" ? jobs.length : (countryCounts[c.id] || 0);
+            return (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setSelectedCountry(c.id)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                  isSelected
+                    ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/60 bg-muted/30"
+                }`}
+              >
+                <span>{language === "en" ? c.labelEn : c.label}</span>
+                {count !== undefined && count > 0 && (
+                  <span
+                    className={`text-[10px] font-mono px-1 py-0.2 rounded font-semibold ${
+                      isSelected
+                        ? "bg-primary-foreground/20 text-primary-foreground"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+
+          {/* Si un pays hors des boutons principaux est actif */}
+          {!PRIMARY_FILTER_COUNTRIES.some((p) => p.id.toLowerCase() === selectedCountry.toLowerCase()) && selectedCountry !== "all" && (
+            <button
+              type="button"
+              onClick={() => setSelectedCountry("all")}
+              className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-primary text-primary-foreground flex items-center gap-1 shadow-xs cursor-pointer"
+            >
+              <span>{selectedCountry}</span>
+              <span className="text-[10px] font-mono opacity-80">({countryCounts[selectedCountry] || 0})</span>
+              <X className="w-3 h-3 ml-0.5" />
+            </button>
+          )}
+
+          {/* Menu déroulant pour tous les autres pays découverts */}
+          {uniqueCountriesInJobs.some((c) => !PRIMARY_FILTER_COUNTRIES.some((p) => p.id.toLowerCase() === c.toLowerCase())) && (
+            <div className="relative pl-1">
+              <select
+                value={PRIMARY_FILTER_COUNTRIES.some((p) => p.id.toLowerCase() === selectedCountry.toLowerCase()) ? "" : selectedCountry}
+                onChange={(e) => {
+                  if (e.target.value) setSelectedCountry(e.target.value);
+                }}
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium bg-muted/40 border border-border text-muted-foreground hover:text-foreground focus:outline-none cursor-pointer ${
+                  !PRIMARY_FILTER_COUNTRIES.some((p) => p.id.toLowerCase() === selectedCountry.toLowerCase()) && selectedCountry !== "all"
+                    ? "font-bold text-primary border-primary"
+                    : ""
+                }`}
+              >
+                <option value="" disabled>
+                  {t("Plus de pays...", "More countries...")}
+                </option>
+                {uniqueCountriesInJobs
+                  .filter((c) => !PRIMARY_FILTER_COUNTRIES.some((p) => p.id.toLowerCase() === c.toLowerCase()))
+                  .map((c) => (
+                    <option key={c} value={c}>
+                      {c} ({countryCounts[c] || 0})
+                    </option>
+                  ))}
+              </select>
+            </div>
+          )}
+        </div>
+
+        {/* Info compteur d'offres filtrées */}
+        <div className="text-xs text-muted-foreground font-medium">
+          <span className="font-bold text-foreground">{filteredJobs.length}</span>{" "}
+          {t("opportunités affichées", "opportunities displayed")}
         </div>
       </div>
 

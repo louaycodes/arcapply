@@ -87,6 +87,36 @@ const AVAILABLE_PLATFORMS: { id: string; label: string; labelEn?: string; countr
   { id: "capdigital", label: "Cap Digital Tech", country: "France" },
 ];
 
+const CRAWL_COUNTRY_OPTIONS: { id: string; label: string; labelEn: string; badge: string }[] = [
+  { id: "all", label: "Tous les pays", labelEn: "All Countries", badge: "EU+" },
+  { id: "France", label: "France", labelEn: "France", badge: "FR" },
+  { id: "Tunisie", label: "Tunisie", labelEn: "Tunisia", badge: "TN" },
+  { id: "Germany", label: "Allemagne", labelEn: "Germany", badge: "DE" },
+  { id: "United Kingdom", label: "Royaume-Uni", labelEn: "United Kingdom", badge: "UK" },
+  { id: "Switzerland", label: "Suisse", labelEn: "Switzerland", badge: "CH" },
+  { id: "Norway", label: "Norvège", labelEn: "Norway", badge: "NO" },
+  { id: "Sweden", label: "Suède", labelEn: "Sweden", badge: "SE" },
+  { id: "Netherlands", label: "Pays-Bas", labelEn: "Netherlands", badge: "NL" },
+  { id: "Belgium", label: "Belgique", labelEn: "Belgium", badge: "BE" },
+  { id: "Luxembourg", label: "Luxembourg", labelEn: "Luxembourg", badge: "LU" },
+  { id: "Spain", label: "Espagne", labelEn: "Spain", badge: "ES" },
+  { id: "Italy", label: "Italie", labelEn: "Italy", badge: "IT" },
+  { id: "Poland", label: "Pologne", labelEn: "Poland", badge: "PL" },
+  { id: "Romania", label: "Roumanie", labelEn: "Romania", badge: "RO" },
+];
+
+const PRIMARY_FILTER_COUNTRIES: { id: string; label: string; labelEn: string }[] = [
+  { id: "all", label: "Tous", labelEn: "All" },
+  { id: "France", label: "France", labelEn: "France" },
+  { id: "Tunisie", label: "Tunisie", labelEn: "Tunisia" },
+  { id: "Germany", label: "Allemagne", labelEn: "Germany" },
+  { id: "United Kingdom", label: "Royaume-Uni", labelEn: "UK" },
+  { id: "Switzerland", label: "Suisse", labelEn: "Switzerland" },
+  { id: "Sweden", label: "Suède", labelEn: "Sweden" },
+  { id: "Norway", label: "Norvège", labelEn: "Norway" },
+  { id: "Netherlands", label: "Pays-Bas", labelEn: "Netherlands" },
+];
+
 export default function RadarPage() {
   const { t, language } = useAppLanguage();
   const [jobs, setJobs] = useState<JobOffer[]>([]);
@@ -97,6 +127,24 @@ export default function RadarPage() {
   const [selectedJobForMirror, setSelectedJobForMirror] = useState<JobOffer | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [newJobIds, setNewJobIds] = useState<Set<string>>(new Set());
+
+  // Métriques géographiques dynamiques pour filtrage
+  const uniqueCountriesInJobs = useMemo(() => {
+    const set = new Set<string>();
+    jobs.forEach((j) => {
+      if (j.country) set.add(j.country);
+    });
+    return Array.from(set).sort();
+  }, [jobs]);
+
+  const countryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    jobs.forEach((j) => {
+      const c = j.country || "Autre";
+      counts[c] = (counts[c] || 0) + 1;
+    });
+    return counts;
+  }, [jobs]);
 
   // Filtres
   const [selectedCountry, setSelectedCountry] = useState<string>("all");
@@ -120,6 +168,7 @@ export default function RadarPage() {
 
   // Formulaire de collecte multi-sources (exclusif PFE)
   const [keywordsInput, setKeywordsInput] = useState<string>("DevOps, Cloud, Software, Data");
+  const [crawlTargetCountry, setCrawlTargetCountry] = useState<string>("all");
   const [selectedPlatformsToCrawl, setSelectedPlatformsToCrawl] = useState<string[]>([
     "top100_enterprises",
     "linkedin",
@@ -323,12 +372,15 @@ export default function RadarPage() {
         .map((k) => k.trim())
         .filter(Boolean);
 
+      const targetLocations = crawlTargetCountry === "all" ? ["all"] : [crawlTargetCountry];
+
       const summary = await crawlAllSources({
         keywords,
-        locations: ["France", "Tunisie"],
-        platforms: targetPlatforms,
+        locations: targetLocations,
+        platforms: undefined,
         limit_per_platform: 20,
       });
+
 
       const byPlatform = summary.by_platform;
       if (byPlatform) {
@@ -691,29 +743,79 @@ export default function RadarPage() {
       <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 p-3.5 rounded-xl border border-border bg-card">
         <div className="flex flex-wrap items-center gap-2">
           {/* Filtre Pays */}
-          <div className="flex items-center bg-muted/60 p-0.5 rounded-lg border border-border/40">
-            {[
-              { id: "all", label: t("Tous", "All") },
-              { id: "France", label: "France" },
-              { id: "Tunisie", label: t("Tunisie", "Tunisia") },
-              { id: "Norway", label: t("Norvège", "Norway") },
-              { id: "Sweden", label: t("Suède", "Sweden") },
-              { id: "Switzerland", label: t("Suisse", "Switzerland") },
-            ].map((c) => (
+          <div className="flex flex-wrap items-center bg-muted/60 p-0.5 rounded-lg border border-border/40 gap-0.5">
+            {PRIMARY_FILTER_COUNTRIES.map((c) => {
+              const isSelected = selectedCountry.toLowerCase() === c.id.toLowerCase() || (c.id === "all" && selectedCountry === "all");
+              const count = c.id === "all" ? jobs.length : countryCounts[c.id];
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setSelectedCountry(c.id)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+                    isSelected
+                      ? "bg-background text-foreground font-semibold shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <span>{language === "en" ? c.labelEn : c.label}</span>
+                  {count !== undefined && count > 0 && (
+                    <span
+                      className={`text-[10px] font-mono px-1 py-0.2 rounded ${
+                        isSelected
+                          ? "bg-primary/15 text-primary font-bold"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+
+            {/* Si un pays hors des boutons principaux est actif (ex: Serbie, Roumanie, Espagne, etc.) */}
+            {!PRIMARY_FILTER_COUNTRIES.some((p) => p.id.toLowerCase() === selectedCountry.toLowerCase()) && selectedCountry !== "all" && (
               <button
-                key={c.id}
                 type="button"
-                onClick={() => setSelectedCountry(c.id)}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
-                  selectedCountry === c.id
-                    ? "bg-background text-foreground font-semibold shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
+                onClick={() => setSelectedCountry("all")}
+                className="px-2.5 py-1 rounded-md text-xs font-semibold bg-primary text-primary-foreground flex items-center gap-1 shadow-xs cursor-pointer"
               >
-                {c.label}
+                <span>{selectedCountry}</span>
+                <span className="text-[10px] font-mono opacity-80">({countryCounts[selectedCountry] || 0})</span>
+                <X className="w-3 h-3 ml-0.5" />
               </button>
-            ))}
+            )}
+
+            {/* Menu déroulant pour tous les autres pays découverts */}
+            {uniqueCountriesInJobs.some((c) => !PRIMARY_FILTER_COUNTRIES.some((p) => p.id.toLowerCase() === c.toLowerCase())) && (
+              <div className="relative pl-1">
+                <select
+                  value={PRIMARY_FILTER_COUNTRIES.some((p) => p.id.toLowerCase() === selectedCountry.toLowerCase()) ? "" : selectedCountry}
+                  onChange={(e) => {
+                    if (e.target.value) setSelectedCountry(e.target.value);
+                  }}
+                  className={`px-2 py-1 rounded-md text-xs font-medium bg-transparent border-0 text-muted-foreground hover:text-foreground focus:outline-none cursor-pointer ${
+                    !PRIMARY_FILTER_COUNTRIES.some((p) => p.id.toLowerCase() === selectedCountry.toLowerCase()) && selectedCountry !== "all"
+                      ? "font-bold text-primary"
+                      : ""
+                  }`}
+                >
+                  <option value="" disabled>
+                    {t("Plus de pays...", "More countries...")}
+                  </option>
+                  {uniqueCountriesInJobs
+                    .filter((c) => !PRIMARY_FILTER_COUNTRIES.some((p) => p.id.toLowerCase() === c.toLowerCase()))
+                    .map((c) => (
+                      <option key={c} value={c}>
+                        {c} ({countryCounts[c] || 0})
+                      </option>
+                    ))}
+                </select>
+              </div>
+            )}
           </div>
+
         </div>
 
         {/* Champ de Recherche Live */}
@@ -977,19 +1079,68 @@ export default function RadarPage() {
                 />
               </div>
 
+              {/* Filtre Pays lors du lancement du scraping */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-primary" />
+                    <span>{t("Zone géographique / Pays cible", "Target Region / Country")}</span>
+                  </label>
+                  <span className="text-[11px] font-mono text-primary font-semibold">
+                    {crawlTargetCountry === "all" ? t("161 sources", "161 sources") : crawlTargetCountry}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-40 overflow-y-auto p-1.5 rounded-xl bg-muted/40 border border-border">
+                  {CRAWL_COUNTRY_OPTIONS.map((c) => {
+                    const isSelected = crawlTargetCountry === c.id;
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => setCrawlTargetCountry(c.id)}
+                        className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all text-left flex items-center justify-between cursor-pointer ${
+                          isSelected
+                            ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                            : "bg-card text-muted-foreground hover:text-foreground hover:bg-muted/80 border border-border/50"
+                        }`}
+                      >
+                        <span className="truncate">{language === "en" ? c.labelEn : c.label}</span>
+                        <span
+                          className={`text-[10px] font-mono px-1 py-0.2 rounded font-semibold ${
+                            isSelected
+                              ? "bg-primary-foreground/20 text-primary-foreground"
+                              : "bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          {c.badge}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="p-3.5 rounded-xl bg-orange-50/80 dark:bg-orange-950/40 border border-orange-200/80 dark:border-orange-800/60 text-xs text-stone-700 dark:text-stone-300 leading-relaxed flex items-start gap-3">
                 <Radar className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                 <div>
                   <span className="font-bold text-stone-900 dark:text-stone-100">
-                    {t("Exploration automatique de toutes les sources :", "Automatic exploration across all sources:")}
+                    {crawlTargetCountry === "all"
+                      ? t("Exploration multi-sources globale :", "Global multi-source exploration:")
+                      : t(`Exploration ciblée sur ${crawlTargetCountry} :`, `Targeted exploration for ${crawlTargetCountry}:`)}
                   </span>{" "}
-                  {t(
-                    "L'ensemble des 27 plateformes et portails carrières (France & Tunisie) sera automatiquement exploré pour vos mots-clés, sans sélection manuelle requise.",
-                    "All 27 platforms and career portals (France & Tunisia) will be automatically explored for your keywords, no manual selection required."
-                  )}
+                  {crawlTargetCountry === "all"
+                    ? t(
+                        "L'intégralité des 161 connecteurs européens et internationaux sera explorée en parallèle pour vos mots-clés.",
+                        "All 161 European and international connectors will be explored in parallel for your keywords."
+                      )
+                    : t(
+                        `Les connecteurs dédiés à ce pays ainsi que les grands portails carrières internationaux exploreront les opportunités pour vos mots-clés.`,
+                        `Dedicated country connectors and major international career portals will explore opportunities for your keywords.`
+                      )}
                 </div>
               </div>
             </div>
+
 
             <div className="flex items-center justify-end gap-3 pt-2 border-t border-border/50">
               <button

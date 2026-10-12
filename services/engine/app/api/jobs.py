@@ -78,8 +78,9 @@ def list_jobs(
     if not include_archived:
         query = query.where(JobOffer.status != "ARCHIVED")
 
-    if country and country != "all":
-        query = query.where(JobOffer.country == country)
+    if country and country.strip().lower() != "all":
+        query = query.where(func.lower(JobOffer.country) == country.strip().lower())
+
 
     if platform and platform != "all":
         query = query.where(JobOffer.platform == platform)

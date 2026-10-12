@@ -472,3 +472,59 @@ def test_jobs_filter_period_and_direct_career():
         session.commit()
 
 
+def test_jobs_filter_by_country():
+    with Session(engine) as session:
+        j_fr = JobOffer(
+            platform="linkedin",
+            external_id="ctry-fr-1",
+            title="Stage PFE DevOps France",
+            company="CloudFR",
+            country="France",
+            description_raw="Sujet de stage de fin d'études DevOps",
+            status="DISCOVERED",
+            offer_type="PFE",
+        )
+        j_de = JobOffer(
+            platform="xing_jobs",
+            external_id="ctry-de-1",
+            title="Stage PFE DevOps Germany",
+            company="CloudDE",
+            country="Germany",
+            description_raw="Sujet de stage de fin d'études DevOps",
+            status="DISCOVERED",
+            offer_type="PFE",
+        )
+        session.add(j_fr)
+        session.add(j_de)
+        session.commit()
+        session.refresh(j_fr)
+        session.refresh(j_de)
+        fr_id = j_fr.id
+        de_id = j_de.id
+
+    # Test filtering country=france (case insensitive)
+    res_fr = client.get("/api/jobs?country=france")
+    assert res_fr.status_code == 200
+    ids_fr = [j["id"] for j in res_fr.json()]
+    assert fr_id in ids_fr
+    assert de_id not in ids_fr
+
+    # Test filtering country=Germany
+    res_de = client.get("/api/jobs?country=Germany")
+    assert res_de.status_code == 200
+    ids_de = [j["id"] for j in res_de.json()]
+    assert de_id in ids_de
+    assert fr_id not in ids_de
+
+    # Cleanup
+    with Session(engine) as session:
+        o1 = session.get(JobOffer, fr_id)
+        o2 = session.get(JobOffer, de_id)
+        if o1:
+            session.delete(o1)
+        if o2:
+            session.delete(o2)
+        session.commit()
+
+
+
