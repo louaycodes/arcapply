@@ -1,3 +1,6 @@
+import hashlib
+import secrets
+import time
 from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlmodel import Session, select
 from typing import Optional
@@ -5,7 +8,11 @@ from typing import Optional
 from app.adapters.database import get_session
 from app.domain.auth import create_jwt_token, decode_jwt_token, hash_password, verify_password
 from app.domain.models import (
+    ForgotPasswordRequest,
     MasterProfile,
+    MessageResponse,
+    PasswordResetToken,
+    ResetPasswordRequest,
     User,
     UserLoginRequest,
     UserLoginResponse,
@@ -91,6 +98,82 @@ def login(payload: UserLoginRequest, session: Session = Depends(get_session)):
             playbook_initialized=user.playbook_initialized,
         ),
     )
+
+
+@router.post("/forgot-password", response_model=MessageResponse)
+def forgot_password(payload: ForgotPasswordRequest, session: Session = Depends(get_session)):
+    email = payload.email.strip().lower()
+    standard_message = "Si cette adresse email est associée à un compte, un lien de réinitialisation a été généré."
+    if not email:
+        return MessageResponse(message=standard_message)
+
+    user = session.exec(select(User).where(User.username == email)).first()
+    if user:
+        raw_token = secrets.token_hex(24)
+        token_hash = hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+        expires_at = int(time.time()) + 900  # 15 minutes TTL
+
+        # Invalider les anciens jetons non consommés pour cet utilisateur
+        existing_tokens = session.exec(
+            select(PasswordResetToken).where(
+                PasswordResetToken.user_id == user.username,
+                PasswordResetToken.used == False,
+            )
+        ).all()
+        for t in existing_tokens:
+            t.used = True
+            session.add(t)
+
+        reset_token = PasswordResetToken(
+            id=f"rst-{secrets.token_hex(8)}",
+            user_id=user.username,
+            token_hash=token_hash,
+            expires_at=expires_at,
+            used=False,
+            created_at=int(time.time()),
+        )
+        session.add(reset_token)
+        session.commit()
+
+        # Log informatif (local dev / console)
+        reset_link = f"http://localhost:3000/reset-password?token={raw_token}"
+        print(f"[AUTH EMAIL] Lien de réinitialisation pour {email} : {reset_link}")
+
+    return MessageResponse(message=standard_message)
+
+
+@router.post("/reset-password", response_model=MessageResponse)
+def reset_password(payload: ResetPasswordRequest, session: Session = Depends(get_session)):
+    raw_token = payload.token.strip()
+    new_password = payload.new_password.strip()
+
+    if not raw_token:
+        raise HTTPException(status_code=400, detail="Jeton de réinitialisation manquant")
+    if not new_password or len(new_password) < 4:
+        raise HTTPException(status_code=400, detail="Le mot de passe doit comporter au moins 4 caractères")
+
+    token_hash = hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+    now = int(time.time())
+
+    reset_token = session.exec(
+        select(PasswordResetToken).where(PasswordResetToken.token_hash == token_hash)
+    ).first()
+
+    if not reset_token or reset_token.used or reset_token.expires_at < now:
+        raise HTTPException(status_code=400, detail="Jeton de réinitialisation invalide ou expiré")
+
+    user = session.exec(select(User).where(User.username == reset_token.user_id)).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="Utilisateur introuvable pour ce jeton")
+
+    user.password_hash = hash_password(new_password)
+    reset_token.used = True
+    session.add(user)
+    session.add(reset_token)
+    session.commit()
+
+    return MessageResponse(message="Mot de passe réinitialisé avec succès")
+
 
 
 def _resolve_user_from_token(raw_token: str, session: Session) -> Optional[User]:

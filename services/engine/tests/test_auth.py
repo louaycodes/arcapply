@@ -214,3 +214,82 @@ def test_jwt_sse_subscriber_resolution():
     assert resolved == "chaima"
 
 
+def test_forgot_password_anti_enumeration():
+    client = TestClient(app)
+    # Non existent email
+    res1 = client.post("/api/auth/forgot-password", json={"email": "nonexistent@example.com"})
+    assert res1.status_code == 200
+    assert "lien de réinitialisation" in res1.json()["message"]
+
+    # Existent email
+    res2 = client.post("/api/auth/forgot-password", json={"email": "louay"})
+    assert res2.status_code == 200
+    assert "lien de réinitialisation" in res2.json()["message"]
+
+
+def test_reset_password_full_lifecycle():
+    import uuid
+    import hashlib
+    import time
+    from sqlmodel import Session, select
+    from app.adapters.database import get_engine, get_session
+    from app.domain.models import PasswordResetToken
+
+    client = TestClient(app)
+    email = f"user_{uuid.uuid4().hex[:6]}@arcapply.tn"
+    # Register user
+    reg_res = client.post("/api/auth/register", json={"email": email, "password": "initialpassword"})
+    assert reg_res.status_code == 200
+
+    # Request forgot password
+    forgot_res = client.post("/api/auth/forgot-password", json={"email": email})
+    assert forgot_res.status_code == 200
+
+    # Find token in DB
+    raw_token = None
+    with next(app.dependency_overrides[get_session]()) as session:
+        tokens = session.exec(select(PasswordResetToken).where(PasswordResetToken.user_id == email)).all()
+        assert len(tokens) >= 1
+        active_t = tokens[-1]
+        assert active_t.used is False
+
+    # Calling with wrong token fails
+    bad_res = client.post("/api/auth/reset-password", json={"token": "invalid_raw_token", "new_password": "newsecretpassword"})
+    assert bad_res.status_code == 400
+
+    # Simulate knowing token by hashing or generating a known raw token
+    import secrets
+    raw_token = secrets.token_hex(24)
+    token_hash = hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+    with next(app.dependency_overrides[get_session]()) as session:
+        custom_t = PasswordResetToken(
+            id=f"rst-test-{uuid.uuid4().hex[:6]}",
+            user_id=email,
+            token_hash=token_hash,
+            expires_at=int(time.time()) + 900,
+            used=False,
+            created_at=int(time.time()),
+        )
+        session.add(custom_t)
+        session.commit()
+
+    # Reset with valid raw token
+    reset_res = client.post("/api/auth/reset-password", json={"token": raw_token, "new_password": "newsecretpassword"})
+    assert reset_res.status_code == 200
+    assert "succès" in reset_res.json()["message"]
+
+    # Re-using the same token fails
+    reuse_res = client.post("/api/auth/reset-password", json={"token": raw_token, "new_password": "anotherpassword"})
+    assert reuse_res.status_code == 400
+
+    # Login with old password fails
+    old_login = client.post("/api/auth/login", json={"username": email, "password": "initialpassword"})
+    assert old_login.status_code == 401
+
+    # Login with new password succeeds!
+    new_login = client.post("/api/auth/login", json={"username": email, "password": "newsecretpassword"})
+    assert new_login.status_code == 200
+    assert "token" in new_login.json()
+
+
+

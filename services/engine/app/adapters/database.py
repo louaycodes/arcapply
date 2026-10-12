@@ -141,6 +141,25 @@ def _migrate_db(engine) -> None:
 
         try:
             conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS password_reset_tokens (
+                    id VARCHAR PRIMARY KEY,
+                    user_id VARCHAR NOT NULL,
+                    token_hash VARCHAR NOT NULL,
+                    expires_at INTEGER NOT NULL,
+                    used BOOLEAN DEFAULT 0,
+                    created_at INTEGER NOT NULL
+                )
+            """))
+            conn.commit()
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_password_reset_tokens_user_id ON password_reset_tokens (user_id)"))
+            conn.commit()
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_password_reset_tokens_token_hash ON password_reset_tokens (token_hash)"))
+            conn.commit()
+        except Exception:
+            pass
+
+        try:
+            conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS users (
                     id VARCHAR PRIMARY KEY,
                     username VARCHAR UNIQUE NOT NULL,
