@@ -11,8 +11,6 @@ import {
   CheckCircle2,
   AlertCircle,
   Save,
-  Cpu,
-  Sliders,
 } from "lucide-react";
 import { useAppLanguage } from "@/lib/language-context";
 import { fetchProfile, updateProfile, testGroqKey, MasterProfile } from "@/lib/api";
@@ -59,7 +57,7 @@ export default function SettingsPage() {
       setNotification(null);
       const updated = await updateProfile({
         groq_api_key: profile.groq_api_key,
-        groq_model: profile.groq_model,
+        groq_model: profile.groq_model || "openai/gpt-oss-120b",
       });
       setProfile(updated);
       setNotification({
@@ -88,7 +86,7 @@ export default function SettingsPage() {
     try {
       setTestingGroq(true);
       setGroqTestResult({ status: "idle" });
-      const res = await testGroqKey(profile.groq_api_key, profile.groq_model || undefined);
+      const res = await testGroqKey(profile.groq_api_key, profile.groq_model || "openai/gpt-oss-120b");
       setGroqTestResult({
         status: "success",
         message: localizeServerMessage(res.message) || t("Clé Groq validée avec succès !", "Groq key validated successfully!"),
@@ -123,8 +121,8 @@ export default function SettingsPage() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {t(
-              "Configurez vos quotas d'IA dédiés (BYOK), votre modèle LLM et vos préférences système.",
-              "Configure your dedicated AI quotas (BYOK), LLM model, and system preferences."
+              "Configurez vos quotas d'IA dédiés (BYOK) et vos préférences système.",
+              "Configure your dedicated AI quotas (BYOK) and system preferences."
             )}
           </p>
         </div>
@@ -169,7 +167,7 @@ export default function SettingsPage() {
                 <h2 className="text-base font-bold text-stone-900 dark:text-stone-100 font-display">
                   {t("Clé d'API Groq Personnelle (BYOK)", "Personal Groq API Key (BYOK)")}
                 </h2>
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-950/40 text-orange-900 dark:text-orange-300 font-semibold border border-orange-200/80 dark:border-orange-800/60">
+                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-950/40 text-orange-950 dark:text-orange-300 font-semibold border border-orange-200/80 dark:border-orange-800/60">
                   {t("Multi-Tenant Isolé", "Isolated Multi-Tenant")}
                 </span>
               </div>
@@ -183,81 +181,49 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-2 space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-stone-800 dark:text-stone-200">
-                {t("Clé d'API Groq (gsk_...)", "Groq API key (gsk_...)")}
-              </label>
-              <a
-                href="https://console.groq.com/keys"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-primary hover:underline flex items-center gap-1 font-medium"
-              >
-                <span>{t("Obtenir une clé gratuite sur console.groq.com", "Get a free key on console.groq.com")}</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            </div>
-
-            <div className="relative flex items-center">
-              <input
-                type={showGroqKey ? "text" : "password"}
-                value={profile?.groq_api_key || ""}
-                onChange={(e) => {
-                  if (profile) setProfile({ ...profile, groq_api_key: e.target.value });
-                  setGroqTestResult({ status: "idle" });
-                }}
-                placeholder="gsk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                className="w-full pr-12 pl-3.5 py-2.5 rounded-xl bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-mono text-xs text-stone-900 dark:text-stone-100 placeholder:text-stone-400 transition-all shadow-xs"
-              />
-              <button
-                type="button"
-                onClick={() => setShowGroqKey(!showGroqKey)}
-                className="absolute right-2.5 p-1.5 rounded-lg hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 transition-colors cursor-pointer"
-                title={showGroqKey ? t("Masquer la clé", "Hide key") : t("Afficher la clé", "Show key")}
-              >
-                {showGroqKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-
-            <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-relaxed">
-              {t(
-                "Si laissé vide, le serveur utilise la clé par défaut de la plateforme. Vos clés sont strictement privées à votre session.",
-                "If left empty, the server uses the platform's default key. Your keys are strictly private to your session."
-              )}
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-xs font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1.5">
-              <Cpu className="w-3.5 h-3.5 text-primary" />
-              <span>{t("Modèle LLM Groq", "Groq LLM model")}</span>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-semibold text-stone-800 dark:text-stone-200">
+              {t("Clé d'API Groq (gsk_...)", "Groq API key (gsk_...)")}
             </label>
-            <select
-              value={profile?.groq_model || "openai/gpt-oss-120b"}
-              onChange={(e) => {
-                if (profile) setProfile({ ...profile, groq_model: e.target.value });
-              }}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-xs text-stone-900 dark:text-stone-100 shadow-xs cursor-pointer transition-all"
+            <a
+              href="https://console.groq.com/keys"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-primary hover:underline flex items-center gap-1 font-medium"
             >
-              <option value="openai/gpt-oss-120b">
-                {t("GPT OSS 120B (openai/gpt-oss-120b) [Recommandé — Quota élevé & Rapide]", "GPT OSS 120B (openai/gpt-oss-120b) [Recommended — High quota & Fast]")}
-              </option>
-              <option value="openai/gpt-oss-20b">
-                {t("GPT OSS 20B (openai/gpt-oss-20b) [Ultra-rapide]", "GPT OSS 20B (openai/gpt-oss-20b) [Ultra-fast]")}
-              </option>
-              <option value="qwen/qwen3.8-27b">
-                {t("Qwen 2.5 27B (qwen/qwen3.8-27b) [Plafond 1000 OTPM]", "Qwen 2.5 27B (qwen/qwen3.8-27b) [1000 OTPM cap]")}
-              </option>
-            </select>
-            <p className="text-[11px] text-stone-500 dark:text-stone-400">
-              {t(
-                "Modèle de raisonnement haute vitesse pour la rédaction du CV et de la lettre.",
-                "High-speed reasoning model for writing the CV and the letter."
-              )}
-            </p>
+              <span>{t("Obtenir une clé gratuite sur console.groq.com", "Get a free key on console.groq.com")}</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
           </div>
+
+          <div className="relative flex items-center">
+            <input
+              type={showGroqKey ? "text" : "password"}
+              value={profile?.groq_api_key || ""}
+              onChange={(e) => {
+                if (profile) setProfile({ ...profile, groq_api_key: e.target.value });
+                setGroqTestResult({ status: "idle" });
+              }}
+              placeholder="gsk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+              className="w-full pr-12 pl-3.5 py-3 rounded-xl bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-mono text-xs text-stone-900 dark:text-stone-100 placeholder:text-stone-400 transition-all shadow-xs"
+            />
+            <button
+              type="button"
+              onClick={() => setShowGroqKey(!showGroqKey)}
+              className="absolute right-2.5 p-1.5 rounded-lg hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 transition-colors cursor-pointer"
+              title={showGroqKey ? t("Masquer la clé", "Hide key") : t("Afficher la clé", "Show key")}
+            >
+              {showGroqKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+
+          <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-relaxed">
+            {t(
+              "Si laissé vide, le serveur utilise la clé par défaut de la plateforme. Vos clés sont strictement privées à votre session.",
+              "If left empty, the server uses the platform's default key. Your keys are strictly private to your session."
+            )}
+          </p>
         </div>
 
         {/* Action Bar for BYOK */}
