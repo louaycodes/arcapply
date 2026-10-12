@@ -52,39 +52,33 @@ import {
 const AVAILABLE_PLATFORMS: { id: string; label: string; labelEn?: string; country: string }[] = [
   { id: "top100_enterprises", label: "Top 100 Firmes IT (Portails Carrières Dédiés)", labelEn: "Top 100 IT Firms (Dedicated Career Portals)", country: "Global" },
   { id: "linkedin", label: "LinkedIn", country: "Global" },
-  { id: "stackoverflow_jobs", label: "StackOverflow Jobs", country: "Global" },
-  // Norvège & Nordics
-  { id: "nav_norway", label: "NAV Arbeidsplassen (Norvège)", labelEn: "NAV Arbeidsplassen (Norway)", country: "Norway" },
-  { id: "finn_no", label: "FINN.no Jobb (Norvège)", labelEn: "FINN.no Jobs (Norway)", country: "Norway" },
-  // Suède
-  { id: "jobtech_sweden", label: "JobTech Platsbanken (Suède)", labelEn: "JobTech Sweden", country: "Sweden" },
-  // Suisse
-  { id: "jobs_ch", label: "Jobs.ch (Suisse)", labelEn: "Jobs.ch (Switzerland)", country: "Switzerland" },
+  { id: "indeed", label: "Indeed", country: "Global" },
+  // France
+  { id: "jobteaser", label: "Jobteaser", country: "France" },
+  { id: "hellowork", label: "HelloWork", country: "France" },
+  { id: "meteojob", label: "Meteojob", country: "France" },
+  { id: "apec", label: "Apec", country: "France" },
+  { id: "letudiant", label: "L'Etudiant", country: "France" },
+  { id: "chooseyourboss", label: "ChooseYourBoss", country: "France" },
+  { id: "numeum", label: "Numeum Tech", country: "France" },
   // Tunisie
   { id: "keejob", label: "Keejob", country: "Tunisie" },
   { id: "tunisietravail", label: "TunisieTravail", country: "Tunisie" },
   { id: "tanitjobs", label: "Tanitjobs", country: "Tunisie" },
-  { id: "emploitunisie", label: "EmploiTunisie", country: "Tunisie" },
-  { id: "stagetunisie", label: "StageTunisie", country: "Tunisie" },
-  { id: "optioncarriere", label: "OptionCarriere", country: "Tunisie" },
   { id: "aneti", label: "ANETI", country: "Tunisie" },
+  { id: "emploitunisie", label: "EmploiTunisie", country: "Tunisie" },
   { id: "offre_emploi_tn", label: "Offre-Emploi.tn", country: "Tunisie" },
-  { id: "wttj", label: "Welcome to the Jungle", country: "France" },
-  { id: "1jeune1solution", label: "1jeune1solution", country: "France" },
-  { id: "jobteaser", label: "Jobteaser", country: "France" },
-  { id: "hellowork", label: "HelloWork", country: "France" },
-  { id: "indeed", label: "Indeed", country: "France" },
-  { id: "apec", label: "Apec", country: "France" },
-  { id: "moovijob", label: "Moovijob", country: "France" },
-  { id: "monster", label: "Monster", country: "France" },
-  { id: "stagiaires_fr", label: "Stagiaires.fr", country: "France" },
-  { id: "cadremploi", label: "Cadremploi", country: "France" },
-  { id: "meteojob", label: "Meteojob", country: "France" },
-  { id: "letudiant", label: "L'Etudiant", country: "France" },
-  { id: "chooseyourboss", label: "ChooseYourBoss", country: "France" },
-  { id: "esn_direct", label: "Portails ESN (Capgemini, Sopra...)", labelEn: "IT Services Portals (Capgemini, Sopra...)", country: "France" },
-  { id: "numeum", label: "Numeum ESN", country: "France" },
-  { id: "capdigital", label: "Cap Digital Tech", country: "France" },
+  // Nordics
+  { id: "nav_norway", label: "NAV Arbeidsplassen (Norvège)", labelEn: "NAV Arbeidsplassen (Norway)", country: "Norway" },
+  { id: "finn_no", label: "FINN.no Jobb (Norvège)", labelEn: "FINN.no Jobs (Norway)", country: "Norway" },
+  { id: "jobtech_sweden", label: "JobTech Platsbanken (Suède)", labelEn: "JobTech Sweden", country: "Sweden" },
+  // DACH & Suisse
+  { id: "jobs_ch", label: "Jobs.ch (Suisse)", labelEn: "Jobs.ch (Switzerland)", country: "Switzerland" },
+  { id: "praktikum_info", label: "Praktikum.info (Allemagne)", labelEn: "Praktikum.info (Germany)", country: "Germany" },
+  // UK & Benelux
+  { id: "gradcracker", label: "Gradcracker STEM (UK)", labelEn: "Gradcracker STEM (UK)", country: "United Kingdom" },
+  { id: "stage_nl", label: "Stage.nl (Pays-Bas)", labelEn: "Stage.nl (Netherlands)", country: "Netherlands" },
+  { id: "student_be", label: "Student.be (Belgique)", labelEn: "Student.be (Belgium)", country: "Belgium" },
 ];
 
 const CRAWL_COUNTRY_OPTIONS: { id: string; label: string; labelEn: string; badge: string }[] = [
@@ -173,9 +167,10 @@ export default function RadarPage() {
     "top100_enterprises",
     "linkedin",
     "keejob",
-    "wttj",
+    "tunisietravail",
     "jobteaser",
     "hellowork",
+    "meteojob",
     "indeed",
   ]);
 
