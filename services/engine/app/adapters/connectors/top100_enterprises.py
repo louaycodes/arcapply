@@ -1,3 +1,4 @@
+import asyncio
 import json
 import re
 import urllib.parse
@@ -44,37 +45,37 @@ class Top100EnterprisesJobConnector(BaseJobConnector):
             "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8",
         }
 
-        async with httpx.AsyncClient(timeout=7.0, follow_redirects=True, headers=headers) as client:
-            # 1. Scraping des entreprises avec board Greenhouse (ex: InstaDeep, Datadog, Criteo, Snowflake)
-            for company in TOP_100_COMPANIES:
+        async with httpx.AsyncClient(timeout=2.5, follow_redirects=True, headers=headers) as client:
+            sem = asyncio.Semaphore(10)
+
+            async def crawl_single(co: dict[str, Any]) -> list[dict[str, Any]]:
+                ats_type = co.get("ats_type")
+                portal_id = co.get("portal_id")
+                async with sem:
+                    try:
+                        if ats_type == "greenhouse" and portal_id:
+                            return await self._crawl_greenhouse_board(client, co, kw_list, 3)
+                        elif ats_type == "lever" and portal_id:
+                            return await self._crawl_lever_board(client, co, kw_list, 3)
+                        elif ats_type == "smartrecruiters" and portal_id:
+                            return await self._crawl_smartrecruiters_board(client, co, kw_list, 3)
+                        elif ats_type in ("custom", "workday_or_taleo"):
+                            return await self._crawl_direct_portal(client, co, kw_list, 3)
+                    except Exception:
+                        pass
+                return []
+
+            eligible = [c for c in TOP_100_COMPANIES if not loc_filter or any(l in c.get("country", "France").lower() for l in loc_filter)]
+            tasks = [crawl_single(c) for c in eligible[:20]]
+            batches = await asyncio.gather(*tasks, return_exceptions=True)
+            for batch in batches:
+                if isinstance(batch, list):
+                    for j in batch:
+                        results.append(j)
+                        if len(results) >= limit:
+                            break
                 if len(results) >= limit:
                     break
-
-                # Filtre pays si spécifié
-                comp_country = company.get("country", "France")
-                if loc_filter and not any(l in comp_country.lower() for l in loc_filter):
-                    continue
-
-                ats_type = company.get("ats_type")
-                portal_id = company.get("portal_id")
-
-                try:
-                    if ats_type == "greenhouse" and portal_id:
-                        gh_jobs = await self._crawl_greenhouse_board(client, company, kw_list, limit - len(results))
-                        results.extend(gh_jobs)
-                    elif ats_type == "lever" and portal_id:
-                        lever_jobs = await self._crawl_lever_board(client, company, kw_list, limit - len(results))
-                        results.extend(lever_jobs)
-                    elif ats_type == "smartrecruiters" and portal_id:
-                        sr_jobs = await self._crawl_smartrecruiters_board(client, company, kw_list, limit - len(results))
-                        results.extend(sr_jobs)
-                    elif ats_type == "custom" or ats_type == "workday_or_taleo":
-                        # Exploration du portail officiel dédié
-                        direct_jobs = await self._crawl_direct_portal(client, company, kw_list, limit - len(results))
-                        results.extend(direct_jobs)
-                except Exception as err:
-                    # Résilience : une indisponibilité d'un portail n'arrête pas le crawl global
-                    continue
 
         return results[:limit]
 

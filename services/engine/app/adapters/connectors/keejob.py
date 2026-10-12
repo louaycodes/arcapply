@@ -40,14 +40,14 @@ class KeejobJobConnector(BaseJobConnector):
         }
 
         try:
-            async with httpx.AsyncClient(timeout=9.0, follow_redirects=True) as client:
-                for term in search_terms:
+            async with httpx.AsyncClient(timeout=4.5, follow_redirects=True) as client:
+                for term in search_terms[:2]:
                     if len(results) >= limit:
                         break
 
                     encoded_query = urllib.parse.quote(term)
-                    # Pagination sur Keejob (&page=1, 2...)
-                    for page in range(1, 4):
+                    # Pagination sur Keejob (&page=1, 2)
+                    for page in range(1, 3):
                         if len(results) >= limit:
                             break
 

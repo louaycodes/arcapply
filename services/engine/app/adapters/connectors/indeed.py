@@ -87,8 +87,11 @@ class IndeedJobConnector(BaseJobConnector):
                         url = f"https://{domain}/jobs?q={encoded_query}&l={encoded_loc}"
 
                         try:
-                            await page.goto(url, timeout=14000, wait_until="domcontentloaded")
-                            await page.wait_for_timeout(2500)
+                            await page.goto(url, timeout=10000, wait_until="domcontentloaded")
+                            try:
+                                await page.wait_for_selector("div.job_seen_beacon, td.resultContent, a[data-jk]", timeout=2500)
+                            except Exception:
+                                pass
 
                             # Sélecteurs Indeed pour les cartes d'offres
                             cards = await page.query_selector_all("div.job_seen_beacon, td.resultContent, a[data-jk]")

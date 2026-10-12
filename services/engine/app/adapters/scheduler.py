@@ -307,6 +307,15 @@ ALL_CONNECTORS: dict[str, type[BaseJobConnector]] = {
     "capdigital": CapDigitalJobConnector,
 }
 
+INACTIVE_PLATFORMS: set[str] = {
+    "stackoverflow_jobs",  # Service définitivement arrêté par Stack Overflow
+    "esn_direct",          # Nom de domaine expiré / en vente
+    "stagiaires_fr",       # Nom de domaine expiré (parking OVH)
+    "stagetunisie",        # DNS mort / nom de domaine non résolu
+    "jobs_mc",             # DNS mort
+    "monaco_emploi",       # DNS mort
+    "capdigital",          # Pôle de compétitivité sans job board direct
+}
 
 
 class CrawlerScheduler:
@@ -382,6 +391,8 @@ class CrawlerScheduler:
                 if resolved_platforms:
                     target_platforms = resolved_platforms
 
+            # Filtrage des connecteurs inactifs ou morts
+            target_platforms = [p for p in target_platforms if p not in INACTIVE_PLATFORMS]
 
             total_collected = 0
             total_new = 0
@@ -399,176 +410,196 @@ class CrawlerScheduler:
             existing_user_jobs = sess.exec(select(JobOffer).where(JobOffer.user_id == target_user)).all()
             dedup_index = JobDeduplicationIndex(existing_user_jobs)
 
-            # Exécution parallèle optimisée des requêtes réseau avec sémaphore de contrôle
-            sem = asyncio.Semaphore(20)
+            # Priorisation intelligente : les grands job boards vérifiés sont scannés en tête de file
+            core_priority = [
+                "top100_enterprises", "linkedin", "keejob", "tunisietravail",
+                "jobteaser", "indeed", "hellowork", "meteojob", "apec", "aneti",
+                "tanitjobs", "letudiant", "gradcracker", "jobtech_sweden", "jobs_ch"
+            ]
+            sorted_platforms = sorted(
+                target_platforms,
+                key=lambda p: (0 if p in core_priority else 1, core_priority.index(p) if p in core_priority else 999)
+            )
 
-            async def fetch_platform_jobs(p_name: str) -> tuple[str, list[dict[str, Any]], Any]:
+            sem = asyncio.Semaphore(15)
+            per_connector_timeout = 10.0
+            global_crawl_timeout = 35.0
+
+            async def fetch_and_process_platform(p_name: str) -> None:
+                nonlocal total_collected, total_new, total_duplicates
                 c_cls = ALL_CONNECTORS.get(p_name)
                 if not c_cls:
-                    return p_name, [], None
+                    return
+
+                # Notification SSE : démarrage de l'exploration de la plateforme
+                await broadcast_event(
+                    "SCRAPE_PROGRESS",
+                    {
+                        "platform": p_name,
+                        "status": "running",
+                        "count": 0,
+                        "message": f"Scan en cours sur {p_name}...",
+                    },
+                    target_user=target_user,
+                )
+
+                fetched: list[dict[str, Any]] = []
+                conn_inst = None
                 async with sem:
                     try:
                         conn_inst = c_cls()
-                        # Timeout strict de 5s par connecteur pour empêcher tout blocage ou dérive réseau
                         fetched = await asyncio.wait_for(
                             conn_inst.search_jobs(
                                 keywords=search_kw,
                                 locations=search_loc,
                                 limit=limit_per_platform,
                             ),
-                            timeout=5.0,
+                            timeout=per_connector_timeout,
                         )
-                        return p_name, fetched, conn_inst
                     except asyncio.TimeoutError:
-                        return p_name, [], None
+                        print(f"[CrawlerScheduler] Timeout connecteur {p_name} (> {per_connector_timeout}s)")
                     except Exception as err:
                         print(f"[CrawlerScheduler] Erreur connecteur {p_name}: {err}")
-                        return p_name, [], None
 
-            # Lancement concurrent de tous les connecteurs avec timeout global de 25s (garantie anti-504 Nginx)
-            fetch_tasks = [fetch_platform_jobs(p) for p in target_platforms]
-            try:
-                gathered_raw = await asyncio.wait_for(
-                    asyncio.gather(*fetch_tasks, return_exceptions=True),
-                    timeout=25.0,
-                )
-            except asyncio.TimeoutError:
-                gathered_raw = []
-
-            gathered_results = [
-                res for res in gathered_raw
-                if isinstance(res, tuple) and len(res) == 3
-            ]
-
-            for platform, jobs, connector in gathered_results:
-                if not connector:
-                    continue
                 platform_new = 0
                 platform_enrich_count = 0
-                for j in jobs:
-                    title = j.get("title", "")
-                    desc = j.get("description_raw", "")
-                    job_loc = j.get("location", "")
 
-                    # Bouclier Géographique Déterministe : Exclusion des offres hors-zone ciblée (ex: Afrique du Sud)
-                    if not is_location_matching_target(job_loc, search_loc):
-                        continue
+                if fetched and conn_inst:
+                    for j in fetched:
+                        title = j.get("title", "")
+                        desc = j.get("description_raw", "")
+                        job_loc = j.get("location", "")
 
-                    # Invariant : validation selon le search_mode du profil
-                    if search_mode == "PFE":
-                        if not is_pfe_offer(title, desc):
+                        # Bouclier Géographique Déterministe
+                        if not is_location_matching_target(job_loc, search_loc):
                             continue
-                        current_offer_type = "PFE"
-                    else:
-                        inferred = infer_offer_type(title, desc)
-                        if inferred == "REJECTED":
+
+                        # Invariant : validation selon le search_mode du profil
+                        if search_mode == "PFE":
+                            if not is_pfe_offer(title, desc):
+                                continue
+                            current_offer_type = "PFE"
+                        else:
+                            inferred = infer_offer_type(title, desc)
+                            if inferred == "REJECTED":
+                                continue
+                            current_offer_type = inferred
+
+                        total_collected += 1
+                        ext_id = j.get("external_id")
+                        plat = j.get("platform", p_name)
+
+                        # Bouclier Anti-Rescrape
+                        if is_job_excluded_from_scraping(sess, target_user, j):
+                            total_duplicates += 1
                             continue
-                        current_offer_type = inferred
 
-                    total_collected += 1
-                    ext_id = j.get("external_id")
-                    plat = j.get("platform", platform)
+                        # Déduplication globale sémantique & cross-plateformes
+                        is_dup, _ = dedup_index.is_duplicate(j)
+                        if is_dup:
+                            total_duplicates += 1
+                            continue
 
-                    # Bouclier Anti-Rescrape : Toute offre déjà postulée ou archivée ne sera JAMAIS re-scrappée
-                    if is_job_excluded_from_scraping(sess, target_user, j):
-                        total_duplicates += 1
-                        continue
+                        j_with_type = dict(j)
+                        j_with_type["offer_type"] = current_offer_type
 
-                    # Déduplication globale sémantique & cross-plateforme (ID externe, URL normalisée, Entreprise + Titre)
-                    is_dup, dup_reason = dedup_index.is_duplicate(j)
-                    if is_dup:
-                        total_duplicates += 1
-                        continue
+                        # Enrichissement de la description si tronquée
+                        job_url = j.get("url", "")
+                        if job_url and platform_enrich_count < 2 and (len(desc) < 220 or "consultez l'annonce" in desc.lower() or "consultez les détails" in desc.lower()):
+                            try:
+                                details = await asyncio.wait_for(conn_inst.fetch_job_details(job_url), timeout=1.8)
+                                if details and details.get("description_raw") and len(details["description_raw"]) > len(desc):
+                                    j_with_type["description_raw"] = details["description_raw"]
+                                    platform_enrich_count += 1
+                            except Exception:
+                                pass
 
-                    j_with_type = dict(j)
-                    j_with_type["offer_type"] = current_offer_type
+                        # Deep Extraction & normalisation métadonnées
+                        enriched = JobDeepExtractor.enrich_job_data(j_with_type)
+                        job_country = resolve_country_name(enriched.get("country") or enriched.get("location") or "France")
+                        detected_lang = detect_job_language(
+                            title=enriched.get("title", ""),
+                            description=enriched.get("description_raw", ""),
+                            country=job_country,
+                        )
 
-                    # Pour toute nouvelle offre, enrichir avec la description intégrale si placeholder ou tronquée
-                    job_url = j.get("url", "")
-                    if job_url and platform_enrich_count < 2 and (len(desc) < 220 or "consultez l'annonce" in desc.lower() or "consultez les détails" in desc.lower()):
-                        try:
-                            details = await asyncio.wait_for(connector.fetch_job_details(job_url), timeout=1.8)
-                            if details and details.get("description_raw") and len(details["description_raw"]) > len(desc):
-                                j_with_type["description_raw"] = details["description_raw"]
-                                platform_enrich_count += 1
-                        except Exception:
-                            pass
+                        new_job = JobOffer(
+                            platform=plat,
+                            external_id=ext_id,
+                            title=enriched["title"],
+                            company=enriched["company"],
+                            location=enriched.get("location", ""),
+                            country=job_country,
+                            description_raw=enriched.get("description_raw", ""),
+                            url=enriched.get("url", ""),
+                            status="DISCOVERED",
+                            offer_type=current_offer_type,
+                            published_at=enriched.get("published_at"),
+                            skills_required=enriched.get("skills_required", "[]"),
+                            contract_duration=enriched.get("contract_duration", ""),
+                            salary_stipend=enriched.get("salary_stipend", ""),
+                            department=enriched.get("department", ""),
+                            is_direct_career_site=enriched.get("is_direct_career_site", False),
+                            apply_url=enriched.get("apply_url", ""),
+                            language=detected_lang,
+                            user_id=target_user,
+                        )
+                        sess.add(new_job)
+                        sess.commit()
+                        sess.refresh(new_job)
+                        dedup_index.add(new_job)
 
-                    # Deep Extraction & Enrichissement sémantique (stack, durée, salaire, date)
-                    enriched = JobDeepExtractor.enrich_job_data(j_with_type)
-                    job_country = resolve_country_name(enriched.get("country") or enriched.get("location") or "France")
-                    detected_lang = detect_job_language(
-                        title=enriched.get("title", ""),
-                        description=enriched.get("description_raw", ""),
-                        country=job_country,
-                    )
+                        total_new += 1
+                        platform_new += 1
 
-                    new_job = JobOffer(
-                        platform=plat,
-                        external_id=ext_id,
-                        title=enriched["title"],
-                        company=enriched["company"],
-                        location=enriched.get("location", ""),
-                        country=job_country,
-                        description_raw=enriched.get("description_raw", ""),
-                        url=enriched.get("url", ""),
-                        status="DISCOVERED",
-                        offer_type=current_offer_type,
-                        published_at=enriched.get("published_at"),
-                        skills_required=enriched.get("skills_required", "[]"),
-                        contract_duration=enriched.get("contract_duration", ""),
-                        salary_stipend=enriched.get("salary_stipend", ""),
-                        department=enriched.get("department", ""),
-                        is_direct_career_site=enriched.get("is_direct_career_site", False),
-                        apply_url=enriched.get("apply_url", ""),
-                        language=detected_lang,
-                        user_id=target_user,
-                    )
-                    sess.add(new_job)
-                    sess.commit()
-                    sess.refresh(new_job)
-                    dedup_index.add(new_job)
+                        # Émission instantanée SSE pour le radar
+                        await broadcast_event(
+                            "JOB_DISCOVERED",
+                            {
+                                "id": new_job.id,
+                                "platform": new_job.platform,
+                                "title": new_job.title,
+                                "company": new_job.company,
+                                "country": new_job.country,
+                                "location": new_job.location,
+                                "status": new_job.status,
+                                "offer_type": new_job.offer_type,
+                                "skills_required": new_job.skills_required,
+                                "contract_duration": new_job.contract_duration,
+                                "salary_stipend": new_job.salary_stipend,
+                                "department": new_job.department,
+                                "is_direct_career_site": new_job.is_direct_career_site,
+                                "apply_url": new_job.apply_url,
+                                "published_at": new_job.published_at.isoformat() if new_job.published_at else None,
+                                "collected_at": new_job.collected_at.isoformat(),
+                            },
+                            target_user=target_user,
+                        )
 
-                    total_new += 1
-                    platform_new += 1
+                source_counts[p_name] = platform_new
+                cls._stats_by_source[p_name] = cls._stats_by_source.get(p_name, 0) + platform_new
 
-                    # Émission instantanée SSE pour le radar
-                    await broadcast_event(
-                        "JOB_DISCOVERED",
-                        {
-                            "id": new_job.id,
-                            "platform": new_job.platform,
-                            "title": new_job.title,
-                            "company": new_job.company,
-                            "country": new_job.country,
-                            "location": new_job.location,
-                            "status": new_job.status,
-                            "offer_type": new_job.offer_type,
-                            "skills_required": new_job.skills_required,
-                            "contract_duration": new_job.contract_duration,
-                            "salary_stipend": new_job.salary_stipend,
-                            "department": new_job.department,
-                            "is_direct_career_site": new_job.is_direct_career_site,
-                            "apply_url": new_job.apply_url,
-                            "published_at": new_job.published_at.isoformat() if new_job.published_at else None,
-                            "collected_at": new_job.collected_at.isoformat(),
-                        },
-                        target_user=target_user,
-                    )
-
-                source_counts[platform] = platform_new
-                cls._stats_by_source[platform] = cls._stats_by_source.get(platform, 0) + platform_new
-
+                # Diffusion SSE : scan de la plateforme terminé
                 await broadcast_event(
                     "SCRAPE_PROGRESS",
                     {
-                        "platform": platform,
+                        "platform": p_name,
                         "status": "completed",
                         "count": platform_new,
-                        "message": f"{platform_new} nouvelle(s) opportunité(s) PFE découverte(s).",
+                        "message": f"{platform_new} nouvelle(s) opportunité(s) PFE validée(s).",
                     },
                     target_user=target_user,
                 )
+
+            # Lancement concurrent avec ingestion en continu
+            tasks = [asyncio.create_task(fetch_and_process_platform(p)) for p in sorted_platforms]
+            try:
+                await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=global_crawl_timeout)
+            except asyncio.TimeoutError:
+                print(f"[CrawlerScheduler] Limite de temps globale atteinte ({global_crawl_timeout}s). Annulation des tâches restantes.")
+                for t in tasks:
+                    if not t.done():
+                        t.cancel()
 
             # Événement global de fin d'exploration multi-sources
             await broadcast_event(
