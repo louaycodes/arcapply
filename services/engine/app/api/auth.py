@@ -3,7 +3,7 @@ from sqlmodel import Session, select
 from typing import Optional
 
 from app.adapters.database import get_session
-from app.domain.auth import hash_password, verify_password
+from app.domain.auth import create_jwt_token, decode_jwt_token, hash_password, verify_password
 from app.domain.models import (
     MasterProfile,
     User,
@@ -57,7 +57,7 @@ def register(payload: UserRegisterRequest, session: Session = Depends(get_sessio
         session.add(profile)
         session.commit()
 
-    token = f"arcapply-token-{new_user.id}"
+    token = create_jwt_token(user_id=new_user.id, username=new_user.username, role=new_user.role)
     return UserLoginResponse(
         token=token,
         user=UserRead(
@@ -79,7 +79,7 @@ def login(payload: UserLoginRequest, session: Session = Depends(get_session)):
     if not user or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Nom d'utilisateur ou mot de passe incorrect")
 
-    token = f"arcapply-token-{user.id}"
+    token = create_jwt_token(user_id=user.id, username=user.username, role=user.role)
     return UserLoginResponse(
         token=token,
         user=UserRead(
@@ -93,6 +93,34 @@ def login(payload: UserLoginRequest, session: Session = Depends(get_session)):
     )
 
 
+def _resolve_user_from_token(raw_token: str, session: Session) -> Optional[User]:
+    """Résout l'entité User à partir d'un JWT valide ou du fallback arcapply-token-<id>."""
+    if not raw_token:
+        return None
+    raw_token = raw_token.strip()
+
+    # Tentative de décodage JWT
+    jwt_payload = decode_jwt_token(raw_token)
+    if jwt_payload:
+        user_id = jwt_payload.get("sub")
+        if user_id:
+            user = session.exec(select(User).where(User.id == user_id)).first()
+            if user:
+                return user
+        username = jwt_payload.get("username")
+        if username:
+            user = session.exec(select(User).where(User.username == username.lower())).first()
+            if user:
+                return user
+
+    # Fallback rétrocompatible pour tests existants
+    if raw_token.startswith("arcapply-token-"):
+        user_id = raw_token.replace("arcapply-token-", "")
+        return session.exec(select(User).where(User.id == user_id)).first()
+
+    return None
+
+
 @router.get("/me", response_model=UserRead)
 def get_current_user(
     authorization: Optional[str] = Header(None),
@@ -102,9 +130,7 @@ def get_current_user(
     user = None
     if authorization:
         token = authorization.replace("Bearer ", "").strip()
-        if token.startswith("arcapply-token-"):
-            user_id = token.replace("arcapply-token-", "")
-            user = session.exec(select(User).where(User.id == user_id)).first()
+        user = _resolve_user_from_token(token, session)
 
     if not user and x_username:
         user = session.exec(select(User).where(User.username == x_username.strip().lower())).first()
@@ -132,9 +158,7 @@ def complete_onboarding(
     user = None
     if authorization:
         token = authorization.replace("Bearer ", "").strip()
-        if token.startswith("arcapply-token-"):
-            user_id = token.replace("arcapply-token-", "")
-            user = session.exec(select(User).where(User.id == user_id)).first()
+        user = _resolve_user_from_token(token, session)
 
     if not user and x_username:
         user = session.exec(select(User).where(User.username == x_username.strip().lower())).first()
@@ -181,7 +205,7 @@ def get_current_username(
     session: Session = Depends(get_session),
 ) -> str:
     """Détermine l'utilisateur actif (Louay ou Chaima).
-    Prend en compte les en-têtes (X-Username, Authorization) et les paramètres d'URL (username, token)
+    Prend en compte les tokens JWT, en-têtes (X-Username, Authorization) et les paramètres d'URL (username, token)
     utiles notamment pour les iframes PDF / preview sans en-tête.
     Par défaut, retombe sur 'louay' pour préserver la rétrocompatibilité des tests existants.
     """
@@ -197,9 +221,8 @@ def get_current_username(
     elif token and token.strip():
         active_token = token.strip()
 
-    if active_token and active_token.startswith("arcapply-token-"):
-        user_id = active_token.replace("arcapply-token-", "")
-        user = session.exec(select(User).where(User.id == user_id)).first()
+    if active_token:
+        user = _resolve_user_from_token(active_token, session)
         if user:
             return user.username.lower()
 
