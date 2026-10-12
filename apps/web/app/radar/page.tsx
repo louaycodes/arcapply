@@ -648,9 +648,6 @@ export default function RadarPage() {
               <span>{t("Offres de Stage PFE", "Internship Offers")}</span>
             </h1>
           </div>
-          <p className="text-xs md:text-sm text-muted-foreground mt-1">
-            {t("Détection en temps réel sur les portails dédiés des 100 meilleures firmes IT mondiales (France & Tunisie) et plateformes vérifiées.", "Real-time detection on the dedicated portals of the world's top 100 IT firms (France & Tunisia) and verified platforms.")}
-          </p>
         </div>
 
         <div className="flex items-center gap-2">
