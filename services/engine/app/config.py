@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     ]
     groq_api_key: str = ""
     groq_model: str = "openai/gpt-oss-120b"
+    jwt_secret: str = "arcapply-super-secret-jwt-key-2026-production-ready"
+    jwt_algorithm: str = "HS256"
+    jwt_expiration_days: int = 7
 
     model_config = SettingsConfigDict(
         env_prefix="ARCAPPLY_",

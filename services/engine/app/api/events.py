@@ -8,6 +8,7 @@ from fastapi.responses import StreamingResponse
 from sqlmodel import Session, select
 
 from app.adapters.database import get_engine
+from app.domain.auth import decode_jwt_token
 from app.domain.models import User
 
 router = APIRouter(prefix="/api/events", tags=["Server-Sent Events"])
@@ -36,15 +37,28 @@ def _resolve_subscriber_user(
     if not raw_token and auth_header:
         raw_token = auth_header.replace("Bearer ", "").strip()
 
-    if raw_token.startswith("arcapply-token-"):
-        user_id = raw_token.replace("arcapply-token-", "").strip()
-        try:
-            with Session(get_engine()) as session:
-                user = session.exec(select(User).where(User.id == user_id)).first()
-                if user:
-                    return user.username.lower()
-        except Exception:
-            pass
+    if raw_token:
+        jwt_payload = decode_jwt_token(raw_token)
+        if jwt_payload and jwt_payload.get("username"):
+            return jwt_payload["username"].lower()
+        if jwt_payload and jwt_payload.get("sub"):
+            try:
+                with Session(get_engine()) as session:
+                    user = session.exec(select(User).where(User.id == jwt_payload["sub"])).first()
+                    if user:
+                        return user.username.lower()
+            except Exception:
+                pass
+
+        if raw_token.startswith("arcapply-token-"):
+            user_id = raw_token.replace("arcapply-token-", "").strip()
+            try:
+                with Session(get_engine()) as session:
+                    user = session.exec(select(User).where(User.id == user_id)).first()
+                    if user:
+                        return user.username.lower()
+            except Exception:
+                pass
 
     return "louay"
 

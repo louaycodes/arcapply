@@ -180,9 +180,20 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1.5">
-            {t("Mot de passe", "Password")}
-          </label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300">
+              {t("Mot de passe", "Password")}
+            </label>
+            {!isRegisterMode && (
+              <button
+                type="button"
+                onClick={() => router.push("/forgot-password")}
+                className="text-[11px] text-primary hover:underline font-medium"
+              >
+                {t("Mot de passe oublié ?", "Forgot password?")}
+              </button>
+            )}
+          </div>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-stone-400">
               <KeyRound className="w-4 h-4" />

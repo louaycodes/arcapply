@@ -1246,6 +1246,42 @@ export async function fetchCurrentUser(token: string): Promise<User> {
   return res.json();
 }
 
+export async function requestPasswordReset(email: string): Promise<{ message: string }> {
+  const res = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const message =
+      localizeServerMessage(errorData.detail?.message || errorData.detail) ||
+      trStored("Erreur lors de la demande de réinitialisation", "Error requesting password reset");
+    throw new Error(message);
+  }
+  return res.json();
+}
+
+export async function resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
+  const res = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ token, new_password: newPassword }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const message =
+      localizeServerMessage(errorData.detail?.message || errorData.detail) ||
+      trStored("Jeton invalide ou expiré", "Invalid or expired token");
+    throw new Error(message);
+  }
+  return res.json();
+}
+
 export async function completeOnboarding(): Promise<User> {
   const res = await authFetch(`${API_BASE_URL}/api/auth/complete-onboarding`, {
     method: "POST",

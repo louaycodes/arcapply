@@ -730,6 +730,30 @@ class UserRegisterRequest(SQLModel):
     full_name: Optional[str] = None
 
 
+class PasswordResetToken(SQLModel, table=True):
+    __tablename__ = "password_reset_tokens"
+    id: str = Field(default_factory=generate_uuid, primary_key=True)
+    user_id: str = Field(index=True)
+    token_hash: str = Field(index=True)
+    expires_at: int
+    used: bool = Field(default=False)
+    created_at: int = Field(default_factory=lambda: int(datetime.now(timezone.utc).timestamp()))
+
+
+class ForgotPasswordRequest(SQLModel):
+    email: str
+
+
+class ResetPasswordRequest(SQLModel):
+    token: str
+    new_password: str
+
+
+class MessageResponse(SQLModel):
+    message: str
+
+
+
 # ============================================================================
 # Agent Playbook Rules & Deep Recon Models
 # ============================================================================
