@@ -1,0 +1,39 @@
+- id: "1"
+  title: Renforcement de la sécurité d'authentification et sessions JWT
+  description: >-
+    Remplace les pseudo-tokens par des jetons d'accès JWT signés cryptographiquement (HS256) avec gestion d'expiration et secret d'environnement (CAP-1, CAP-2).
+    Met à jour le contexte d'authentification frontend et les intercepteurs API tout en préservant le repli automatique mono-utilisateur en dev.
+  spec_checkpoint: false
+  done_checkpoint: false
+  invoke_dev_with: >-
+    Respecter strictement les invariants AD-1 et AD-2. Conserver la compatibilité avec get_current_username et le token SSE. Aucune régression sur les tests unitaires auth existants. Zéro emoji.
+
+- id: "2"
+  title: Récupération d'accès et réinitialisation sécurisée de mot de passe
+  description: >-
+    Implémente les flux forgot-password et reset-password avec protection anti-énumération de comptes et jetons horodatés à usage unique d'une validité de 15 minutes (CAP-3).
+    Ajoute les pages frontend dédiées, la table PasswordResetToken avec migration SQLite idempotente dans _migrate_db, et l'adaptateur de notification par email.
+  spec_checkpoint: false
+  done_checkpoint: true
+  invoke_dev_with: >-
+    Ajouter une migration additive SQLite idempotente dans app/adapters/database.py. Ne jamais renvoyer de code d'erreur révélant si une adresse email existe en base. Fournir des tests FastAPI dédiés. Zéro emoji.
+
+- id: "3"
+  title: Navigation séquentielle d'onboarding en 12 étapes et persistance incrémentale
+  description: >-
+    Consolide le shell d'onboarding totalement isolé des barres de navigation du cockpit sur /onboarding/** avec sauvegarde incrémentale à chaque étape (CAP-4).
+    Intègre les contrôles de saisie stricts par étape et le test en temps réel de connectivité de la clé d'inférence LLM Groq sans blocage (CAP-5).
+  spec_checkpoint: false
+  done_checkpoint: false
+  invoke_dev_with: >-
+    S'assurer que Sidebar et TopNavbar restent masquées sur toutes les routes /onboarding/**. Utiliser exclusivement Lucide React et des codes texte (ex. [FR], [TN]). Tester le comportement hors-ligne et la sauvegarde automatique.
+
+- id: "4"
+  title: Finalisation de complétude ATS, synchronisation miroir et activation du cockpit
+  description: >-
+    Implémente l'étape 12 d'évaluation déterministe de complétude du Master Profile et la clôture officielle du parcours d'onboarding (CAP-6).
+    Déclenche la synchronisation en arrière-plan du profil miroir, met à jour User.onboarding_completed et déverrouille l'accès complet au cockpit.
+  spec_checkpoint: false
+  done_checkpoint: true
+  invoke_dev_with: >-
+    Vérifier la bonne transition d'état et le nettoyage des clés de session temporaires (arcapply_just_registered, arcapply_onboarding_skipped). Valider l'intégralité de la suite de tests frontend et backend avant de clore.
