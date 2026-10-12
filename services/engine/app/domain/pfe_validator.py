@@ -7,6 +7,7 @@ import re
 # ---------------------------------------------------------------------------
 # L'offre DOIT contenir au moins l'un de ces mots-clés (titre ou description)
 PFE_KEYWORDS: list[str] = [
+    # Français & International de base
     r"\bpfe\b",
     r"\bstage\b",
     r"\bstages\b",
@@ -20,12 +21,54 @@ PFE_KEYWORDS: list[str] = [
     r"\bfin\s*d['’\s]?etudes?\b",
     r"\bend[- ]of[- ]studies\b",
     r"\bend[- ]of[- ]study\b",
+    r"\bmaster\s*thesis\b",
     r"\balternance\b",
     r"\bapprentissage\b",
     r"\bapprenti\b",
     r"\bgraduate\b",
+    r"\bgraduate\s*(?:engineer|scheme|program)\b",
     r"\btrainee\b",
     r"\btraineeship\b",
+    r"\bplacement\b",
+    r"\bindustrial\s*placement\b",
+    # Norvège & Danemark (Nordics)
+    r"\bpraksis\b",
+    r"\bpraksisplass\b",
+    r"\bsommerjobb\b",
+    r"\bsommerstudent\b",
+    r"\bmasteroppgave\b",
+    r"\bdiplomoppgave\b",
+    r"\bstudentstilling\b",
+    r"\bpraktikant\b",
+    # Suède
+    r"\bexjobb\b",
+    r"\bexamensarbete\b",
+    r"\bpraktik\b",
+    r"\bsommarjobb\b",
+    r"\bstudentmedarbetare\b",
+    # Allemagne, Autriche & Suisse (Alémanique)
+    r"\bpraktikum\b",
+    r"\bwerkstudent\b",
+    r"\bmasterarbeit\b",
+    r"\babschlussarbeit\b",
+    r"\bbachelorarbeit\b",
+    r"\bpflichtpraktikum\b",
+    # Pays-Bas & Flandre (Néerlandais)
+    r"\bafstudeerstage\b",
+    r"\bmeeloopstage\b",
+    r"\bmeewerkstage\b",
+    r"\bstagiair\b",
+    # Italie
+    r"\btirocinio\b",
+    r"\btirocinante\b",
+    # Espagne
+    r"\bpr[áa]cticas?\b",
+    r"\bbecari[oa]\b",
+    # Europe de l'Est & Centrale (Pologne, Roumanie, Hongrie)
+    r"\bsta[żz]\b",
+    r"\bpraktyk[ai]\b",
+    r"\bstagiu\b",
+    r"\bgyakornok\b",
 ]
 
 # ---------------------------------------------------------------------------

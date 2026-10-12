@@ -29,10 +29,15 @@ from app.adapters.connectors.tunisietravail import TunisieTravailJobConnector
 from app.adapters.connectors.unjeuneunesolution import UnJeuneUneSolutionJobConnector
 from app.adapters.connectors.top100_enterprises import Top100EnterprisesJobConnector
 from app.adapters.connectors.wttj import WTTJJobConnector
+from app.adapters.connectors.nav_norway import NAVNorwayJobConnector
+from app.adapters.connectors.finn_no import FinnNoJobConnector
+from app.adapters.connectors.jobtech_sweden import JobTechSwedenJobConnector
+from app.adapters.connectors.jobs_ch import JobsChJobConnector
 from app.adapters.database import get_engine
 from app.api.events import broadcast_event
 from app.adapters.connectors import infer_offer_type, is_pfe_offer
 from app.domain.anti_rescrape import is_job_already_applied, is_job_already_archived, is_job_excluded_from_scraping
+from app.domain.country_resolver import resolve_country_name
 from app.domain.deduplication import JobDeduplicationIndex
 from app.domain.job_extractor import JobDeepExtractor
 from app.domain.language_detector import detect_job_language
@@ -45,6 +50,13 @@ ALL_CONNECTORS: dict[str, type[BaseJobConnector]] = {
     # International & Global
     "linkedin": LinkedInJobConnector,
     "stackoverflow_jobs": StackOverflowJobsJobConnector,
+    # Norvège & Nordics
+    "nav_norway": NAVNorwayJobConnector,
+    "finn_no": FinnNoJobConnector,
+    # Suède
+    "jobtech_sweden": JobTechSwedenJobConnector,
+    # Suisse
+    "jobs_ch": JobsChJobConnector,
     # Tunisie
     "keejob": KeejobJobConnector,
     "tunisietravail": TunisieTravailJobConnector,
@@ -223,10 +235,11 @@ class CrawlerScheduler:
 
                     # Deep Extraction & Enrichissement sémantique (stack, durée, salaire, date)
                     enriched = JobDeepExtractor.enrich_job_data(j_with_type)
+                    job_country = resolve_country_name(enriched.get("country") or enriched.get("location") or "France")
                     detected_lang = detect_job_language(
                         title=enriched.get("title", ""),
                         description=enriched.get("description_raw", ""),
-                        country=enriched.get("country", "France"),
+                        country=job_country,
                     )
 
                     new_job = JobOffer(
@@ -235,7 +248,7 @@ class CrawlerScheduler:
                         title=enriched["title"],
                         company=enriched["company"],
                         location=enriched.get("location", ""),
-                        country=enriched.get("country", "France"),
+                        country=job_country,
                         description_raw=enriched.get("description_raw", ""),
                         url=enriched.get("url", ""),
                         status="DISCOVERED",

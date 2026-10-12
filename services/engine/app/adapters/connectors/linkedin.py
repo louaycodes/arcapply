@@ -3,12 +3,49 @@ import urllib.parse
 from typing import Any
 import httpx
 from bs4 import BeautifulSoup
+from app.domain.country_resolver import get_default_keywords_for_location, resolve_country_name
 from app.ports.connectors import BaseJobConnector
+
+LINKEDIN_GEO_IDS: dict[str, str] = {
+    "norway": "103819153",
+    "norvège": "103819153",
+    "sweden": "105117694",
+    "suède": "105117694",
+    "denmark": "104514075",
+    "danemark": "104514075",
+    "finland": "100456013",
+    "finlande": "100456013",
+    "germany": "101282230",
+    "allemagne": "101282230",
+    "switzerland": "106693272",
+    "suisse": "106693272",
+    "belgium": "106203498",
+    "belgique": "106203498",
+    "united kingdom": "102257491",
+    "uk": "102257491",
+    "royaume-uni": "102257491",
+    "netherlands": "102890719",
+    "pays-bas": "102890719",
+    "france": "105015875",
+    "tunisie": "102144391",
+    "tunisia": "102144391",
+    "italy": "103350119",
+    "italie": "103350119",
+    "spain": "105646813",
+    "espagne": "105646813",
+    "luxembourg": "104035573",
+    "ireland": "104738515",
+    "irlande": "104738515",
+    "poland": "105072130",
+    "pologne": "105072130",
+    "romania": "106670623",
+    "roumanie": "106670623",
+}
 
 
 class LinkedInJobConnector(BaseJobConnector):
     """
-    Connecteur réel de recherche et d'ingestion d'offres LinkedIn (PFE France & Tunisie).
+    Connecteur réel de recherche et d'ingestion d'offres LinkedIn International (France, Tunisie, Norvège, Europe).
     Effectue un scraping en direct via l'API publique invité de LinkedIn (aucun mock ni fallback fictif - AD-4).
     """
 
@@ -25,10 +62,6 @@ class LinkedInJobConnector(BaseJobConnector):
         # Application du jitter initial
         await self.apply_jitter(min_seconds=0.2, max_seconds=0.5)
 
-        search_terms = self.normalize_search_terms(
-            keywords,
-            default_fallback=["Stage PFE", "Stage Ingénieur", "PFE"],
-        )
         target_locations = [l.strip() for l in locations if l.strip()] if locations else ["France", "Tunisie"]
 
         results: list[dict[str, Any]] = []
@@ -44,8 +77,16 @@ class LinkedInJobConnector(BaseJobConnector):
 
         async with httpx.AsyncClient(timeout=9.0, follow_redirects=True) as client:
             for loc in target_locations:
+                country = resolve_country_name(loc)
                 encoded_loc = urllib.parse.quote(loc)
-                country = "Tunisie" if "tunisi" in loc.lower() or "tunis" in loc.lower() else "France"
+
+                # Résolution du geoId LinkedIn si disponible
+                loc_key = loc.lower().strip()
+                geo_id = LINKEDIN_GEO_IDS.get(loc_key) or LINKEDIN_GEO_IDS.get(country.lower())
+
+                # Mots-clés adaptés à la localisation
+                fallback_kw = get_default_keywords_for_location(loc)
+                search_terms = self.normalize_search_terms(keywords, default_fallback=fallback_kw)
 
                 for term in search_terms:
                     if len(results) >= limit:
@@ -61,9 +102,10 @@ class LinkedInJobConnector(BaseJobConnector):
                             break
 
                         start_offset = page_idx * 10
+                        geo_param = f"&geoId={geo_id}" if geo_id else ""
                         url = (
                             f"https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search"
-                            f"?keywords={encoded_query}&location={encoded_loc}&start={start_offset}"
+                            f"?keywords={encoded_query}&location={encoded_loc}{geo_param}&start={start_offset}"
                         )
 
                         try:
@@ -113,7 +155,7 @@ class LinkedInJobConnector(BaseJobConnector):
                                     f"Consultez les détails pour découvrir les missions, la stack technique et postuler."
                                 )
 
-                                job_country = "Tunisie" if "tunisi" in location_str.lower() or "tunis" in location_str.lower() else country
+                                job_country = resolve_country_name(location_str) if location_str else country
 
                                 results.append({
                                     "external_id": ext_id,

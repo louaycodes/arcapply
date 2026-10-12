@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 import httpx
 from bs4 import BeautifulSoup
+from app.domain.country_resolver import resolve_country_name
 from app.domain.job_extractor import JobDeepExtractor
 from app.domain.top100_companies import TOP_100_COMPANIES, get_top_companies_by_country
 from app.ports.connectors import BaseJobConnector
@@ -105,7 +106,7 @@ class Top100EnterprisesJobConnector(BaseJobConnector):
                     if not any(k in combined for k in keywords):
                         continue
 
-                    country = "Tunisie" if any(t in (loc_name + " " + company["country"]).lower() for t in ["tunis", "tunisie"]) else "France"
+                    country = resolve_country_name(f"{loc_name} {company.get('country', '')}")
 
                     job_entry = {
                         "external_id": f"gh-{portal_id}-{item.get('id')}",
@@ -156,7 +157,7 @@ class Top100EnterprisesJobConnector(BaseJobConnector):
                     if not any(k in combined for k in keywords):
                         continue
 
-                    country = "Tunisie" if any(t in (loc_name + " " + company["country"]).lower() for t in ["tunis", "tunisie"]) else "France"
+                    country = resolve_country_name(f"{loc_name} {company.get('country', '')}")
 
                     job_entry = {
                         "external_id": f"lev-{portal_id}-{item.get('id')}",
@@ -208,7 +209,7 @@ class Top100EnterprisesJobConnector(BaseJobConnector):
                     if not any(k in combined for k in keywords):
                         continue
 
-                    c_val = "Tunisie" if any(t in (city + " " + country_name).lower() for t in ["tunis", "tunisia", "tn"]) else "France"
+                    c_val = resolve_country_name(f"{city} {country_name} {company.get('country', '')}")
 
                     ext_id = f"sr-{portal_id}-{item.get('id')}"
                     apply_url = f"https://jobs.smartrecruiters.com/{portal_id}/{item.get('id')}"
@@ -271,7 +272,7 @@ class Top100EnterprisesJobConnector(BaseJobConnector):
                     if any(k in t_lower for k in keywords):
                         seen_urls.add(href)
                         full_url = href if href.startswith("http") else urllib.parse.urljoin(careers_url, href)
-                        c_val = company.get("country", "France")
+                        c_val = resolve_country_name(company.get("country", "France"))
                         ext_id = self.generate_stable_id(f"dir-{company['id']}", full_url + text_content)
 
                         job_entry = {
