@@ -308,6 +308,33 @@ export default function RadarPage() {
           message: t("La base de données des offres a été vidée.", "The offers database has been cleared."),
         });
         setTimeout(() => setNotification(null), 3500);
+      },
+      (completedSummary) => {
+        setIsCollecting(false);
+        const byPlatform = completedSummary.by_platform;
+        if (byPlatform) {
+          setCrawlPlatformStats((prev) => {
+            const updated = { ...prev };
+            Object.entries(byPlatform).forEach(([plat, cnt]) => {
+              const key = plat.toLowerCase();
+              const num = typeof cnt === "number" ? cnt : Number(cnt) || 0;
+              updated[key] = {
+                status: "completed",
+                count: num,
+                message: `${num} offre(s) PFE validée(s)`,
+              };
+            });
+            return updated;
+          });
+        }
+        if (completedSummary.new_count !== undefined) {
+          setTotalPfeDiscoveredInCrawl(completedSummary.new_count);
+        }
+        setNotification({
+          type: "success",
+          message: completedSummary.message || t("Collecte multi-sources achevée avec succès.", "Multi-source collection completed successfully."),
+        });
+        loadJobs();
       }
     );
 
@@ -374,37 +401,45 @@ export default function RadarPage() {
         locations: targetLocations,
         platforms: undefined,
         limit_per_platform: 20,
-      });
+      }, true);
 
-
-      const byPlatform = summary.by_platform;
-      if (byPlatform) {
-        setCrawlPlatformStats((prev) => {
-          const updated = { ...prev };
-          Object.entries(byPlatform).forEach(([plat, cnt]) => {
-            const key = plat.toLowerCase();
-            const num = typeof cnt === "number" ? cnt : Number(cnt) || 0;
-            updated[key] = {
-              status: "completed",
-              count: num,
-              message: `${num} offre(s) PFE validée(s)`,
-            };
+      if (summary.status === "completed") {
+        const byPlatform = summary.by_platform;
+        if (byPlatform) {
+          setCrawlPlatformStats((prev) => {
+            const updated = { ...prev };
+            Object.entries(byPlatform).forEach(([plat, cnt]) => {
+              const key = plat.toLowerCase();
+              const num = typeof cnt === "number" ? cnt : Number(cnt) || 0;
+              updated[key] = {
+                status: "completed",
+                count: num,
+                message: `${num} offre(s) PFE validée(s)`,
+              };
+            });
+            return updated;
           });
-          return updated;
+        }
+        setTotalPfeDiscoveredInCrawl(summary.new_count ?? 0);
+        setNotification({
+          type: "success",
+          message: summary.message || t("Collecte multi-sources achevée avec succès.", "Multi-source collection completed successfully."),
         });
+        setIsCollecting(false);
+      } else {
+        setScrapeMessage(
+          t(
+            "Exploration active en arrière-plan sans limite de temps. Collecte en direct...",
+            "Active background exploration running with no time limit. Live streaming..."
+          )
+        );
       }
-      setTotalPfeDiscoveredInCrawl(summary.new_count ?? 0);
-      setNotification({
-        type: "success",
-        message: summary.message || t("Collecte multi-sources achevée avec succès.", "Multi-source collection completed successfully."),
-      });
     } catch (err: any) {
+      setIsCollecting(false);
       setNotification({
         type: "error",
-        message: err.message || t("Erreur pendant la collecte multi-sources.", "Error during multi-source collection."),
+        message: err.message || t("Erreur pendant le lancement de la collecte multi-sources.", "Error starting multi-source collection."),
       });
-    } finally {
-      setIsCollecting(false);
     }
   };
 

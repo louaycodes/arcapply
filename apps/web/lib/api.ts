@@ -375,8 +375,12 @@ export async function fetchSourcesStatus(): Promise<SourcesRegistryStatus> {
   return res.json();
 }
 
-export async function crawlAllSources(payload?: JobCollectRequest): Promise<JobCollectSummary> {
-  const res = await authFetch(`${API_BASE_URL}/api/jobs/crawl-all`, {
+export async function crawlAllSources(
+  payload?: JobCollectRequest,
+  background: boolean = true
+): Promise<JobCollectSummary & { status?: string }> {
+  const url = `${API_BASE_URL}/api/jobs/crawl-all${background ? "?background=true" : ""}`;
+  const res = await authFetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload || {}),
@@ -415,7 +419,16 @@ export function createRadarEventSource(
   onError?: (err: any) => void,
   onJobStatusChanged?: (payload: { job_id: string; old_status: string; new_status: string }) => void,
   onEmailReceived?: (payload: { id: string; category: string; company?: string; subject: string; snippet?: string }) => void,
-  onJobsCleared?: () => void
+  onJobsCleared?: () => void,
+  onAllCompleted?: (summary: {
+    status: string;
+    total_collected?: number;
+    new_count?: number;
+    duplicate_count?: number;
+    platforms?: string[];
+    by_platform?: Record<string, number>;
+    message?: string;
+  }) => void
 ): () => void {
   if (typeof window === "undefined") return () => {};
 
@@ -457,6 +470,17 @@ export function createRadarEventSource(
       }
     } catch (err) {
       console.error("Error parsing SCRAPE_PROGRESS event:", err);
+    }
+  });
+
+  eventSource.addEventListener("SCRAPE_ALL_COMPLETED", (e: MessageEvent) => {
+    try {
+      const data = JSON.parse(e.data);
+      if (onAllCompleted && data.payload) {
+        onAllCompleted(data.payload);
+      }
+    } catch (err) {
+      console.error("Error parsing SCRAPE_ALL_COMPLETED event:", err);
     }
   });
 
