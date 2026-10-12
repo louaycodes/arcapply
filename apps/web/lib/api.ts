@@ -362,9 +362,14 @@ export interface SourceTelemetry {
 }
 
 export interface SourcesRegistryStatus {
-  is_crawling: boolean;
-  last_crawl: string | null;
-  sources: SourceTelemetry[];
+  is_running?: boolean;
+  is_crawling?: boolean;
+  last_crawl?: string | null;
+  last_crawl_time?: string | null;
+  sources?: SourceTelemetry[];
+  registered_connectors?: string[];
+  total_connectors?: number;
+  stats_by_source?: Record<string, number>;
 }
 
 export async function fetchSourcesStatus(): Promise<SourcesRegistryStatus> {

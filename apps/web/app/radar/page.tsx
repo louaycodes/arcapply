@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
   fetchJobs,
   fetchProfile,
   crawlAllSources,
+  fetchSourcesStatus,
   archiveJob,
   clearAllJobs,
   createRadarEventSource,
@@ -148,6 +150,8 @@ export default function RadarPage() {
   const [viewMode, setViewMode] = useState<"timeline" | "grid">("timeline");
 
   const [isCollecting, setIsCollecting] = useState(false);
+  const [isCrawlCompleted, setIsCrawlCompleted] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [showAppliedSection, setShowAppliedSection] = useState(true);
   const [scrapeMessage, setScrapeMessage] = useState<string | null>(null);
@@ -211,6 +215,19 @@ export default function RadarPage() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    setMounted(true);
+    fetchSourcesStatus()
+      .then((status) => {
+        if (status.is_running || status.is_crawling) {
+          setIsCollecting(true);
+          setIsCrawlCompleted(false);
+          setIsCrawlModalOpen(true);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     loadJobs();
@@ -311,6 +328,7 @@ export default function RadarPage() {
       },
       (completedSummary) => {
         setIsCollecting(false);
+        setIsCrawlCompleted(true);
         const byPlatform = completedSummary.by_platform;
         if (byPlatform) {
           setCrawlPlatformStats((prev) => {
@@ -367,6 +385,7 @@ export default function RadarPage() {
     try {
       setShowCollectModal(false);
       setIsCollecting(true);
+      setIsCrawlCompleted(false);
       setIsCrawlModalOpen(true);
       setTotalPfeDiscoveredInCrawl(0);
 
@@ -426,6 +445,7 @@ export default function RadarPage() {
           message: summary.message || t("Collecte multi-sources achevée avec succès.", "Multi-source collection completed successfully."),
         });
         setIsCollecting(false);
+        setIsCrawlCompleted(true);
       } else {
         setScrapeMessage(
           t(
@@ -436,6 +456,8 @@ export default function RadarPage() {
       }
     } catch (err: any) {
       setIsCollecting(false);
+      setIsCrawlCompleted(false);
+      setIsCrawlModalOpen(false);
       setNotification({
         type: "error",
         message: err.message || t("Erreur pendant le lancement de la collecte multi-sources.", "Error starting multi-source collection."),
@@ -445,6 +467,7 @@ export default function RadarPage() {
 
   const handleFinishCrawl = () => {
     setIsCrawlModalOpen(false);
+    setIsCrawlCompleted(false);
     loadJobs();
     setTimeout(() => setNotification(null), 4000);
   };
@@ -1071,9 +1094,21 @@ export default function RadarPage() {
       )}
 
       {/* Collect Modal */}
-      {showCollectModal && (
-        <div className="fixed inset-0 z-50 !mt-0 flex items-center justify-center bg-stone-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-lg rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-xl space-y-5 animate-in zoom-in-95 duration-150">
+      {mounted && showCollectModal && createPortal(
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-stone-950/80 backdrop-blur-md p-4 animate-in fade-in duration-200 select-none overflow-y-auto"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: "100vw",
+            height: "100vh",
+            zIndex: 9999,
+          }}
+        >
+          <div className="w-full max-w-lg rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150 relative z-10 my-auto">
             <div className="flex items-center justify-between border-b border-stone-200 dark:border-stone-800 pb-3">
               <div className="flex items-center gap-2">
                 <Radar className="w-5 h-5 text-primary" />
@@ -1171,7 +1206,6 @@ export default function RadarPage() {
               </div>
             </div>
 
-
             <div className="flex items-center justify-end gap-3 pt-2 border-t border-border/50">
               <button
                 type="button"
@@ -1190,16 +1224,29 @@ export default function RadarPage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* 5. Fenêtre Modale de Scraping Épurée Multi-Sources */}
-      {isCrawlModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/80 backdrop-blur-md p-4 animate-in fade-in duration-200 select-none">
-          <div className="w-full max-w-sm sm:max-w-md rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-2xl p-6 sm:p-8 space-y-6 animate-in zoom-in-95 duration-150 text-center">
+      {mounted && isCrawlModalOpen && createPortal(
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-stone-950/85 backdrop-blur-md p-4 animate-in fade-in duration-200 select-none overflow-y-auto"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: "100vw",
+            height: "100vh",
+            zIndex: 9999,
+          }}
+        >
+          <div className="w-full max-w-sm sm:max-w-md rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-2xl p-6 sm:p-8 space-y-6 animate-in zoom-in-95 duration-150 text-center relative z-10 my-auto">
             {/* Statut minimaliste */}
             <div className="flex justify-center">
-              {isCollecting ? (
+              {!isCrawlCompleted ? (
                 <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   <span>{t("Collecte en cours", "Scanning in progress")}</span>
@@ -1215,7 +1262,7 @@ export default function RadarPage() {
             {/* Logo de la source active */}
             <div className="flex flex-col items-center justify-center">
               <div className="relative w-28 h-24 rounded-2xl bg-stone-50 dark:bg-stone-800/80 border border-stone-200/80 dark:border-stone-700/60 shadow-xs flex items-center justify-center p-3.5 transition-all">
-                {isCollecting && (
+                {!isCrawlCompleted && (
                   <span className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-primary/30 to-amber-500/30 animate-pulse -z-10 blur-sm" />
                 )}
                 {currentScrapingSource ? (
@@ -1259,7 +1306,7 @@ export default function RadarPage() {
                 ? selectedPlatformsToCrawl
                 : AVAILABLE_PLATFORMS.map((p) => p.id)
               ).map((platformId) => {
-                const isCur = currentScrapingSource === platformId.toLowerCase() && isCollecting;
+                const isCur = currentScrapingSource === platformId.toLowerCase() && !isCrawlCompleted;
                 const stat = crawlPlatformStats[platformId.toLowerCase()];
                 const isDone = stat?.status === "completed";
 
@@ -1288,9 +1335,9 @@ export default function RadarPage() {
               })}
             </div>
 
-            {/* Action de clôture */}
-            {!isCollecting && (
-              <div className="pt-2">
+            {/* Action de clôture : UNIQUEMENT visible quand TOUT le scraping est terminé */}
+            {isCrawlCompleted ? (
+              <div className="pt-2 animate-in fade-in duration-300">
                 <button
                   type="button"
                   onClick={handleFinishCrawl}
@@ -1306,9 +1353,22 @@ export default function RadarPage() {
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
+            ) : (
+              <div className="pt-2">
+                <div className="w-full py-2.5 px-4 rounded-xl bg-stone-100 dark:bg-stone-800/60 border border-stone-200/60 dark:border-stone-700/40 text-muted-foreground text-xs font-medium flex items-center justify-center gap-2">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                  <span>
+                    {t(
+                      "Exploration active de toutes les plateformes en cours...",
+                      "Active exploration of all platforms in progress..."
+                    )}
+                  </span>
+                </div>
+              </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal CV Ciblé */}
