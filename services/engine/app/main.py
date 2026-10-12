@@ -46,6 +46,22 @@ app.include_router(recon.router)
 
 
 
+def _get_cors_headers(request: Request) -> dict[str, str]:
+    origin = request.headers.get("origin") or ""
+    headers: dict[str, str] = {}
+    if origin and (
+        origin in settings.cors_origins
+        or "louaycodes.tn" in origin
+        or origin.startswith("http://localhost")
+        or origin.startswith("http://127.0.0.1")
+    ):
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Access-Control-Allow-Credentials"] = "true"
+        headers["Access-Control-Allow-Methods"] = "*"
+        headers["Access-Control-Allow-Headers"] = "*"
+    return headers
+
+
 @app.exception_handler(HTTPException)
 async def http_exception_rfc7807_handler(request: Request, exc: HTTPException):
     detail = exc.detail if isinstance(exc.detail, dict) else {"message": str(exc.detail)}
@@ -58,6 +74,22 @@ async def http_exception_rfc7807_handler(request: Request, exc: HTTPException):
             "detail": detail,
             "path": str(request.url.path),
         },
+        headers=_get_cors_headers(request),
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={
+            "type": "https://datatracker.ietf.org/doc/html/rfc7807",
+            "title": "Erreur interne",
+            "status": 500,
+            "detail": {"message": str(exc)},
+            "path": str(request.url.path),
+        },
+        headers=_get_cors_headers(request),
     )
 
 

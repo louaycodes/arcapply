@@ -109,7 +109,7 @@ from app.adapters.database import get_engine
 from app.api.events import broadcast_event
 from app.adapters.connectors import infer_offer_type, is_pfe_offer
 from app.domain.anti_rescrape import is_job_already_applied, is_job_already_archived, is_job_excluded_from_scraping
-from app.domain.country_resolver import resolve_country_name
+from app.domain.country_resolver import resolve_country_name, is_location_matching_target
 from app.domain.deduplication import JobDeduplicationIndex
 from app.domain.job_extractor import JobDeepExtractor
 from app.domain.language_detector import detect_job_language
@@ -400,7 +400,7 @@ class CrawlerScheduler:
             dedup_index = JobDeduplicationIndex(existing_user_jobs)
 
             # Exécution parallèle optimisée des requêtes réseau avec sémaphore de contrôle
-            sem = asyncio.Semaphore(12)
+            sem = asyncio.Semaphore(20)
 
             async def fetch_platform_jobs(p_name: str) -> tuple[str, list[dict[str, Any]], Any]:
                 c_cls = ALL_CONNECTORS.get(p_name)
@@ -409,27 +409,50 @@ class CrawlerScheduler:
                 async with sem:
                     try:
                         conn_inst = c_cls()
-                        fetched = await conn_inst.search_jobs(
-                            keywords=search_kw,
-                            locations=search_loc,
-                            limit=limit_per_platform,
+                        # Timeout strict de 5s par connecteur pour empêcher tout blocage ou dérive réseau
+                        fetched = await asyncio.wait_for(
+                            conn_inst.search_jobs(
+                                keywords=search_kw,
+                                locations=search_loc,
+                                limit=limit_per_platform,
+                            ),
+                            timeout=5.0,
                         )
                         return p_name, fetched, conn_inst
+                    except asyncio.TimeoutError:
+                        return p_name, [], None
                     except Exception as err:
                         print(f"[CrawlerScheduler] Erreur connecteur {p_name}: {err}")
                         return p_name, [], None
 
-            # Lancement concurrent de tous les connecteurs ciblés
+            # Lancement concurrent de tous les connecteurs avec timeout global de 25s (garantie anti-504 Nginx)
             fetch_tasks = [fetch_platform_jobs(p) for p in target_platforms]
-            gathered_results = await asyncio.gather(*fetch_tasks)
+            try:
+                gathered_raw = await asyncio.wait_for(
+                    asyncio.gather(*fetch_tasks, return_exceptions=True),
+                    timeout=25.0,
+                )
+            except asyncio.TimeoutError:
+                gathered_raw = []
+
+            gathered_results = [
+                res for res in gathered_raw
+                if isinstance(res, tuple) and len(res) == 3
+            ]
 
             for platform, jobs, connector in gathered_results:
                 if not connector:
                     continue
                 platform_new = 0
+                platform_enrich_count = 0
                 for j in jobs:
                     title = j.get("title", "")
                     desc = j.get("description_raw", "")
+                    job_loc = j.get("location", "")
+
+                    # Bouclier Géographique Déterministe : Exclusion des offres hors-zone ciblée (ex: Afrique du Sud)
+                    if not is_location_matching_target(job_loc, search_loc):
+                        continue
 
                     # Invariant : validation selon le search_mode du profil
                     if search_mode == "PFE":
@@ -462,11 +485,12 @@ class CrawlerScheduler:
 
                     # Pour toute nouvelle offre, enrichir avec la description intégrale si placeholder ou tronquée
                     job_url = j.get("url", "")
-                    if job_url and (len(desc) < 220 or "consultez l'annonce" in desc.lower() or "consultez les détails" in desc.lower()):
+                    if job_url and platform_enrich_count < 2 and (len(desc) < 220 or "consultez l'annonce" in desc.lower() or "consultez les détails" in desc.lower()):
                         try:
-                            details = await connector.fetch_job_details(job_url)
+                            details = await asyncio.wait_for(connector.fetch_job_details(job_url), timeout=1.8)
                             if details and details.get("description_raw") and len(details["description_raw"]) > len(desc):
                                 j_with_type["description_raw"] = details["description_raw"]
+                                platform_enrich_count += 1
                         except Exception:
                             pass
 

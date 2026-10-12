@@ -105,6 +105,21 @@ def _migrate_db(engine) -> None:
             pass
 
         try:
+            # Purge des offres hors-perimetre (ex: Afrique du Sud du bug geoId anterieur)
+            conn.execute(text("""
+                DELETE FROM job_offers
+                WHERE LOWER(location) LIKE '%south africa%'
+                   OR LOWER(location) LIKE '%afrique du sud%'
+                   OR LOWER(location) LIKE '%cape town%'
+                   OR LOWER(location) LIKE '%johannesburg%'
+                   OR LOWER(location) LIKE '%durban%'
+                   OR LOWER(country) = 'afrique du sud'
+            """))
+            conn.commit()
+        except Exception:
+            pass
+
+        try:
             conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS recon_dossiers (
                     id VARCHAR PRIMARY KEY,

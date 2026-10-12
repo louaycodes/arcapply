@@ -306,6 +306,10 @@ def resolve_country_name(location_or_country: str) -> str:
 
     loc_clean = location_or_country.lower().strip()
 
+    # 0. Identification explicite de pays hors-périmètre (ex: Afrique du Sud)
+    if any(k in loc_clean for k in ["afrique du sud", "south africa", "johannesburg", "cape town", "durban", "pretoria"]):
+        return "Afrique du Sud"
+
     # 1. Correspondance exacte ou partielle sur les alias
     for alias, canonical_key in LOCATION_ALIASES.items():
         if re.search(rf"\b{re.escape(alias)}\b", loc_clean):
@@ -319,6 +323,32 @@ def resolve_country_name(location_or_country: str) -> str:
             return meta.name
 
     return "France"
+
+
+def is_location_matching_target(location: str, target_countries: list[str]) -> bool:
+    """
+    Vérifie si la localisation de l'offre correspond aux pays ciblés par la recherche.
+    Si les pays ciblés incluent 'all', 'europe', ou 'tous', accepte tout pays éligible (hors Afrique du Sud etc.).
+    """
+    if not location:
+        return True
+
+    resolved = resolve_country_name(location)
+    # Rejet systématique des pays hors-zone détectés
+    if resolved in ["Afrique du Sud"]:
+        return False
+
+    if not target_countries or any(tc.lower() in ["all", "europe", "tous"] for tc in target_countries):
+        return True
+
+    resolved_lower = resolved.lower()
+    loc_lower = location.lower()
+    for tc in target_countries:
+        tc_clean = tc.lower().strip()
+        tc_resolved = resolve_country_name(tc_clean).lower()
+        if resolved_lower == tc_resolved or tc_clean in loc_lower or tc_clean in resolved_lower:
+            return True
+    return False
 
 
 def get_country_iso_code(country_name: str) -> str:
@@ -337,3 +367,4 @@ def get_default_keywords_for_location(location: str) -> list[str]:
         if key == resolved or meta.name.lower() == resolved:
             return list(meta.keywords)
     return ["Stage PFE", "Stage Ingénieur", "PFE"]
+
