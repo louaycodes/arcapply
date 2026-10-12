@@ -53,6 +53,14 @@ const AVAILABLE_PLATFORMS: { id: string; label: string; labelEn?: string; countr
   { id: "top100_enterprises", label: "Top 100 Firmes IT (Portails Carrières Dédiés)", labelEn: "Top 100 IT Firms (Dedicated Career Portals)", country: "Global" },
   { id: "linkedin", label: "LinkedIn", country: "Global" },
   { id: "stackoverflow_jobs", label: "StackOverflow Jobs", country: "Global" },
+  // Norvège & Nordics
+  { id: "nav_norway", label: "NAV Arbeidsplassen (Norvège)", labelEn: "NAV Arbeidsplassen (Norway)", country: "Norway" },
+  { id: "finn_no", label: "FINN.no Jobb (Norvège)", labelEn: "FINN.no Jobs (Norway)", country: "Norway" },
+  // Suède
+  { id: "jobtech_sweden", label: "JobTech Platsbanken (Suède)", labelEn: "JobTech Sweden", country: "Sweden" },
+  // Suisse
+  { id: "jobs_ch", label: "Jobs.ch (Suisse)", labelEn: "Jobs.ch (Switzerland)", country: "Switzerland" },
+  // Tunisie
   { id: "keejob", label: "Keejob", country: "Tunisie" },
   { id: "tunisietravail", label: "TunisieTravail", country: "Tunisie" },
   { id: "tanitjobs", label: "Tanitjobs", country: "Tunisie" },
@@ -688,6 +696,9 @@ export default function RadarPage() {
               { id: "all", label: t("Tous", "All") },
               { id: "France", label: "France" },
               { id: "Tunisie", label: t("Tunisie", "Tunisia") },
+              { id: "Norway", label: t("Norvège", "Norway") },
+              { id: "Sweden", label: t("Suède", "Sweden") },
+              { id: "Switzerland", label: t("Suisse", "Switzerland") },
             ].map((c) => (
               <button
                 key={c.id}

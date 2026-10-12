@@ -58,7 +58,21 @@ export function KanbanCard({
             {isLinkedIn ? "LinkedIn" : job.platform || "Source"}
           </span>
           <span className="text-[10px] text-stone-500 dark:text-stone-400 font-medium">
-            {job.country === "France" ? "FR" : job.country === "Tunisie" ? "TN" : job.country || ""}
+            {(() => {
+              const c = (job.country || "").toLowerCase();
+              if (c.includes("france")) return "FR";
+              if (c.includes("tunisi")) return "TN";
+              if (c.includes("norw") || c.includes("norv")) return "NO";
+              if (c.includes("swed") || c.includes("suèd")) return "SE";
+              if (c.includes("switz") || c.includes("suiss")) return "CH";
+              if (c.includes("germ") || c.includes("allem")) return "DE";
+              if (c.includes("belg")) return "BE";
+              if (c.includes("uk") || c.includes("king") || c.includes("royaume")) return "UK";
+              if (c.includes("neth") || c.includes("pays-bas")) return "NL";
+              if (c.includes("spain") || c.includes("espag")) return "ES";
+              if (c.includes("ital")) return "IT";
+              return job.country ? job.country.slice(0, 2).toUpperCase() : "";
+            })()}
           </span>
         </div>
 
