@@ -1,249 +1,476 @@
 "use client";
 
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import {
-  ShieldCheck,
+  Send,
+  Trophy,
+  Briefcase,
+  TrendingUp,
+  Clock,
   Radar,
-  UserCheck,
-  KanbanSquare,
   ArrowRight,
   Sparkles,
-  Compass,
-  Zap,
-  FileText,
+  Award,
+  ChevronRight,
   Building2,
+  MapPin,
+  Calendar,
   CheckCircle2,
-  Clock,
-  Target,
+  XCircle,
+  HelpCircle,
 } from "lucide-react";
 import { useAppLanguage } from "@/lib/language-context";
 import { useAuth } from "@/components/auth/auth-context";
 import { LandingPage } from "@/components/landing/landing-page";
+import { fetchJobs, fetchPipelineMetrics, JobOffer, PipelineMetrics } from "@/lib/api";
 
 export default function HomePage() {
   const { user } = useAuth();
   const { t } = useAppLanguage();
 
+  const [jobs, setJobs] = useState<JobOffer[]>([]);
+  const [metrics, setMetrics] = useState<PipelineMetrics | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    let isMounted = true;
+
+    async function loadDashboardData() {
+      try {
+        setIsLoading(true);
+        const [jobsData, metricsData] = await Promise.all([
+          fetchJobs({ include_archived: false }).catch(() => []),
+          fetchPipelineMetrics().catch(() => null),
+        ]);
+        if (isMounted) {
+          setJobs(jobsData);
+          setMetrics(metricsData);
+        }
+      } catch (err) {
+        console.error("Erreur chargement données tableau de bord:", err);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    }
+
+    loadDashboardData();
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
+
+  // Calcul des candidatures postulées
+  const appliedJobs = useMemo(() => {
+    return jobs.filter((j) =>
+      ["APPLIED", "INTERVIEW", "OFFER", "REJECTED"].includes(j.status?.toUpperCase() || "")
+    );
+  }, [jobs]);
+
+  const totalApplied = useMemo(() => {
+    return metrics?.submitted_total ?? appliedJobs.length;
+  }, [metrics, appliedJobs]);
+
+  // Agrégation chronologique des candidatures (au cours du temps)
+  const timelineData = useMemo(() => {
+    const weeks: { [key: string]: { label: string; count: number; jobs: JobOffer[] } } = {};
+    const now = new Date();
+
+    // Générer les 6 dernières semaines
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+      const weekNum = Math.ceil(d.getDate() / 7);
+      const monthName = d.toLocaleDateString("fr-FR", { month: "short" });
+      const key = `S${weekNum} ${monthName}`;
+      weeks[key] = { label: key, count: 0, jobs: [] };
+    }
+
+    appliedJobs.forEach((job) => {
+      const dateStr = job.applied_at || job.updated_at || job.collected_at;
+      if (!dateStr) return;
+      const jobDate = new Date(dateStr);
+      const weekNum = Math.ceil(jobDate.getDate() / 7);
+      const monthName = jobDate.toLocaleDateString("fr-FR", { month: "short" });
+      const key = `S${weekNum} ${monthName}`;
+      if (weeks[key]) {
+        weeks[key].count += 1;
+        weeks[key].jobs.push(job);
+      }
+    });
+
+    return Object.values(weeks);
+  }, [appliedJobs]);
+
+  const maxTimelineCount = useMemo(() => {
+    const max = Math.max(...timelineData.map((d) => d.count), 1);
+    return max;
+  }, [timelineData]);
+
+  // Répartition par localisation (FR vs TN)
+  const locationStats = useMemo(() => {
+    let fr = 0;
+    let tn = 0;
+    appliedJobs.forEach((j) => {
+      const loc = (j.location || "").toLowerCase();
+      if (loc.includes("tunis") || loc.includes("tn") || loc.includes("sousse") || loc.includes("sfax")) {
+        tn++;
+      } else {
+        fr++;
+      }
+    });
+    return { fr, tn };
+  }, [appliedJobs]);
+
   if (!user) {
     return <LandingPage />;
   }
 
+  const interviewCount = metrics?.interview_count ?? appliedJobs.filter((j) => j.status === "INTERVIEW").length;
+  const offerCount = metrics?.offer_count ?? appliedJobs.filter((j) => j.status === "OFFER").length;
+  const rejectedCount = metrics?.rejected_count ?? appliedJobs.filter((j) => j.status === "REJECTED").length;
+  const activeCount = metrics?.active_count ?? appliedJobs.filter((j) => ["APPLIED", "INTERVIEW"].includes(j.status)).length;
+
+  const responseRate = totalApplied > 0
+    ? Math.round(((interviewCount + rejectedCount) / totalApplied) * 100)
+    : 0;
+
+  const interviewRate = totalApplied > 0
+    ? Math.round((interviewCount / totalApplied) * 100)
+    : 0;
+
   return (
-    <div className="p-6 sm:p-10 max-w-6xl mx-auto space-y-10">
-      {/* ── Hero Welcome ── */}
-      <div className="relative overflow-hidden rounded-3xl border border-[#EADBCC] dark:border-stone-800 bg-gradient-to-br from-[#FFFDF9] via-[#FFF7ED] to-[#F7EFE4] dark:from-stone-900 dark:via-stone-900/90 dark:to-stone-950 p-8 sm:p-12 shadow-artisan-card">
-        <div className="relative z-10 max-w-2xl space-y-5">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-orange-100/90 dark:bg-orange-950/60 border border-orange-200 dark:border-orange-800 text-orange-900 dark:text-orange-300 text-xs font-semibold">
-            <Sparkles className="w-3.5 h-3.5 text-primary" />
-            <span>{t("Stages PFE & Emploi Ingénieur 2027", "PFE Internships & Engineering Jobs 2027")}</span>
-          </div>
-
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-stone-900 dark:text-stone-100 font-display leading-[1.15]">
-            {t("Votre copilote intelligent pour décrocher le poste idéal.", "Your smart copilot to land the ideal position.")}
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8 font-sans">
+      
+      {/* ── En-tête du Tableau de Bord ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200/80 dark:border-stone-800 pb-5">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-stone-900 dark:text-stone-100 font-display">
+            {t("Tableau de Bord des Candidatures", "Application Dashboard")}
           </h1>
-
-          <p className="text-sm sm:text-base text-stone-600 dark:text-stone-300 leading-relaxed font-sans font-normal">
-            {t("Optimisez vos candidatures d'ingénieur en moins de 3 minutes par offre : adaptation ciblée de votre CV, calcul immédiat de votre score de compatibilité et suivi complet de vos envois et entretiens.", "Optimize your engineering applications in under 3 minutes per offer: targeted CV tailoring, instant match score and full tracking of your submissions and interviews.")}
+          <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mt-1">
+            {t(
+              "Suivi en temps réel de votre progression, vélocité d'envoi et retours recruteurs.",
+              "Real-time tracking of your progress, sending velocity, and recruiter feedback."
+            )}
           </p>
-
-          <div className="pt-2 flex flex-wrap items-center gap-4">
-            <Link
-              href="/radar"
-              className="px-6 py-3 rounded-xl bg-primary hover:bg-orange-700 text-white text-sm font-semibold flex items-center gap-2.5 tactile-button shadow-artisan-button transition-all"
-            >
-              <Radar className="w-4 h-4" />
-              <span>{t("Explorer les offres Radar", "Explore Radar offers")}</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link
-              href="/cv"
-              className="px-5 py-3 rounded-xl border border-stone-300 dark:border-stone-700 bg-white/90 dark:bg-stone-800 hover:bg-white dark:hover:bg-stone-700 text-sm font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-2 shadow-sm transition-all hover:border-orange-300 dark:hover:border-orange-500/50"
-            >
-              <FileText className="w-4 h-4 text-primary" />
-              <span>{t("Éditeur de CV vectoriel", "Vector CV editor")}</span>
-            </Link>
-          </div>
         </div>
 
-        {/* Ambient Warm Studio Glow */}
-        <div className="absolute right-0 top-0 bottom-0 w-1/2 bg-gradient-to-l from-orange-200/30 via-amber-100/25 to-transparent dark:from-orange-900/20 dark:via-amber-900/10 pointer-events-none" />
+        <div className="flex items-center gap-2.5">
+          <Link
+            href="/radar"
+            className="px-4 py-2 rounded-xl bg-primary hover:bg-[#C2410C] text-white text-xs font-semibold flex items-center gap-2 shadow-sm transition-all"
+          >
+            <Radar className="w-3.5 h-3.5" />
+            <span>{t("Explorer les offres", "Explore offers")}</span>
+          </Link>
+          <Link
+            href="/kanban"
+            className="px-4 py-2 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:bg-stone-50 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-xs"
+          >
+            <span>{t("Voir le Kanban", "View Kanban")}</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
       </div>
 
-      {/* ── Modules Clés du Cockpit ── */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
+      {/* ── 4 Cartes KPIs Principaux ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+        
+        {/* KPI 1 : Postes Postulés */}
+        <div className="p-5 sm:p-6 rounded-2xl border border-orange-200/80 dark:border-orange-900/40 bg-gradient-to-br from-white via-orange-50/20 to-orange-100/30 dark:from-stone-900 dark:via-stone-900 dark:to-orange-950/20 shadow-xs space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-stone-600 dark:text-stone-400">
+              {t("Postes Postulés", "Applied Positions")}
+            </span>
+            <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+              <Send className="w-4 h-4" />
+            </div>
+          </div>
           <div>
-            <h2 className="text-lg font-bold text-stone-900 dark:text-stone-100 font-display flex items-center gap-2">
-              <Compass className="w-4 h-4 text-primary" />
-              <span>{t("Cockpit de Candidature", "Application Cockpit")}</span>
-            </h2>
-            <p className="text-xs text-stone-600 dark:text-stone-400">
-              {t("Accédez directement aux outils d'ingénierie conçus pour votre recherche.", "Jump straight to the engineering tools built for your search.")}
+            <span className="text-3xl sm:text-4xl font-black font-display text-stone-900 dark:text-white tracking-tight">
+              {isLoading ? "—" : totalApplied}
+            </span>
+            <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span>
+                {t(
+                  `${activeCount} candidature${activeCount > 1 ? "s" : ""} active${activeCount > 1 ? "s" : ""}`,
+                  `${activeCount} active application${activeCount > 1 ? "s" : ""}`
+                )}
+              </span>
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {/* Card 1: Radar */}
-          <Link
-            href="/radar"
-            className="group p-5 rounded-2xl border border-border dark:border-stone-800 bg-white dark:bg-stone-900 shadow-artisan hover:border-orange-300 dark:hover:border-orange-500/50 hover:shadow-md transition-all flex flex-col justify-between space-y-4"
-          >
-            <div className="space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-950/40 border border-orange-200/80 dark:border-orange-800/50 flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
-                <Radar className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100 font-display group-hover:text-primary transition-colors">
-                  {t("Radar des Offres", "Offer Radar")}
-                </h3>
-                <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed">
-                  {t("Flux continu des portails carrières dédiés des 100 meilleures firmes IT (France & Tunisie).", "Continuous feed from the career portals of the top 100 IT firms (France & Tunisia).")}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center text-xs font-semibold text-primary gap-1 group-hover:translate-x-0.5 transition-transform">
-              <span>{t("Voir le flux", "View the feed")}</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </div>
-          </Link>
-
-          {/* Card 2: CV Studio */}
-          <Link
-            href="/cv"
-            className="group p-5 rounded-2xl border border-border dark:border-stone-800 bg-white dark:bg-stone-900 shadow-artisan hover:border-orange-300 dark:hover:border-orange-500/50 hover:shadow-md transition-all flex flex-col justify-between space-y-4"
-          >
-            <div className="space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/50 flex items-center justify-center text-amber-700 dark:text-amber-400 group-hover:scale-105 transition-transform">
-                <FileText className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100 font-display group-hover:text-primary transition-colors">
-                  {t("Éditeur de CV A4", "A4 CV Editor")}
-                </h3>
-                <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed">
-                  {t("Modifiez directement sur la feuille A4 et compilez des PDF vectoriels fidèles à 100%.", "Edit directly on the A4 sheet and compile 100% faithful vector PDFs.")}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center text-xs font-semibold text-primary gap-1 group-hover:translate-x-0.5 transition-transform">
-              <span>{t("Ouvrir l'éditeur", "Open the editor")}</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </div>
-          </Link>
-
-          {/* Card 3: Kanban */}
-          <Link
-            href="/kanban"
-            className="group p-5 rounded-2xl border border-border dark:border-stone-800 bg-white dark:bg-stone-900 shadow-artisan hover:border-orange-300 dark:hover:border-orange-500/50 hover:shadow-md transition-all flex flex-col justify-between space-y-4"
-          >
-            <div className="space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/50 flex items-center justify-center text-emerald-700 dark:text-emerald-400 group-hover:scale-105 transition-transform">
-                <KanbanSquare className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100 font-display group-hover:text-primary transition-colors">
-                  {t("Suivi Kanban", "Kanban Tracker")}
-                </h3>
-                <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed">
-                  {t("Pipeline visuel d'embauche : À postuler, Postulé, Entretiens et Offres finales reçues.", "Visual hiring pipeline: To apply, Applied, Interviews and Final offers received.")}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center text-xs font-semibold text-primary gap-1 group-hover:translate-x-0.5 transition-transform">
-              <span>{t("Consulter le suivi", "View tracking")}</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </div>
-          </Link>
-
-          {/* Card 4: Profil */}
-          <Link
-            href="/profile"
-            className="group p-5 rounded-2xl border border-border dark:border-stone-800 bg-white dark:bg-stone-900 shadow-artisan hover:border-orange-300 dark:hover:border-orange-500/50 hover:shadow-md transition-all flex flex-col justify-between space-y-4"
-          >
-            <div className="space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 flex items-center justify-center text-stone-700 dark:text-stone-300 group-hover:scale-105 transition-transform">
-                <UserCheck className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100 font-display group-hover:text-primary transition-colors">
-                  {t("Profil de Référence", "Reference Profile")}
-                </h3>
-                <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed">
-                  {t("Vos compétences et expériences certifiées. Source unique garantissant zéro hallucination.", "Your verified skills and experience. A single source of truth guaranteeing zero hallucination.")}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center text-xs font-semibold text-primary gap-1 group-hover:translate-x-0.5 transition-transform">
-              <span>{t("Mettre à jour", "Update")}</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </div>
-          </Link>
-        </div>
-      </div>
-
-      {/* ── Feature Pillar Cards ── */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Zap className="w-4 h-4 text-primary" />
-          <h2 className="text-lg font-bold text-stone-900 dark:text-stone-100 font-display">
-            {t("Piliers d'Excellence ArcApply", "ArcApply Pillars of Excellence")}
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="p-7 rounded-2xl border border-border dark:border-stone-800 bg-white dark:bg-stone-900 shadow-artisan space-y-4 hover:border-orange-200 dark:hover:border-orange-500/40 transition-colors">
-            <div className="w-12 h-12 rounded-xl bg-orange-100/80 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800/60 flex items-center justify-center text-primary shadow-sm">
-              <ShieldCheck className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 font-display">{t("Candidatures 100% Sincères", "100% Genuine Applications")}</h3>
-              <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed">
-                {t("Votre profil sert de référence unique. Vos CV et lettres mettent en valeur vos vraies expériences et compétences, sans jamais rien inventer.", "Your profile is the single reference. Your CVs and letters highlight your real experience and skills, without ever inventing anything.")}
-              </p>
-            </div>
-            <div className="pt-1">
-              <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700">
-                {t("Fidélité garantie", "Guaranteed accuracy")}
-              </span>
+        {/* KPI 2 : Entretiens Décrochés */}
+        <div className="p-5 sm:p-6 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-xs space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-stone-600 dark:text-stone-400">
+              {t("Entretiens Décrochés", "Interviews Secured")}
+            </span>
+            <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
+              <Briefcase className="w-4 h-4" />
             </div>
           </div>
+          <div>
+            <span className="text-3xl sm:text-4xl font-black font-display text-amber-600 dark:text-amber-400 tracking-tight">
+              {isLoading ? "—" : interviewCount}
+            </span>
+            <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1">
+              {t(
+                `Taux de convocation : ${interviewRate}%`,
+                `Interview rate: ${interviewRate}%`
+              )}
+            </p>
+          </div>
+        </div>
 
-          <div className="p-7 rounded-2xl border border-border dark:border-stone-800 bg-white dark:bg-stone-900 shadow-artisan space-y-4 hover:border-amber-200 dark:hover:border-amber-500/40 transition-colors">
-            <div className="w-12 h-12 rounded-xl bg-amber-100/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 flex items-center justify-center text-amber-700 dark:text-amber-400 shadow-sm">
-              <Target className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 font-display">{t("Score de Compatibilité ATS", "ATS Match Score")}</h3>
-              <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed">
-                {t("Mesurez instantanément la correspondance entre votre profil et les exigences du recruteur pour cibler les offres où vous avez le plus de chances.", "Instantly measure how your profile matches the recruiter's requirements to target the offers where you stand the best chance.")}
-              </p>
-            </div>
-            <div className="pt-1">
-              <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
-                {t("Score déterministe", "Deterministic score")}
-              </span>
+        {/* KPI 3 : Taux de Réponse Recruteurs */}
+        <div className="p-5 sm:p-6 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-xs space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-stone-600 dark:text-stone-400">
+              {t("Taux de Réponse", "Response Rate")}
+            </span>
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+              <TrendingUp className="w-4 h-4" />
             </div>
           </div>
+          <div>
+            <span className="text-3xl sm:text-4xl font-black font-display text-emerald-600 dark:text-emerald-400 tracking-tight">
+              {isLoading ? "—" : `${responseRate}%`}
+            </span>
+            <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1">
+              {t(
+                `${interviewCount + rejectedCount} réponse${interviewCount + rejectedCount > 1 ? "s" : ""} reçue${interviewCount + rejectedCount > 1 ? "s" : ""}`,
+                `${interviewCount + rejectedCount} response${interviewCount + rejectedCount > 1 ? "s" : ""} received`
+              )}
+            </p>
+          </div>
+        </div>
 
-          <div className="p-7 rounded-2xl border border-border dark:border-stone-800 bg-white dark:bg-stone-900 shadow-artisan space-y-4 hover:border-emerald-200 dark:hover:border-emerald-500/40 transition-colors">
-            <div className="w-12 h-12 rounded-xl bg-emerald-100/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-center text-emerald-700 dark:text-emerald-400 shadow-sm">
-              <KanbanSquare className="w-6 h-6" />
+        {/* KPI 4 : Offres Finales Obtenues */}
+        <div className="p-5 sm:p-6 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-xs space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-stone-600 dark:text-stone-400">
+              {t("Offres Finales", "Final Offers")}
+            </span>
+            <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-600 dark:text-purple-400">
+              <Trophy className="w-4 h-4" />
             </div>
-            <div>
-              <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 font-display">{t("Suivi des Candidatures", "Application Tracking")}</h3>
-              <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed">
-                {t("Visualisez chaque étape de vos candidatures, de la découverte à l'offre finale, avec détection automatique des retours recruteurs.", "See every stage of your applications, from discovery to final offer, with automatic detection of recruiter replies.")}
-              </p>
-            </div>
-            <div className="pt-1">
-              <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
-                {t("Contrôle total", "Full control")}
-              </span>
-            </div>
+          </div>
+          <div>
+            <span className="text-3xl sm:text-4xl font-black font-display text-purple-600 dark:text-purple-400 tracking-tight">
+              {isLoading ? "—" : offerCount}
+            </span>
+            <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1">
+              {offerCount > 0
+                ? t("Proposition reçue !", "Offer received!")
+                : t("En cours d'obtention", "In progress")}
+            </p>
           </div>
         </div>
       </div>
+
+      {/* ── Graphiques Clés : Évolution Temporelle & Entonnoir de Conversion ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* Graphique 1 : Postulations au cours du temps (lg: 8 cols) */}
+        <div className="lg:col-span-8 p-6 sm:p-7 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-xs space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h2 className="text-base font-bold text-stone-900 dark:text-stone-100 font-display flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-primary" />
+                <span>{t("Postulations au Cours du Temps", "Applications Over Time")}</span>
+              </h2>
+              <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
+                {t(
+                  "Volume hebdomadaire de candidatures transmises aux recruteurs.",
+                  "Weekly volume of applications sent to recruiters."
+                )}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400">
+                {t("6 dernières semaines", "Last 6 weeks")}
+              </span>
+            </div>
+          </div>
+
+          {/* Histogramme des candidatures */}
+          <div className="pt-4">
+            <div className="h-48 flex items-end justify-between gap-3 sm:gap-6 border-b border-stone-200 dark:border-stone-800 pb-2">
+              {timelineData.map((d, index) => {
+                const heightPercent = maxTimelineCount > 0 ? Math.max((d.count / maxTimelineCount) * 100, d.count > 0 ? 12 : 4) : 4;
+                const isCurrentWeek = index === timelineData.length - 1;
+
+                return (
+                  <div key={d.label} className="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
+                    <span className="text-[11px] font-bold text-stone-700 dark:text-stone-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {d.count}
+                    </span>
+                    <div className="w-full max-w-[42px] bg-stone-100 dark:bg-stone-800 rounded-t-xl h-full flex items-end p-1">
+                      <div
+                        style={{ height: `${heightPercent}%` }}
+                        className={`w-full rounded-lg transition-all duration-500 ${
+                          d.count > 0
+                            ? isCurrentWeek
+                              ? "bg-primary shadow-xs shadow-orange-500/20"
+                              : "bg-orange-400 dark:bg-orange-500/80"
+                            : "bg-stone-200/60 dark:bg-stone-800"
+                        }`}
+                      />
+                    </div>
+                    <span className="text-[10px] font-medium text-stone-500 dark:text-stone-400 truncate max-w-full">
+                      {d.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex items-center justify-between pt-3 text-[11px] text-stone-500 dark:text-stone-400">
+              <span>{t("Vélocité moyenne : ", "Average velocity: ")} <strong className="text-stone-800 dark:text-stone-200">{Math.round(totalApplied / 6)} / sem.</strong></span>
+              <span>{t("Total période : ", "Period total: ")} <strong className="text-stone-800 dark:text-stone-200">{totalApplied} postulations</strong></span>
+            </div>
+          </div>
+        </div>
+
+        {/* Graphique 2 : Entonnoir & Répartition Marchés (lg: 4 cols) */}
+        <div className="lg:col-span-4 p-6 sm:p-7 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-xs space-y-6 flex flex-col justify-between">
+          <div className="space-y-1">
+            <h2 className="text-base font-bold text-stone-900 dark:text-stone-100 font-display">
+              {t("Entonnoir de Conversion", "Conversion Funnel")}
+            </h2>
+            <p className="text-xs text-stone-500 dark:text-stone-400">
+              {t("Rendement des étapes du pipeline.", "Yield across pipeline stages.")}
+            </p>
+          </div>
+
+          {/* Étapes Entonnoir */}
+          <div className="space-y-3.5">
+            {/* Étape 1 : Postulées */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-xs font-semibold text-stone-700 dark:text-stone-300">
+                <span>{t("1. Postulées", "1. Applied")}</span>
+                <span>{totalApplied}</span>
+              </div>
+              <div className="w-full h-2 rounded-full bg-stone-100 dark:bg-stone-800 overflow-hidden">
+                <div className="h-full bg-primary rounded-full" style={{ width: "100%" }} />
+              </div>
+            </div>
+
+            {/* Étape 2 : Retours Reçus */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-xs font-semibold text-stone-700 dark:text-stone-300">
+                <span>{t("2. Retours Reçus", "2. Responses")}</span>
+                <span>{interviewCount + rejectedCount}</span>
+              </div>
+              <div className="w-full h-2 rounded-full bg-stone-100 dark:bg-stone-800 overflow-hidden">
+                <div
+                  className="h-full bg-emerald-500 rounded-full"
+                  style={{ width: `${Math.min(responseRate, 100)}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Étape 3 : Entretiens */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-xs font-semibold text-stone-700 dark:text-stone-300">
+                <span>{t("3. Entretiens", "3. Interviews")}</span>
+                <span>{interviewCount}</span>
+              </div>
+              <div className="w-full h-2 rounded-full bg-stone-100 dark:bg-stone-800 overflow-hidden">
+                <div
+                  className="h-full bg-amber-500 rounded-full"
+                  style={{ width: `${Math.min(interviewRate, 100)}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Étape 4 : Offres */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-xs font-semibold text-stone-700 dark:text-stone-300">
+                <span>{t("4. Offres Finales", "4. Offers")}</span>
+                <span>{offerCount}</span>
+              </div>
+              <div className="w-full h-2 rounded-full bg-stone-100 dark:bg-stone-800 overflow-hidden">
+                <div
+                  className="h-full bg-purple-500 rounded-full"
+                  style={{ width: `${totalApplied > 0 ? (offerCount / totalApplied) * 100 : 0}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Répartition géographique compacte */}
+          <div className="pt-4 border-t border-stone-200 dark:border-stone-800 flex items-center justify-between text-xs">
+            <span className="text-stone-500">{t("Répartition :", "Distribution:")}</span>
+            <div className="flex items-center gap-3 font-semibold">
+              <span className="text-stone-800 dark:text-stone-200">FR: {locationStats.fr}</span>
+              <span className="text-stone-800 dark:text-stone-200">TN: {locationStats.tn}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Dernières Candidatures Envoyées ── */}
+      {appliedJobs.length > 0 && (
+        <div className="p-6 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-bold text-stone-900 dark:text-stone-100 font-display">
+              {t("Dernières Candidatures en Cours", "Recent Active Applications")}
+            </h2>
+            <Link
+              href="/kanban"
+              className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
+            >
+              <span>{t("Gérer le pipeline", "Manage pipeline")}</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          <div className="divide-y divide-stone-100 dark:divide-stone-800">
+            {appliedJobs.slice(0, 5).map((job) => (
+              <div key={job.id} className="py-3 flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <h3 className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100 truncate">
+                    {job.title}
+                  </h3>
+                  <div className="flex items-center gap-2 text-[11px] text-stone-500 dark:text-stone-400 mt-0.5">
+                    <span className="font-semibold text-stone-700 dark:text-stone-300">{job.company}</span>
+                    <span>•</span>
+                    <span>{job.location || "France / Tunisie"}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                      job.status === "INTERVIEW"
+                        ? "bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/60"
+                        : job.status === "OFFER"
+                        ? "bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 border-purple-200 dark:border-purple-800/60"
+                        : job.status === "REJECTED"
+                        ? "bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border-rose-200 dark:border-rose-800/60"
+                        : "bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800/60"
+                    }`}
+                  >
+                    {job.status === "INTERVIEW"
+                      ? t("Entretien", "Interview")
+                      : job.status === "OFFER"
+                      ? t("Offre reçue", "Offer")
+                      : job.status === "REJECTED"
+                      ? t("Refusé", "Rejected")
+                      : t("Postulé", "Applied")}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
+
