@@ -103,9 +103,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Permettre l'accès aux routes publiques (Landing page sur "/", "/landing" et page de login dédiée)
+  // Permettre l'accès aux routes publiques (Landing page sur "/", "/landing", pages d'authentification et de réinitialisation)
   if (!user) {
-    const isPublicRoute = pathname === "/" || pathname === "/landing" || pathname === "/login";
+    const isPublicRoute =
+      pathname === "/" ||
+      pathname === "/landing" ||
+      pathname === "/login" ||
+      pathname === "/forgot-password" ||
+      pathname === "/reset-password";
     if (isPublicRoute) {
       return (
         <AuthContext.Provider value={{ user, token, isLoading, login, logout, register }}>
