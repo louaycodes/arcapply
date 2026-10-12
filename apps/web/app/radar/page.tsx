@@ -291,10 +291,7 @@ export default function RadarPage() {
       setIsCrawlModalOpen(true);
       setTotalPfeDiscoveredInCrawl(0);
 
-      const targetPlatforms =
-        selectedPlatformsToCrawl.length > 0
-          ? selectedPlatformsToCrawl
-          : AVAILABLE_PLATFORMS.map((p) => p.id);
+      const targetPlatforms = AVAILABLE_PLATFORMS.map((p) => p.id);
 
       const initialStats: Record<
         string,
@@ -544,27 +541,6 @@ export default function RadarPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleClearAllJobs}
-            disabled={isLoading || isClearing || jobs.length === 0}
-            className="px-3 py-2 rounded-lg border border-destructive/20 bg-card hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors flex items-center gap-1.5 text-xs font-medium disabled:opacity-40 cursor-pointer"
-            title={t("Effacer la liste des offres", "Clear the offer list")}
-          >
-            <Trash2 className={`w-3.5 h-3.5 text-destructive ${isClearing ? "animate-spin" : ""}`} />
-            <span className="text-destructive hidden sm:inline">{isClearing ? t("Suppression...", "Deleting...") : t("Vider", "Clear")}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={loadJobs}
-            disabled={isLoading}
-            className="p-2 rounded-lg border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-            title={t("Rafraîchir les offres", "Refresh offers")}
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
-          </button>
-
           <button
             type="button"
             onClick={() => setShowCollectModal(true)}
@@ -972,94 +948,35 @@ export default function RadarPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
-                  {t("Spécialités, métiers ou technologies ciblés", "Target roles, specialties or technologies")}
+                  {t("Mots-clés, technologies ou métiers recherchés", "Keywords, technologies or targeted roles")}
                 </label>
                 <input
                   type="text"
+                  autoFocus
                   value={keywordsInput}
                   onChange={(e) => setKeywordsInput(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-muted/60 border border-border text-xs text-foreground focus:outline-none focus:border-primary"
-                  placeholder={t("ex: DevOps, Cloud, Software, Data, IA, Fullstack", "e.g. DevOps, Cloud, Software, Data, AI, Fullstack")}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleLaunchCollect();
+                    }
+                  }}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-muted/60 border border-border text-xs text-foreground focus:outline-none focus:border-primary placeholder:text-muted-foreground/60 transition-colors"
+                  placeholder={t("ex: DevOps, Cloud, Python, Data, IA, Fullstack, Cyber", "e.g. DevOps, Cloud, Python, Data, AI, Fullstack, Cyber")}
                 />
-                <div className="mt-2 p-2.5 rounded-lg bg-primary/10 border border-primary/20 text-[11px] text-foreground leading-relaxed flex items-start gap-2">
-                  <ShieldCheck className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                  <span>
-                    {t(
-                      "ArcApply est dédié à 100% aux stages PFE. Entrez simplement votre domaine technique : l'application génère automatiquement les requêtes de stage ciblées et écarte strictement les offres non-PFE.",
-                      "ArcApply is 100% dedicated to PFE internships. Simply enter your technical domain: the app automatically generates targeted internship queries and strictly rejects non-PFE listings."
-                    )}
-                  </span>
-                </div>
               </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-xs font-semibold text-muted-foreground">
-                    {t(
-                      `Sources prioritaires (${selectedPlatformsToCrawl.length}/${AVAILABLE_PLATFORMS.length} actives)`,
-                      `Priority sources (${selectedPlatformsToCrawl.length}/${AVAILABLE_PLATFORMS.length} active)`
-                    )}
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (selectedPlatformsToCrawl.length === AVAILABLE_PLATFORMS.length) {
-                        setSelectedPlatformsToCrawl([]);
-                      } else {
-                        setSelectedPlatformsToCrawl(AVAILABLE_PLATFORMS.map((p) => p.id));
-                      }
-                    }}
-                    className="text-[11px] text-primary hover:underline font-semibold cursor-pointer"
-                  >
-                    {selectedPlatformsToCrawl.length === AVAILABLE_PLATFORMS.length
-                      ? t("Tout désélectionner", "Deselect all")
-                      : t("Tout sélectionner", "Select all")}
-                  </button>
+              <div className="p-3.5 rounded-xl bg-orange-50/80 dark:bg-orange-950/40 border border-orange-200/80 dark:border-orange-800/60 text-xs text-stone-700 dark:text-stone-300 leading-relaxed flex items-start gap-3">
+                <Radar className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold text-stone-900 dark:text-stone-100">
+                    {t("Exploration automatique de toutes les sources :", "Automatic exploration across all sources:")}
+                  </span>{" "}
+                  {t(
+                    "L'ensemble des 27 plateformes et portails carrières (France & Tunisie) sera automatiquement exploré pour vos mots-clés, sans sélection manuelle requise.",
+                    "All 27 platforms and career portals (France & Tunisia) will be automatically explored for your keywords, no manual selection required."
+                  )}
                 </div>
-                <div className="grid grid-cols-1 gap-1.5 max-h-60 overflow-y-auto pr-1">
-                  {AVAILABLE_PLATFORMS.map((plat) => {
-                    const isChecked = selectedPlatformsToCrawl.includes(plat.id);
-                    const isTop100 = plat.id === "top100_enterprises";
-                    return (
-                      <label
-                        key={plat.id}
-                        className={`flex items-center justify-between p-2 rounded-lg border text-xs cursor-pointer transition-all ${
-                          isTop100
-                            ? isChecked
-                              ? "border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-950 dark:text-amber-200 font-semibold shadow-xs"
-                              : "border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900/60 text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800"
-                            : isChecked
-                            ? "border-orange-300 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/40 text-orange-950 dark:text-orange-200 font-semibold shadow-xs"
-                            : "border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900/60 text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedPlatformsToCrawl((prev) => [...prev, plat.id]);
-                              } else {
-                                setSelectedPlatformsToCrawl((prev) => prev.filter((id) => id !== plat.id));
-                              }
-                            }}
-                            className="rounded accent-primary"
-                          />
-                          <span>{language === "en" && plat.labelEn ? plat.labelEn : plat.label}</span>
-                        </div>
-                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted/80 text-muted-foreground">
-                          {plat.country === "Tunisie" ? t("Tunisie", "Tunisia") : plat.country}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 text-[11px] text-muted-foreground leading-relaxed">
-                <span className="font-bold text-primary">{t("Recherche directe :", "Direct search:")}</span>{" "}
-                {t("Les sites carrières des meilleures entreprises sont consultés directement pour trouver les offres les plus récentes.", "The career sites of top companies are queried directly to find the most recent offers.")}
               </div>
             </div>
 
