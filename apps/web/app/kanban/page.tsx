@@ -30,6 +30,11 @@ import {
   CheckCircle2,
   MapPin,
 } from "lucide-react";
+import {
+  ALL_RADAR_COUNTRIES,
+  matchJobCountry,
+  getCanonicalCountryLabel,
+} from "@/lib/countries";
 
 const PRIMARY_FILTER_COUNTRIES = [
   { id: "all", label: "Tous", labelEn: "All", badge: "ALL" },
@@ -166,16 +171,13 @@ export default function KanbanPage() {
     let result = jobs;
 
     if (selectedCountry && selectedCountry !== "all") {
-      const target = selectedCountry.toLowerCase();
       result = result.filter((j) => {
-        const country = (j.country || "").toLowerCase();
-        const loc = (j.location || "").toLowerCase();
-        return (
-          country.includes(target) ||
-          loc.includes(target) ||
-          (target === "france" && loc.includes("paris")) ||
-          (target === "tunisie" && (loc.includes("tunis") || loc.includes("ariana") || loc.includes("sousse")))
-        );
+        if (selectedCountry === "international") {
+          const isFR = matchJobCountry(j.country || j.location, "France");
+          const isTN = matchJobCountry(j.country || j.location, "Tunisie");
+          return !isFR && !isTN;
+        }
+        return matchJobCountry(j.country || j.location, selectedCountry);
       });
     }
 
@@ -498,33 +500,36 @@ export default function KanbanPage() {
             </button>
           )}
 
-          {/* Menu déroulant pour tous les autres pays découverts */}
-          {uniqueCountriesInJobs.some((c) => !PRIMARY_FILTER_COUNTRIES.some((p) => p.id.toLowerCase() === c.toLowerCase())) && (
-            <div className="relative pl-1">
-              <select
-                value={PRIMARY_FILTER_COUNTRIES.some((p) => p.id.toLowerCase() === selectedCountry.toLowerCase()) ? "" : selectedCountry}
-                onChange={(e) => {
-                  if (e.target.value) setSelectedCountry(e.target.value);
-                }}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium bg-muted/40 border border-border text-muted-foreground hover:text-foreground focus:outline-none cursor-pointer ${
-                  !PRIMARY_FILTER_COUNTRIES.some((p) => p.id.toLowerCase() === selectedCountry.toLowerCase()) && selectedCountry !== "all"
-                    ? "font-bold text-primary border-primary"
-                    : ""
-                }`}
-              >
-                <option value="" disabled>
-                  {t("Plus de pays...", "More countries...")}
+          {/* Menu déroulant pour tous les pays disponibles (18+) */}
+          <div className="relative pl-1">
+            <select
+              value={PRIMARY_FILTER_COUNTRIES.some((p) => p.id.toLowerCase() === selectedCountry.toLowerCase()) ? "" : selectedCountry}
+              onChange={(e) => {
+                if (e.target.value) setSelectedCountry(e.target.value);
+              }}
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium bg-muted/40 border border-border text-muted-foreground hover:text-foreground focus:outline-none cursor-pointer ${
+                !PRIMARY_FILTER_COUNTRIES.some((p) => p.id.toLowerCase() === selectedCountry.toLowerCase()) && selectedCountry !== "all"
+                  ? "font-bold text-primary border-primary"
+                  : ""
+              }`}
+            >
+              <option value="" disabled>
+                {t("Tous les pays (18+)...", "All countries (18+)...")}
+              </option>
+              {ALL_RADAR_COUNTRIES.filter((c) => c.id !== "all").map((c) => (
+                <option key={c.id} value={c.id}>
+                  [{c.badge}] {language === "en" ? c.labelEn : c.label} ({countryCounts[c.id] || 0})
                 </option>
-                {uniqueCountriesInJobs
-                  .filter((c) => !PRIMARY_FILTER_COUNTRIES.some((p) => p.id.toLowerCase() === c.toLowerCase()))
-                  .map((c) => (
-                    <option key={c} value={c}>
-                      {c} ({countryCounts[c] || 0})
-                    </option>
-                  ))}
-              </select>
-            </div>
-          )}
+              ))}
+              {uniqueCountriesInJobs
+                .filter((c) => !ALL_RADAR_COUNTRIES.some((rc) => rc.id.toLowerCase() === c.toLowerCase()))
+                .map((c) => (
+                  <option key={c} value={c}>
+                    {c} ({countryCounts[c] || 0})
+                  </option>
+                ))}
+            </select>
+          </div>
         </div>
 
         {/* Info compteur d'offres filtrées */}
