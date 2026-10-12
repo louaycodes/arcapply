@@ -108,16 +108,10 @@ export default function ProfilePage() {
   const [status, setStatus] = useState<ProfileCompletenessStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [isDownloadingCv, setIsDownloadingCv] = useState(false);
-  const [cvDownloadLang, setCvDownloadLang] = useState<"fr" | "en">(appLanguage);
   const [notification, setNotification] = useState<{
     type: "success" | "error" | "info";
     message: string;
   } | null>(null);
-
-  useEffect(() => {
-    setCvDownloadLang(appLanguage);
-  }, [appLanguage]);
 
   const loadData = async () => {
     try {
@@ -228,43 +222,7 @@ export default function ProfilePage() {
     }
   };
 
-  const handleDownloadCV = async () => {
-    if (!profile) return;
-    try {
-      setIsDownloadingCv(true);
-      // Sauvegarde automatique préalable pour garantir que tous les champs saisis sont pris en compte
-      const profileToSave: MasterProfile = {
-        ...profile,
-        headline: profile.headline || profile.headline_fr,
-        headline_fr: profile.headline_fr || profile.headline,
-        bio: profile.bio || profile.bio_fr,
-        bio_fr: profile.bio_fr || profile.bio,
-      };
-      await updateProfile(profileToSave);
-      const blob = await downloadProfileCVPdf(cvDownloadLang);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      const cleanName = (profile.full_name.trim() || "Candidat").replace(/[^a-zA-Z0-9_\u00C0-\u017F-]/g, "_");
-      a.download = `CV_${cleanName}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      setNotification({
-        type: "success",
-        message: t("Votre CV complet a été téléchargé avec succès (format PDF A4 vectoriel) !", "Your complete CV was downloaded successfully (A4 vector PDF)!"),
-      });
-    } catch (err: any) {
-      setNotification({
-        type: "error",
-        message: err.message || t("Échec du téléchargement du CV.", "CV download failed."),
-      });
-    } finally {
-      setIsDownloadingCv(false);
-      setTimeout(() => setNotification(null), 5000);
-    }
-  };
+
 
 
   // Education Helpers
@@ -590,148 +548,6 @@ export default function ProfilePage() {
           <span>{notification.message}</span>
         </div>
       )}
-
-      {/* Profile Completeness Pie Chart Card */}
-      <div className="p-5 sm:p-6 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-artisan flex flex-col sm:flex-row items-center gap-5 sm:gap-6">
-        <div className="relative w-20 h-20 shrink-0 flex items-center justify-center">
-          <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 36 36">
-            <path
-              className="text-stone-100 dark:text-stone-800"
-              strokeWidth="3.5"
-              stroke="currentColor"
-              fill="none"
-              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-            />
-            <path
-              className={`transition-all duration-700 ease-out ${
-                percentage === 100
-                  ? "text-emerald-500"
-                  : percentage >= 50
-                  ? "text-amber-500"
-                  : "text-rose-500"
-              }`}
-              strokeDasharray={`${percentage}, 100`}
-              strokeWidth="3.5"
-              strokeLinecap="round"
-              stroke="currentColor"
-              fill="none"
-              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-            />
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="font-bold text-sm text-stone-900 dark:text-stone-100 font-mono leading-none">
-              {percentage}%
-            </span>
-          </div>
-        </div>
-
-        <div className="flex-1 min-w-0 text-center sm:text-left space-y-1.5">
-          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-            <h2 className="text-base font-bold text-stone-900 dark:text-stone-100 font-display">
-              {percentage === 100
-                ? t("Master Profile Complet & Validé", "Master Profile Complete & Validated")
-                : t("Niveau de Complétude du Compte", "Account Completeness Level")}
-            </h2>
-            <span
-              className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
-                percentage === 100
-                  ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60"
-                  : "bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border-amber-200 dark:border-amber-800/60"
-              }`}
-            >
-              {percentage === 100 ? t("100% Prêt à postuler", "100% Ready to apply") : `${percentage}%`}
-            </span>
-          </div>
-
-          <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed">
-            {percentage === 100
-              ? t(
-                  "Toutes les sections indispensables (formations, expériences, compétences) sont renseignées pour garantir un ciblage déterministe.",
-                  "All essential sections (education, experiences, skills) are filled to ensure deterministic matching."
-                )
-              : t(
-                  "Remplissez les informations ci-dessous pour optimiser vos scores de correspondance ATS et vos candidatures.",
-                  "Fill in the information below to optimize your ATS matching scores and applications."
-                )}
-          </p>
-
-          {!isComplete && status && status.missing_fields && status.missing_fields.length > 0 && (
-            <div className="pt-1 flex flex-wrap items-center justify-center sm:justify-start gap-1.5">
-              {status.missing_fields.map((field, idx) => (
-                <span
-                  key={idx}
-                  className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 border border-stone-200 dark:border-stone-700"
-                >
-                  {localizeServerMessage(field)}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Language & Mirror Synchronization Bar */}
-      <div className="p-4 sm:p-5 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-artisan flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-orange-50 dark:bg-orange-950/40 border border-orange-200/60 dark:border-orange-800/60 flex items-center justify-center text-primary font-bold">
-            <Globe2 className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-stone-900 dark:text-stone-100 uppercase tracking-wider font-mono">
-                {t("Langue d'édition", "Editing Language")}
-              </span>
-              <div className="inline-flex rounded-lg bg-stone-100 dark:bg-stone-800 p-0.5 border border-stone-200 dark:border-stone-700">
-                <button
-                  type="button"
-                  onClick={() => setActiveLangTab("fr")}
-                  className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
-                    activeLangTab === "fr"
-                      ? "bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 shadow-xs"
-                      : "text-stone-500 hover:text-stone-900 dark:hover:text-stone-100"
-                  }`}
-                >
-                  [FR] Français
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveLangTab("en")}
-                  className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
-                    activeLangTab === "en"
-                      ? "bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 shadow-xs"
-                      : "text-stone-500 hover:text-stone-900 dark:hover:text-stone-100"
-                  }`}
-                >
-                  [EN] English (Miroir)
-                </button>
-              </div>
-            </div>
-            <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5">
-              {activeLangTab === "fr"
-                ? t("Vous éditez votre profil en français. Une seule saisie suffit.", "Editing your profile in French. Single input is all you need.")
-                : t("Aperçu et retouche de la version anglaise auto-synchronisée.", "Preview and refinement of the auto-synchronized English version.")}
-            </p>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleSyncMirror}
-          disabled={isSyncingMirror || isSaving}
-          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-orange-50 hover:bg-orange-100 dark:bg-orange-950/40 dark:hover:bg-orange-900/60 border border-orange-200 dark:border-orange-800/60 text-primary text-xs font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50"
-          title={t(
-            "Traduit et synchronise automatiquement toutes les sections vers l'autre langue via l'IA.",
-            "Automatically translates and synchronizes all sections to the other language via AI."
-          )}
-        >
-          {isSyncingMirror ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <Sparkles className="w-3.5 h-3.5" />
-          )}
-          <span>{isSyncingMirror ? t("Synchronisation...", "Synchronizing...") : t("Synchroniser le Miroir (IA)", "Sync Mirror Profile (AI)")}</span>
-        </button>
-      </div>
 
       {/* Profile Form Sections */}
       <div className="space-y-8">
@@ -1693,115 +1509,6 @@ export default function ProfilePage() {
               ))}
             </div>
           )}
-        </div>
-
-        {/* Section 9: Bouton de Téléchargement du CV Complet (DEMANDE FORMELLE DE L'UTILISATEUR) */}
-        <div className="p-6 md:p-8 rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-card via-card to-primary/5 shadow-xl space-y-6">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary flex-shrink-0">
-                <FileDown className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-foreground font-display flex items-center gap-2">
-                  <span>{t("Télécharger mon CV Complet (PDF A4 Vectoriel)", "Download my Complete CV (A4 Vector PDF)")}</span>
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60">
-                    {t("100% Souverain", "100% Sovereign")}
-                  </span>
-                </h3>
-                <p className="text-xs text-muted-foreground mt-1 max-w-2xl leading-relaxed">
-                  {t("Générez et téléchargez instantanément votre CV vectoriel A4 officiel compilé par le moteur Playwright. Ce CV compile l'intégralité de vos informations déjà saisies :", "Instantly generate and download your official A4 vector CV compiled by the Playwright engine. This CV includes all the information you have entered:")} 
-                  <span className="font-semibold text-foreground"> {t("Coordonnées, Formations, Stages, Expériences, Projets, Compétences, Activités Extra-Professionnelles et Langues", "Contact details, Education, Internships, Experience, Projects, Skills, Extracurricular Activities and Languages")}</span>.
-                </p>
-              </div>
-            </div>
-
-            {/* Language toggle + Download trigger */}
-            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-              <div className="flex items-center rounded-lg border border-border bg-muted/60 p-1 text-xs font-semibold">
-                <button
-                  type="button"
-                  onClick={() => setCvDownloadLang("fr")}
-                  className={`px-3 py-1.5 rounded-md transition-all cursor-pointer ${
-                    cvDownloadLang === "fr"
-                      ? "bg-primary text-white shadow-xs"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {t("Version FR", "FR version")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCvDownloadLang("en")}
-                  className={`px-3 py-1.5 rounded-md transition-all cursor-pointer ${
-                    cvDownloadLang === "en"
-                      ? "bg-primary text-white shadow-xs"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {t("Version EN", "EN version")}
-                </button>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleDownloadCV}
-                disabled={isDownloadingCv}
-                className="flex-1 md:flex-none px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-sm font-bold flex items-center justify-center gap-2.5 shadow-lg shadow-primary/25 hover:shadow-primary/35 transition-all disabled:opacity-60 cursor-pointer"
-              >
-                {isDownloadingCv ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>{t("Compilation PDF...", "Compiling PDF...")}</span>
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-4 h-4" />
-                    <span>{t("Télécharger mon CV (PDF)", "Download my CV (PDF)")}</span>
-                  </>
-                )}
-              </button>
-
-              <Link
-                href="/cv"
-                className="px-3.5 py-2.5 rounded-xl border border-border/80 bg-card hover:bg-muted text-xs font-medium text-foreground flex items-center gap-1.5 transition-colors"
-                title={t("Ouvrir le Studio CV pour personnaliser les marges, polices ou sections", "Open CV Studio to customize margins, fonts or sections")}
-              >
-                <span>{t("Studio CV", "CV Studio")}</span>
-                <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
-              </Link>
-            </div>
-          </div>
-
-          {/* Quick checklist of included elements */}
-          <div className="pt-4 border-t border-border/40 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1.5">
-              <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>{t(`${stages.length} Stage${stages.length > 1 ? "s" : ""}`, `${stages.length} Internship${stages.length === 1 ? "" : "s"}`)}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>{t(`${profile.projects.length} Projet${profile.projects.length > 1 ? "s" : ""}`, `${profile.projects.length} Project${profile.projects.length === 1 ? "" : "s"}`)}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>
-                {t(
-                  `${(profile.extracurriculars || []).length} Activité${(profile.extracurriculars || []).length > 1 ? "s" : ""} extra`,
-                  `${(profile.extracurriculars || []).length} Extracurricular${(profile.extracurriculars || []).length === 1 ? "" : "s"}`
-                )}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>
-                {t(
-                  `${(profile.languages || []).length} Langue${(profile.languages || []).length > 1 ? "s" : ""}`,
-                  `${(profile.languages || []).length} Language${(profile.languages || []).length === 1 ? "" : "s"}`
-                )}
-              </span>
-            </div>
-          </div>
         </div>
       </div>
 
