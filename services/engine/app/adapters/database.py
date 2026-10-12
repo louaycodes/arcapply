@@ -3,6 +3,8 @@ from sqlmodel import Session, SQLModel, create_engine, select
 from app.config import settings
 from app.domain.models import MasterProfile
 
+from sqlalchemy import event, text
+
 _engine = None
 
 
@@ -13,14 +15,21 @@ def get_engine():
         _engine = create_engine(
             settings.database_url,
             echo=False,
-            connect_args={"check_same_thread": False},
+            connect_args={"check_same_thread": False, "timeout": 30.0},
         )
+        if "sqlite" in settings.database_url:
+            @event.listens_for(_engine, "connect")
+            def set_sqlite_pragma(dbapi_connection, connection_record):
+                cursor = dbapi_connection.cursor()
+                cursor.execute("PRAGMA journal_mode=WAL")
+                cursor.execute("PRAGMA busy_timeout=30000")
+                cursor.execute("PRAGMA synchronous=NORMAL")
+                cursor.close()
     return _engine
 
 
 def _migrate_db(engine) -> None:
     """Migrations additives idempotentes pour SQLite."""
-    from sqlalchemy import text
     with engine.connect() as conn:
         try:
             conn.execute(text("ALTER TABLE master_profiles ADD COLUMN search_mode VARCHAR DEFAULT 'PFE'"))
