@@ -122,24 +122,34 @@ class BaseEuropeanWebJobConnector(BaseJobConnector):
                 continue
 
             job_url = urllib.parse.urljoin(self.base_url, href)
-            if job_url in seen_urls:
+            if job_url in seen_urls or job_url.rstrip("/") == self.base_url.rstrip("/"):
+                continue
+            if job_url.rstrip("/").endswith(("/jobs", "/emplois", "/vacatures", "/karriere")):
                 continue
             seen_urls.add(job_url)
 
             # Titre
             title_el = card.select_one(self.title_selector)
             title = (title_el.get_text(strip=True) if title_el else link_el.get_text(strip=True)) or "Opportunité"
-            # Nettoyage
+            # Nettoyage et suppression d'émojis tiers
+            title = re.sub(r"[^\w\s\-\.,/&()+#'\"–—]", "", title)
             title = re.sub(r"\s+", " ", title).strip()
-            if len(title) < 3 or title.lower() in ["apply", "postuler", "details", "en savoir plus", "voir"]:
+            title_lower = title.lower()
+            if len(title) < 4 or any(bad in title_lower for bad in [
+                "apply", "postuler", "details", "en savoir plus", "voir",
+                "for jobsøgere", "for arbejdsgivere", "find jobs", "search jobs",
+                "connexion", "login", "create account", "privacy policy"
+            ]):
                 continue
 
             # Entreprise
             company_el = card.select_one(self.company_selector)
             company = company_el.get_text(strip=True) if company_el else f"Entreprise {self.default_country}"
+            company = re.sub(r"[^\w\s\-\.,/&()+#'\"–—]", "", company)
             company = re.sub(r"\s+", " ", company).strip()
-            if len(company) > 60 or company == title:
+            if len(company) > 60 or company == title or not company:
                 company = f"Entreprise {self.default_country}"
+
 
             # Lieu
             loc_el = card.select_one(self.location_selector)

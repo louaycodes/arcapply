@@ -373,43 +373,33 @@ class CrawlerScheduler:
             existing_user_jobs = sess.exec(select(JobOffer).where(JobOffer.user_id == target_user)).all()
             dedup_index = JobDeduplicationIndex(existing_user_jobs)
 
-            for platform in target_platforms:
-                connector_cls = ALL_CONNECTORS.get(platform)
-                if not connector_cls:
+            # Exécution parallèle optimisée des requêtes réseau avec sémaphore de contrôle
+            sem = asyncio.Semaphore(12)
+
+            async def fetch_platform_jobs(p_name: str) -> tuple[str, list[dict[str, Any]], Any]:
+                c_cls = ALL_CONNECTORS.get(p_name)
+                if not c_cls:
+                    return p_name, [], None
+                async with sem:
+                    try:
+                        conn_inst = c_cls()
+                        fetched = await conn_inst.search_jobs(
+                            keywords=search_kw,
+                            locations=search_loc,
+                            limit=limit_per_platform,
+                        )
+                        return p_name, fetched, conn_inst
+                    except Exception as err:
+                        print(f"[CrawlerScheduler] Erreur connecteur {p_name}: {err}")
+                        return p_name, [], None
+
+            # Lancement concurrent de tous les connecteurs ciblés
+            fetch_tasks = [fetch_platform_jobs(p) for p in target_platforms]
+            gathered_results = await asyncio.gather(*fetch_tasks)
+
+            for platform, jobs, connector in gathered_results:
+                if not connector:
                     continue
-
-                await broadcast_event(
-                    "SCRAPE_PROGRESS",
-                    {
-                        "platform": platform,
-                        "status": "running",
-                        "count": 0,
-                        "message": f"Scan en cours sur {platform}...",
-                    },
-                    target_user=target_user,
-                )
-
-                connector = connector_cls()
-                try:
-                    jobs = await connector.search_jobs(
-                        keywords=search_kw,
-                        locations=search_loc,
-                        limit=limit_per_platform,
-                    )
-                except Exception as err:
-                    print(f"[CrawlerScheduler] Erreur connecteur {platform}: {err}")
-                    jobs = []
-                    await broadcast_event(
-                        "SCRAPE_PROGRESS",
-                        {
-                            "platform": platform,
-                            "status": "error",
-                            "count": 0,
-                            "message": f"Erreur lors du scan de {platform}: {err}",
-                        },
-                        target_user=target_user,
-                    )
-
                 platform_new = 0
                 for j in jobs:
                     title = j.get("title", "")

@@ -393,9 +393,9 @@ class JobOfferRead(JobOfferBase):
 
 
 class JobCollectRequest(SQLModel):
-    keywords: list[str] = ["PFE", "Stage Ingénieur"]
-    locations: list[str] = ["France", "Tunisie"]
-    platforms: list[str] = ["linkedin", "jobteaser"]
+    keywords: Optional[list[str]] = None
+    locations: Optional[list[str]] = None
+    platforms: Optional[list[str]] = None
     limit_per_platform: int = 5
 
 
