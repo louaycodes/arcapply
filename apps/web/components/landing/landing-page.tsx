@@ -5,7 +5,6 @@ import Link from "next/link";
 import {
   Radar,
   ArrowRight,
-  ChevronDown,
   UserPlus,
   Mail,
   Phone,
@@ -14,8 +13,6 @@ import {
   Globe,
   Linkedin,
   Github,
-  Sparkles,
-  HelpCircle,
   CheckCircle2,
   X,
 } from "lucide-react";
@@ -24,14 +21,10 @@ import { LanguageSwitcher } from "@/components/navigation/language-switcher";
 import { ThemeToggle } from "@/components/navigation/theme-toggle";
 import { LoginForm } from "@/components/auth/login-form";
 import { WorldCoverageMap } from "@/components/landing/world-coverage-map";
-import { BentoCapabilities } from "@/components/landing/bento-capabilities";
-import { AscensionProtocol } from "@/components/landing/ascension-protocol";
-import { ComparisonCockpit } from "@/components/landing/comparison-cockpit";
 
 export function LandingPage() {
   const { t } = useAppLanguage();
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [activeFaqIndex, setActiveFaqIndex] = useState<number | null>(0);
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -53,80 +46,6 @@ export function LandingPage() {
     if (!footerEmail.trim()) return;
     setFooterSubscribed(true);
   };
-
-
-  const faqItems = [
-    {
-      q: t(
-        "Qu'est-ce qu'ArcApply et à qui s'adresse la plateforme ?",
-        "What is ArcApply and who is it designed for?"
-      ),
-      a: t(
-        "ArcApply est un copilote de candidature d'ingénieur conçu spécifiquement pour les étudiants en fin d'études (PFE) et jeunes diplômés cherchant un stage ou premier emploi en France et en Tunisie. Contrairement aux générateurs de masse, ArcApply garantit zéro hallucination en s'appuyant rigoureusement sur votre Master Profile vérifié.",
-        "ArcApply is an engineering application copilot tailored for graduating engineering students (internships/PFE) and junior engineers in France and Tunisia. Unlike bulk spam generators, ArcApply guarantees zero hallucination by strictly drawing from your verified Master Profile."
-      ),
-    },
-    {
-      q: t(
-        "Comment fonctionne la garantie Zéro Hallucination ?",
-        "How does the Zero Hallucination guarantee work?"
-      ),
-      a: t(
-        "Les modèles IA classiques inventent fréquemment des compétences ou des projets. ArcApply applique un filtre déterministe strict : chaque argument d'une lettre de motivation ou élément de CV personnalisé doit provenir d'un fait documenté dans votre profil (projets réels, technologies utilisées, expériences). Tout contenu non vérifiable est éliminé.",
-        "Standard AI generators frequently fabricate skills or experiences. ArcApply enforces a strict deterministic guardrail: every line in a cover letter or CV must stem from documented facts in your Master Profile (real projects, stacks, verified work). Unverifiable synthetic content is strictly prohibited."
-      ),
-    },
-    {
-      q: t(
-        "Quelles sont les 27 sources scrutées en continu par le Radar ?",
-        "Which 27 job boards does Radar monitor continuously?"
-      ),
-      a: t(
-        "Le Radar ArcApply agrège et déduplique automatiquement les offres provenant de 27 plateformes majeures en France et en Tunisie : LinkedIn, Welcome to the Jungle, Indeed, HelloWork, Apec, Cadremploi, JobTeaser, L'Étudiant, 1 Jeune 1 Solution, Tanitjobs, Keejob, Emploi Tunisie, ANETI, Tunisie Travail, ainsi que les portails carrières directs du Top 100 ESN et firmes technologiques.",
-        "ArcApply's Radar aggregates and deduplicates job postings across 27 primary platforms in France and Tunisia: LinkedIn, Welcome to the Jungle, Indeed, HelloWork, Apec, Cadremploi, JobTeaser, L'Étudiant, 1 Jeune 1 Solution, Tanitjobs, Keejob, Emploi Tunisie, ANETI, Tunisie Travail, and direct career portals of Top 100 IT tech companies."
-      ),
-    },
-    {
-      q: t(
-        "Comment fonctionne le calcul du score de compatibilité ATS ?",
-        "How is the ATS compatibility score calculated?"
-      ),
-      a: t(
-        "Notre moteur ATS analyse sémantiquement la description de chaque offre (mots-clés, exigences techniques, niveau d'études, responsabilités) et la compare à vos acquis. Il vous indique votre score de compatibilité (ex: 94%), met en valeur vos atouts correspondants et identifie les compétences requises manquantes.",
-        "Our ATS engine performs semantic parsing of job descriptions (keywords, required tech stack, seniority, domain) and cross-checks them against your verified profile. You receive an instant match score (e.g. 94%), highlights of your matched strengths, and precise missing gaps."
-      ),
-    },
-    {
-      q: t(
-        "Qu'est-ce que le mode BYOK (Bring Your Own Key) avec Groq ?",
-        "What is BYOK (Bring Your Own Key) with Groq?"
-      ),
-      a: t(
-        "Groq fournit une API d'inférence ultra-rapide avec un quota gratuit généreux. En renseignant votre propre clé API Groq gratuite dans vos paramètres ou lors de l'onboarding, vous bénéficiez d'un quota dédié de 200 000 tokens/jour sans dépendre des limites d'un serveur partagé.",
-        "Groq offers an ultra-fast LLM inference API with a generous free tier. By providing your own free Groq API key in Settings or during onboarding, you get a dedicated private quota (200,000 tokens/day) completely isolated from platform server limits."
-      ),
-    },
-    {
-      q: t(
-        "Mes données personnelles et mes candidatures sont-elles privées ?",
-        "Are my personal data and applications private?"
-      ),
-      a: t(
-        "Absolument. Vos données de Master Profile, vos CV générés et votre suivi Kanban restent strictement confinés à votre session locale. ArcApply ne partage ni ne revend aucune information à des plateformes tierces ou cabinets de recrutement sans votre action explicite.",
-        "Absolutely. Your Master Profile data, generated CVs, and Kanban tracking are strictly private to your account. ArcApply never sells or shares your information with third-party aggregators or recruiters without your explicit action."
-      ),
-    },
-    {
-      q: t(
-        "L'utilisation de la plateforme est-elle payante ?",
-        "Is the platform free to use?"
-      ),
-      a: t(
-        "L'accès de base et l'ensemble des modules d'ArcApply sont entièrement gratuits pour les étudiants ingénieurs. Vous pouvez connecter votre clé Groq gratuite pour profiter de l'assistance illimitée.",
-        "Core access and all ArcApply features are completely free for student engineers. You can connect your free Groq key for unlimited daily copilot assistance."
-      ),
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-[#FBF8F3] dark:bg-[#12100E] text-stone-900 dark:text-stone-100 font-sans selection:bg-orange-100 selection:text-orange-950 dark:selection:bg-orange-950 dark:selection:text-orange-200">
@@ -165,18 +84,6 @@ export function LandingPage() {
             <a href="#sources" className="hover:text-primary transition-colors flex items-center gap-1.5">
               <span>{t("Sources (27)", "Sources (27)")}</span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            </a>
-            <a href="#features" className="hover:text-primary transition-colors">
-              {t("Capacités Clés", "Capabilities")}
-            </a>
-            <a href="#how-it-works" className="hover:text-primary transition-colors">
-              {t("Protocole 3 Étapes", "3-Step Protocol")}
-            </a>
-            <a href="#comparison" className="hover:text-primary transition-colors">
-              {t("Comparatif", "Comparison")}
-            </a>
-            <a href="#faq" className="hover:text-primary transition-colors">
-              {t("FAQ", "FAQ")}
             </a>
           </div>
 
@@ -227,34 +134,6 @@ export function LandingPage() {
               >
                 <span>{t("27 Sources d'Offres Indexées", "27 Indexed Job Boards")}</span>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-bold">FR & TN</span>
-              </a>
-              <a
-                href="#features"
-                onClick={() => setMobileMenuOpen(false)}
-                className="py-1.5 hover:text-primary transition-colors"
-              >
-                {t("Capacités Clés", "Capabilities")}
-              </a>
-              <a
-                href="#how-it-works"
-                onClick={() => setMobileMenuOpen(false)}
-                className="py-1.5 hover:text-primary transition-colors"
-              >
-                {t("Protocole 3 Étapes", "3-Step Protocol")}
-              </a>
-              <a
-                href="#comparison"
-                onClick={() => setMobileMenuOpen(false)}
-                className="py-1.5 hover:text-primary transition-colors"
-              >
-                {t("Comparatif Élite", "Comparison")}
-              </a>
-              <a
-                href="#faq"
-                onClick={() => setMobileMenuOpen(false)}
-                className="py-1.5 hover:text-primary transition-colors"
-              >
-                {t("FAQ", "FAQ")}
               </a>
             </div>
 
@@ -328,110 +207,8 @@ export function LandingPage() {
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[380px] bg-orange-500/10 dark:bg-orange-500/5 blur-[130px] rounded-full pointer-events-none" />
       </section>
 
-      {/* ── Section: 27 Plateformes Scrutées en Continu (Carte Interactive FR & TN + Marquee Logos) ── */}
+      {/* ── Section: Carte Interactive FR & TN + Marquee Logos ── */}
       <WorldCoverageMap />
-      {/* ── Section: Capacités Clés (Bento Command Center 6 Modules) ── */}
-      <BentoCapabilities />
-
-      {/* ── Section: Parcours Ascensionnel (Protocole 3 Étapes Interactif) ── */}
-      <AscensionProtocol />
-
-      {/* ── Section: Comparatif Élite (Cockpit Side-by-Side Benchmark) ── */}
-      <ComparisonCockpit />
-
-
-      {/* ── Section: FAQ ── */}
-      <section id="faq" className="py-24 relative overflow-hidden">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          
-          <div className="text-center max-w-2xl mx-auto space-y-3">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold border border-primary/20 shadow-xs">
-              <HelpCircle className="w-3.5 h-3.5" />
-              <span>{t("Foire Aux Questions", "Frequently Asked Questions")}</span>
-            </div>
-            <h2 className="text-3xl sm:text-5xl font-black font-display tracking-tight text-stone-900 dark:text-white">
-              {t("Questions Fréquemment Posées", "Frequently Asked Questions")}
-            </h2>
-            <div className="w-16 h-1 bg-primary rounded-full mx-auto mt-3" />
-            <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 max-w-xl mx-auto mt-2">
-              {t(
-                "Tout ce que vous devez savoir sur le fonctionnement déterministe d'ArcApply et la garantie zéro hallucination.",
-                "Everything you need to know about ArcApply's deterministic application engine and zero hallucination guarantee."
-              )}
-            </p>
-          </div>
-
-          <div className="max-w-3xl mx-auto space-y-3.5">
-            {faqItems.map((item, index) => {
-              const isOpen = activeFaqIndex === index;
-              return (
-                <div
-                  key={index}
-                  className="rounded-2xl border border-stone-200/90 dark:border-stone-800/80 bg-white dark:bg-[#181513] overflow-hidden transition-all duration-300 shadow-xs hover:border-primary/40 hover:shadow-md"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setActiveFaqIndex(isOpen ? null : index)}
-                    className="w-full p-4 sm:p-5 text-left flex items-center justify-between gap-4 font-bold text-sm sm:text-base text-stone-900 dark:text-stone-100 font-display transition-all duration-300 hover:pl-6 hover:bg-primary/5 cursor-pointer"
-                  >
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <span className="w-7 h-7 rounded-full bg-primary/15 text-primary text-xs font-black flex items-center justify-center shrink-0 border border-primary/25">
-                        {index + 1}
-                      </span>
-                      <span className="truncate sm:whitespace-normal">{item.q}</span>
-                    </div>
-                    <ChevronDown
-                      className={`w-4 h-4 text-stone-400 transition-transform duration-300 shrink-0 ${
-                        isOpen ? "rotate-180 text-primary" : ""
-                      }`}
-                    />
-                  </button>
-                  {isOpen && (
-                    <div className="px-5 pb-5 sm:px-6 sm:pb-5 text-xs sm:text-sm text-stone-600 dark:text-stone-300 leading-relaxed border-t border-dashed border-stone-200 dark:border-stone-800/80 pt-4 bg-stone-50/50 dark:bg-[#141210]/50 animate-in fade-in duration-200">
-                      {item.a}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Bottom Call To Action Banner ── */}
-      <section className="py-20 bg-gradient-to-r from-[#0F172A] via-[#1E1B18] to-[#2B1308] text-white relative overflow-hidden">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6 relative z-10">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-orange-500/20 border border-orange-500/30 text-orange-300 text-xs font-bold">
-            <Sparkles className="w-3.5 h-3.5 text-primary" />
-            <span>{t("Stages PFE & Emploi Ingénieur 2027", "Engineering Internships & Jobs 2027")}</span>
-          </div>
-
-          <h2 className="text-2xl sm:text-4xl font-extrabold font-display tracking-tight text-white">
-            {t(
-              "Prêt à multiplier par 3 vos retours d'entretiens ?",
-              "Ready to Triple Your Recruiter Interview Callbacks?"
-            )}
-          </h2>
-          <p className="text-xs sm:text-sm text-stone-300 max-w-xl mx-auto leading-relaxed">
-            {t(
-              "Rejoignez les étudiants ingénieurs en France et Tunisie qui postulent plus intelligemment, sans stress et avec des dossiers irréprochables.",
-              "Join engineering students in France and Tunisia applying smarter, without burnout, with verified dossiers."
-            )}
-          </p>
-          <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
-            <button
-              onClick={() => setAuthModalOpen(true)}
-              className="px-7 py-3.5 rounded-xl bg-primary hover:bg-[#C2410C] text-white text-xs font-bold shadow-lg shadow-orange-600/30 transition-all flex items-center gap-2 tactile-button cursor-pointer"
-            >
-              <UserPlus className="w-4 h-4" />
-              <span>{t("Créer mon compte gratuitement", "Create Free Account")}</span>
-            </button>
-          </div>
-        </div>
-        
-        {/* Glow */}
-        <div className="absolute right-0 top-0 bottom-0 w-96 bg-orange-500/10 blur-[100px] pointer-events-none" />
-      </section>
 
       {/* ── Rich Footer (inspiré de test.html et du Guide de Marque) ── */}
       <footer className="bg-[#141210] dark:bg-[#0c0a09] text-stone-400 text-xs relative overflow-hidden border-t border-stone-800">
@@ -563,26 +340,6 @@ export function LandingPage() {
                   <li>
                     <a href="#sources" className="text-stone-400 hover:text-primary transition-colors">
                       {t("Sources (27)", "Sources (27)")}
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#features" className="text-stone-400 hover:text-primary transition-colors">
-                      {t("Capacités Clés", "Capabilities")}
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#how-it-works" className="text-stone-400 hover:text-primary transition-colors">
-                      {t("Protocole 3 Étapes", "3-Step Protocol")}
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#comparison" className="text-stone-400 hover:text-primary transition-colors">
-                      {t("Comparatif", "Comparison")}
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#faq" className="text-stone-400 hover:text-primary transition-colors">
-                      {t("FAQ", "FAQ")}
                     </a>
                   </li>
                   <li>
