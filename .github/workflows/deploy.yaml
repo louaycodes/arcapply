@@ -7,6 +7,7 @@ on:
       - 'apps/**'
       - 'services/**'
       - '.github/workflows/deploy.yaml'
+  workflow_dispatch:
 
 concurrency:
   group: deploy-prod
@@ -16,7 +17,34 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy via SSH
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          SSH_HOST: ${{ secrets.VPS_HOST }}
+          SSH_PORT: ${{ secrets.VPS_PORT }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts
+
+      - name: Upload code to VPS
+        env:
+          SSH_HOST: ${{ secrets.VPS_HOST }}
+          SSH_USER: ${{ secrets.VPS_USER }}
+          SSH_PORT: ${{ secrets.VPS_PORT }}
+        run: |
+          rsync -az --delete \
+            --exclude '.env' --exclude '.env.*' \
+            --exclude 'node_modules' --exclude '.venv' \
+            --exclude '.next' --exclude '__pycache__' \
+            -e "ssh -i ~/.ssh/id_ed25519 -p $SSH_PORT" \
+            apps services "$SSH_USER@$SSH_HOST:/opt/arcapply/arcapply/"
+
+      - name: Build and restart on VPS
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -26,10 +54,7 @@ jobs:
           script_stop: true
           command_timeout: 30m
           script: |
-            cd /opt/arcapply/arcapply
-            git fetch origin
-            git reset --hard origin/main
-            cd services/engine
+            cd /opt/arcapply/arcapply/services/engine
             /home/louay/.local/bin/uv sync --no-dev
             cd ../../apps/web
             npm install --no-audit --no-fund
