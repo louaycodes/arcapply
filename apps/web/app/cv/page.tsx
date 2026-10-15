@@ -755,7 +755,19 @@ export default function StudioCVPage() {
         )
       );
     } catch (err: any) {
-      showNotification("error", err.message || t("Erreur de compilation du PDF.", "PDF compilation error."));
+      if (iframeRef.current && iframeRef.current.contentWindow) {
+        showNotification(
+          "info",
+          t(
+            "Génération locale : choisissez 'Enregistrer au format PDF' dans la fenêtre d'impression.",
+            "Local generation: select 'Save as PDF' in the print dialog."
+          )
+        );
+        iframeRef.current.contentWindow.focus();
+        iframeRef.current.contentWindow.print();
+      } else {
+        showNotification("error", err.message || t("Erreur de compilation du PDF.", "PDF compilation error."));
+      }
     } finally {
       setIsCompiling(false);
     }

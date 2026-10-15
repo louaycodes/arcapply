@@ -477,7 +477,18 @@ async def compile_custom_pdf(req: CompilePDFRequest) -> Response:
             detail={"error_code": "EMPTY_HTML", "message": "Le contenu HTML est requis pour la compilation PDF."},
         )
 
-    pdf_bytes = await PDFCompilerService.compile_html_to_pdf(req.html_content)
+    try:
+        pdf_bytes = await PDFCompilerService.compile_html_to_pdf(req.html_content)
+    except Exception as e:
+        logger.error(f"Erreur lors de la compilation PDF : {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error_code": "PDF_COMPILATION_ERROR",
+                "message": f"Échec de la compilation du PDF : {str(e)}",
+            },
+        )
+
     clean_name = sanitize_filename(req.filename or "CV_Personnalise.pdf")
     if not clean_name.lower().endswith(".pdf"):
         clean_name += ".pdf"
@@ -541,7 +552,17 @@ async def download_profile_cv_pdf(
 
     custom_cv = CVParserService.convert_profile_to_custom_cv(profile, language=lang)
     html_content = render_custom_cv_html(custom_cv)
-    pdf_bytes = await PDFCompilerService.compile_html_to_pdf(html_content)
+    try:
+        pdf_bytes = await PDFCompilerService.compile_html_to_pdf(html_content)
+    except Exception as e:
+        logger.error(f"Erreur lors de la compilation PDF Master Profile : {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error_code": "PDF_COMPILATION_ERROR",
+                "message": f"Échec de la compilation du PDF : {str(e)}",
+            },
+        )
 
     candidat_name = profile.full_name.strip() if profile.full_name else "Candidat"
     clean_name = sanitize_filename(f"CV_{candidat_name}.pdf")

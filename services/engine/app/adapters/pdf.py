@@ -1,7 +1,16 @@
 import logging
+import subprocess
+import sys
 from playwright.async_api import async_playwright
 
 logger = logging.getLogger(__name__)
+
+CHROMIUM_LAUNCH_ARGS = [
+    "--no-sandbox",
+    "--disable-setuid-sandbox",
+    "--disable-dev-shm-usage",
+    "--disable-gpu",
+]
 
 
 class PDFCompilerService:
@@ -11,16 +20,43 @@ class PDFCompilerService:
     """
 
     @classmethod
+    async def _launch_browser(cls, playwright_instance):
+        """Lance le navigateur Chromium avec gestion robuste du bac à sable et auto-téléchargement si absent."""
+        try:
+            return await playwright_instance.chromium.launch(
+                headless=True,
+                args=CHROMIUM_LAUNCH_ARGS,
+            )
+        except Exception as e:
+            err_msg = str(e)
+            if "Executable doesn't exist" in err_msg or "playwright install" in err_msg:
+                logger.warning("Chromium Playwright manquant sur le serveur. Tentative d'installation automatique...")
+                try:
+                    subprocess.run(
+                        [sys.executable, "-m", "playwright", "install", "chromium"],
+                        check=True,
+                        timeout=180,
+                    )
+                    return await playwright_instance.chromium.launch(
+                        headless=True,
+                        args=CHROMIUM_LAUNCH_ARGS,
+                    )
+                except Exception as install_err:
+                    logger.error(f"Échec de l'auto-installation de Chromium : {install_err}")
+                    raise RuntimeError(f"Navigateur Chromium non disponible sur le serveur : {e}") from e
+            raise
+
+    @classmethod
     async def compile_html_to_pdf(cls, html_content: str) -> bytes:
         """
         Rend le HTML en mémoire et compile un PDF vectoriel A4 calibré pour 1 page.
         """
         async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
+            browser = await cls._launch_browser(p)
             try:
                 page = await browser.new_page()
-                await page.set_content(html_content, wait_until="load")
-                
+                await page.set_content(html_content, wait_until="domcontentloaded", timeout=15000)
+
                 pdf_options = {
                     "format": "A4",
                     "print_background": True,
@@ -45,13 +81,13 @@ class PDFCompilerService:
         Rend le HTML en mémoire et compile une image (JPEG/PNG) haute résolution 2x via Playwright.
         """
         async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
+            browser = await cls._launch_browser(p)
             try:
                 page = await browser.new_page(
                     viewport={"width": 794, "height": 1123},
                     device_scale_factor=2,
                 )
-                await page.set_content(html_content, wait_until="load")
+                await page.set_content(html_content, wait_until="domcontentloaded", timeout=15000)
                 img_bytes = await page.screenshot(
                     type=image_format,
                     quality=quality if image_format == "jpeg" else None,

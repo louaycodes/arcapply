@@ -56,6 +56,7 @@ jobs:
           script: |
             cd /opt/arcapply/arcapply/services/engine
             /home/louay/.local/bin/uv sync --no-dev
+            /opt/arcapply/arcapply/services/engine/.venv/bin/playwright install chromium || /home/louay/.local/bin/uv run playwright install chromium || true
             cd ../../apps/web
             npm install --no-audit --no-fund
             npm run build
