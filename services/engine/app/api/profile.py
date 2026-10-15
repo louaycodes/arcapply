@@ -5,6 +5,7 @@ from sqlmodel import Session, select, SQLModel
 from app.adapters.database import get_session
 from app.config import settings
 from app.domain.models import (
+    Certification,
     Education,
     Experience,
     MasterProfile,
@@ -198,6 +199,18 @@ def update_profile(
                 level=skill_data.level,
             )
             profile.skills.append(skill)
+
+    # Mise à jour des certifications si fournies
+    if data.certifications is not None:
+        profile.certifications.clear()
+        for cert_data in data.certifications:
+            cert = Certification(
+                profile_id=profile.id,
+                title=cert_data.title,
+                date_received=cert_data.date_received or getattr(cert_data, "date", "") or "",
+                url=cert_data.url,
+            )
+            profile.certifications.append(cert)
 
     # Mise à jour des langues si fournies
     if data.languages is not None:

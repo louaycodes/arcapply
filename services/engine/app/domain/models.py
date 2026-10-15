@@ -160,6 +160,35 @@ class Skill(SkillBase, table=True):
     profile: Optional["MasterProfile"] = Relationship(back_populates="skills")
 
 
+class CertificationBase(SQLModel):
+    title: str = Field(default="")
+    date_received: str = Field(default="")
+    url: Optional[str] = Field(default=None)
+
+    @property
+    def date(self) -> str:
+        return self.date_received
+
+    @date.setter
+    def date(self, value: str) -> None:
+        self.date_received = value
+
+
+class BadgeBase(CertificationBase):
+    pass
+
+
+class Certification(CertificationBase, table=True):
+    __tablename__ = "certifications"
+    id: str = Field(default_factory=generate_uuid, primary_key=True)
+    profile_id: str = Field(foreign_key="master_profiles.id", index=True)
+
+    profile: Optional["MasterProfile"] = Relationship(back_populates="certifications")
+
+
+Badge = Certification
+
+
 class MasterProfileBase(SQLModel):
     full_name: str = Field(default="")
     email: str = Field(default="")
@@ -204,6 +233,10 @@ class MasterProfile(MasterProfileBase, table=True):
         sa_relationship_kwargs={"cascade": "all, delete-orphan", "lazy": "selectin"},
     )
     skills: list[Skill] = Relationship(
+        back_populates="profile",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan", "lazy": "selectin"},
+    )
+    certifications: list[Certification] = Relationship(
         back_populates="profile",
         sa_relationship_kwargs={"cascade": "all, delete-orphan", "lazy": "selectin"},
     )
@@ -259,6 +292,14 @@ class SkillRead(SkillBase):
     profile_id: str
 
 
+class CertificationRead(CertificationBase):
+    id: str
+    profile_id: str
+
+
+BadgeRead = CertificationRead
+
+
 class MasterProfileRead(MasterProfileBase):
     id: str
     is_complete: bool
@@ -269,6 +310,7 @@ class MasterProfileRead(MasterProfileBase):
     experiences: list[ExperienceRead] = []
     projects: list[ProjectRead] = []
     skills: list[SkillRead] = []
+    certifications: list[CertificationRead] = []
     languages: list[LanguageBase] = []
     extracurriculars: list[ExtracurricularBase] = []
 
@@ -297,6 +339,7 @@ class MasterProfileUpdate(SQLModel):
     experiences: Optional[list[ExperienceBase]] = None
     projects: Optional[list[ProjectBase]] = None
     skills: Optional[list[SkillBase]] = None
+    certifications: Optional[list[CertificationBase]] = None
     languages: Optional[list[LanguageBase]] = None
     extracurriculars: Optional[list[ExtracurricularBase]] = None
     groq_api_key: Optional[str] = None
@@ -435,6 +478,7 @@ class TargetedCVBase(SQLModel):
     experiences_raw: str = Field(default="[]")
     projects_raw: str = Field(default="[]")
     educations_raw: str = Field(default="[]")
+    certifications_raw: str = Field(default="[]")
     html_content: str = Field(default="")
     language: str = Field(default="fr", index=True)
     user_id: str = Field(default="louay", index=True)
@@ -486,6 +530,14 @@ class TargetedCV(TargetedCVBase, table=True):
     def educations(self, value: list[dict]) -> None:
         self.educations_raw = json.dumps(value)
 
+    @property
+    def certifications(self) -> list[dict]:
+        return json.loads(self.certifications_raw) if self.certifications_raw else []
+
+    @certifications.setter
+    def certifications(self, value: list[dict]) -> None:
+        self.certifications_raw = json.dumps(value)
+
 
 class TargetedCVRead(SQLModel):
     id: str
@@ -498,6 +550,7 @@ class TargetedCVRead(SQLModel):
     experiences: list[dict]
     projects: list[dict]
     educations: list[dict]
+    certifications: list[dict] = []
     html_content: str
     language: str = "fr"
     created_at: datetime
@@ -511,6 +564,7 @@ class TargetedCVUpdateRequest(SQLModel):
     experiences: Optional[list[dict]] = None
     projects: Optional[list[dict]] = None
     educations: Optional[list[dict]] = None
+    certifications: Optional[list[dict]] = None
 
 
 # ============================================================================
@@ -644,6 +698,12 @@ class ParsedExtracurricular(SQLModel):
     description: str = ""
 
 
+class ParsedCertification(SQLModel):
+    title: str = ""
+    date_received: str = ""
+    url: Optional[str] = None
+
+
 class CustomCVData(SQLModel):
     full_name: str = ""
     headline: str = ""
@@ -658,6 +718,7 @@ class CustomCVData(SQLModel):
     experiences: list[ParsedExperience] = []
     projects: list[ParsedProject] = []
     skills_categories: list[ParsedSkillCategory] = []
+    certifications: list[ParsedCertification] = []
     extracurricular: list[ParsedExtracurricular] = []
     languages: list[str] = []
     language: str = "fr"

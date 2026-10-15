@@ -208,3 +208,41 @@ def test_byok_groq_api_key_profile_update_and_test_endpoint():
     assert test_empty.status_code == 400
 
 
+def test_profile_certifications_and_badges():
+    """Vérifie la mise à jour et la persistance des certifications et badges dans le Master Profile."""
+    payload = {
+        "full_name": "Louay Zorai",
+        "email": "contact@louaycodes.tn",
+        "certifications": [
+            {
+                "title": "AWS Certified Solutions Architect Associate",
+                "date_received": "2024",
+                "url": "https://www.credly.com/badges/aws-solutions-architect",
+            },
+            {
+                "title": "HashiCorp Certified Terraform Associate",
+                "date_received": "Juin 2024",
+                "url": "https://www.credly.com/badges/terraform-associate",
+            },
+        ],
+    }
+
+    put_res = client.put("/api/profile", json=payload)
+    assert put_res.status_code == 200
+    data = put_res.json()
+
+    assert "certifications" in data
+    assert len(data["certifications"]) == 2
+    assert data["certifications"][0]["title"] == "AWS Certified Solutions Architect Associate"
+    assert data["certifications"][0]["date_received"] == "2024"
+    assert data["certifications"][0]["url"] == "https://www.credly.com/badges/aws-solutions-architect"
+    assert data["certifications"][1]["title"] == "HashiCorp Certified Terraform Associate"
+
+    # GET profile
+    get_res = client.get("/api/profile")
+    assert get_res.status_code == 200
+    get_data = get_res.json()
+    assert len(get_data["certifications"]) == 2
+    assert get_data["certifications"][0]["title"] == "AWS Certified Solutions Architect Associate"
+
+

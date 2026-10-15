@@ -79,6 +79,29 @@ def _migrate_db(engine) -> None:
         except Exception:
             pass
 
+        try:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS certifications (
+                    id VARCHAR PRIMARY KEY,
+                    profile_id VARCHAR NOT NULL,
+                    title VARCHAR DEFAULT '',
+                    date_received VARCHAR DEFAULT '',
+                    url VARCHAR,
+                    FOREIGN KEY (profile_id) REFERENCES master_profiles (id)
+                )
+            """))
+            conn.commit()
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_certifications_profile_id ON certifications (profile_id)"))
+            conn.commit()
+        except Exception:
+            pass
+
+        try:
+            conn.execute(text("ALTER TABLE targeted_cvs ADD COLUMN certifications_raw TEXT DEFAULT '[]'"))
+            conn.commit()
+        except Exception:
+            pass
+
 
         # Migrations additives pour le Deep Scraping & Filtrage Temporel
         additive_columns = [
