@@ -5,7 +5,7 @@ from sqlmodel import Session
 from app.adapters.pdf import PDFCompilerService
 from app.domain.ats import ATSMatchingEngine
 from app.domain.cv import CVGeneratorService
-from app.domain.models import Education, Experience, ExtracurricularBase, JobOffer, LanguageBase, MasterProfile, Project, Skill
+from app.domain.models import Certification, Education, Experience, ExtracurricularBase, JobOffer, LanguageBase, MasterProfile, Project, Skill
 from tests.conftest import client, engine
 
 
@@ -210,6 +210,9 @@ def test_cv_contains_all_8_sections_and_portfolio_link():
                 LanguageBase(name="Français", level="Courant"),
                 LanguageBase(name="Anglais", level="Technique"),
             ]
+            profile.certifications = [
+                Certification(profile_id=profile.id, title="AWS Certified Cloud Practitioner", date_received="2024", url="https://www.credly.com/badges/aws-ccp"),
+            ]
             session.add(profile)
         session.commit()
 
@@ -228,6 +231,9 @@ def test_cv_contains_all_8_sections_and_portfolio_link():
     assert "EXPÉRIENCES PROFESSIONNELLES (STAGES)" in html_fr
     assert "PROJETS SÉLECTIONNÉS" in html_fr
     assert "COMPÉTENCES TECHNIQUES" in html_fr
+    assert "CERTIFICATIONS & BADGES" in html_fr
+    assert "AWS Certified Cloud Practitioner" in html_fr
+    assert "https://www.credly.com/badges/aws-ccp" in html_fr
     assert "ACTIVITÉS EXTRA-PROFESSIONNELLES" in html_fr
     assert "LANGUES" in html_fr
 
@@ -250,6 +256,8 @@ def test_cv_contains_all_8_sections_and_portfolio_link():
     assert "PROFESSIONAL EXPERIENCE (INTERNSHIPS)" in html_en
     assert "SELECTED PROJECTS" in html_en
     assert "TECHNICAL SKILLS" in html_en
+    assert "CERTIFICATIONS & BADGES" in html_en
+    assert "AWS Certified Cloud Practitioner" in html_en
     assert "EXTRACURRICULAR ACTIVITIES" in html_en
     assert "LANGUAGES" in html_en
 

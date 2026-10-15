@@ -4,6 +4,7 @@ import json
 import logging
 import re
 from datetime import datetime
+from typing import Optional
 import pypdf
 from app.config import settings
 from app.domain.models import (
@@ -11,6 +12,7 @@ from app.domain.models import (
     CustomCVData,
     JobOffer,
     MasterProfile,
+    ParsedCertification,
     ParsedEducation,
     ParsedExperience,
     ParsedExtracurricular,
@@ -526,6 +528,17 @@ class CVGeneratorService:
             lang=lang,
         )
 
+        # 7b. Certifications & Badges
+        certifications_list = []
+        if getattr(profile, "certifications", None):
+            for cert in profile.certifications:
+                if cert.title and cert.title.strip():
+                    certifications_list.append({
+                        "title": cert.title.strip(),
+                        "date_received": cert.date_received or getattr(cert, "date", "") or "",
+                        "url": cert.url or "",
+                    })
+
         # 8. Rendu HTML A4 ATS
         html_content = cls.render_html_template(
             profile=profile,
@@ -538,6 +551,7 @@ class CVGeneratorService:
             projects=selected_projects,
             educations=educations_list,
             categorized_skills=categorized_skills,
+            certifications=certifications_list,
             language=lang,
         )
 
@@ -554,6 +568,7 @@ class CVGeneratorService:
         cv.experiences = selected_experiences
         cv.projects = selected_projects
         cv.educations = educations_list
+        cv.certifications = certifications_list
 
         return cv
 
@@ -677,20 +692,22 @@ class CVGeneratorService:
         projects: list[dict],
         educations: list[dict],
         categorized_skills: list[dict],
+        certifications: Optional[list[dict]] = None,
         language: str = "fr",
     ) -> str:
         """
         Génère un HTML/CSS sobre, textuel, aéré et élégant étalé sur 2 pages A4.
         Respecte la sobriété absolue demandée : écriture simple, typographie soignée, aucun artifice.
-        Contient les 8 sections dans l'ordre :
+        Contient les sections dans l'ordre :
         1. Nom & Contact avec Portfolio direct sur www.louaycodes.tn
         2. Overview de profil (texte simple, aucun bandeau ni bordure latérale)
         3. Éducation
         4. Expériences professionnelles (stages)
         5. Projets sélectionnés
         6. Compétences Techniques (par catégories)
-        7. Activités extra-professionnelles (Enactus EMC & Lycée Pilote Bizerte Youth Club)
-        8. Langues
+        7. Certifications & Badges
+        8. Activités extra-professionnelles (Enactus EMC & Lycée Pilote Bizerte Youth Club)
+        9. Langues
         """
         is_en = language == "en"
 
@@ -728,6 +745,7 @@ class CVGeneratorService:
         title_experiences = "PROFESSIONAL EXPERIENCE (INTERNSHIPS)" if is_en else "EXPÉRIENCES PROFESSIONNELLES (STAGES)"
         title_projects = "SELECTED PROJECTS" if is_en else "PROJETS SÉLECTIONNÉS"
         title_skills = "TECHNICAL SKILLS" if is_en else "COMPÉTENCES TECHNIQUES"
+        title_certifications = "CERTIFICATIONS & BADGES" if is_en else "CERTIFICATIONS & BADGES"
         title_extracurricular = "EXTRACURRICULAR ACTIVITIES" if is_en else "ACTIVITÉS EXTRA-PROFESSIONNELLES"
         title_languages = "LANGUAGES" if is_en else "LANGUES"
 
@@ -829,6 +847,49 @@ class CVGeneratorService:
             </div>
         </section>
         """ if skills_rows else ""
+
+        # 7b. Certifications & Badges
+        cert_data_list = certifications
+        if cert_data_list is None:
+            cert_data_list = []
+            if getattr(profile, "certifications", None):
+                for c in profile.certifications:
+                    cert_data_list.append({
+                        "title": c.title,
+                        "date_received": c.date_received or getattr(c, "date", "") or "",
+                        "url": c.url,
+                    })
+
+        if cert_data_list:
+            cert_items = []
+            for cert in cert_data_list:
+                c_title = cert.get("title", "") if isinstance(cert, dict) else getattr(cert, "title", "")
+                c_date = (cert.get("date_received", "") or cert.get("date", "")) if isinstance(cert, dict) else (getattr(cert, "date_received", "") or getattr(cert, "date", ""))
+                c_url = cert.get("url") if isinstance(cert, dict) else getattr(cert, "url", None)
+                if not c_title or not str(c_title).strip():
+                    continue
+                url_html = ""
+                if c_url:
+                    label_verify = "Verify" if is_en else "Vérifier"
+                    url_html = f' — <a href="{html.escape(str(c_url))}" target="_blank" rel="noopener noreferrer" style="color: #374151; font-size: 8pt; text-decoration: underline;">{label_verify}</a>'
+
+                date_html = f'<span class="item-date">{html.escape(str(c_date))}</span>' if c_date else ""
+                cert_items.append(f"""
+                <div class="item">
+                    <div class="item-header">
+                        <span class="item-role">{html.escape(str(c_title))}</span>{url_html}
+                        {date_html}
+                    </div>
+                </div>
+                """)
+            certifications_html = f"""
+            <section class="section">
+                <h2 class="section-title">{title_certifications}</h2>
+                {''.join(cert_items)}
+            </section>
+            """ if cert_items else ""
+        else:
+            certifications_html = ""
 
         # 8. Activités extra-professionnelles (dynamiques avec fallback)
         if profile.extracurriculars:
@@ -1051,6 +1112,7 @@ class CVGeneratorService:
         {exp_html}
         {proj_html}
         {skills_html}
+        {certifications_html}
         {extracurricular_html}
         {languages_html}
     </div>
@@ -1099,6 +1161,7 @@ def render_custom_cv_html(data: CustomCVData) -> str:
     title_experiences = "PROFESSIONAL EXPERIENCE (INTERNSHIPS)" if is_en else "EXPÉRIENCES PROFESSIONNELLES (STAGES)"
     title_projects = "SELECTED PROJECTS" if is_en else "PROJETS SÉLECTIONNÉS"
     title_skills = "TECHNICAL SKILLS" if is_en else "COMPÉTENCES TECHNIQUES"
+    title_certifications = "CERTIFICATIONS & BADGES" if is_en else "CERTIFICATIONS & BADGES"
     title_extracurricular = "EXTRACURRICULAR ACTIVITIES" if is_en else "ACTIVITÉS EXTRA-PROFESSIONNELLES"
     title_languages = "LANGUAGES" if is_en else "LANGUES"
 
@@ -1203,6 +1266,35 @@ def render_custom_cv_html(data: CustomCVData) -> str:
         </div>
     </section>
     """ if skills_rows else ""
+
+    # 5b. Certifications & Badges
+    cert_items = []
+    for cert in (getattr(data, "certifications", None) or []):
+        c_title = getattr(cert, "title", "") or (cert.get("title", "") if isinstance(cert, dict) else "")
+        c_date = (getattr(cert, "date_received", "") or getattr(cert, "date", "")) if not isinstance(cert, dict) else (cert.get("date_received", "") or cert.get("date", ""))
+        c_url = getattr(cert, "url", None) or (cert.get("url") if isinstance(cert, dict) else None)
+        if not c_title or not str(c_title).strip():
+            continue
+        url_html = ""
+        if c_url:
+            label_verify = "Verify" if is_en else "Vérifier"
+            url_html = f' — <a href="{html.escape(str(c_url))}" target="_blank" rel="noopener noreferrer" style="color: #374151; font-size: 8pt; text-decoration: underline;">{label_verify}</a>'
+
+        date_html = f'<span class="item-date">{html.escape(str(c_date))}</span>' if c_date else ""
+        cert_items.append(f"""
+        <div class="item">
+            <div class="item-header">
+                <span class="item-role">{html.escape(str(c_title))}</span>{url_html}
+                {date_html}
+            </div>
+        </div>
+        """)
+    certifications_html = f"""
+    <section class="section">
+        <h2 class="section-title">{title_certifications}</h2>
+        {''.join(cert_items)}
+    </section>
+    """ if cert_items else ""
 
     # 6. Activités extra-professionnelles
     extra_items = []
@@ -1404,6 +1496,7 @@ def render_custom_cv_html(data: CustomCVData) -> str:
         {exp_html}
         {proj_html}
         {skills_html}
+        {certifications_html}
         {extra_html}
         {languages_html}
     </div>
@@ -1497,6 +1590,7 @@ class CVParserService:
             ("experience", r"^(?:#+|\*+)?\s*(?:expériences?|experiences?|stages?|parcours professionnel|work experience|employment)\b"),
             ("projects", r"^(?:#+|\*+)?\s*(?:projets?|projects?|réalisations?|realisations?|key projects)\b"),
             ("skills", r"^(?:#+|\*+)?\s*(?:compétences?|competences?|skills?|technologies?|stack|expertise technique)\b"),
+            ("certifications", r"^(?:#+|\*+)?\s*(?:certifications?|badges?|certificats?|licenses?|licences?)\b"),
             ("extracurricular", r"^(?:#+|\*+)?\s*(?:activités? extra-professionnelles?|activites? extra-professionnelles?|extracurricular|vie associative|associatif|engagements?)\b"),
             ("languages", r"^(?:#+|\*+)?\s*(?:langues?|languages?)\b"),
         ]
@@ -1611,6 +1705,19 @@ class CVParserService:
             if cat_matches:
                 categorized_skills.append(ParsedSkillCategory(title=cat_title, skills=cat_matches))
 
+        # 10b. Certifications & Badges
+        certifications: list[ParsedCertification] = []
+        cert_lines = sections.get("certifications", [])
+        if cert_lines:
+            for cl in cert_lines[:8]:
+                cl_clean = cl.strip("•-* \t")
+                if cl_clean and len(cl_clean) > 3:
+                    certifications.append(ParsedCertification(
+                        title=cl_clean,
+                        date_received="",
+                        url=None,
+                    ))
+
         # 11. Activités extra-professionnelles
         extracurricular: list[ParsedExtracurricular] = []
         extra_lines = sections["extracurricular"]
@@ -1648,6 +1755,7 @@ class CVParserService:
             experiences=experiences,
             projects=projects,
             skills_categories=categorized_skills,
+            certifications=certifications,
             extracurricular=extracurricular,
             languages=languages,
             language="fr",
@@ -1806,6 +1914,17 @@ class CVParserService:
             if cat_skills:
                 skills_categories.append(ParsedSkillCategory(title=title, skills=cat_skills))
 
+        # Certifications & Badges (strictement issues du profil)
+        certifications = []
+        if getattr(profile, "certifications", None):
+            for cert in profile.certifications:
+                if cert.title and cert.title.strip():
+                    certifications.append(ParsedCertification(
+                        title=cert.title.strip(),
+                        date_received=cert.date_received or getattr(cert, "date", "") or "",
+                        url=cert.url,
+                    ))
+
         # Activités extra-professionnelles (strictement issues du profil)
         extracurricular = []
         if profile.extracurriculars:
@@ -1840,6 +1959,7 @@ class CVParserService:
             experiences=experiences,
             projects=projects,
             skills_categories=skills_categories,
+            certifications=certifications,
             extracurricular=extracurricular,
             languages=languages,
             language=language,

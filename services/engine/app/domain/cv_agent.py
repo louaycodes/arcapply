@@ -143,6 +143,14 @@ def _build_cv_context(
         lines.append(f"     Description originale : {desc}")
         lines.append(f"     Technologies : {techs}")
 
+    # Certifications & Badges
+    certs = profile.get("certifications", [])
+    if certs:
+        lines.append(f"\n--- Certifications & Badges ({len(certs)}) ---")
+        for c in certs:
+            d_str = f" ({c['date_received']})" if c.get("date_received") else ""
+            lines.append(f"  • {c.get('title', '')}{d_str}")
+
     return "\n".join(lines)
 
 
@@ -244,6 +252,14 @@ def node_load_cv_context(state: CVWriterState) -> dict:
                     for p in (profile.projects or [])
                 ],
                 "skills": [{"name": s.name, "category": s.category} for s in (profile.skills or [])],
+                "certifications": [
+                    {
+                        "title": c.title,
+                        "date_received": c.date_received or getattr(c, "date", "") or "",
+                        "url": c.url,
+                    }
+                    for c in (getattr(profile, "certifications", None) or [])
+                ],
                 "groq_api_key": getattr(profile, "groq_api_key", None),
                 "groq_model": getattr(profile, "groq_model", None),
             }
