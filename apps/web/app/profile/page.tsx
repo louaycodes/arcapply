@@ -14,6 +14,7 @@ import {
   Experience,
   Project,
   Skill,
+  Certification,
   Language,
   Extracurricular,
   SKILL_CATEGORIES,
@@ -23,6 +24,7 @@ import { useAppLanguage } from "@/lib/language-context";
 import { localizeServerMessage } from "@/lib/i18n";
 import {
   ShieldCheck,
+  BadgeCheck,
   GraduationCap,
   Briefcase,
   FolderGit2,
@@ -128,6 +130,7 @@ export default function ProfilePage() {
         educations: profileData.educations || [],
         projects: profileData.projects || [],
         skills: profileData.skills || [],
+        certifications: profileData.certifications || [],
       });
       setStatus(statusData);
     } catch (err: any) {
@@ -165,6 +168,7 @@ export default function ProfilePage() {
         educations: updated.educations || [],
         projects: updated.projects || [],
         skills: updated.skills || [],
+        certifications: updated.certifications || [],
       });
       setStatus(newStatus);
       setNotification({
@@ -200,6 +204,7 @@ export default function ProfilePage() {
         educations: synced.educations || [],
         projects: synced.projects || [],
         skills: synced.skills || [],
+        certifications: synced.certifications || [],
       });
       const newStatus = await fetchProfileStatus();
       setStatus(newStatus);
@@ -453,6 +458,35 @@ export default function ProfilePage() {
     setProfile({
       ...profile,
       extracurriculars: (profile.extracurriculars || []).filter((_, i) => i !== index),
+    });
+  };
+
+  // Certifications & Badges Helpers
+  const addCertification = () => {
+    if (!profile) return;
+    const newCert: Certification = {
+      title: "",
+      date_received: "",
+      url: "",
+    };
+    setProfile({
+      ...profile,
+      certifications: [...(profile.certifications || []), newCert],
+    });
+  };
+
+  const updateCertification = (index: number, updatedCert: Certification) => {
+    if (!profile) return;
+    const updated = [...(profile.certifications || [])];
+    updated[index] = updatedCert;
+    setProfile({ ...profile, certifications: updated });
+  };
+
+  const removeCertification = (index: number) => {
+    if (!profile) return;
+    setProfile({
+      ...profile,
+      certifications: (profile.certifications || []).filter((_, i) => i !== index),
     });
   };
 
@@ -1353,6 +1387,96 @@ export default function ProfilePage() {
               );
             })}
           </div>
+        </div>
+
+        {/* Section: Certifications & Badges */}
+        <div className="p-6 rounded-xl border border-border bg-card space-y-5">
+          <div className="flex items-center justify-between border-b border-border/50 pb-3">
+            <div className="flex items-center gap-3">
+              <BadgeCheck className="w-5 h-5 text-primary" />
+              <div>
+                <h2 className="text-base font-semibold text-foreground">{t("Certifications & Badges", "Certifications & Badges")}</h2>
+                <p className="text-xs text-muted-foreground">{t("Certifications professionnelles, accréditations cloud et badges vérifiables.", "Professional certifications, cloud accreditations, and verifiable badges.")}</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={addCertification}
+              className="text-xs px-3 py-1.5 rounded-md bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 flex items-center gap-1.5 transition-colors cursor-pointer font-medium"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>{t("Ajouter une certification", "Add a certification")}</span>
+            </button>
+          </div>
+
+          {(profile.certifications || []).length === 0 ? (
+            <p className="text-xs text-muted-foreground italic py-3">
+              {t("Aucune certification ou badge renseigné. Ajoutez vos certifications (AWS, Kubernetes, HashiCorp, GCP...) pour enrichir votre CV.", "No certifications or badges entered. Add your certifications (AWS, Kubernetes, HashiCorp, GCP...) to enrich your CV.")}
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {(profile.certifications || []).map((cert, idx) => (
+                <div key={idx} className="p-4 rounded-lg bg-muted/40 border border-border/70 space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs font-semibold text-primary">#{idx + 1}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeCertification(idx)}
+                      className="text-muted-foreground hover:text-destructive p-1 transition-colors cursor-pointer"
+                      title={t("Supprimer la certification", "Delete certification")}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="md:col-span-2 space-y-1">
+                      <label className="text-[11px] font-medium text-muted-foreground">{t("Titre de la certification ou du badge *", "Certification or badge title *")}</label>
+                      <input
+                        type="text"
+                        placeholder={t("ex: AWS Certified Solutions Architect Associate", "e.g. AWS Certified Solutions Architect Associate")}
+                        value={cert.title}
+                        onChange={(e) => updateCertification(idx, { ...cert, title: e.target.value })}
+                        className="w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-medium text-muted-foreground">{t("Date de réception", "Issue date")}</label>
+                      <input
+                        type="text"
+                        placeholder={t("ex: Juin 2024 ou 2024", "e.g. June 2024 or 2024")}
+                        value={cert.date_received}
+                        onChange={(e) => updateCertification(idx, { ...cert, date_received: e.target.value })}
+                        className="w-full px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-medium text-muted-foreground">{t("URL du badge / certificat", "Badge / certificate URL")}</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="url"
+                        placeholder="https://www.credly.com/badges/..."
+                        value={cert.url || ""}
+                        onChange={(e) => updateCertification(idx, { ...cert, url: e.target.value })}
+                        className="flex-1 px-3 py-1.5 rounded bg-muted border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                      />
+                      {cert.url && (
+                        <a
+                          href={cert.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-2.5 py-1.5 rounded bg-muted hover:bg-muted/80 border border-border text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                          title={t("Ouvrir le lien", "Open link")}
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Section 7: Activités Extra-Professionnelles (AJOUT DEMANDÉ) */}

@@ -101,6 +101,15 @@ export interface Skill {
   level?: string | null;
 }
 
+export interface Certification {
+  id?: string;
+  title: string;
+  date_received: string;
+  url?: string | null;
+}
+
+export type Badge = Certification;
+
 export const SKILL_CATEGORIES = [
   "Frameworks",
   "Langages & Scripting",
@@ -161,6 +170,7 @@ export interface MasterProfile {
   experiences: Experience[];
   projects: Project[];
   skills: Skill[];
+  certifications: Certification[];
   languages: Language[];
   extracurriculars: Extracurricular[];
 }
@@ -570,6 +580,7 @@ export interface TargetedCV {
   experiences: any[];
   projects: any[];
   educations: any[];
+  certifications?: Certification[];
   html_content: string;
   language?: string;
   created_at: string;
@@ -742,6 +753,7 @@ export interface CustomCVData {
   experiences: ParsedExperience[];
   projects: ParsedProject[];
   skills_categories: ParsedSkillCategory[];
+  certifications?: Certification[];
   extracurricular: ParsedExtracurricular[];
   languages: string[];
   language: "fr" | "en";
