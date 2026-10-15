@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 import json
 import logging
 import re
@@ -595,12 +596,21 @@ def save_cv_draft(
     return {"status": "saved", "id": draft.id, "updated_at": draft.updated_at}
 
 
+def _normalize_dt(dt: datetime | None) -> float:
+    if not dt:
+        return 0.0
+    if dt.tzinfo is not None:
+        return dt.timestamp()
+    return dt.replace(tzinfo=timezone.utc).timestamp()
+
+
 @router.get("/draft")
 def get_cv_draft(
+    force_profile: bool = Query(False, description="Forcer le rechargement depuis le Master Profile"),
     username: str = Depends(get_current_username),
     session: Session = Depends(get_session),
 ):
-    """Récupère le dernier brouillon de CV sauvegardé pour l'utilisateur courant."""
+    """Récupère le dernier brouillon de CV sauvegardé pour l'utilisateur courant ou synchronise avec le Master Profile."""
     draft_id = f"draft-{username}"
     draft = session.get(CustomCVDraft, draft_id)
     if not draft:
@@ -616,7 +626,7 @@ def get_cv_draft(
             and not profile.skills
         )
 
-    if not draft:
+    if force_profile or not draft:
         if profile:
             custom_cv = CVParserService.convert_profile_to_custom_cv(profile, language="fr")
             html_content = render_custom_cv_html(custom_cv)
@@ -624,15 +634,57 @@ def get_cv_draft(
                 "data": custom_cv,
                 "html_content": html_content,
                 "has_draft": False,
+                "is_stale": False,
                 "is_profile_empty": is_profile_empty,
             }
-        return {"data": None, "html_content": "", "has_draft": False, "is_profile_empty": True}
+        return {"data": None, "html_content": "", "has_draft": False, "is_stale": False, "is_profile_empty": True}
+
+    # Détection de péremption du brouillon par rapport aux mises à jour du Master Profile
+    is_stale = False
+    if profile and profile.updated_at and draft.updated_at:
+        p_ts = _normalize_dt(profile.updated_at)
+        d_ts = _normalize_dt(draft.updated_at)
+        if p_ts > d_ts:
+            is_stale = True
 
     try:
         data_dict = json.loads(draft.data_json)
         custom_cv = CustomCVData(**data_dict)
     except Exception:
-        custom_cv = CVParserService.convert_profile_to_custom_cv(profile, language="fr") if profile else None
+        custom_cv = None
+        is_stale = True
+
+    # Vérification si des certifications ou compétences du profil manquent dans le brouillon
+    has_cert_in_profile = bool(
+        profile
+        and (
+            (getattr(profile, "certifications", None) and len(profile.certifications) > 0)
+            or (getattr(profile, "certifications_raw", None) and profile.certifications_raw not in ("[]", "", None))
+        )
+    )
+    has_cert_in_draft = bool(custom_cv and getattr(custom_cv, "certifications", None) and len(custom_cv.certifications) > 0)
+    if has_cert_in_profile and not has_cert_in_draft:
+        is_stale = True
+
+    if is_stale and profile:
+        # Re-synchronisation automatique
+        target_lang = custom_cv.language if custom_cv and custom_cv.language else "fr"
+        custom_cv = CVParserService.convert_profile_to_custom_cv(profile, language=target_lang)
+        html_content = render_custom_cv_html(custom_cv)
+        draft.data_json = json.dumps(custom_cv.model_dump(), default=str)
+        draft.html_content = html_content
+        draft.updated_at = utc_now()
+        session.add(draft)
+        session.commit()
+        session.refresh(draft)
+        return {
+            "data": custom_cv,
+            "html_content": html_content,
+            "has_draft": True,
+            "is_stale": False,
+            "is_profile_empty": is_profile_empty,
+            "updated_at": draft.updated_at,
+        }
 
     html_content = draft.html_content if draft.html_content else (render_custom_cv_html(custom_cv) if custom_cv else "")
 
@@ -640,6 +692,23 @@ def get_cv_draft(
         "data": custom_cv,
         "html_content": html_content,
         "has_draft": True,
+        "is_stale": False,
         "is_profile_empty": is_profile_empty,
         "updated_at": draft.updated_at,
     }
+
+
+@router.delete("/draft")
+def delete_cv_draft(
+    username: str = Depends(get_current_username),
+    session: Session = Depends(get_session),
+):
+    """Supprime le brouillon de CV pour forcer une réinitialisation intégrale depuis le Master Profile."""
+    draft_id = f"draft-{username}"
+    draft = session.get(CustomCVDraft, draft_id)
+    if not draft:
+        draft = session.exec(select(CustomCVDraft).where(CustomCVDraft.user_id == username)).first()
+    if draft:
+        session.delete(draft)
+        session.commit()
+    return {"status": "deleted"}

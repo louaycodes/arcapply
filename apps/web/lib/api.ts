@@ -852,18 +852,30 @@ export async function saveCVDraft(data: CustomCVData): Promise<{ status: string;
   return res.json();
 }
 
-export async function fetchCVDraft(): Promise<{
+export async function fetchCVDraft(forceProfile: boolean = false): Promise<{
   data: CustomCVData | null;
   html_content: string;
   has_draft: boolean;
+  is_stale?: boolean;
   is_profile_empty?: boolean;
   updated_at?: string;
 }> {
-  const res = await authFetch(`${API_BASE_URL}/api/cv/draft`, {
+  const res = await authFetch(`${API_BASE_URL}/api/cv/draft${forceProfile ? "?force_profile=true" : ""}`, {
     cache: "no-store",
   });
   if (!res.ok) {
     throw new Error(trStored(`Échec de récupération du brouillon : ${res.statusText}`, `Failed to fetch the draft: ${res.statusText}`));
+  }
+  return res.json();
+}
+
+export async function deleteCVDraft(): Promise<{ status: string }> {
+  const res = await authFetch(`${API_BASE_URL}/api/cv/draft`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(localizeServerMessage(errorData?.detail?.message) || trStored("Échec de la suppression du brouillon.", "Failed to delete the draft."));
   }
   return res.json();
 }

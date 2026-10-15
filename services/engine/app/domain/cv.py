@@ -1852,88 +1852,187 @@ class CVParserService:
         """Convertit un MasterProfile souverain en structure CustomCVData éditable sans aucune donnée mockée."""
         is_en = language.lower().strip() == "en"
 
-        headline = profile.headline or ""
-        summary = profile.bio or ""
+        headline = (profile.headline_en if is_en else profile.headline_fr) or profile.headline or ""
+        summary = (profile.bio_en if is_en else profile.bio_fr) or profile.bio or ""
 
         educations = []
-        for edu in profile.educations:
+        for edu in (profile.educations or []):
+            deg = (edu.degree_en if is_en else edu.degree_fr) or edu.degree or ""
+            fos = (edu.field_of_study_en if is_en else edu.field_of_study_fr) or edu.field_of_study or ""
+            desc = (edu.description_en if is_en else edu.description_fr) or edu.description or ""
             educations.append(ParsedEducation(
-                school=edu.school,
-                degree=edu.degree,
-                field_of_study=edu.field_of_study,
-                start_date=edu.start_date,
+                school=edu.school or "",
+                degree=deg,
+                field_of_study=fos,
+                start_date=edu.start_date or "",
                 end_date=edu.end_date or ("Present" if is_en else "En cours"),
-                description=edu.description or "",
+                description=desc,
             ))
 
         experiences = []
-        for exp in profile.experiences:
+        for exp in (profile.experiences or []):
+            r = (exp.role_en if is_en else exp.role_fr) or exp.role or ""
+            desc = (exp.description_en if is_en else exp.description_fr) or exp.description or ""
             experiences.append(ParsedExperience(
-                company=exp.company,
-                role=exp.role,
+                company=exp.company or "",
+                role=r,
                 location=exp.location or "",
-                start_date=exp.start_date,
+                start_date=exp.start_date or "",
                 end_date=exp.end_date or ("Present" if is_en else "Présent"),
-                description=exp.description,
-                technologies=exp.technologies,
+                description=desc,
+                technologies=exp.technologies or [],
             ))
 
         projects = []
-        for proj in profile.projects:
+        for proj in (profile.projects or []):
+            t = (proj.title_en if is_en else proj.title_fr) or proj.title or ""
+            r = (proj.role_en if is_en else proj.role_fr) or proj.role or ""
+            desc = (proj.description_en if is_en else proj.description_fr) or proj.description or ""
             projects.append(ParsedProject(
-                title=proj.title,
-                role=proj.role or "",
+                title=t,
+                role=r,
                 url=proj.url or "",
-                description=proj.description,
-                technologies=proj.technologies,
+                description=desc,
+                technologies=proj.technologies or [],
             ))
 
-        # Compétences
-        all_skills = {s.name.strip().lower(): s.name.strip() for s in profile.skills if s.name.strip()}
-        for exp in profile.experiences:
-            for t in exp.technologies:
-                if t.strip() and t.strip().lower() not in all_skills:
-                    all_skills[t.strip().lower()] = t.strip()
-        for proj in profile.projects:
-            for t in proj.technologies:
-                if t.strip() and t.strip().lower() not in all_skills:
-                    all_skills[t.strip().lower()] = t.strip()
+        # Compétences & Outils (préservation stricte de 100% des compétences saisies dans le profil)
+        cat_translations_en = {
+            "langages": "Programming Languages",
+            "langages de programmation": "Programming Languages",
+            "languages": "Programming Languages",
+            "frameworks": "Frameworks & Libraries",
+            "frameworks & bibliothèques": "Frameworks & Libraries",
+            "frameworks & librairies": "Frameworks & Libraries",
+            "bases de données": "Databases",
+            "bases de donnees": "Databases",
+            "databases": "Databases",
+            "outils": "Tools & Platforms",
+            "outils & logiciels": "Tools & Platforms",
+            "outils & devops": "DevOps & Tools",
+            "devops": "DevOps & Cloud",
+            "cloud": "Cloud & Infrastructure",
+            "cloud & devops": "Cloud & DevOps",
+            "méthodologies": "Methodologies",
+            "methodologies": "Methodologies",
+            "technologies": "Technologies",
+        }
+        cat_translations_fr = {
+            "programming languages": "Langages de programmation",
+            "languages": "Langages de programmation",
+            "frameworks & libraries": "Frameworks & Bibliothèques",
+            "frameworks": "Frameworks & Bibliothèques",
+            "databases": "Bases de données",
+            "tools & platforms": "Outils & Logiciels",
+            "tools & software": "Outils & Logiciels",
+            "devops & tools": "DevOps & Outils",
+            "cloud & devops": "Cloud & DevOps",
+            "cloud & infrastructure": "Cloud & Infrastructure",
+            "methodologies": "Méthodologies",
+            "technologies": "Technologies",
+        }
 
-        assigned = set()
-        skills_categories = []
-        for cat_key, cat_data in TAXONOMY_CATEGORIES.items():
-            title = cat_data["title_en"] if is_en else cat_data["title_fr"]
-            kw_list = cat_data["keywords"]
-            cat_skills = []
-            for kw in kw_list:
-                for s_low, s_orig in list(all_skills.items()):
-                    if s_low == kw or (len(kw) > 3 and kw in s_low):
-                        if s_low not in assigned:
-                            assigned.add(s_low)
-                            cat_skills.append(s_orig)
-            if cat_skills:
-                skills_categories.append(ParsedSkillCategory(title=title, skills=cat_skills))
+        skills_by_category: dict[str, list[str]] = {}
+        assigned_skills_lower: set[str] = set()
+
+        # 1. Compétences explicites définies par le candidat dans son Master Profile
+        for s in (profile.skills or []):
+            s_name = s.name.strip() if s.name else ""
+            if not s_name:
+                continue
+            raw_cat = (s.category or "Technologies").strip()
+            cat_low = raw_cat.lower()
+            if is_en and cat_low in cat_translations_en:
+                cat_display = cat_translations_en[cat_low]
+            elif not is_en and cat_low in cat_translations_fr:
+                cat_display = cat_translations_fr[cat_low]
+            else:
+                cat_display = raw_cat
+
+            if cat_display not in skills_by_category:
+                skills_by_category[cat_display] = []
+
+            if s_name.lower() not in assigned_skills_lower:
+                skills_by_category[cat_display].append(s_name)
+                assigned_skills_lower.add(s_name.lower())
+
+        # 2. Technologies issues des expériences et projets non encore répertoriées
+        extra_techs: list[str] = []
+        for exp in (profile.experiences or []):
+            for t in (exp.technologies or []):
+                t_clean = t.strip()
+                if t_clean and t_clean.lower() not in assigned_skills_lower:
+                    extra_techs.append(t_clean)
+                    assigned_skills_lower.add(t_clean.lower())
+        for proj in (profile.projects or []):
+            for t in (proj.technologies or []):
+                t_clean = t.strip()
+                if t_clean and t_clean.lower() not in assigned_skills_lower:
+                    extra_techs.append(t_clean)
+                    assigned_skills_lower.add(t_clean.lower())
+
+        for tech in extra_techs:
+            tech_low = tech.lower()
+            placed = False
+            for cat_key, cat_data in TAXONOMY_CATEGORIES.items():
+                title = cat_data["title_en"] if is_en else cat_data["title_fr"]
+                kw_list = cat_data["keywords"]
+                if any(tech_low == kw or (len(kw) > 3 and kw in tech_low) for kw in kw_list):
+                    if title not in skills_by_category:
+                        skills_by_category[title] = []
+                    skills_by_category[title].append(tech)
+                    placed = True
+                    break
+            if not placed:
+                fallback_cat = "Tools & Other Technologies" if is_en else "Outils & Autres Technologies"
+                if fallback_cat not in skills_by_category:
+                    skills_by_category[fallback_cat] = []
+                skills_by_category[fallback_cat].append(tech)
+
+        skills_categories = [
+            ParsedSkillCategory(title=cat_title, skills=s_list)
+            for cat_title, s_list in skills_by_category.items()
+            if s_list
+        ]
 
         # Certifications & Badges (strictement issues du profil)
         certifications = []
         if getattr(profile, "certifications", None):
             for cert in profile.certifications:
-                if cert.title and cert.title.strip():
+                c_title = getattr(cert, "title", "") or ""
+                if c_title and c_title.strip():
                     certifications.append(ParsedCertification(
-                        title=cert.title.strip(),
-                        date_received=cert.date_received or getattr(cert, "date", "") or "",
-                        url=cert.url,
+                        title=c_title.strip(),
+                        date_received=getattr(cert, "date_received", "") or getattr(cert, "date", "") or "",
+                        url=getattr(cert, "url", None),
                     ))
+
+        # Fallback si stocké en certifications_raw (JSON)
+        if not certifications and getattr(profile, "certifications_raw", None):
+            try:
+                raw_list = json.loads(profile.certifications_raw) if isinstance(profile.certifications_raw, str) else profile.certifications_raw
+                if isinstance(raw_list, list):
+                    for cert_dict in raw_list:
+                        if isinstance(cert_dict, dict) and cert_dict.get("title"):
+                            certifications.append(ParsedCertification(
+                                title=str(cert_dict["title"]).strip(),
+                                date_received=str(cert_dict.get("date_received") or cert_dict.get("date") or "").strip(),
+                                url=cert_dict.get("url"),
+                            ))
+            except Exception:
+                pass
 
         # Activités extra-professionnelles (strictement issues du profil)
         extracurricular = []
         if profile.extracurriculars:
             for extra in profile.extracurriculars:
+                r = (extra.role_en if is_en else extra.role_fr) or extra.role or ""
+                desc = (extra.description_en if is_en else extra.description_fr) or extra.description or ""
                 extracurricular.append(ParsedExtracurricular(
-                    organization=extra.organization,
-                    role=extra.role,
-                    date=extra.date,
-                    description=extra.description,
+                    organization=extra.organization or "",
+                    role=r,
+                    date=extra.date or "",
+                    description=desc,
                 ))
 
         # Langues (strictement issues du profil)

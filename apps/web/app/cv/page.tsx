@@ -9,6 +9,7 @@ import {
   fetchCVFromProfile,
   saveCVDraft,
   fetchCVDraft,
+  deleteCVDraft,
 } from "@/lib/api";
 import {
   FileText,
@@ -159,7 +160,7 @@ export default function StudioCVPage() {
     try {
       setIsLoading(true);
       const draftRes = await fetchCVDraft();
-      if (draftRes.has_draft && draftRes.html_content) {
+      if (draftRes.has_draft && draftRes.html_content && !draftRes.is_stale) {
         setHtmlContent(draftRes.html_content);
         currentHtmlRef.current = draftRes.html_content;
         if (draftRes.data) {
@@ -171,13 +172,15 @@ export default function StudioCVPage() {
         setIsProfileEmpty(Boolean(draftRes.is_profile_empty));
         showNotification("info", t("Brouillon sauvegardé chargé avec succès.", "Saved draft loaded successfully."));
       } else {
-        const profRes = await fetchCVFromProfile("fr");
+        const profRes = await fetchCVFromProfile(cvLang);
         setCvData(profRes.data);
         setHtmlContent(profRes.html_content);
         currentHtmlRef.current = profRes.html_content;
-        setFontSizePt(profRes.data.font_size_pt || 9.0);
-        setLineHeight(profRes.data.line_height || 1.35);
-        setMarginMm(profRes.data.margin_top_mm || 8.0);
+        if (profRes.data) {
+          setFontSizePt(profRes.data.font_size_pt || 9.0);
+          setLineHeight(profRes.data.line_height || 1.35);
+          setMarginMm(profRes.data.margin_top_mm || 8.0);
+        }
         setIsProfileEmpty(Boolean(profRes.is_profile_empty));
       }
     } catch (err: any) {
@@ -556,6 +559,58 @@ export default function StudioCVPage() {
     updateIframeHeight();
   };
 
+  const insertCertificationBlock = () => {
+    if (!iframeRef.current || !iframeRef.current.contentDocument) return;
+    const doc = iframeRef.current.contentDocument;
+
+    let certSection = Array.from(doc.querySelectorAll(".section")).find((s) => {
+      const title = s.querySelector(".section-title")?.textContent || "";
+      return /certif|badge/i.test(title);
+    });
+
+    if (!certSection) {
+      certSection = doc.createElement("section");
+      certSection.className = "section";
+      certSection.innerHTML = `<h2 class="section-title">CERTIFICATIONS & BADGES</h2>`;
+      const skillsSection = Array.from(doc.querySelectorAll(".section")).find((s) => {
+        const title = s.querySelector(".section-title")?.textContent || "";
+        return /compétence|competence|skill/i.test(title);
+      });
+      if (skillsSection && skillsSection.nextSibling) {
+        skillsSection.parentNode?.insertBefore(certSection, skillsSection.nextSibling);
+      } else {
+        const container = doc.querySelector(".cv-container") || doc.body;
+        container.appendChild(certSection);
+      }
+    }
+
+    const newCert = doc.createElement("div");
+    newCert.className = "item";
+    const datePlaceholder = cvLang === "en" ? "YYYY" : "AAAA";
+    const titlePlaceholder = cvLang === "en" ? "Certification Title / Badge" : "Titre de la Certification / Badge";
+    newCert.innerHTML = `
+      <div class="item-header">
+        <span class="item-role">${titlePlaceholder}</span>
+        <span class="item-date">${datePlaceholder}</span>
+      </div>
+    `;
+
+    certSection.appendChild(newCert);
+    newCert.scrollIntoView({ behavior: "smooth", block: "center" });
+    const roleSpan = newCert.querySelector(".item-role") as HTMLElement;
+    if (roleSpan && doc.defaultView) {
+      const range = doc.createRange();
+      const sel = doc.defaultView.getSelection();
+      range.selectNodeContents(roleSpan);
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    }
+    setHasUnsavedEdits(true);
+    currentHtmlRef.current = doc.documentElement.outerHTML;
+    updateIframeHeight();
+    showNotification("info", t("Nouvelle certification insérée. Cliquez pour modifier.", "New certification inserted. Click to edit."));
+  };
+
   const insertExtracurricularBlock = () => {
     if (!iframeRef.current || !iframeRef.current.contentDocument) return;
     const doc = iframeRef.current.contentDocument;
@@ -737,23 +792,29 @@ export default function StudioCVPage() {
     }
   };
 
-  // 12. Reset with Profile
+  // 12. Reset / Sync directly from Master Profile
   const handleResetMasterProfile = async () => {
     try {
       setIsLoading(true);
-      const res = await fetchCVFromProfile("fr");
+      await deleteCVDraft().catch(() => {});
+      const res = await fetchCVFromProfile(cvLang);
       setCvData(res.data);
       setHtmlContent(res.html_content);
       currentHtmlRef.current = res.html_content;
+      if (res.data) {
+        setFontSizePt(res.data.font_size_pt || 9.0);
+        setLineHeight(res.data.line_height || 1.35);
+        setMarginMm(res.data.margin_top_mm || 8.0);
+      }
       setHasUnsavedEdits(false);
       setIsProfileEmpty(Boolean(res.is_profile_empty));
       if (res.is_profile_empty) {
         showNotification("info", t("Votre profil est actuellement vide.", "Your profile is currently empty."));
       } else {
-        showNotification("success", t("Données de votre profil rechargées.", "Your profile data was reloaded."));
+        showNotification("success", t("CV synchronisé avec succès depuis votre Master Profile.", "CV successfully synchronized from your master profile."));
       }
     } catch (err: any) {
-      showNotification("error", err.message || t("Échec du rechargement.", "Reload failed."));
+      showNotification("error", err.message || t("Échec de la synchronisation.", "Sync failed."));
     } finally {
       setIsLoading(false);
     }
@@ -829,10 +890,47 @@ export default function StudioCVPage() {
             <Code2 className="w-3.5 h-3.5" />
             <span>{t("+ Compétences", "+ Skills")}</span>
           </button>
+          <button
+            type="button"
+            onClick={insertCertificationBlock}
+            className="px-2.5 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold flex items-center gap-1.5 transition-colors border border-primary/20"
+            title={t("Insérer une certification ou un badge", "Insert certification or badge")}
+          >
+            <Award className="w-3.5 h-3.5" />
+            <span>{t("+ Certification", "+ Certification")}</span>
+          </button>
         </div>
 
-        {/* Right: Language Toggle & Download Button */}
-        <div className="flex items-center gap-2.5">
+        {/* Right: Sync, Save, Language Toggle & Download Button */}
+        <div className="flex items-center gap-2">
+          {/* Synchroniser avec le Master Profile */}
+          <button
+            type="button"
+            onClick={handleResetMasterProfile}
+            disabled={isLoading || isCompiling}
+            className="px-2.5 py-1.5 rounded-lg bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 text-xs font-semibold flex items-center gap-1.5 transition-colors border border-stone-200 dark:border-stone-700"
+            title={t("Recharger toutes les données depuis le Master Profile", "Reload all data from Master Profile")}
+          >
+            <RotateCcw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
+            <span>{t("Synchroniser Profil", "Sync Profile")}</span>
+          </button>
+
+          {/* Sauvegarder Brouillon */}
+          <button
+            type="button"
+            onClick={handleSaveDraft}
+            disabled={isSaving || isLoading}
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors border ${
+              hasUnsavedEdits
+                ? "bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30"
+                : "bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-600 dark:text-stone-400 border-stone-200 dark:border-stone-700"
+            }`}
+            title={t("Enregistrer les modifications en brouillon", "Save edits as draft")}
+          >
+            <Save className="w-3.5 h-3.5" />
+            <span>{isSaving ? t("Sauvegarde...", "Saving...") : t("Sauvegarder", "Save")}</span>
+          </button>
+
           {/* FR / EN Language Switch */}
           <div className="inline-flex items-center rounded-lg border border-stone-200 dark:border-stone-800 bg-stone-100/80 dark:bg-stone-800/80 p-0.5 text-xs font-semibold">
             <button

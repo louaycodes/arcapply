@@ -681,5 +681,128 @@ def test_put_targeted_cv_in_place_edit():
     assert "Docker" in data["matched_skills"]
 
 
+def test_convert_profile_to_custom_cv_preserves_all_skills_and_certifications():
+    """Vérifie que convert_profile_to_custom_cv préserve 100% des compétences, catégories et certifications."""
+    from app.domain.cv import CVParserService, render_custom_cv_html
+    from app.domain.models import Certification, Experience, MasterProfile, Skill
+
+    profile = MasterProfile(
+        id="prof-fidelity-test",
+        user_id="louay",
+        full_name="Jean Ingénieur",
+        email="jean@test.com",
+        headline="Ingénieur Fullstack & Cloud",
+        bio="Profil passionné par le DevOps.",
+    )
+    profile.skills = [
+        Skill(name="Python", category="Langages"),
+        Skill(name="FastAPI", category="Frameworks"),
+        Skill(name="React", category="Frameworks"),
+        Skill(name="PostgreSQL", category="Bases de données"),
+        Skill(name="Docker", category="DevOps & Outils"),
+        Skill(name="Kubernetes", category="DevOps & Outils"),
+        Skill(name="CustomSkillXYZ", category="Spécialités"),
+    ]
+    profile.certifications = [
+        Certification(
+            title="AWS Certified Solutions Architect",
+            date_received="2024",
+            url="https://aws.amazon.com/verify/123",
+        ),
+        Certification(
+            title="CKA: Certified Kubernetes Administrator",
+            date_received="2025",
+            url="https://cncf.io/verify/456",
+        ),
+    ]
+
+    custom_cv = CVParserService.convert_profile_to_custom_cv(profile, language="fr")
+
+    # 1. Vérification des certifications
+    assert len(custom_cv.certifications) == 2
+    assert custom_cv.certifications[0].title == "AWS Certified Solutions Architect"
+    assert custom_cv.certifications[0].date_received == "2024"
+    assert custom_cv.certifications[0].url == "https://aws.amazon.com/verify/123"
+    assert custom_cv.certifications[1].title == "CKA: Certified Kubernetes Administrator"
+
+    # 2. Vérification de la préservation intégrale de toutes les compétences
+    all_rendered_skills = []
+    for cat in custom_cv.skills_categories:
+        all_rendered_skills.extend(cat.skills)
+
+    for skill in profile.skills:
+        assert skill.name in all_rendered_skills, f"La compétence {skill.name} a été omise du CV!"
+
+    assert "CustomSkillXYZ" in all_rendered_skills
+
+    # 3. Vérification du HTML rendu
+    html = render_custom_cv_html(custom_cv)
+    assert "CERTIFICATIONS &amp; BADGES" in html or "CERTIFICATIONS & BADGES" in html
+    assert "AWS Certified Solutions Architect" in html
+    assert "CKA: Certified Kubernetes Administrator" in html
+    assert "CustomSkillXYZ" in html
+    assert "https://aws.amazon.com/verify/123" in html
+
+
+def test_cv_draft_auto_sync_and_delete_endpoint():
+    """Vérifie la synchronisation automatique du draft CV et la suppression via DELETE."""
+    from sqlmodel import Session
+    from tests.conftest import client, engine
+    from app.domain.models import Certification, CustomCVDraft, MasterProfile, Skill, utc_now
+
+    with Session(engine) as session:
+        # Créer ou mettre à jour le profil avec une certification
+        profile = session.get(MasterProfile, "default-profile")
+        if not profile:
+            profile = MasterProfile(
+                id="default-profile",
+                user_id="louay",
+                full_name="Louay AutoSync",
+                email="louay@autosync.tn",
+            )
+        profile.certifications.clear()
+        profile.certifications.append(
+            Certification(
+                title="HashiCorp Certified: Terraform Associate",
+                date_received="2025",
+                url="https://hashicorp.com/cert/789",
+            )
+        )
+        profile.updated_at = utc_now()
+        session.add(profile)
+
+        # Créer un brouillon obsolète sans la certification
+        draft_id = "draft-louay"
+        old_draft = session.get(CustomCVDraft, draft_id)
+        if not old_draft:
+            old_draft = CustomCVDraft(
+                id=draft_id,
+                user_id="louay",
+                title="Old Draft",
+                data_json='{"full_name": "Louay AutoSync", "certifications": []}',
+                html_content="<div>Old Draft Content</div>",
+            )
+        else:
+            old_draft.data_json = '{"full_name": "Louay AutoSync", "certifications": []}'
+            old_draft.html_content = "<div>Old Draft Content</div>"
+        session.add(old_draft)
+        session.commit()
+
+    # Appel GET /api/cv/draft : doit détecter que le profil a une certification et auto-synchroniser
+    res = client.get("/api/cv/draft")
+    assert res.status_code == 200
+    data = res.json()
+    assert "data" in data
+    assert len(data["data"]["certifications"]) >= 1
+    assert data["data"]["certifications"][0]["title"] == "HashiCorp Certified: Terraform Associate"
+    assert "HashiCorp Certified" in data["html_content"]
+
+    # Appel DELETE /api/cv/draft
+    del_res = client.delete("/api/cv/draft")
+    assert del_res.status_code == 200
+    assert del_res.json() == {"status": "deleted"}
+
+
+
 
 
