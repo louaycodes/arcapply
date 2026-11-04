@@ -292,4 +292,114 @@ def test_reset_password_full_lifecycle():
     assert "token" in new_login.json()
 
 
+def test_google_auth_config():
+    client = TestClient(app)
+    res = client.get("/api/auth/google/config")
+    assert res.status_code == 200
+    data = res.json()
+    assert "client_id" in data
+    assert "enabled" in data
+
+
+def test_google_auth_new_user_registration():
+    client = TestClient(app)
+    import uuid
+    google_email = f"google_user_{uuid.uuid4().hex[:8]}@gmail.com"
+    res = client.post(
+        "/api/auth/google",
+        json={
+            "credential": f"mock-google-{google_email}",
+        },
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert "token" in data
+    assert data["is_new_user"] is True
+    assert data["user"]["username"] == google_email
+    assert data["user"]["auth_provider"] == "google"
+    assert data["user"]["onboarding_completed"] is False
+
+    # Check profile was created
+    token = data["token"]
+    prof_res = client.get("/api/profile", headers={"Authorization": f"Bearer {token}"})
+    assert prof_res.status_code == 200
+    assert prof_res.json()["user_id"] == google_email
+
+
+def test_google_auth_existing_user_login():
+    client = TestClient(app)
+    import uuid
+    google_email = f"google_login_{uuid.uuid4().hex[:8]}@gmail.com"
+
+    # First call: registers user
+    res1 = client.post("/api/auth/google", json={"credential": f"mock-google-{google_email}"})
+    assert res1.status_code == 200
+    assert res1.json()["is_new_user"] is True
+
+    # Second call: logs user in
+    res2 = client.post("/api/auth/google", json={"credential": f"mock-google-{google_email}"})
+    assert res2.status_code == 200
+    assert res2.json()["is_new_user"] is False
+    assert res2.json()["user"]["username"] == google_email
+
+
+def test_google_auth_link_existing_local_user():
+    client = TestClient(app)
+    import uuid
+    email = f"local_{uuid.uuid4().hex[:8]}@gmail.com"
+
+    # Register as normal local user first
+    reg = client.post("/api/auth/register", json={"email": email, "password": "mypassword123", "full_name": "Local Account"})
+    assert reg.status_code == 200
+
+    # Authenticate via Google with the same email
+    res = client.post("/api/auth/google", json={"credential": f"mock-google-{email}"})
+    assert res.status_code == 200
+    data = res.json()
+    assert data["is_new_user"] is False
+    assert data["user"]["username"] == email
+    assert data["user"]["auth_provider"] == "google"
+
+
+def test_google_auth_invalid_payload():
+    client = TestClient(app)
+    res = client.post("/api/auth/google", json={})
+    assert res.status_code == 400
+
+
+def test_google_auth_mock_httpx_tokeninfo(monkeypatch):
+    client = TestClient(app)
+    import uuid
+    real_email = f"real_token_{uuid.uuid4().hex[:8]}@gmail.com"
+
+    class MockResponse:
+        status_code = 200
+
+        def json(self):
+            return {
+                "email": real_email,
+                "email_verified": "true",
+                "name": "Jane Google",
+                "picture": "https://lh3.googleusercontent.com/photo.jpg",
+                "sub": "google-sub-999888777",
+                "aud": "mock-client-id",
+            }
+
+    import httpx
+
+    async def mock_get(*args, **kwargs):
+        return MockResponse()
+
+    monkeypatch.setattr(httpx.AsyncClient, "get", mock_get)
+
+    res = client.post("/api/auth/google", json={"credential": "valid-simulated-google-jwt"})
+    assert res.status_code == 200
+    data = res.json()
+    assert data["user"]["username"] == real_email
+    assert data["user"]["full_name"] == "Jane Google"
+    assert data["user"]["avatar_url"] == "https://lh3.googleusercontent.com/photo.jpg"
+    assert data["is_new_user"] is True
+
+
+
 
