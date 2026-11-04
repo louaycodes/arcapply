@@ -794,6 +794,7 @@ class UserLoginResponse(SQLModel):
 
 class GoogleAuthRequest(SQLModel):
     credential: Optional[str] = None
+    access_token: Optional[str] = None
     code: Optional[str] = None
     redirect_uri: Optional[str] = None
     email: Optional[str] = None

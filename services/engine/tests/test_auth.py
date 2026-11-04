@@ -376,13 +376,14 @@ def test_google_auth_mock_httpx_tokeninfo(monkeypatch):
         status_code = 200
 
         def json(self):
+            from app.config import settings
             return {
                 "email": real_email,
                 "email_verified": "true",
                 "name": "Jane Google",
                 "picture": "https://lh3.googleusercontent.com/photo.jpg",
                 "sub": "google-sub-999888777",
-                "aud": "mock-client-id",
+                "aud": settings.effective_google_client_id or "mock-client-id",
             }
 
     import httpx
@@ -399,6 +400,19 @@ def test_google_auth_mock_httpx_tokeninfo(monkeypatch):
     assert data["user"]["full_name"] == "Jane Google"
     assert data["user"]["avatar_url"] == "https://lh3.googleusercontent.com/photo.jpg"
     assert data["is_new_user"] is True
+
+
+def test_google_auth_access_token_flow():
+    client = TestClient(app)
+    import uuid
+    token_email = f"token_user_{uuid.uuid4().hex[:8]}@gmail.com"
+    res = client.post("/api/auth/google", json={"access_token": f"mock-access-{token_email}"})
+    assert res.status_code == 200
+    data = res.json()
+    assert data["user"]["username"] == token_email
+    assert data["is_new_user"] is True
+    assert data["user"]["auth_provider"] == "google"
+
 
 
 

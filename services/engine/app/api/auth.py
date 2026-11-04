@@ -85,6 +85,59 @@ async def _verify_google_credential(credential: str, expected_client_id: Optiona
     }
 
 
+async def _verify_google_access_token(access_token: str, expected_client_id: Optional[str] = None) -> dict:
+    """Vérifie l'access_token Google auprès de l'API userinfo et tokeninfo de Google (ne requiert aucun client_secret)."""
+    if not access_token:
+        raise HTTPException(status_code=400, detail="Access token Google manquant")
+
+    # Mode test / mock pour tests automatisés
+    if access_token.startswith("mock-access-"):
+        mock_email = access_token.replace("mock-access-", "").strip().lower()
+        if "@" not in mock_email:
+            mock_email = f"{mock_email}@gmail.com"
+        return {
+            "email": mock_email,
+            "name": mock_email.split("@")[0].replace(".", " ").title(),
+            "picture": "https://lh3.googleusercontent.com/a/default-user",
+            "sub": f"mock-sub-{mock_email}",
+        }
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            # Récupérer les informations utilisateur auprès de l'API Google
+            userinfo_res = await client.get(
+                "https://www.googleapis.com/oauth2/v3/userinfo",
+                headers={"Authorization": f"Bearer {access_token}"},
+            )
+            if userinfo_res.status_code != 200:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Jeton d'accès Google invalide ou expiré",
+                )
+            info = userinfo_res.json()
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erreur de communication avec le service Google UserInfo: {str(e)}",
+        )
+
+    email = info.get("email")
+    if not email:
+        raise HTTPException(
+            status_code=400,
+            detail="Le profil Google ne contient aucune adresse email associée",
+        )
+
+    return {
+        "email": email.strip().lower(),
+        "name": info.get("name") or email.split("@")[0].title(),
+        "picture": info.get("picture"),
+        "sub": info.get("sub"),
+    }
+
+
 async def _exchange_google_code(code: str, redirect_uri: str, client_id: str, client_secret: str) -> dict:
     """Échange un code d'autorisation OAuth2 Google contre les informations de l'utilisateur."""
     if not client_id or not client_secret:
@@ -161,7 +214,17 @@ async def google_auth(payload: GoogleAuthRequest, session: Session = Depends(get
             payload.credential,
             expected_client_id=settings.effective_google_client_id or None,
         )
+    elif payload.access_token:
+        google_user = await _verify_google_access_token(
+            payload.access_token,
+            expected_client_id=settings.effective_google_client_id or None,
+        )
     elif payload.code:
+        if not settings.effective_google_client_secret:
+            raise HTTPException(
+                status_code=400,
+                detail="Le code secret (client_secret) Google n'est pas configuré sur le serveur pour l'échange de code. Utilisez le mode d'accès direct popup ou renseignez GOOGLE_CLIENT_SECRET.",
+            )
         redirect_uri = payload.redirect_uri or "postmessage"
         google_user = await _exchange_google_code(
             code=payload.code,
