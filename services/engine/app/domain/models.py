@@ -209,6 +209,7 @@ class MasterProfileBase(SQLModel):
     extracurriculars_raw: str = Field(default="[]")
     user_id: str = Field(default="louay", index=True)
     onboarding_completed: bool = Field(default=False)
+    avatar_url: Optional[str] = Field(default=None)
     groq_api_key: Optional[str] = Field(default=None)
     groq_model: Optional[str] = Field(default=None)
 
@@ -755,6 +756,8 @@ class UserBase(SQLModel):
     username: str = Field(unique=True, index=True)
     full_name: str = Field(default="")
     role: str = Field(default="user")
+    auth_provider: str = Field(default="local")
+    avatar_url: Optional[str] = Field(default=None)
     onboarding_completed: bool = Field(default=False)
     playbook_initialized: bool = Field(default=False)
 
@@ -762,6 +765,7 @@ class UserBase(SQLModel):
 class User(UserBase, table=True):
     __tablename__ = "users"
     id: str = Field(default_factory=generate_uuid, primary_key=True)
+    provider_id: Optional[str] = Field(default=None, index=True)
     password_hash: str = Field(default="")
     created_at: datetime = Field(default_factory=utc_now)
 
@@ -771,6 +775,8 @@ class UserRead(SQLModel):
     username: str
     full_name: str
     role: str
+    auth_provider: str = "local"
+    avatar_url: Optional[str] = None
     onboarding_completed: bool = False
     playbook_initialized: bool = False
 
@@ -783,6 +789,22 @@ class UserLoginRequest(SQLModel):
 class UserLoginResponse(SQLModel):
     token: str
     user: UserRead
+    is_new_user: bool = False
+
+
+class GoogleAuthRequest(SQLModel):
+    credential: Optional[str] = None
+    code: Optional[str] = None
+    redirect_uri: Optional[str] = None
+    email: Optional[str] = None
+    full_name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    provider_id: Optional[str] = None
+
+
+class GoogleConfigResponse(SQLModel):
+    client_id: str
+    enabled: bool
 
 
 class UserRegisterRequest(SQLModel):

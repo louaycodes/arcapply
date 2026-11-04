@@ -266,6 +266,10 @@ def _migrate_db(engine) -> None:
             ("users", "onboarding_completed", "BOOLEAN DEFAULT 0"),
             ("users", "playbook_initialized", "BOOLEAN DEFAULT 0"),
             ("master_profiles", "onboarding_completed", "BOOLEAN DEFAULT 0"),
+            ("users", "auth_provider", "VARCHAR DEFAULT 'local'"),
+            ("users", "provider_id", "VARCHAR DEFAULT NULL"),
+            ("users", "avatar_url", "VARCHAR DEFAULT NULL"),
+            ("master_profiles", "avatar_url", "VARCHAR DEFAULT NULL"),
         ]
         for tbl_name, col_name, col_type in applied_columns:
             try:
@@ -273,6 +277,12 @@ def _migrate_db(engine) -> None:
                 conn.commit()
             except Exception:
                 pass
+
+        try:
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_provider_id ON users (provider_id)"))
+            conn.commit()
+        except Exception:
+            pass
 
         # Pour les utilisateurs pré-existants en production, marquer playbook_initialized = 1
         # afin de préserver définitivement les suppressions de directives

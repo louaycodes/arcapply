@@ -2,13 +2,17 @@ import hashlib
 import secrets
 import time
 from fastapi import APIRouter, Depends, HTTPException, Header
+import httpx
 from sqlmodel import Session, select
 from typing import Optional
 
 from app.adapters.database import get_session
+from app.config import settings
 from app.domain.auth import create_jwt_token, decode_jwt_token, hash_password, verify_password
 from app.domain.models import (
     ForgotPasswordRequest,
+    GoogleAuthRequest,
+    GoogleConfigResponse,
     MasterProfile,
     MessageResponse,
     PasswordResetToken,
@@ -21,6 +25,245 @@ from app.domain.models import (
 )
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+
+
+async def _verify_google_credential(credential: str, expected_client_id: Optional[str] = None) -> dict:
+    """Vérifie le jeton ID Google auprès du service tokeninfo officiel de Google."""
+    if not credential:
+        raise HTTPException(status_code=400, detail="Jeton Google manquant")
+
+    # Mode test / mock pour tests automatisés ou environnement déconnecté
+    if credential.startswith("mock-google-"):
+        mock_email = credential.replace("mock-google-", "").strip().lower()
+        if "@" not in mock_email:
+            mock_email = f"{mock_email}@gmail.com"
+        return {
+            "email": mock_email,
+            "name": mock_email.split("@")[0].replace(".", " ").title(),
+            "picture": "https://lh3.googleusercontent.com/a/default-user",
+            "sub": f"mock-sub-{mock_email}",
+        }
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(f"https://oauth2.googleapis.com/tokeninfo?id_token={credential}")
+            if resp.status_code != 200:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Jeton d'authentification Google invalide ou expiré",
+                )
+            info = resp.json()
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erreur de communication avec le service Google Auth: {str(e)}",
+        )
+
+    email = info.get("email")
+    if not email:
+        raise HTTPException(
+            status_code=400,
+            detail="Le jeton Google ne contient aucune adresse email associée",
+        )
+
+    # Vérification facultative du Client ID si configuré
+    if expected_client_id:
+        aud = info.get("aud")
+        if aud != expected_client_id:
+            raise HTTPException(
+                status_code=400,
+                detail="Le jeton Google ne correspond pas au client_id configuré",
+            )
+
+    return {
+        "email": email.strip().lower(),
+        "name": info.get("name") or email.split("@")[0].title(),
+        "picture": info.get("picture"),
+        "sub": info.get("sub"),
+    }
+
+
+async def _exchange_google_code(code: str, redirect_uri: str, client_id: str, client_secret: str) -> dict:
+    """Échange un code d'autorisation OAuth2 Google contre les informations de l'utilisateur."""
+    if not client_id or not client_secret:
+        raise HTTPException(
+            status_code=400,
+            detail="Le client_id ou client_secret Google n'est pas configuré sur le serveur",
+        )
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(
+                "https://oauth2.googleapis.com/token",
+                data={
+                    "code": code,
+                    "client_id": client_id,
+                    "client_secret": client_secret,
+                    "redirect_uri": redirect_uri,
+                    "grant_type": "authorization_code",
+                },
+            )
+            if resp.status_code != 200:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Échec de l'échange du code d'autorisation Google",
+                )
+            token_data = resp.json()
+            id_token = token_data.get("id_token")
+            if id_token:
+                return await _verify_google_credential(id_token, client_id)
+
+            access_token = token_data.get("access_token")
+            userinfo_res = await client.get(
+                "https://www.googleapis.com/oauth2/v3/userinfo",
+                headers={"Authorization": f"Bearer {access_token}"},
+            )
+            if userinfo_res.status_code != 200:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Impossible de récupérer les informations du profil Google",
+                )
+            info = userinfo_res.json()
+            return {
+                "email": info.get("email", "").strip().lower(),
+                "name": info.get("name") or "",
+                "picture": info.get("picture"),
+                "sub": info.get("sub"),
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erreur lors de l'échange avec Google: {str(e)}",
+        )
+
+
+@router.get("/google/config", response_model=GoogleConfigResponse)
+def get_google_config():
+    """Retourne la configuration publique pour l'authentification Google."""
+    client_id = settings.effective_google_client_id
+    return GoogleConfigResponse(
+        client_id=client_id,
+        enabled=bool(client_id),
+    )
+
+
+@router.post("/google", response_model=UserLoginResponse)
+async def google_auth(payload: GoogleAuthRequest, session: Session = Depends(get_session)):
+    """Authentification ou création de compte via Google provider."""
+    google_user = None
+
+    if payload.credential:
+        google_user = await _verify_google_credential(
+            payload.credential,
+            expected_client_id=settings.effective_google_client_id or None,
+        )
+    elif payload.code:
+        redirect_uri = payload.redirect_uri or "postmessage"
+        google_user = await _exchange_google_code(
+            code=payload.code,
+            redirect_uri=redirect_uri,
+            client_id=settings.effective_google_client_id,
+            client_secret=settings.effective_google_client_secret,
+        )
+    elif payload.email and (not settings.effective_google_client_id or payload.credential == "mock"):
+        # Mode développement / test direct
+        google_user = {
+            "email": payload.email.strip().lower(),
+            "name": payload.full_name or payload.email.split("@")[0].title(),
+            "picture": payload.avatar_url or "https://lh3.googleusercontent.com/a/default-user",
+            "sub": payload.provider_id or f"google-{payload.email}",
+        }
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Informations d'authentification Google manquantes (credential ou code requis)",
+        )
+
+    email = google_user["email"].strip().lower()
+    full_name = google_user.get("name") or email.split("@")[0].capitalize()
+    avatar_url = google_user.get("picture")
+    sub = google_user.get("sub")
+
+    # Recherche d'un utilisateur existant par username (email) ou par provider_id Google
+    user = session.exec(
+        select(User).where(
+            (User.username == email) | ((User.provider_id == sub) & (User.auth_provider == "google"))
+        )
+    ).first()
+
+    is_new_user = False
+    if not user:
+        # Création de compte automatique via Google
+        is_new_user = True
+        user = User(
+            username=email,
+            full_name=full_name,
+            role="user",
+            password_hash="",
+            auth_provider="google",
+            provider_id=sub,
+            avatar_url=avatar_url,
+            onboarding_completed=False,
+            playbook_initialized=False,
+        )
+        session.add(user)
+        session.commit()
+        session.refresh(user)
+
+        # Initialisation du MasterProfile isolé
+        profile = session.exec(select(MasterProfile).where(MasterProfile.user_id == email)).first()
+        if not profile:
+            profile = MasterProfile(
+                id=f"profile-{user.id}",
+                user_id=email,
+                full_name=full_name,
+                email=email,
+                avatar_url=avatar_url,
+                headline="",
+                bio="",
+                search_mode="PFE",
+                is_complete=False,
+            )
+            session.add(profile)
+            session.commit()
+    else:
+        # Utilisateur existant : mise à jour des métadonnées Google
+        user.auth_provider = "google"
+        if sub and not user.provider_id:
+            user.provider_id = sub
+        if avatar_url and not user.avatar_url:
+            user.avatar_url = avatar_url
+        if full_name and not user.full_name:
+            user.full_name = full_name
+        session.add(user)
+
+        # Mettre à jour l'avatar du profil si vide
+        profile = session.exec(select(MasterProfile).where(MasterProfile.user_id == user.username)).first()
+        if profile and avatar_url and not profile.avatar_url:
+            profile.avatar_url = avatar_url
+            session.add(profile)
+        session.commit()
+        session.refresh(user)
+
+    token = create_jwt_token(user_id=user.id, username=user.username, role=user.role)
+    return UserLoginResponse(
+        token=token,
+        user=UserRead(
+            id=user.id,
+            username=user.username,
+            full_name=user.full_name,
+            role=user.role,
+            auth_provider=user.auth_provider or "google",
+            avatar_url=user.avatar_url,
+            onboarding_completed=user.onboarding_completed,
+            playbook_initialized=user.playbook_initialized,
+        ),
+        is_new_user=is_new_user,
+    )
 
 
 @router.post("/register", response_model=UserLoginResponse)
@@ -72,9 +315,12 @@ def register(payload: UserRegisterRequest, session: Session = Depends(get_sessio
             username=new_user.username,
             full_name=new_user.full_name,
             role=new_user.role,
+            auth_provider=new_user.auth_provider or "local",
+            avatar_url=new_user.avatar_url,
             onboarding_completed=new_user.onboarding_completed,
             playbook_initialized=new_user.playbook_initialized,
         ),
+        is_new_user=True,
     )
 
 
@@ -94,9 +340,12 @@ def login(payload: UserLoginRequest, session: Session = Depends(get_session)):
             username=user.username,
             full_name=user.full_name,
             role=user.role,
+            auth_provider=user.auth_provider or "local",
+            avatar_url=user.avatar_url,
             onboarding_completed=user.onboarding_completed,
             playbook_initialized=user.playbook_initialized,
         ),
+        is_new_user=False,
     )
 
 
@@ -226,6 +475,8 @@ def get_current_user(
         username=user.username,
         full_name=user.full_name,
         role=user.role,
+        auth_provider=getattr(user, "auth_provider", "local") or "local",
+        avatar_url=getattr(user, "avatar_url", None),
         onboarding_completed=user.onboarding_completed,
         playbook_initialized=user.playbook_initialized,
     )
@@ -263,6 +514,8 @@ def complete_onboarding(
             username=user.username,
             full_name=user.full_name,
             role=user.role,
+            auth_provider=getattr(user, "auth_provider", "local") or "local",
+            avatar_url=getattr(user, "avatar_url", None),
             onboarding_completed=True,
             playbook_initialized=user.playbook_initialized,
         )

@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     jwt_secret: str = "arcapply-super-secret-jwt-key-2026-production-ready"
     jwt_algorithm: str = "HS256"
     jwt_expiration_days: int = 7
+    google_client_id: str = ""
+    google_client_secret: str = ""
 
     model_config = SettingsConfigDict(
         env_prefix="ARCAPPLY_",
@@ -33,6 +35,23 @@ class Settings(BaseSettings):
     @property
     def effective_groq_model(self) -> str:
         return self.groq_model or os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+
+    @property
+    def effective_google_client_id(self) -> str:
+        return (
+            self.google_client_id
+            or os.getenv("ARCAPPLY_GOOGLE_CLIENT_ID", "")
+            or os.getenv("GOOGLE_CLIENT_ID", "")
+            or os.getenv("NEXT_PUBLIC_GOOGLE_CLIENT_ID", "")
+        )
+
+    @property
+    def effective_google_client_secret(self) -> str:
+        return (
+            self.google_client_secret
+            or os.getenv("ARCAPPLY_GOOGLE_CLIENT_SECRET", "")
+            or os.getenv("GOOGLE_CLIENT_SECRET", "")
+        )
 
     @property
     def db_path(self) -> Path:
