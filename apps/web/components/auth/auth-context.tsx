@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { User, loginUser, registerUser, fetchCurrentUser } from "@/lib/api";
+import { User, loginUser, registerUser, loginWithGoogle, fetchCurrentUser } from "@/lib/api";
 import { Loader2 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { LoginForm } from "@/components/auth/login-form";
@@ -15,6 +15,14 @@ interface AuthContextType {
   isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
   register: (email: string, password: string, fullName?: string) => Promise<void>;
+  loginWithGoogle: (payload: {
+    credential?: string;
+    code?: string;
+    redirect_uri?: string;
+    email?: string;
+    full_name?: string;
+    avatar_url?: string;
+  }) => Promise<{ isNewUser?: boolean }>;
   logout: () => void;
 }
 
@@ -82,6 +90,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("arcapply_user", JSON.stringify(response.user));
   };
 
+  const loginWithGoogleAuth = async (payload: {
+    credential?: string;
+    code?: string;
+    redirect_uri?: string;
+    email?: string;
+    full_name?: string;
+    avatar_url?: string;
+  }) => {
+    const response = await loginWithGoogle(payload);
+    setToken(response.token);
+    setUser(response.user);
+    localStorage.setItem("arcapply_token", response.token);
+    localStorage.setItem("arcapply_user", JSON.stringify(response.user));
+    return { isNewUser: response.is_new_user };
+  };
 
   const logout = () => {
     setUser(null);
@@ -113,7 +136,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       pathname === "/reset-password";
     if (isPublicRoute) {
       return (
-        <AuthContext.Provider value={{ user, token, isLoading, login, logout, register }}>
+        <AuthContext.Provider value={{ user, token, isLoading, login, logout, register, loginWithGoogle: loginWithGoogleAuth }}>
           {children}
         </AuthContext.Provider>
       );
@@ -121,7 +144,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Pour les routes protégées du cockpit (/radar, /profile, /settings, /cv, etc.), afficher l'accès sécurisé
     return (
-      <AuthContext.Provider value={{ user, token, isLoading, login, logout, register }}>
+      <AuthContext.Provider value={{ user, token, isLoading, login, logout, register, loginWithGoogle: loginWithGoogleAuth }}>
         <div className="relative min-h-screen w-full flex items-center justify-center bg-[#F7F3EC] dark:bg-[#12100E] p-4 pt-16 font-sans selection:bg-orange-100">
           <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex items-center gap-2">
             <LanguageSwitcher />
@@ -134,7 +157,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, logout, register }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, logout, register, loginWithGoogle: loginWithGoogleAuth }}>
       {children}
     </AuthContext.Provider>
   );

@@ -153,9 +153,17 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
         {user ? (
           <>
             <div className="px-3.5 py-2.5 rounded-xl bg-white dark:bg-stone-800/80 border border-border dark:border-stone-700 shadow-artisan flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-orange-200 dark:from-primary/30 dark:to-orange-900 text-primary font-bold flex items-center justify-center text-xs shrink-0 border border-primary/30">
-                {user.full_name?.substring(0, 2).toUpperCase() || user.username.substring(0, 2).toUpperCase()}
-              </div>
+              {user.avatar_url ? (
+                <img
+                  src={user.avatar_url}
+                  alt={user.full_name || user.username}
+                  className="w-8 h-8 rounded-full object-cover shrink-0 border border-primary/30"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-orange-200 dark:from-primary/30 dark:to-orange-900 text-primary font-bold flex items-center justify-center text-xs shrink-0 border border-primary/30">
+                  {user.full_name?.substring(0, 2).toUpperCase() || user.username.substring(0, 2).toUpperCase()}
+                </div>
+              )}
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-bold text-stone-800 dark:text-stone-100 truncate leading-tight">
                   {user.full_name || user.username}

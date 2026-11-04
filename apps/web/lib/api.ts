@@ -1243,6 +1243,8 @@ export interface User {
   username: string;
   full_name: string;
   role: string;
+  auth_provider?: string;
+  avatar_url?: string;
   onboarding_completed?: boolean;
   playbook_initialized?: boolean;
 }
@@ -1250,6 +1252,51 @@ export interface User {
 export interface LoginResponse {
   token: string;
   user: User;
+  is_new_user?: boolean;
+}
+
+export interface GoogleAuthConfig {
+  client_id: string;
+  enabled: boolean;
+}
+
+export async function fetchGoogleConfig(): Promise<GoogleAuthConfig> {
+  try {
+    const res = await authFetch(`${API_BASE_URL}/api/auth/google/config`, {
+      method: "GET",
+    });
+    if (!res.ok) {
+      return { client_id: "", enabled: false };
+    }
+    return res.json();
+  } catch {
+    return { client_id: "", enabled: false };
+  }
+}
+
+export async function loginWithGoogle(payload: {
+  credential?: string;
+  code?: string;
+  redirect_uri?: string;
+  email?: string;
+  full_name?: string;
+  avatar_url?: string;
+}): Promise<LoginResponse> {
+  const res = await authFetch(`${API_BASE_URL}/api/auth/google`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const message =
+      localizeServerMessage(errorData.detail?.message || errorData.detail) ||
+      trStored("Échec de l'authentification avec Google", "Google authentication failed");
+    throw new Error(message);
+  }
+  return res.json();
 }
 
 export async function loginUser(username: string, password: string): Promise<LoginResponse> {
