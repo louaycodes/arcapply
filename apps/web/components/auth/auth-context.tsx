@@ -17,6 +17,7 @@ interface AuthContextType {
   register: (email: string, password: string, fullName?: string) => Promise<void>;
   loginWithGoogle: (payload: {
     credential?: string;
+    access_token?: string;
     code?: string;
     redirect_uri?: string;
     email?: string;
@@ -92,6 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithGoogleAuth = async (payload: {
     credential?: string;
+    access_token?: string;
     code?: string;
     redirect_uri?: string;
     email?: string;

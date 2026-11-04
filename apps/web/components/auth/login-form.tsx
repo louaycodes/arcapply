@@ -46,7 +46,14 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
   const googleButtonContainerRef = useRef<HTMLDivElement>(null);
 
   const handleGoogleSuccess = useCallback(
-    async (payload: { credential?: string; code?: string; redirect_uri?: string; email?: string; full_name?: string }) => {
+    async (payload: {
+      credential?: string;
+      access_token?: string;
+      code?: string;
+      redirect_uri?: string;
+      email?: string;
+      full_name?: string;
+    }) => {
       setIsGoogleLoading(true);
       setError(null);
       try {
@@ -142,20 +149,22 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
     if (googleClientId && window.google?.accounts) {
       setIsGoogleLoading(true);
       try {
-        if (window.google.accounts.oauth2) {
-          const client = window.google.accounts.oauth2.initCodeClient({
+        if (window.google.accounts.oauth2?.initTokenClient) {
+          const client = window.google.accounts.oauth2.initTokenClient({
             client_id: googleClientId,
             scope: "openid email profile",
-            ux_mode: "popup",
             callback: (response: any) => {
-              if (response.code) {
-                handleGoogleSuccess({ code: response.code });
+              if (response?.access_token) {
+                handleGoogleSuccess({ access_token: response.access_token });
+              } else if (response?.error) {
+                setIsGoogleLoading(false);
+                setError(response.error_description || response.error);
               } else {
                 setIsGoogleLoading(false);
               }
             },
           });
-          client.requestCode();
+          client.requestAccessToken();
         } else if (window.google.accounts.id) {
           window.google.accounts.id.prompt((notification: any) => {
             if (notification.isNotDisplayed() || notification.isSkippedMoment()) {

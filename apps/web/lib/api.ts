@@ -1276,6 +1276,7 @@ export async function fetchGoogleConfig(): Promise<GoogleAuthConfig> {
 
 export async function loginWithGoogle(payload: {
   credential?: string;
+  access_token?: string;
   code?: string;
   redirect_uri?: string;
   email?: string;
