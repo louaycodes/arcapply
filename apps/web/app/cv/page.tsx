@@ -170,7 +170,6 @@ export default function StudioCVPage() {
           setMarginMm(draftRes.data.margin_top_mm || 8.0);
         }
         setIsProfileEmpty(Boolean(draftRes.is_profile_empty));
-        showNotification("info", t("Brouillon sauvegardé chargé avec succès.", "Saved draft loaded successfully."));
       } else {
         const profRes = await fetchCVFromProfile(cvLang);
         setCvData(profRes.data);
